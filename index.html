@@ -4377,7 +4377,7 @@ function renderDashboard(c, actions){
   actions.innerHTML = `
     <button class="btn btn-sm btn-outline" onclick="openExportHub()" title="Print or save shareable documents" style="display:inline-flex;align-items:center;gap:6px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      <span class="dash-export-label">Print / Export</span>
+      <span class="dash-export-label" style="white-space:nowrap">Print / Export</span>
     </button>
     <button class="btn btn-sm ${dashEditMode?'btn-primary':'btn-outline edit-layout-btn'}" onclick="toggleDashEdit()" style="display:inline-flex;align-items:center;gap:6px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
