@@ -15,6 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Union Vault"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="color-scheme" content="light dark"/>
 <meta name="application-name" content="Union Vault"/>
 <!-- Status-bar tint follows the OS theme so the chrome matches the app's own dark mode. -->
 <meta name="theme-color" content="#FAFAF8" media="(prefers-color-scheme: light)"/>
@@ -3235,10 +3236,32 @@ async function _lpSignIn() {
   // Success — hide landing, go to dashboard
   document.getElementById('welcome-overlay').classList.add('hidden');
   if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
-  if(typeof navigate !== 'undefined') navigate('dashboard');
   if(typeof _cloudToast !== 'undefined') _cloudToast('Signed in as ' + r.user.email);
-  // First-time user (no setup data yet) → show setup modal
-  if(!alreadySetUp) _showSetupModal();
+  // New device (no localStorage) — check cloud for existing data before showing setup
+  if(!alreadySetUp) {
+    var cloudChk = await _cloudLoad();
+    console.log('[UV] cloudLoad result:', JSON.stringify({ok:cloudChk.ok, empty:cloudChk.empty, error:cloudChk.error, sections:cloudChk.saved?Object.keys(cloudChk.saved):[]}));
+    if(cloudChk.ok && !cloudChk.empty) {
+      // Cloud data exists — load it silently, go to dashboard
+      if(cloudChk.saved.event)    Object.assign(STATE.event, cloudChk.saved.event);
+      if(cloudChk.saved.settings) Object.assign(STATE.settings, cloudChk.saved.settings);
+      ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
+      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
+      saveToStorage();
+      if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
+      if(typeof navigate !== 'undefined') navigate('dashboard');
+      if(typeof _cloudToast !== 'undefined') _cloudToast('Your data has been restored from the cloud ✓');
+      window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
+      if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
+      setTimeout(_mediaCloudSync, 800);
+    } else {
+      // Genuinely new account — show setup
+      if(typeof navigate !== 'undefined') navigate('dashboard');
+      _showSetupModal();
+    }
+  } else {
+    if(typeof navigate !== 'undefined') navigate('dashboard');
+  }
 }
 
 async function _lpSignUp() {
@@ -8522,7 +8545,12 @@ function _longDate(iso){
   return d.getDate()+' '+['January','February','March','April','May','June','July','August','September','October','November','December'][d.getMonth()]+' '+d.getFullYear();
 }
 // The public RSVP link (same as the tracker's Copy/Preview link).
-function _rsvpLink(){ return window.location.origin+window.location.pathname+'?rsvp=true'; }
+// Stage 5: uses couple_uid so the RSVP form can look up wedding details + save to rsvp_responses.
+function _rsvpLink(){
+  const uid = _sbSession&&_sbSession.user&&_sbSession.user.id;
+  if(uid) return window.location.origin+window.location.pathname+'?rsvp='+uid;
+  return window.location.origin+window.location.pathname+'?rsvp=true'; // fallback if not signed in
+}
 // Resolve template tokens for a given group of guests.
 function _fillTemplate(tpl, grp){
   const ev=STATE.event||{};
@@ -10780,7 +10808,8 @@ const _RSVP_SECTIONS=[
   ['awaiting','Awaiting response'],
   ['inviteprogress','Invite progress'],
   ['contactable','Contactable'],
-  ['seatingstatus','Seating status']
+  ['seatingstatus','Seating status'],
+  ['onlinersvps','Online RSVPs']
 ];
 // Default order = array index order of _RSVP_SECTIONS keys
 const _RSVP_SECTION_KEYS=_RSVP_SECTIONS.map(s=>s[0]);
@@ -11437,6 +11466,106 @@ function _rsvpSortValue(g, key, grp){
 }
 function _rsvpSortClick(colKey){ _cycleSort('rsvpSort', colKey); rsvpRerenderList(); }
 
+// ── Online RSVPs: fetch submitted responses from Supabase ────────────────────
+async function _loadOnlineRsvps(){
+  const body   = document.getElementById('online-rsvps-body');
+  const btn    = document.getElementById('load-rsvps-btn');
+  if(!body) return;
+  if(!_sbSession){
+    body.innerHTML='<span style="color:var(--red)">Please sign in to view responses.</span>';
+    return;
+  }
+  if(btn){ btn.disabled=true; btn.innerHTML=btn.innerHTML.replace('Load','Loading…'); }
+  try{
+    const uid = _sbSession.user.id;
+    const url = `${_SB_URL}/rest/v1/rsvp_responses?couple_id=eq.${encodeURIComponent(uid)}&order=created_at.desc&limit=200`;
+    const res = await fetch(url,{
+      headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json'}
+    });
+    if(!res.ok){ throw new Error('HTTP '+res.status); }
+    const rows = await res.json();
+
+    if(!rows.length){
+      body.innerHTML='<span style="color:var(--muted);font-style:italic">No responses yet — share your RSVP link to get started.</span>';
+      if(btn){ btn.disabled=false; btn.innerHTML=btn.innerHTML.replace('Loading…','Refresh'); }
+      return;
+    }
+
+    // Tally
+    const yes=rows.filter(r=>r.attending==='yes').length;
+    const no =rows.filter(r=>r.attending==='no').length;
+    const total=rows.length;
+
+    // Diet totals across all yes responses
+    const dietMap={};
+    rows.filter(r=>r.attending==='yes'&&Array.isArray(r.dietary)).forEach(r=>{
+      r.dietary.forEach(d=>{ dietMap[d]=(dietMap[d]||0)+1; });
+    });
+    const dietLabels={vegetarian:'Veg',vegan:'Vegan',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut',other:'Other'};
+    const dietSummary=Object.entries(dietMap).map(([k,v])=>`${dietLabels[k]||k} ×${v}`).join(' · ')||'None noted';
+
+    // Format date helper
+    const fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
+
+    // Build table
+    const rowsHtml = rows.map(r=>{
+      const dietStr = Array.isArray(r.dietary)&&r.dietary.length
+        ? r.dietary.map(d=>dietLabels[d]||d).join(', ')
+        : '—';
+      const attendBadge = r.attending==='yes'
+        ? `<span style="color:var(--green);font-weight:600">✓ Yes</span>`
+        : r.attending==='no'
+          ? `<span style="color:var(--red)">✗ No</span>`
+          : `<span style="color:var(--muted)">—</span>`;
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 10px;font-size:12.5px;color:var(--ink);font-weight:500">${r.guest_name||'—'}</td>
+        <td style="padding:8px 10px;font-size:12.5px">${attendBadge}</td>
+        <td style="padding:8px 10px;font-size:12px;color:var(--muted)">${dietStr}</td>
+        <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.email||'—'}</td>
+        <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${fmt(r.created_at)}</td>
+      </tr>`;
+    }).join('');
+
+    body.innerHTML=`
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="flex:1;min-width:90px;padding:10px 14px;background:rgba(74,124,89,.08);border:1px solid rgba(74,124,89,.25);border-radius:9px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--green)">${yes}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Attending</div>
+        </div>
+        <div style="flex:1;min-width:90px;padding:10px 14px;background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.2);border-radius:9px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--red)">${no}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Declining</div>
+        </div>
+        <div style="flex:1;min-width:90px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--ink)">${total}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Total</div>
+        </div>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">
+        <strong style="color:var(--ink)">Dietary (attending):</strong> ${dietSummary}
+      </div>
+      <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border)">
+        <table style="width:100%;border-collapse:collapse;font-family:inherit">
+          <thead>
+            <tr style="background:var(--surface);border-bottom:1px solid var(--border)">
+              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Guest</th>
+              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Attending</th>
+              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Dietary</th>
+              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Email</th>
+              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Submitted</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
+  }catch(err){
+    console.warn('_loadOnlineRsvps error',err);
+    body.innerHTML=`<span style="color:var(--red)">Could not load responses — ${err.message||'network error'}. Try again.</span>`;
+  } finally {
+    if(btn){ btn.disabled=false; btn.innerHTML=btn.innerHTML.replace('Loading…','Refresh'); }
+  }
+}
+
 function renderRsvpMgr(c, actions){
   // Combined RSVP & Invites page. Topbar: invite-mode toggle + manage guests.
   if(actions){
@@ -11467,7 +11596,7 @@ function renderRsvpMgr(c, actions){
       ${_rsvpArrangeMenuHtml()}
     </div>`;
   }
-  const url=window.location.origin+window.location.pathname+'?rsvp=true';
+  const url=_rsvpLink();
   const s=rsvpStats();
   const statusMeta={
     attending:{label:'Attending',bg:'rgba(74,124,89,.14)',fg:'var(--green)'},
@@ -11567,7 +11696,20 @@ function renderRsvpMgr(c, actions){
       awaiting:!hidden.has('awaiting')?_rsvpWidgetAwaiting():'',
       inviteprogress:!hidden.has('inviteprogress')?_rsvpWidgetInviteProgress():'',
       contactable:!hidden.has('contactable')?_rsvpWidgetContactable():'',
-      seatingstatus:!hidden.has('seatingstatus')?_rsvpWidgetSeating():''
+      seatingstatus:!hidden.has('seatingstatus')?_rsvpWidgetSeating():'',
+      // ── Stage 5: Online RSVPs card (submissions received via public link) ──
+      onlinersvps:`<div class="card" id="online-rsvp-card">
+        <div class="section-eyebrow" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+          <span>Online RSVPs</span>
+          <button class="btn btn-sm btn-outline" style="font-size:11.5px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px" onclick="_loadOnlineRsvps()" id="load-rsvps-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
+            Load
+          </button>
+        </div>
+        <div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:6px 0">
+          Responses submitted via your public RSVP link will appear here. Hit <strong>Load</strong> to fetch the latest.
+        </div>
+      </div>`
     };
     // ── Placement-driven assembly: dock stack beside tracker + row-broken grid ──
     const _placements=_rsvpPlacements();
@@ -43484,6 +43626,11 @@ _sbOnAuthChange(function(){ if(typeof _currentPage!=='undefined'&&_currentPage==
 // Load persisted data before first render
 const alreadySetUp = loadFromStorage();
 
+// On a fresh device with no saved preference, honour the OS dark-mode setting
+if(!alreadySetUp && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+  document.body.classList.add('dark');
+}
+
 // Apply sidebar mode from settings
 if((STATE.settings.sidebarMode||'hamburger')==='icon'){
   document.body.classList.add('icon-sidebar');
@@ -43495,6 +43642,525 @@ if((STATE.settings.sidebarMode||'hamburger')==='icon'){
 // from the dashboard onward.
 try{ if(_autoCheckPassedInstallments()) saveToStorage(); }catch(e){}
 
+/* ══════════════════════════════════════════════════════════════════════════
+   STAGE 5 — PUBLIC PAGES (RSVP form + Vendor portal)
+   These functions render a full-page experience that replaces the normal
+   app shell. They are called from boot() when URL params are detected,
+   and they never touch localStorage, STATE, or any planner internals.
+
+   SQL required in Supabase dashboard (run once):
+   ────────────────────────────────────────────────
+   CREATE TABLE rsvp_responses (
+     id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+     couple_id   uuid NOT NULL REFERENCES auth.users(id),
+     guest_name  text NOT NULL,
+     email       text,
+     phone       text,
+     address     text,
+     attending   text CHECK (attending IN ('yes','no')),
+     dietary     text[],
+     message     text,
+     created_at  timestamptz DEFAULT now()
+   );
+   ALTER TABLE rsvp_responses ENABLE ROW LEVEL SECURITY;
+   CREATE POLICY "couple reads own rsvps" ON rsvp_responses
+     FOR SELECT USING (auth.uid() = couple_id);
+   CREATE POLICY "public can submit rsvp" ON rsvp_responses
+     FOR INSERT WITH CHECK (true);
+
+   CREATE TABLE vendor_tokens (
+     token       text PRIMARY KEY DEFAULT encode(gen_random_bytes(24),'hex'),
+     couple_id   uuid NOT NULL REFERENCES auth.users(id),
+     vendor_name text,
+     sections    text[],
+     expires_at  timestamptz,
+     created_at  timestamptz DEFAULT now()
+   );
+   ALTER TABLE vendor_tokens ENABLE ROW LEVEL SECURITY;
+   CREATE POLICY "couple manages tokens" ON vendor_tokens
+     USING (auth.uid() = couple_id);
+   CREATE POLICY "public reads by token" ON vendor_tokens
+     FOR SELECT USING (true);
+   ──────────────────────────────────────────────── */
+
+// ── Helpers shared by public pages ──────────────────────────────────────────
+
+function _publicPageShell(innerHtml){
+  // Replaces the entire body with a clean public-page shell (no nav, no sidebar).
+  document.body.innerHTML = innerHtml;
+}
+
+function _publicCss(accentHex, pageHex, bandHex, inkHex, textHex, headFont, bodyFont){
+  // Returns a <style> block injecting the couple's wedding website palette
+  // so the public RSVP/vendor pages feel on-brand.
+  const a = accentHex||'#C9A227';
+  const pg= pageHex ||'#E8DDD0';
+  const bd= bandHex ||'#DDD3C4';
+  const ink=inkHex  ||'#4A3F35';
+  const txt=textHex ||'#5A5148';
+  const hf= headFont||"'Cormorant Garamond',serif";
+  const bf= bodyFont||"'Inter',sans-serif";
+  return `<style>
+    *,*::before,*::after{box-sizing:border-box}
+    :root{
+      --pub-page:${pg};--pub-band:${bd};--pub-accent:${a};
+      --pub-ink:${ink};--pub-text:${txt};
+      --pub-surface:color-mix(in srgb,${pg} 60%,#fff 40%);
+      --pub-border:color-mix(in srgb,${a} 25%,#ccc 75%);
+      --pub-btn:${a};--pub-btn-fg:#fff;
+      --pub-radius:11px;
+    }
+    @media(prefers-color-scheme:dark){
+      :root:not([data-theme="light"]){
+        --pub-page:#1C1C22;--pub-band:#26252B;--pub-accent:#B0A085;
+        --pub-ink:#D2CEC6;--pub-text:#9A9389;
+        --pub-surface:#1E1E24;--pub-border:#2E2D33;
+        --pub-btn:#B0A085;--pub-btn-fg:#1C1C22;
+        color-scheme:dark;
+      }
+    }
+    :root[data-theme="dark"]{
+      --pub-page:#1C1C22;--pub-band:#26252B;--pub-accent:#B0A085;
+      --pub-ink:#D2CEC6;--pub-text:#9A9389;
+      --pub-surface:#1E1E24;--pub-border:#2E2D33;
+      --pub-btn:#B0A085;--pub-btn-fg:#1C1C22;
+      color-scheme:dark;
+    }
+    body{margin:0;background:var(--pub-page);color:var(--pub-ink);font-family:${bf};font-size:14px;min-height:100vh}
+    .pub-theme-btn{position:fixed;top:14px;right:14px;z-index:999;display:inline-flex;align-items:center;gap:5px;padding:6px 11px;font-size:11.5px;font-weight:500;font-family:${bf};border:1px solid var(--pub-border);border-radius:8px;background:var(--pub-surface);color:var(--pub-text);cursor:pointer;transition:all .15s}
+    .pub-theme-btn:hover{color:var(--pub-ink);border-color:var(--pub-accent)}
+    .pub-header{background:var(--pub-band);padding:40px 24px 32px;text-align:center;border-bottom:1px solid var(--pub-border)}
+    .pub-eyebrow{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--pub-accent);margin-bottom:10px}
+    .pub-couple{font-family:${hf};font-size:32px;font-weight:500;color:var(--pub-ink);line-height:1.15;margin-bottom:8px}
+    .pub-dateline{font-size:12.5px;color:var(--pub-text);letter-spacing:.03em}
+    .pub-divider{width:44px;height:1px;background:var(--pub-accent);opacity:.6;margin:14px auto 0}
+    .pub-body{padding:28px 24px;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+    .pub-label{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--pub-accent);margin-bottom:6px}
+    .pub-label .opt{color:var(--pub-text);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px}
+    .pub-input,.pub-select,.pub-textarea{width:100%;padding:11px 14px;font-size:13.5px;font-family:${bf};color:var(--pub-ink);background:var(--pub-surface);border:1px solid var(--pub-border);border-radius:9px;outline:none;transition:border-color .15s,box-shadow .15s}
+    .pub-input:focus,.pub-select:focus,.pub-textarea:focus{border-color:var(--pub-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--pub-accent) 20%,transparent 80%)}
+    .pub-input::placeholder,.pub-textarea::placeholder{color:var(--pub-text);opacity:.7}
+    .pub-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239A9389' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:calc(100% - 12px) center;padding-right:32px;cursor:pointer}
+    .pub-textarea{resize:vertical;min-height:80px}
+    .pub-attend-pills{display:flex;gap:8px;flex-wrap:wrap}
+    .pub-attend-pill{flex:1;min-width:120px;padding:10px 12px;border:1px solid var(--pub-border);border-radius:9px;background:var(--pub-surface);font-size:12.5px;font-weight:500;color:var(--pub-text);cursor:pointer;text-align:center;transition:all .15s;font-family:${bf};user-select:none}
+    .pub-attend-pill:hover{border-color:var(--pub-accent);color:var(--pub-ink)}
+    .pub-attend-pill.yes{border-color:#4A7C59;background:rgba(74,124,89,.1);color:#4A7C59;font-weight:600}
+    .pub-attend-pill.no{border-color:#C0392B;background:rgba(192,57,43,.08);color:#C0392B;font-weight:600}
+    .pub-diet-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .pub-diet-chip{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--pub-border);border-radius:8px;background:var(--pub-surface);font-size:12.5px;color:var(--pub-text);cursor:pointer;transition:all .15s;user-select:none}
+    .pub-diet-chip:hover{border-color:var(--pub-accent);color:var(--pub-ink)}
+    .pub-diet-chip.on{border-color:var(--pub-accent);background:color-mix(in srgb,var(--pub-accent) 12%,transparent 88%);color:var(--pub-ink)}
+    .pub-diet-check{width:14px;height:14px;border:1.5px solid var(--pub-border);border-radius:4px;background:var(--pub-page);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+    .pub-diet-chip.on .pub-diet-check{background:var(--pub-accent);border-color:var(--pub-accent)}
+    .pub-diet-check svg{opacity:0;transition:opacity .15s}
+    .pub-diet-chip.on .pub-diet-check svg{opacity:1}
+    .pub-submit{width:100%;padding:14px;background:var(--pub-btn);color:var(--pub-btn-fg);border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:${bf};letter-spacing:.02em;cursor:pointer;transition:opacity .15s,transform .1s}
+    .pub-submit:hover:not(:disabled){opacity:.88}
+    .pub-submit:disabled{opacity:.55;cursor:not-allowed}
+    .pub-footer{text-align:center;font-size:11.5px;color:var(--pub-text);padding-bottom:8px}
+    .pub-addr-row{display:grid;grid-template-columns:1fr 70px 90px;gap:7px;margin-top:7px}
+    .pub-addr-hint{font-size:11px;color:var(--pub-text);margin-top:5px}
+    .pub-msg-box{padding:16px;border-radius:12px;text-align:center;font-size:14px;line-height:1.6}
+    .pub-msg-box.success{background:rgba(74,124,89,.12);border:1px solid rgba(74,124,89,.3);color:#4A7C59}
+    .pub-msg-box.expired{background:var(--pub-surface);border:1px solid var(--pub-border);color:var(--pub-text)}
+    .pub-ring{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--pub-accent);opacity:.7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--pub-accent)}
+    @media(max-width:480px){.pub-addr-row{grid-template-columns:1fr 60px 75px}.pub-couple{font-size:26px}.pub-body{padding:20px 16px}}
+    .pub-ac-wrap{position:relative}
+    .pub-ac-list{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--pub-page);border:1px solid var(--pub-accent);border-radius:9px;box-shadow:0 6px 22px rgba(0,0,0,.12);list-style:none;margin:0;padding:4px 0;z-index:99;max-height:200px;overflow-y:auto}
+    .pub-ac-item{padding:10px 14px;font-size:13px;color:var(--pub-ink);cursor:pointer;transition:background .1s;font-family:${bf}}
+    .pub-ac-item:hover,.pub-ac-item.focused{background:color-mix(in srgb,var(--pub-accent) 15%,transparent 85%)}
+    .pub-ac-none{padding:10px 14px;font-size:12.5px;color:var(--pub-text);font-style:italic;font-family:${bf}}
+  </style>`;
+}
+
+function _pubToggleTheme(){
+  const r=document.documentElement;
+  r.setAttribute('data-theme', r.getAttribute('data-theme')==='dark'?'light':'dark');
+}
+
+// ── _showRsvpExpired: legacy ?rsvp=true link ─────────────────────────────────
+function _showRsvpExpired(){
+  _publicPageShell(`
+    ${_publicCss()}
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 24px">
+      <div style="max-width:400px;width:100%;text-align:center">
+        <div class="pub-ring">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="pub-eyebrow">This link has been updated</div>
+        <div class="pub-couple" style="font-size:22px;margin-bottom:10px">RSVP link expired</div>
+        <div style="font-size:13.5px;color:var(--pub-text);line-height:1.6;margin-bottom:20px">
+          This RSVP link is no longer valid. The couple may have regenerated a new link.<br>
+          Please contact them directly to receive the updated link.
+        </div>
+        <div class="pub-footer" style="margin-top:8px">Powered by <strong style="color:var(--pub-ink)">Union Vault</strong></div>
+      </div>
+    </div>`);
+}
+
+// ── _showRsvpForm: public RSVP form for guests ───────────────────────────────
+async function _showRsvpForm(coupleId){
+  // 1. Fetch couple's planner data (event details + guest list + website theme)
+  let eventName='', eventDate='', eventVenue='', theme={}, guestNames=[];
+  try{
+    const res = await fetch(`${_SB_URL}/rest/v1/planner_data?select=data&user_id=eq.${coupleId}&limit=1`,{
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
+    });
+    if(res.ok){
+      const rows = await res.json();
+      if(rows && rows[0] && rows[0].data){
+        const d = rows[0].data;
+        const ev = d.event||{};
+        const p1 = ev.partner1||'', p2 = ev.partner2||'';
+        eventName = (p1&&p2)?`${p1} & ${p2}`:(p1||p2||'');
+        eventDate = ev.date||'';
+        eventVenue= ev.venue||'';
+        theme = (d.website&&d.website.theme)||{};
+        // Build guest name list (A-list only, names only, sorted)
+        guestNames = (d.guests||[])
+          .filter(g=>(g.listType||'A')!=='B' && g.name)
+          .map(g=>g.name.trim())
+          .sort((a,b)=>a.localeCompare(b));
+      }
+    }
+  }catch(e){ console.warn('RSVP data fetch failed',e); }
+
+  const dateStr = eventDate ? (()=>{
+    const d=new Date(eventDate+'T00:00:00'); if(isNaN(d)) return '';
+    return d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  })() : '';
+
+  // Embed guest names as JSON for client-side autocomplete
+  const guestNamesJson = JSON.stringify(guestNames);
+
+  const dietOptions = [
+    ['vegetarian','Vegetarian'],['vegan','Vegan'],
+    ['glutenfree','Gluten free'],['dairyfree','Dairy free'],
+    ['nutallergy','Nut allergy'],['other','Other']
+  ];
+  const dietHtml = dietOptions.map(([k,lbl])=>`
+    <div class="pub-diet-chip" onclick="this.classList.toggle('on')" data-diet="${k}">
+      <span class="pub-diet-check"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg></span>${lbl}
+    </div>`).join('');
+
+  _publicPageShell(`
+    ${_publicCss(theme.accent,theme.page,theme.band,theme.heading,theme.text,theme.headFont,theme.bodyFont)}
+    <button class="pub-theme-btn" onclick="_pubToggleTheme()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      Theme
+    </button>
+    <div class="pub-header">
+      <div class="pub-ring">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <div class="pub-eyebrow">You're invited</div>
+      <div class="pub-couple">${eventName||'Wedding RSVP'}</div>
+      ${dateStr||eventVenue?`<div class="pub-dateline">${[dateStr,eventVenue].filter(Boolean).join(' · ')}</div>`:''}
+      <div class="pub-divider"></div>
+    </div>
+    <div class="pub-body" id="rsvp-form-body">
+      <div>
+        <div class="pub-label">Your name</div>
+        <div class="pub-ac-wrap">
+          <input class="pub-input" id="rf-name" type="text" autocomplete="off"
+            placeholder="Start typing your first or last name…"
+            oninput="_rfNameSearch(this.value)"
+            onfocus="if(this.value.length>=2)_rfNameSearch(this.value)"
+            onblur="setTimeout(()=>{const l=document.getElementById('rf-ac-list');if(l)l.style.display='none'},200)"
+            onkeydown="_rfNameKey(event)"
+          />
+          <ul class="pub-ac-list" id="rf-ac-list" role="listbox"></ul>
+        </div>
+        <div class="pub-addr-hint">Can't find your name? <a href="mailto:" id="rf-contact-link" style="color:var(--pub-accent)">Contact the couple</a></div>
+      </div>
+      <div>
+        <div class="pub-label">Will you be attending?</div>
+        <div class="pub-attend-pills">
+          <div class="pub-attend-pill" id="rf-yes" onclick="_rfSetAttend('yes')">✓ Joyfully accepts</div>
+          <div class="pub-attend-pill" id="rf-no"  onclick="_rfSetAttend('no')">Regretfully declines</div>
+        </div>
+      </div>
+      <div>
+        <div class="pub-label">Dietary requirements <span class="opt">(optional)</span></div>
+        <div class="pub-diet-grid">${dietHtml}</div>
+      </div>
+      <div>
+        <div class="pub-label">Email address <span class="opt">(optional)</span></div>
+        <input class="pub-input" id="rf-email" type="email" placeholder="So we can reach you"/>
+      </div>
+      <div>
+        <div class="pub-label">Phone number <span class="opt">(optional)</span></div>
+        <input class="pub-input" id="rf-phone" type="tel" placeholder="For day-of contact"/>
+      </div>
+      <div>
+        <div class="pub-label">Postal address <span class="opt">(optional — for thank-you cards)</span></div>
+        <input class="pub-input" id="rf-street" placeholder="Street address"/>
+        <div class="pub-addr-row">
+          <input class="pub-input" id="rf-suburb" placeholder="Suburb"/>
+          <input class="pub-input" id="rf-state"  placeholder="State"/>
+          <input class="pub-input" id="rf-post"   placeholder="Postcode"/>
+        </div>
+      </div>
+      <div>
+        <div class="pub-label">A message for the couple <span class="opt">(optional)</span></div>
+        <textarea class="pub-textarea" id="rf-message" placeholder="Any well-wishes, song requests, or notes…"></textarea>
+      </div>
+      <button class="pub-submit" id="rf-submit" onclick="_rfSubmit('${coupleId}')">Send my RSVP</button>
+      <div class="pub-footer">Your response goes straight to ${eventName||'the couple'}.</div>
+    </div>
+    <div class="pub-footer" style="padding:16px 24px 24px;text-align:center;font-size:11px">Powered by <strong>Union Vault</strong></div>
+    <div id="rf-guest-data" style="display:none" data-guests='${guestNamesJson.replace(/'/g,"&#39;")}'></div>
+  `);
+}
+
+// ── RSVP autocomplete helpers ──────────────────────────────────
+function _rfNameSearch(q){
+  const list=document.getElementById('rf-ac-list');
+  if(!list) return;
+  if(q.length<2){list.style.display='none';return;}
+  const lq=q.toLowerCase();
+  const gd=document.getElementById('rf-guest-data');
+  const guests=gd?JSON.parse(gd.dataset.guests||'[]'):[];
+  const hits=guests.filter(n=>{
+    const parts=n.toLowerCase().split(/[\s&,]+/);
+    return parts.some(p=>p.startsWith(lq))||n.toLowerCase().includes(lq);
+  }).slice(0,8);
+  if(!hits.length){
+    list.innerHTML='<li class="pub-ac-none">No match — try another spelling</li>';
+  } else {
+    list.innerHTML=hits.map((n,i)=>`<li class="pub-ac-item" role="option" data-idx="${i}"
+      onmouseenter="this.classList.add('focused')" onmouseleave="this.classList.remove('focused')"
+      onmousedown="_rfPickName(${JSON.stringify(n)})">${n}</li>`).join('');
+  }
+  list.style.display='block';
+}
+function _rfPickName(name){
+  const inp=document.getElementById('rf-name');
+  const list=document.getElementById('rf-ac-list');
+  if(inp){inp.value=name;inp.style.borderColor='var(--pub-accent)';inp.style.boxShadow='0 0 0 3px color-mix(in srgb,var(--pub-accent) 20%,transparent 80%)';}
+  if(list)list.style.display='none';
+}
+function _rfNameKey(e){
+  const list=document.getElementById('rf-ac-list');
+  if(!list||list.style.display==='none') return;
+  const items=list.querySelectorAll('.pub-ac-item');
+  const cur=list.querySelector('.pub-ac-item.focused');
+  let idx=cur?parseInt(cur.dataset.idx,10):-1;
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    items.forEach(el=>el.classList.remove('focused'));
+    idx=Math.min(idx+1,items.length-1);
+    if(items[idx])items[idx].classList.add('focused');
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    items.forEach(el=>el.classList.remove('focused'));
+    idx=Math.max(idx-1,0);
+    if(items[idx])items[idx].classList.add('focused');
+  } else if(e.key==='Enter'&&cur){
+    e.preventDefault();
+    _rfPickName(cur.textContent);
+  } else if(e.key==='Escape'){
+    list.style.display='none';
+  }
+}
+
+let _rfAttending = null;
+function _rfSetAttend(val){
+  _rfAttending = val;
+  document.getElementById('rf-yes').classList.toggle('yes', val==='yes');
+  document.getElementById('rf-yes').classList.toggle('no',  false);
+  document.getElementById('rf-no').classList.toggle('no',   val==='no');
+  document.getElementById('rf-no').classList.toggle('yes',  false);
+}
+
+async function _rfSubmit(coupleId){
+  const nameEl  = document.getElementById('rf-name');
+  const submitEl= document.getElementById('rf-submit');
+  const name = nameEl ? nameEl.value : '';
+  if(!name){ nameEl&&(nameEl.style.borderColor='#C0392B'); return; }
+  if(!_rfAttending){ return; }
+  // Collect dietary
+  const diet = Array.from(document.querySelectorAll('.pub-diet-chip.on')).map(el=>el.dataset.diet);
+  // Build address string
+  const street= (document.getElementById('rf-street')||{}).value||'';
+  const suburb= (document.getElementById('rf-suburb')||{}).value||'';
+  const state = (document.getElementById('rf-state') ||{}).value||'';
+  const post  = (document.getElementById('rf-post')  ||{}).value||'';
+  const addressParts=[street,suburb,state,post].map(s=>s.trim()).filter(Boolean);
+  const address = addressParts.length ? addressParts.join(', ') : null;
+
+  submitEl.disabled=true; submitEl.textContent='Sending…';
+  try{
+    const body={
+      couple_id: coupleId,
+      guest_name: name,
+      email: (document.getElementById('rf-email')||{}).value||null,
+      phone: (document.getElementById('rf-phone')||{}).value||null,
+      address: address,
+      attending: _rfAttending,
+      dietary: diet.length ? diet : null,
+      message: (document.getElementById('rf-message')||{}).value||null
+    };
+    const res = await fetch(`${_SB_URL}/rest/v1/rsvp_responses`,{
+      method:'POST',
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body: JSON.stringify(body)
+    });
+    if(res.ok || res.status===201){
+      const formBody = document.getElementById('rsvp-form-body');
+      if(formBody){
+        formBody.innerHTML=`<div class="pub-msg-box success">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:10px;display:block;margin:0 auto 12px"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+          <div style="font-size:17px;font-weight:600;margin-bottom:6px">RSVP received!</div>
+          <div style="font-size:13.5px;opacity:.85">${_rfAttending==='yes'?"We can't wait to celebrate with you 🥂":"Thank you for letting us know — you'll be missed."}</div>
+        </div>`;
+      }
+    } else {
+      submitEl.disabled=false; submitEl.textContent='Send my RSVP';
+      alert('Something went wrong — please try again.');
+    }
+  }catch(e){
+    console.warn('RSVP submit error',e);
+    submitEl.disabled=false; submitEl.textContent='Send my RSVP';
+    alert('Network error — please check your connection and try again.');
+  }
+}
+
+// ── _showVendorPortal: read-only vendor brief (Option B style) ───────────────
+async function _showVendorPortal(token){
+  let vendor={}, couple={}, theme={}, expired=false;
+  try{
+    const res = await fetch(`${_SB_URL}/rest/v1/vendor_tokens?token=eq.${encodeURIComponent(token)}&select=*&limit=1`,{
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
+    });
+    if(res.ok){
+      const rows = await res.json();
+      if(!rows||!rows[0]){ _showVendorError('not-found'); return; }
+      vendor = rows[0];
+      // Check expiry
+      if(vendor.expires_at && new Date(vendor.expires_at) < new Date()){ expired=true; }
+      // Fetch couple's data for booking details + theme
+      const pr = await fetch(`${_SB_URL}/rest/v1/planner_data?select=data&user_id=eq.${vendor.couple_id}&limit=1`,{
+        headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
+      });
+      if(pr.ok){
+        const pd = await pr.json();
+        if(pd&&pd[0]&&pd[0].data){
+          couple = pd[0].data;
+          theme = (couple.website&&couple.website.theme)||{};
+        }
+      }
+    } else { _showVendorError('not-found'); return; }
+  }catch(e){ console.warn('Vendor portal error',e); _showVendorError('error'); return; }
+
+  if(expired){ _showVendorExpired(vendor, couple, theme); return; }
+
+  const ev = couple.event||{};
+  const p1 = ev.partner1||'', p2 = ev.partner2||'';
+  const coupleName = (p1&&p2)?`${p1} & ${p2}`:(p1||p2||'');
+  const dateStr = ev.date ? (()=>{
+    const d=new Date(ev.date+'T00:00:00'); if(isNaN(d)) return ev.date;
+    return d.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+  })() : '';
+
+  // Build booking rows from vendors list matching this token's vendor_name
+  const matchedVendor = (couple.vendors||[]).find(v=>v.business===vendor.vendor_name||v.contact===vendor.vendor_name)||{};
+  const bookingRows = [
+    ['Event date', dateStr||'TBC'],
+    ['Venue', ev.venue||'TBC'],
+    ['Service', matchedVendor.category||vendor.vendor_name||'—'],
+    ['Setup time', matchedVendor.setupTime||matchedVendor.notes||'TBC'],
+    ['Guest count', (()=>{ const gc=(couple.guests||[]).filter(g=>(g.listType||'A')!=='B').length; return gc||'TBC'; })()]
+  ].filter(([,v])=>v&&v!=='TBC'||true);
+
+  const sections = Array.isArray(vendor.sections)&&vendor.sections.length ? vendor.sections : [];
+
+  _publicPageShell(`
+    ${_publicCss(theme.accent,theme.page,theme.band,theme.heading,theme.text,theme.headFont,theme.bodyFont)}
+    <button class="pub-theme-btn" onclick="_pubToggleTheme()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      Theme
+    </button>
+    <div class="pub-header">
+      <div class="pub-eyebrow" style="font-size:10px;letter-spacing:.13em;display:inline-block;background:color-mix(in srgb,var(--pub-accent) 20%,transparent 80%);border:1px solid color-mix(in srgb,var(--pub-accent) 40%,transparent 60%);border-radius:16px;padding:3px 10px;margin-bottom:12px">Vendor brief</div>
+      <div class="pub-couple">${coupleName||'Wedding'}</div>
+      ${vendor.vendor_name?`<div class="pub-dateline">Shared with: ${vendor.vendor_name}</div>`:''}
+      <div class="pub-divider"></div>
+    </div>
+    <div class="pub-body">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 13px;background:color-mix(in srgb,var(--pub-accent) 10%,transparent 90%);border:1px solid color-mix(in srgb,var(--pub-accent) 30%,transparent 70%);border-radius:8px;font-size:12px;color:var(--pub-text)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Read-only view
+      </div>
+      <div style="background:var(--pub-surface);border:1px solid var(--pub-border);border-radius:12px;overflow:hidden">
+        <div style="padding:12px 16px;background:color-mix(in srgb,var(--pub-accent) 12%,transparent 88%);border-bottom:1px solid var(--pub-border);display:flex;align-items:center;gap:8px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--pub-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span style="font-size:13px;font-weight:600;color:var(--pub-ink)">Your booking</span>
+        </div>
+        ${bookingRows.map(([k,v],i)=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:9px 16px;gap:12px${i?';border-top:1px solid var(--pub-border)':''}">
+          <span style="font-size:12px;color:var(--pub-text);flex-shrink:0">${k}</span>
+          <span style="font-size:13px;color:var(--pub-ink);font-weight:500;text-align:right">${k==='Guest count'?`<span style="font-size:17px;font-family:'Cormorant Garamond',serif">${v}</span>`:v}</span>
+        </div>`).join('')}
+      </div>
+      ${sections.length?`<div>
+        <div style="font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--pub-accent);padding-bottom:8px;border-bottom:1px solid var(--pub-border);margin-bottom:10px">Also shared with you</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${sections.map(s=>`<div style="font-size:11.5px;font-weight:500;padding:5px 11px;border-radius:16px;background:var(--pub-surface);border:1px solid var(--pub-border);color:var(--pub-text)">${s}</div>`).join('')}</div>
+      </div>`:''}
+      <div>
+        <div style="font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--pub-accent);padding-bottom:8px;border-bottom:1px solid var(--pub-border);margin-bottom:10px">Contact</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--pub-surface);border:1px solid var(--pub-border);border-radius:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--pub-accent);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Cormorant Garamond',serif;font-size:17px;flex-shrink:0">${(p1||'?')[0]}</div>
+          <div>
+            <div style="font-size:13px;font-weight:500;color:var(--pub-ink)">${p1||coupleName||'The couple'}</div>
+            ${matchedVendor.email?`<div style="font-size:11.5px;color:var(--pub-text);margin-top:1px">${matchedVendor.email}</div>`:''}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pub-footer" style="padding:16px 24px 24px;text-align:center;font-size:11px">Powered by <strong>Union Vault</strong></div>
+  `);
+}
+
+function _showVendorExpired(vendor, couple, theme){
+  const ev=(couple&&couple.event)||{};
+  const p1=ev.partner1||'', p2=ev.partner2||'';
+  const coupleName=(p1&&p2)?`${p1} & ${p2}`:(p1||p2||'the couple');
+  _publicPageShell(`
+    ${_publicCss((theme&&theme.accent),(theme&&theme.page),(theme&&theme.band))}
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 24px">
+      <div style="max-width:400px;width:100%;text-align:center">
+        <div class="pub-ring">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div class="pub-eyebrow">Access expired</div>
+        <div class="pub-couple" style="font-size:22px;margin-bottom:10px">This link has expired</div>
+        <div style="font-size:13.5px;color:var(--pub-text);line-height:1.6">
+          Your vendor access link for ${coupleName} has passed its expiry date.<br>
+          Please contact them directly to request a new link.
+        </div>
+        <div class="pub-footer" style="margin-top:20px">Powered by <strong>Union Vault</strong></div>
+      </div>
+    </div>`);
+}
+
+function _showVendorError(type){
+  _publicPageShell(`
+    ${_publicCss()}
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 24px">
+      <div style="max-width:400px;width:100%;text-align:center">
+        <div class="pub-ring" style="opacity:.5">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="pub-eyebrow">${type==='not-found'?'Link not found':'Something went wrong'}</div>
+        <div class="pub-couple" style="font-size:22px;margin-bottom:10px">${type==='not-found'?'Vendor link not found':'Error loading page'}</div>
+        <div style="font-size:13.5px;color:var(--pub-text);line-height:1.6">${type==='not-found'?'This vendor link doesn\'t exist or has been removed. Please contact the couple for a new link.':'There was a problem loading this page. Please try again or contact the couple directly.'}</div>
+      </div>
+    </div>`);
+}
+
+/* ══ END STAGE 5 PUBLIC PAGES ══════════════════════════════════════════════ */
+
 /* ── BOOT ──────────────────────────────────────────────────────────────────
    The ONE async step the whole app depends on. Every render site reads images
    synchronously via _mediaUrl(), which needs the blob cache populated. So we
@@ -43505,6 +44171,33 @@ try{ if(_autoCheckPassedInstallments()) saveToStorage(); }catch(e){}
    — the planner works, images just show as missing rather than the whole app
    refusing to load. */
 (async function boot(){
+  // ── Stage 5: intercept public URL params BEFORE the normal app boot ────────
+  const _bootParams = new URLSearchParams(window.location.search);
+  const _rsvpParam  = _bootParams.get('rsvp');
+  const _vendorParam= _bootParams.get('vendor');
+
+  if(_rsvpParam){
+    // Hide the app shell entirely — this is a public-facing page
+    document.body.style.visibility='hidden';
+    if(_rsvpParam==='true'){
+      // Legacy link — show polite "link has expired / been updated" message
+      _showRsvpExpired();
+    } else {
+      // Valid UID-based link
+      await _showRsvpForm(_rsvpParam);
+    }
+    document.body.style.visibility='visible';
+    return; // do NOT boot the planner app
+  }
+
+  if(_vendorParam){
+    document.body.style.visibility='hidden';
+    await _showVendorPortal(_vendorParam);
+    document.body.style.visibility='visible';
+    return; // do NOT boot the planner app
+  }
+  // ── End Stage 5 URL intercept ───────────────────────────────────────────────
+
   _sbLoadSession();
   try{
     await _mediaLoadAll();
