@@ -27154,6 +27154,8 @@ async function cloudLoadClick(silent){
   window._autoSyncState='saved';
   window._autoSyncLastSaved=Date.now();
   _syncStatusRefresh();
+  // Stage 4: background-fetch any photos missing on this device
+  setTimeout(_mediaCloudSync, 500);
 }
 
 function _csvBtnHtml(){return'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Save to cloud';}
@@ -42538,7 +42540,36 @@ function _textStorageFullWarn(){
    map. Render sites change from `item.image` to `_mediaUrl(item.image)` — a
    one-line, synchronous swap. All async is confined to boot and save. */
 
-const MEDIA_DB   = 'ea_media';
+const MEDIA_DB   = 'uv_media';
+// One-time IDB migration: copy blobs from ea_media → uv_media then delete old DB
+(function(){
+  try{
+    const probe=indexedDB.open('ea_media',1);
+    probe.onsuccess=function(e){
+      const old=e.target.result;
+      const tx=old.transaction('files','readonly');
+      const req=tx.objectStore('files').getAll();
+      req.onsuccess=function(ev){
+        const rows=ev.target.result||[];
+        old.close();
+        if(!rows.length){ indexedDB.deleteDatabase('ea_media'); return; }
+        const newReq=indexedDB.open('uv_media',1);
+        newReq.onupgradeneeded=function(ev2){
+          const db2=ev2.target.result;
+          if(!db2.objectStoreNames.contains('files')) db2.createObjectStore('files',{keyPath:'id'});
+        };
+        newReq.onsuccess=function(ev2){
+          const db2=ev2.target.result;
+          const tx2=db2.transaction('files','readwrite');
+          rows.forEach(r=>tx2.objectStore('files').put(r));
+          tx2.oncomplete=function(){ db2.close(); indexedDB.deleteDatabase('ea_media'); };
+        };
+      };
+      probe.onerror=function(){};
+    };
+    probe.onupgradeneeded=function(e){ e.target.transaction.abort(); };
+  }catch(_){}
+})();
 const MEDIA_STORE= 'files';
 let   _mediaDB   = null;
 const MEDIA      = {};      /* id -> blob: URL  (the synchronous cache) */
@@ -42699,6 +42730,8 @@ async function _mediaPut(dataUrl, name, type){
   });
   MEDIA[id]      = URL.createObjectURL(blob);
   MEDIA_META[id] = { size:blob.size, type:type||blob.type, name:name||'' };
+  // Stage 4: upload to Supabase Storage in background (non-blocking)
+  if(_sbSession) _sbPhotoUpload(id, blob).catch(e=>console.warn('Photo upload failed',id,e));
   return id;
 }
 
@@ -42715,6 +42748,9 @@ async function _mediaDelete(id){
   }catch(_){}
   if(MEDIA[id]) URL.revokeObjectURL(MEDIA[id]);
   delete MEDIA[id]; delete MEDIA_META[id];
+  delete _sbSignedCache[id];
+  // Stage 4: delete from Supabase Storage in background
+  if(_sbSession) _sbPhotoDelete(id).catch(e=>console.warn('Photo delete failed',id,e));
 }
 
 /* BOOT: read every blob, mint a blob: URL for each. After this, all reads
@@ -42745,7 +42781,104 @@ function _mediaUrl(ref){
   if(!ref) return '';
   const s = String(ref);
   if(s.startsWith('http://')||s.startsWith('https://')||s.startsWith('data:')||s.startsWith('blob:')) return s;
-  return MEDIA[s] || '';
+  if(MEDIA[s]) return MEDIA[s];
+  // Stage 4: if blob isn't local, return cached signed URL if available
+  // (async fetch is triggered separately by _mediaCloudSync after cloud load)
+  const cached = _sbSignedCache[s];
+  if(cached && cached.expires - Date.now() > 0) return cached.url;
+  return '';
+}
+
+// ── SUPABASE STORAGE HELPERS (Stage 4) ──────────────────────────────────────
+const _SB_BUCKET = 'photos';
+// Signed URL cache: id → { url, expires }
+const _sbSignedCache = {};
+
+async function _sbPhotoUpload(id, blob){
+  if(!_sbSession) return false;
+  const uid = _sbSession.user.id;
+  const path = `${uid}/${id}`;
+  const r = await fetch(
+    `${_SB_URL}/storage/v1/object/${_SB_BUCKET}/${path}`,
+    { method:'POST',
+      headers:{ 'apikey':_SB_KEY, 'Authorization':'Bearer '+_sbSession.access_token,
+                'Content-Type': blob.type||'application/octet-stream',
+                'x-upsert':'true' },
+      body: blob }
+  );
+  return r.ok;
+}
+
+async function _sbPhotoSignedUrl(id){
+  if(!_sbSession) return null;
+  // Return cached URL if still valid (>5 min remaining)
+  const cached = _sbSignedCache[id];
+  if(cached && cached.expires - Date.now() > 300000) return cached.url;
+  const uid = _sbSession.user.id;
+  const path = `${uid}/${id}`;
+  const r = await fetch(
+    `${_SB_URL}/storage/v1/object/sign/${_SB_BUCKET}/${path}`,
+    { method:'POST',
+      headers:{ 'apikey':_SB_KEY, 'Authorization':'Bearer '+_sbSession.access_token,
+                'Content-Type':'application/json' },
+      body: JSON.stringify({ expiresIn: 3600 }) }
+  );
+  if(!r.ok) return null;
+  const j = await r.json();
+  const url = j.signedURL ? `${_SB_URL}/storage/v1${j.signedURL}` : (j.signedUrl||null);
+  if(url) _sbSignedCache[id] = { url, expires: Date.now() + 3600000 };
+  return url;
+}
+
+async function _sbPhotoDelete(id){
+  if(!_sbSession) return;
+  const uid = _sbSession.user.id;
+  await fetch(
+    `${_SB_URL}/storage/v1/object/${_SB_BUCKET}`,
+    { method:'DELETE',
+      headers:{ 'apikey':_SB_KEY, 'Authorization':'Bearer '+_sbSession.access_token,
+                'Content-Type':'application/json' },
+      body: JSON.stringify({ prefixes: [`${uid}/${id}`] }) }
+  );
+}
+
+// Fetch a photo from Supabase Storage → store in IDB + MEDIA cache
+async function _sbPhotoFetch(id){
+  const url = await _sbPhotoSignedUrl(id);
+  if(!url) return false;
+  try{
+    const r = await fetch(url);
+    if(!r.ok) return false;
+    const blob = await r.blob();
+    // Store in IDB
+    const db = await _mediaOpen();
+    await new Promise((resolve,reject)=>{
+      const tx = db.transaction(MEDIA_STORE,'readwrite');
+      tx.objectStore(MEDIA_STORE).put({ id, blob, name:'', type:blob.type, size:blob.size, addedAt:new Date().toISOString() });
+      tx.oncomplete = resolve;
+      tx.onerror    = e => reject(e.target.error);
+    });
+    if(MEDIA[id]) URL.revokeObjectURL(MEDIA[id]);
+    MEDIA[id]      = URL.createObjectURL(blob);
+    MEDIA_META[id] = { size:blob.size, type:blob.type, name:'' };
+    return true;
+  }catch(e){ console.warn('_sbPhotoFetch failed',id,e); return false; }
+}
+
+// After a cloud data load, queue background fetch for any media IDs missing locally
+async function _mediaCloudSync(){
+  if(!_sbSession) return;
+  // Collect all media IDs referenced in STATE
+  const refs = new Set();
+  _mediaRefs(STATE,'id').forEach(h=>{ const v=h.get(); if(v) refs.add(v); });
+  const missing = [...refs].filter(id => !MEDIA[id]);
+  if(!missing.length) return;
+  console.log(`[Stage4] Fetching ${missing.length} missing photo(s) from cloud…`);
+  for(const id of missing){
+    await _sbPhotoFetch(id);
+    // Re-render current page each time a photo lands so images appear progressively
+    if(typeof renderPage==='function') try{ renderPage(); }catch(_){}
+  }
 }
 
 /* Is this ref a media id whose blob is gone? (the receipts already lost) */
@@ -43388,6 +43521,8 @@ try{ if(_autoCheckPassedInstallments()) saveToStorage(); }catch(e){}
     navigate('dashboard');
     // Stage 3: async conflict check (runs after UI is visible, non-blocking)
     setTimeout(_autoSyncCheckOnBoot, 800);
+    // Stage 4: fetch any photos missing locally (runs after conflict check)
+    setTimeout(_mediaCloudSync, 2000);
   } else if(alreadySetUp && !_sbSession){
     // Has local data but not signed in → show landing (auth prompt)
     updateTopbarSub();
