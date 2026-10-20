@@ -27068,9 +27068,12 @@ const _CS=['event','settings','guests','checklist','vendors','quotes',
   'website','timeline','events','tagDefs','families',
   'invites','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'];
 
-async function _cloudSave(){
+async function _cloudSave(silent){
   if(!_sbSession) return {error:'Not signed in'};
   const uid=_sbSession.user.id;
+  // Stamp the last-save timestamp so conflict check can compare
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings._lastCloudSave=new Date().toISOString();
   const pay={
     event:STATE.event, settings:STATE.settings, guests:STATE.guests,
     checklist:STATE.checklist, vendors:STATE.vendors||[], quotes:STATE.quotes||[],
@@ -27088,7 +27091,18 @@ async function _cloudSave(){
   };
   const rows=_CS.map(s=>({user_id:uid,section:s,data:pay[s]??{}}));
   const ok=await _sbUpsert('planner_data',rows);
-  return ok?{ok:true}:{error:'Save failed — check your connection.'};
+  if(ok){
+    // Persist the updated _lastCloudSave timestamp to localStorage directly
+    // (avoids recursion since saveToStorage → _autoSyncSchedule → flush loop)
+    try{
+      const raw=localStorage.getItem(STORAGE_KEY);
+      const stored=raw?JSON.parse(raw):{};
+      if(!stored.settings) stored.settings={};
+      stored.settings._lastCloudSave=STATE.settings._lastCloudSave;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(stored));
+    }catch(e){ console.warn('Could not persist _lastCloudSave',e); }
+  }
+  return ok?{ok:true,silent}:{error:'Save failed — check your connection.'};
 }
 
 async function _cloudLoad(){
@@ -27107,17 +27121,25 @@ async function cloudSaveClick(){
   if(_cldSaving) return; _cldSaving=true;
   const btn=document.getElementById('cloud-save-btn');
   if(btn){btn.disabled=true;btn.innerHTML='Saving…';}
+  window._autoSyncState='saving'; _syncStatusRefresh();
   const r=await _cloudSave(); _cldSaving=false;
   if(btn){btn.disabled=false;btn.innerHTML=_csvBtnHtml();}
+  if(r.ok){
+    window._autoSyncState='saved';
+    window._autoSyncLastSaved=Date.now();
+  } else {
+    window._autoSyncState='error';
+  }
+  _syncStatusRefresh();
   _cloudToast(r.ok?'Saved to cloud ✓':(r.error||'Save failed'),!r.ok);
 }
-async function cloudLoadClick(){
+async function cloudLoadClick(silent){
   const btn=document.getElementById('cloud-load-btn');
   if(btn){btn.disabled=true;btn.innerHTML='Loading…';}
   const r=await _cloudLoad();
   if(btn){btn.disabled=false;btn.innerHTML=_cldBtnHtml();}
-  if(!r.ok){_cloudToast(r.error||'Load failed',true);return;}
-  if(r.empty){_cloudToast('No cloud data yet — save from this device first.');return;}
+  if(!r.ok){if(!silent)_cloudToast(r.error||'Load failed',true);return;}
+  if(r.empty){if(!silent)_cloudToast('No cloud data yet — save from this device first.');return;}
   if(r.saved.event)    Object.assign(STATE.event,r.saved.event);
   if(r.saved.settings) Object.assign(STATE.settings,r.saved.settings);
   ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
@@ -27125,7 +27147,11 @@ async function cloudLoadClick(){
   saveToStorage();
   if(typeof updateTopbarSub==='function') updateTopbarSub();
   navigate(_currentPage||'dashboard');
-  _cloudToast('Loaded from cloud ✓');
+  if(!silent) _cloudToast('Loaded from cloud ✓');
+  // Mark sync status as fresh after load
+  window._autoSyncState='saved';
+  window._autoSyncLastSaved=Date.now();
+  _syncStatusRefresh();
 }
 
 function _csvBtnHtml(){return'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Save to cloud';}
@@ -42237,8 +42263,186 @@ function _cloudAccountHtml(){
     +`<div style="display:flex;gap:10px;flex-wrap:wrap">`
     +`<button class="btn btn-primary btn-sm" id="cloud-save-btn" onclick="cloudSaveClick()" style="display:inline-flex;align-items:center;gap:5px">${_csvBtnHtml()}</button>`
     +`<button class="btn btn-outline btn-sm" id="cloud-load-btn" onclick="cloudLoadClick()" style="display:inline-flex;align-items:center;gap:5px">${_cldBtnHtml()}</button></div>`
-    +`<p style="font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.4"><b>Save to cloud</b> — uploads your current planner.<br><b>Load from cloud</b> — replaces this device&#39;s data with the cloud version.</p>`;
+    +`<p style="font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.4"><b>Save to cloud</b> — uploads your current planner.<br><b>Load from cloud</b> — replaces this device&#39;s data with the cloud version.</p>`
+    +`<div id="auto-sync-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 14px;background:var(--surface);border:.5px solid var(--border);border-radius:10px">`
+    +`<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:500">Auto-sync</span><span style="font-size:11px;color:var(--muted)">Automatically save & load from cloud</span></div>`
+    +`<label style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0"><input type="checkbox" id="auto-sync-toggle" onchange="_autoSyncToggleChange(this.checked)" style="opacity:0;width:0;height:0;position:absolute"><span onclick="" style="position:absolute;cursor:pointer;inset:0;background:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'var(--muted)':'var(--gold,#c9a84c)'};border-radius:11px;transition:.2s;display:block" id="auto-sync-track"></span><span id="auto-sync-thumb" style="position:absolute;left:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'3px':'19px'};top:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;pointer-events:none"></span></label></div>`
+    +`<div id="sync-status-strip" style="margin-top:10px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px">${_syncStatusHtml()}</div>`;
 }
+
+function _syncStatusHtml(){
+  const s=window._autoSyncState||'idle';
+  const t=window._autoSyncLastSaved||null;
+  if(s==='saving') return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;animation:_syncpulse 1.2s ease-in-out infinite;flex-shrink:0"></span><span>Saving…</span>`;
+  if(s==='saved'&&t){
+    const d=new Date(t);
+    const now=new Date();
+    const diff=Math.round((now-d)/60000);
+    let lab=diff<1?'Just now':diff===1?'1 min ago':diff<60?diff+' mins ago':d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0"></span><span>Synced · ${lab}</span>`;
+  }
+  if(s==='error') return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0"></span><span>Sync failed — check connection</span>`;
+  return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);opacity:.5;flex-shrink:0"></span><span>Not yet synced</span>`;
+}
+
+// ── AUTO-SYNC ENGINE ─────────────────────────────────────────────────────────
+window._autoSyncState='idle';
+window._autoSyncLastSaved=null;
+let _autoSyncTimer=null;
+const _AUTOSYNC_DEBOUNCE=30000; // 30 s
+
+function _autoSyncEnabled(){
+  return _sbSession && (typeof STATE==='undefined' || STATE.settings==null || STATE.settings.autoSync!==false);
+}
+
+function _syncStatusRefresh(){
+  const el=document.getElementById('sync-status-strip');
+  if(el) el.innerHTML=_syncStatusHtml();
+  // also keep toggle thumb/track in sync with current STATE
+  const on=_autoSyncEnabled();
+  const track=document.getElementById('auto-sync-track');
+  const thumb=document.getElementById('auto-sync-thumb');
+  const chk=document.getElementById('auto-sync-toggle');
+  if(track) track.style.background=on?'var(--gold,#c9a84c)':'var(--muted)';
+  if(thumb) thumb.style.left=on?'19px':'3px';
+  if(chk) chk.checked=on;
+}
+
+function _autoSyncToggleChange(on){
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.autoSync=on;
+  saveToStorage();
+  _syncStatusRefresh();
+  if(on) _autoSyncSchedule();
+}
+
+function _autoSyncSchedule(){
+  if(!_autoSyncEnabled()) return;
+  if(_autoSyncTimer) clearTimeout(_autoSyncTimer);
+  _autoSyncTimer=setTimeout(_autoSyncFlush,_AUTOSYNC_DEBOUNCE);
+}
+
+async function _autoSyncFlush(){
+  _autoSyncTimer=null;
+  if(!_autoSyncEnabled()) return;
+  window._autoSyncState='saving';
+  _syncStatusRefresh();
+  try{
+    await _cloudSave(true); // silent=true → no toast on success
+    window._autoSyncState='saved';
+    window._autoSyncLastSaved=Date.now();
+  }catch(e){
+    console.warn('Auto-sync flush failed',e);
+    window._autoSyncState='error';
+  }
+  _syncStatusRefresh();
+}
+
+// visibilitychange + beforeunload — flush immediately if pending
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='hidden'&&_autoSyncTimer){
+    clearTimeout(_autoSyncTimer);
+    _autoSyncTimer=null;
+    _autoSyncFlush();
+  }
+});
+window.addEventListener('beforeunload',function(){
+  if(_autoSyncTimer){
+    clearTimeout(_autoSyncTimer);
+    _autoSyncTimer=null;
+    // fire-and-forget; sendBeacon-style best effort
+    _autoSyncFlush();
+  }
+});
+
+async function _autoSyncCheckOnBoot(){
+  if(!_sbSession||!alreadySetUp) return;
+  try{
+    const res=await fetch(`${_SB_URL}/rest/v1/planner_data?user_id=eq.${_sbSession.user.id}&select=updated_at`,{
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_sbSession.access_token}
+    });
+    if(!res.ok) return;
+    const rows=await res.json();
+    if(!rows||!rows.length||!rows[0].updated_at) return;
+    const cloudTs=new Date(rows[0].updated_at).getTime();
+    const localTsRaw=STATE.settings&&STATE.settings._lastCloudSave;
+    const localTs=localTsRaw?new Date(localTsRaw).getTime():0;
+    // If cloud is newer by >60s and we haven't already applied it this session
+    if(cloudTs-localTs>60000){
+      _showConflictDialog(cloudTs,localTs);
+    } else {
+      // cloud is same or older — push local up silently if auto-sync on
+      if(_autoSyncEnabled()) _autoSyncSchedule();
+    }
+  }catch(e){ console.warn('Boot conflict check failed',e); }
+}
+
+function _showConflictDialog(cloudTs,localTs){
+  const fmt=ts=>ts?new Date(ts).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'Unknown';
+  const overlay=document.createElement('div');
+  overlay.id='conflict-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML=`
+    <div style="background:var(--canvas);border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+      <h3 style="margin:0 0 6px;font-size:17px;font-weight:600">Version mismatch detected</h3>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 18px;line-height:1.5">Your cloud version is newer than this device. Which version would you like to use?</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+        <label id="cv-card" onclick="_conflictSelect('cloud')" style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;border:2px solid var(--gold,#c9a84c);cursor:pointer;background:var(--surface)">
+          <input type="radio" name="cv" value="cloud" checked style="margin-top:2px;accent-color:var(--gold,#c9a84c)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px">Cloud version <span style="font-size:10px;background:var(--gold,#c9a84c);color:#fff;padding:1px 7px;border-radius:20px;font-weight:600">Newer</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmt(cloudTs)}</div>
+          </div>
+        </label>
+        <label id="lv-card" onclick="_conflictSelect('local')" style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;border:2px solid var(--border);cursor:pointer;background:var(--surface)">
+          <input type="radio" name="cv" value="local" style="margin-top:2px;accent-color:var(--gold,#c9a84c)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px">This device <span style="font-size:10px;background:var(--muted);color:#fff;padding:1px 7px;border-radius:20px;font-weight:600">Older</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmt(localTs)}</div>
+          </div>
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-ghost btn-sm" onclick="_conflictDismiss()" style="font-size:13px">Decide later</button>
+        <button class="btn btn-primary btn-sm" id="conflict-use-btn" onclick="_conflictApply()" style="font-size:13px">Use selected version</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  // Add pulse keyframe if not already present
+  if(!document.getElementById('_syncpulse-style')){
+    const s=document.createElement('style');
+    s.id='_syncpulse-style';
+    s.textContent='@keyframes _syncpulse{0%,100%{opacity:1}50%{opacity:.35}}';
+    document.head.appendChild(s);
+  }
+  window._conflictChoice='cloud';
+}
+
+function _conflictSelect(choice){
+  window._conflictChoice=choice;
+  const cc=document.getElementById('cv-card');
+  const lc=document.getElementById('lv-card');
+  if(cc) cc.style.borderColor=choice==='cloud'?'var(--gold,#c9a84c)':'var(--border)';
+  if(lc) lc.style.borderColor=choice==='local'?'var(--gold,#c9a84c)':'var(--border)';
+  // update radio
+  const radios=document.querySelectorAll('input[name="cv"]');
+  radios.forEach(r=>{ r.checked=(r.value===choice); });
+}
+
+function _conflictDismiss(){
+  const el=document.getElementById('conflict-overlay');
+  if(el) el.remove();
+}
+
+async function _conflictApply(){
+  const btn=document.getElementById('conflict-use-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Loading…'; }
+  if(window._conflictChoice==='cloud'){
+    await cloudLoadClick(true); // silent=true
+  }
+  _conflictDismiss();
+}
+
 // PERSISTENCE (localStorage)
 // ══════════════════════════════════════════════
 const STORAGE_KEY = 'union_vault_v1';
@@ -42289,6 +42493,8 @@ function saveToStorage(){
       _textStorageFullWarn();
     } else { console.warn('Storage save failed', e); }
   }
+  // Stage 3: schedule auto-sync after every local save
+  if(typeof _autoSyncSchedule==='function') _autoSyncSchedule();
 }
 
 let _storageWarned = false;
@@ -43174,10 +43380,12 @@ try{ if(_autoCheckPassedInstallments()) saveToStorage(); }catch(e){}
   }
 
   if(alreadySetUp && _sbSession){
-    // Fully set up + signed in → go straight to app
+    // Fully set up + signed in → go straight to app, then check for cloud conflict
     document.getElementById('welcome-overlay').classList.add('hidden');
     updateTopbarSub();
     navigate('dashboard');
+    // Stage 3: async conflict check (runs after UI is visible, non-blocking)
+    setTimeout(_autoSyncCheckOnBoot, 800);
   } else if(alreadySetUp && !_sbSession){
     // Has local data but not signed in → show landing (auth prompt)
     updateTopbarSub();
