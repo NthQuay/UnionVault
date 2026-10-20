@@ -21438,7 +21438,7 @@ function _apptBuildIcs(task, a){
   if(a.email) descParts.push(`Email: ${a.email}`);
   if(Number(a.fee)>0) descParts.push(`Fee: ${fmt(Number(a.fee))}`);
   if(a.notes) descParts.push(a.notes);
-  const uid=`${task.id||'appt'}-${a.id||Date.now()}@elegant-affair`;
+  const uid=`${task.id||'appt'}-${a.id||Date.now()}@unionvault`;
   const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
   const lines=[
     'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Union Vault//Appointment//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
@@ -26992,7 +26992,9 @@ let _seatingCounts=true;
 // ═══════════════════════════════════════
 const _SB_URL  = 'https://hzafdlfprtzfxtyaebmc.supabase.co';
 const _SB_KEY  = 'sb_publishable_hWMFKVxJTRH3UqcC9GN_WA_gJ2GNX5T';
-const _SB_SK   = 'ea_sb_session';
+const _SB_SK   = 'uv_sb_session';
+// One-time migration: carry over any existing session from the old key
+(function(){ try{ const old=localStorage.getItem('ea_sb_session'); if(old&&!localStorage.getItem('uv_sb_session')){ localStorage.setItem('uv_sb_session',old); localStorage.removeItem('ea_sb_session'); } }catch(_){} })();
 let _sbSession = null;
 
 async function _sbAuthPost(path, payload){
