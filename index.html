@@ -43217,18 +43217,19 @@ async function _autoSyncCheckOnBoot(){
     });
     if(!res.ok) return;
     const rows=await res.json();
-    if(!rows||!rows.length||!rows[0].updated_at) return;
-    const cloudTs=new Date(rows[0].updated_at).getTime();
+    if(!rows||!rows.length) return;
     const localTsRaw=STATE.settings&&STATE.settings._lastCloudSave;
     const localTs=localTsRaw?new Date(localTsRaw).getTime():0;
-    // If cloud is newer by >60s and we haven't already applied it this session
+    if(!localTsRaw){
+      // Never cloud-synced on this device — restore with toast so user sees it happen
+      cloudLoadClick(false);
+      return;
+    }
+    // Need updated_at to compare — skip if unavailable
+    if(!rows[0].updated_at) return;
+    const cloudTs=new Date(rows[0].updated_at).getTime();
     if(cloudTs-localTs>60000){
-      if(!localTsRaw){
-        // Never cloud-synced on this device — restore silently, no dialog needed
-        cloudLoadClick(true);
-      } else {
-        _showConflictDialog(cloudTs,localTs);
-      }
+      _showConflictDialog(cloudTs,localTs);
     } else {
       // cloud is same or older — push local up silently if auto-sync on
       if(_autoSyncEnabled()) _autoSyncSchedule();
