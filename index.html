@@ -31396,7 +31396,7 @@ function inspoCardHtml(item){
 function openAddInspo(cat){
   inspoTempImage='';
   openModal('Add Inspiration',`
-  <div style="display:flex;flex-direction:column;gap:14px">
+  <div style="display:flex;flex-direction:column;gap:10px">
     <div class="form-row">
       <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="ii-title" placeholder="What's this idea?"/></div>
       <div class="form-group"><label class="form-label">Category</label>
@@ -31405,10 +31405,10 @@ function openAddInspo(cat){
     </div>
     <div class="form-group"><label class="form-label">Upload Image</label><input type="file" accept="image/*" class="form-input" onchange="handleInspoUpload(event)" style="padding:6px;font-size:12px"/></div>
     <div class="form-group"><label class="form-label">Image URL</label><input class="form-input" id="ii-url" placeholder="https://…" oninput="previewInspoImg(this.value)"/></div>
-    <div id="ii-preview" style="display:none"><img id="ii-preview-img" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px"/></div>
+    <div id="ii-preview" style="display:none"><img id="ii-preview-img" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px"/></div>
     <div class="form-group"><label class="form-label">Link URL</label><input class="form-input" id="ii-link" placeholder="https://… (e.g. product page, Pinterest pin)"/></div>
     <div class="form-group"><label class="form-label">Payment link</label>${inspoBudgetLinkHtml('','')}</div>
-    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="ii-notes" rows="2" placeholder="Notes or inspiration…" style="resize:vertical"></textarea></div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="ii-notes" rows="1" placeholder="Notes or inspiration…" style="resize:vertical"></textarea></div>
   </div>`,
   `<button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
    <button class="btn btn-primary" onclick="saveInspo()">Add Idea</button>`);
@@ -31711,7 +31711,7 @@ function openEditInspo(id){
   const item=STATE.inspo.items.find(x=>x.id===id); if(!item)return;
   inspoTempImage=item.image||'';   /* now a media id or an http URL, never bytes */
   openModal('Edit Idea',`
-  <div style="display:flex;flex-direction:column;gap:14px">
+  <div style="display:flex;flex-direction:column;gap:10px">
     <div class="form-row">
       <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="ii-title" value="${item.title}"/></div>
       <div class="form-group"><label class="form-label">Category</label>
@@ -31720,10 +31720,10 @@ function openEditInspo(id){
     </div>
     <div class="form-group"><label class="form-label">Upload Image</label><input type="file" accept="image/*" class="form-input" onchange="handleInspoUpload(event)" style="padding:6px;font-size:12px"/></div>
     <div class="form-group"><label class="form-label">Image URL</label><input class="form-input" id="ii-url" value="${item.image&&String(item.image).startsWith('http')?item.image:''}" oninput="previewInspoImg(this.value)"/></div>
-    ${_mediaUrl(item.image)?`<div id="ii-preview" style="display:block"><img id="ii-preview-img" src="${_mediaUrl(item.image)}" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px"/></div>`:`<div id="ii-preview" style="display:none"><img id="ii-preview-img" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px"/></div>`}
+    ${_mediaUrl(item.image)?`<div id="ii-preview" style="display:block"><img id="ii-preview-img" src="${_mediaUrl(item.image)}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px"/></div>`:`<div id="ii-preview" style="display:none"><img id="ii-preview-img" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px"/></div>`}
     <div class="form-group"><label class="form-label">Link URL</label><input class="form-input" id="ii-link" value="${item.link||''}" placeholder="https://… (e.g. product page, Pinterest pin)"/></div>
     <div class="form-group"><label class="form-label">Payment link</label>${inspoBudgetLinkHtml(item.budgetId||'', item.budgetSubId||'')}</div>
-    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="ii-notes" rows="2" style="resize:vertical">${item.notes||''}</textarea></div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="ii-notes" rows="1" style="resize:vertical">${item.notes||''}</textarea></div>
   </div>`,
   `<button class="btn btn-danger" style="margin-right:auto" onclick="deleteInspo('${id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>Delete</button>
    <button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
