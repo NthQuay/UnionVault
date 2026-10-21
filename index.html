@@ -42472,9 +42472,9 @@ function _cloudAccountHtml(){
     +`<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${user.email}</div><div style="font-size:11px;color:var(--muted)">Signed in</div></div>`
     +`<button class="btn btn-ghost btn-sm" onclick="cloudSignOut()" style="color:var(--muted);font-size:12px;white-space:nowrap">Sign out</button></div>`
     +`<p style="font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5">Save your planner to the cloud, then load it on any device. Photos sync separately (coming soon).</p>`
-    +`<div style="display:flex;gap:10px;flex-wrap:wrap">`
-    +`<button class="btn btn-primary btn-sm" id="cloud-save-btn" onclick="cloudSaveClick()" style="display:inline-flex;align-items:center;gap:5px">${_csvBtnHtml()}</button>`
-    +`<button class="btn btn-outline btn-sm" id="cloud-load-btn" onclick="cloudLoadClick()" style="display:inline-flex;align-items:center;gap:5px">${_cldBtnHtml()}</button></div>`
+    +`<div style="display:flex;gap:10px">`
+    +`<button class="btn btn-primary btn-sm" id="cloud-save-btn" onclick="cloudSaveClick()" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:1">${_csvBtnHtml()}</button>`
+    +`<button class="btn btn-primary btn-sm" id="cloud-load-btn" onclick="cloudLoadClick()" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:1">${_cldBtnHtml()}</button></div>`
     +`<p style="font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.4"><b>Save to cloud</b> — uploads your current planner.<br><b>Load from cloud</b> — replaces this device&#39;s data with the cloud version.</p>`
     +`<div id="auto-sync-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 14px;background:var(--surface);border:.5px solid var(--border);border-radius:10px">`
     +`<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:500">Auto-sync</span><span style="font-size:11px;color:var(--muted)">Automatically save & load from cloud</span></div>`
