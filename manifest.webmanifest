@@ -1,6 +1,6 @@
 {
   "name": "Union Vault",
-  "short_name": "UV",
+  "short_name": "UnionVault",
   "description": "Your wedding, perfectly planned.",
   "start_url": "./",
   "display": "standalone",
