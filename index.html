@@ -721,7 +721,7 @@ body.dark .wb-blk-addbtn:hover{color:var(--gold)}
 body.dark .wb-add-trig{color:var(--gold)}
 .wb-add-trig:hover{background:var(--gold);color:#fff}
 body.dark .wb-add-trig:hover{color:#1B1A1E}
-.wb-add-menu{position:absolute;bottom:calc(100% + 5px);left:0;z-index:20;min-width:180px;background:var(--cream);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);overflow:hidden}
+.wb-add-menu{position:fixed;z-index:9999;min-width:180px;background:var(--cream);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);overflow:hidden}
 body.dark .wb-add-menu{box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .wb-add-menu[hidden]{display:none}
 .wb-add-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;font-family:'Inter',sans-serif;font-size:12.5px;color:var(--ink);background:transparent;border:none;border-bottom:1px solid var(--border);padding:9px 12px;cursor:pointer;transition:background .12s}
@@ -33966,6 +33966,14 @@ function _wbAddMenuToggle(key,ev){
   const open=!menu.hasAttribute('hidden');
   _wbAddMenuCloseAll();
   if(open) return;                       // it was open → toggle shut
+  // Position using fixed coords so it escapes overflow:hidden parents
+  if(trig){
+    const r=trig.getBoundingClientRect();
+    menu.style.top=(r.bottom+5)+'px';
+    // align left edge, but keep on screen
+    const leftEdge=Math.min(r.left, window.innerWidth - 190);
+    menu.style.left=Math.max(8, leftEdge)+'px';
+  }
   menu.removeAttribute('hidden');
   if(trig) trig.setAttribute('aria-expanded','true');
   // close on the next outside click / Escape
@@ -33977,6 +33985,7 @@ function _wbAddMenuToggle(key,ev){
 function _wbAddMenuCloseAll(){
   document.querySelectorAll('.wb-add-menu:not([hidden])').forEach(m=>{
     m.setAttribute('hidden','');
+    m.style.top=''; m.style.left='';
     const t=m.previousElementSibling; if(t) t.setAttribute('aria-expanded','false');
   });
   document.removeEventListener('keydown', _wbAddMenuEsc);
