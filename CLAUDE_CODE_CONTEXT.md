@@ -20,7 +20,7 @@ You are continuing development of **UnionVault**, a single-file PWA wedding plan
 7. Deliver every build as: `UnionVault - [very short summary].html`
 8. Every change must account for both desktop (wide) and mobile (narrow) layouts. Flag if a change risks breaking one.
 9. "Park" = add to the Parked Ideas table in Section 4 and confirm it's noted. User will ask for "parked ideas" to retrieve.
-10. Bump SW cache name (`union-vault-v10` → `v11`) on the next deploy.
+10. Bump SW cache name on the next deploy (currently `union-vault-v11`).
 
 ---
 
@@ -148,7 +148,7 @@ All logos served from: `https://raw.githubusercontent.com/mandyjane/UnionVault/m
 | Hash routing | `#liam-amanda` = wedding website; `#rsvp-liam-amanda` = RSVP direct |
 | URL params | `?runsheet=<coupleId>` · `?vendor=<token>` · `?rsvp=<slug>` — intercepted at boot (~line 44997) |
 | Dark mode | `data-theme="light"` on `<html>` for light; removed for dark. Guards `@media(prefers-color-scheme:dark) :root:not([data-theme="light"])` (~line 2769) |
-| SW cache | `union-vault-v10` (current). **Bump to v11 on next deploy** |
+| SW cache | `union-vault-v11` (current) |
 | App build | `APP_BUILD = 'v184'` |
 
 ## 1.7 Supabase Tables
@@ -451,6 +451,33 @@ The app began as "Elegant Affair Planner" and was later rebranded to "UnionVault
 
 ---
 
+## Session 6 (v185 continued) — Cloud auto-sync fix, custom domain setup, SW cache bump
+**Date:** 2026-10-21 | Cache: v10 → v11
+
+### Change 1: Cloud auto-sync on sign-in (new domain / new device)
+**Problem:** Signing in on `unionvault.app` (or any device with prior local state but no cloud-sync history) did not auto-load cloud data. `alreadySetUp` is captured as a closure at boot — if any local state existed (even from an offline setup attempt), `_lpSignIn()` skipped `_cloudLoad()` entirely and just navigated to dashboard.
+
+**Fix:**
+- `_lpSignIn()` else branch (~line 3369): added `setTimeout(_autoSyncCheckOnBoot, 800)` so that signing in when `alreadySetUp = true` still triggers a cloud check.
+- `_autoSyncCheckOnBoot()` (~line 43225): when `localTsRaw` is null (device has never cloud-synced, `_lastCloudSave` absent), auto-load silently via `cloudLoadClick(true)` instead of showing the conflict dialog. Previously showed "This device: Unknown" which was confusing.
+
+**Cases now handled:**
+- Fresh device (empty localStorage): existing path unchanged ✓
+- New domain / offline setup, never cloud-synced: auto-loads silently ✓
+- Returning device, cloud is newer: conflict dialog (was boot-only, now post-sign-in too) ✓
+- Returning device, cloud same age: no dialog, auto-push local up ✓
+
+### Change 2: SW cache bump
+Bumped `union-vault-v10` → `union-vault-v11` in `sw.js`. Clears P8.
+
+### Infrastructure: `unionvault.app` custom domain
+- Domain purchased on Porkbun; DNS A records added; GitHub Pages DNS check ✓
+- TLS cert provisioned (3/3); Enforce HTTPS pending (allow up to 24h)
+- `mandyjane.github.io/UnionVault` continues to redirect to `unionvault.app`
+- Org migration (P10) still pending; domain will travel with the repo when moved
+
+---
+
 # 4. UNABRIDGED PARKED IDEAS & BACKLOG
 
 | # | Item | Status | Context & Intended Behaviour |
@@ -462,8 +489,9 @@ The app began as "Elegant Affair Planner" and was later rebranded to "UnionVault
 | **P5** | **Remove debug `console.log` from `_lpSignIn()`** | 🅿️ Parked (deferred since Session 2) | A `console.log` statement in the login function outputs auth data. Must be removed before production/public launch. Flagged every session, never critical enough to prioritise. |
 | **P6** | **Test confirmation email on sign-up** | 🅿️ Parked | The Supabase email confirmation flow has not been tested end-to-end. Need to: create a new test account, receive the confirmation email, click the link, and verify the app handles the redirect/confirmation state correctly. |
 | **P7** | **Test guest RSVP flow end-to-end** | 🅿️ Parked | The public RSVP page (`?rsvp=<slug>` or `#rsvp-liam-amanda`) has not been tested from QR code scan → form fill → submit → confirmation. Need to test: QR code renders correct URL, RSVP page loads without auth, form submits to `rsvp_responses` table, couple sees submission in RSVP Manager. |
-| **P8** | **SW cache bump to v11** | 🅿️ Parked — DEPLOY BLOCKER | Current code still says `union-vault-v10`. Must be bumped to `union-vault-v11` before deploying Session 5 changes. Otherwise returning users won't get the updated files. |
+| **P8** | **SW cache bump to v11** | ✅ Done | Bumped `union-vault-v10` → `union-vault-v11` in `sw.js`. |
 | **P9** | **SVG console errors in Wishing Well print labels** | 🅿️ Parked (noted v183) | `openWwPrintLabels` / `_wwGenerateLabels` — SVG strings are being passed through the HTML escaper, producing invalid attribute values like `""9""`. Causes console errors but does not affect card layout or core function. Fix: ensure SVG template strings bypass the HTML escaper. |
+| **P10** | **Move UnionVault repo to its own GitHub org** | 🅿️ Parked | Domain `unionvault.app` is live (DNS ✓, TLS cert active, Enforce HTTPS pending). Org migration not yet done. When done: (1) update all `raw.githubusercontent.com/mandyjane/UnionVault/` logo/asset URLs in `index.html` to new org path; (2) update `CLAUDE_CODE_CONTEXT.md` §1.1 repo URL and §1.4 logo base path; (3) no DNS changes needed — the `CNAME` file travels with the repo. Note: if repo is renamed to `unionvault.github.io`, raw asset paths change to `raw.githubusercontent.com/UnionVault/unionvault.github.io/main/...`. |
 
 ---
 

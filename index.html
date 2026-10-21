@@ -3367,6 +3367,7 @@ async function _lpSignIn() {
     }
   } else {
     if(typeof navigate !== 'undefined') navigate('dashboard');
+    setTimeout(_autoSyncCheckOnBoot, 800);
   }
 }
 
@@ -43222,7 +43223,12 @@ async function _autoSyncCheckOnBoot(){
     const localTs=localTsRaw?new Date(localTsRaw).getTime():0;
     // If cloud is newer by >60s and we haven't already applied it this session
     if(cloudTs-localTs>60000){
-      _showConflictDialog(cloudTs,localTs);
+      if(!localTsRaw){
+        // Never cloud-synced on this device — restore silently, no dialog needed
+        cloudLoadClick(true);
+      } else {
+        _showConflictDialog(cloudTs,localTs);
+      }
     } else {
       // cloud is same or older — push local up silently if auto-sync on
       if(_autoSyncEnabled()) _autoSyncSchedule();
