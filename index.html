@@ -4307,16 +4307,16 @@ function toggleSidebar(){
   const sidebar=document.getElementById('sidebar');
   const overlay=document.getElementById('sidebar-overlay');
   const isIconMode=document.body.classList.contains('icon-sidebar');
+  const isMobile=window.innerWidth<=900;
 
   if(isIconMode){
-    // Icon-sidebar: toggle between full (labels shown) and collapsed (icons only)
     sidebar.classList.toggle('collapsed');
+    try{localStorage.setItem('uv_sb_desktop',sidebar.classList.contains('collapsed')?'icon':'full');}catch(_){}
   } else {
-    // Hamburger mode: open/close with overlay on mobile
     sidebar.classList.toggle('collapsed');
-    const isMobile=window.innerWidth<=900;
     if(isMobile){
       overlay.classList.toggle('visible',!sidebar.classList.contains('collapsed'));
+      try{localStorage.setItem('uv_sb_mobile',sidebar.classList.contains('collapsed')?'closed':'open');}catch(_){}
     }
   }
 }
@@ -44557,12 +44557,45 @@ if(!alreadySetUp && window.matchMedia && window.matchMedia('(prefers-color-schem
   document.documentElement.setAttribute('data-theme','light');
 }
 
-// Apply sidebar mode from settings
-if((STATE.settings.sidebarMode||'hamburger')==='icon'){
-  document.body.classList.add('icon-sidebar');
-} else if(window.innerWidth<=900){
-  document.getElementById('sidebar').classList.add('collapsed');
-}
+// Sidebar mode — device-aware defaults, each device type remembers its own state
+(function _initSidebarMode(){
+  const isMobile=window.innerWidth<=900;
+  const sidebar=document.getElementById('sidebar');
+  const overlay=document.getElementById('sidebar-overlay');
+  if(isMobile){
+    // Mobile: hamburger drawer, closed by default
+    const saved=localStorage.getItem('uv_sb_mobile')||'closed';
+    sidebar.classList.toggle('collapsed',saved!=='open');
+    if(overlay) overlay.classList.toggle('visible',saved==='open');
+  } else {
+    // Desktop: icon-strip sidebar by default (collapsed=icon-only), remembers full vs icon
+    document.body.classList.add('icon-sidebar');
+    const saved=localStorage.getItem('uv_sb_desktop')||'icon';
+    sidebar.classList.toggle('collapsed',saved!=='full');
+  }
+})();
+// Switch sidebar mode when window crosses the mobile/desktop breakpoint
+window.addEventListener('resize',(function(){
+  let wasDesktop=window.innerWidth>900;
+  return function(){
+    const isDesktop=window.innerWidth>900;
+    if(isDesktop===wasDesktop) return;
+    wasDesktop=isDesktop;
+    const sidebar=document.getElementById('sidebar');
+    const overlay=document.getElementById('sidebar-overlay');
+    if(isDesktop){
+      document.body.classList.add('icon-sidebar');
+      const saved=localStorage.getItem('uv_sb_desktop')||'icon';
+      sidebar.classList.toggle('collapsed',saved!=='full');
+      if(overlay){overlay.classList.remove('visible');}
+    } else {
+      document.body.classList.remove('icon-sidebar');
+      const saved=localStorage.getItem('uv_sb_mobile')||'closed';
+      sidebar.classList.toggle('collapsed',saved!=='open');
+      if(overlay) overlay.classList.toggle('visible',saved==='open');
+    }
+  };
+})());
 
 // Auto-mark any past-due installments on load (when enabled) so totals are correct
 // from the dashboard onward.
