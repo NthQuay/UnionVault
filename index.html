@@ -757,7 +757,7 @@ body.dark .wb-custom-badge{background:rgba(196,168,130,.15);color:#C3B69E}
 .wb-cblank{width:100%;display:flex;align-items:center;gap:9px;text-align:left;padding:11px 12px;border:1px dashed var(--sw-border,#E3D7C4);border-radius:8px;background:transparent;color:var(--gold-deep);cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;transition:all .15s}
 .wb-cblank:hover{border-color:var(--gold);background:var(--surface)}
 .toggle-switch{position:relative;width:48px;height:26px;flex-shrink:0}
-.toggle-switch input{opacity:0;width:0;height:0;position:absolute}
+.toggle-switch input{opacity:0;width:0;height:0;position:absolute;-webkit-appearance:none;appearance:none}
 .toggle-track{position:absolute;inset:0;background:var(--border);border-radius:26px;cursor:pointer;transition:background .25s}
 .toggle-track::after{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .toggle-switch input:checked+.toggle-track{background:var(--gold)}
@@ -43518,6 +43518,13 @@ function loadFromStorage(){
     if(saved.dashLayout)STATE.dashLayout = saved.dashLayout;
     if(saved.dashHiddenWidgets)STATE.dashHiddenWidgets = saved.dashHiddenWidgets;
     document.body.classList.toggle('dark', !!saved.darkMode);
+    // Sync data-theme on <html> so OS dark-mode media queries don't override
+    // CSS variables when the user's saved preference is light mode.
+    if(saved.darkMode){
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme','light');
+    }
     document.body.classList.toggle('cl-no-fade', STATE.settings.checklistCompletedFade===false);
     if(saved.sidebarMode==='icon') document.body.classList.add('icon-sidebar');
 
@@ -43613,6 +43620,15 @@ function setCurrency(code){
 
 function toggleDarkMode(on){
   document.body.classList.toggle('dark', on);
+  // Keep data-theme="light" on <html> when light mode is active so the
+  // @media(prefers-color-scheme:dark) :root:not([data-theme="light"]) rules
+  // don't override CSS variables on phones/browsers whose OS is in dark mode
+  // but whose app preference is light mode.
+  if(on){
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme','light');
+  }
   saveToStorage();
   if(typeof _updateBudgetNavBadge==='function') _updateBudgetNavBadge();
   if(typeof _updateChecklistNavBadge==='function') _updateChecklistNavBadge();
@@ -43751,6 +43767,13 @@ const alreadySetUp = loadFromStorage();
 // On a fresh device with no saved preference, honour the OS dark-mode setting
 if(!alreadySetUp && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
   document.body.classList.add('dark');
+  // No need to set data-theme — when OS dark mode is the preference we let
+  // the media query apply naturally (data-theme is only set to 'light' to
+  // block that query when the user has explicitly chosen light mode).
+} else if(!alreadySetUp){
+  // Fresh device, OS is light mode — mark explicitly so the guard holds
+  // even before any preference is saved.
+  document.documentElement.setAttribute('data-theme','light');
 }
 
 // Apply sidebar mode from settings
