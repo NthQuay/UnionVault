@@ -37420,7 +37420,7 @@ function renderSettings(c, actions){
         </div>
       </div>
     </div>
-    <div class="settings-sect" data-sect="display formatting task alerts banner payment alerts banner fade completed tasks faded strikethrough dim finished checklist undo toast delete recovery ceremony details event details religion officiant venue checklist budget year budget dates paid owing categories suggest budget links follow-up tasks email appointments auto-mark installments mark paid due soon alert countdown currency decimals dollars cents currency symbol aud usd gbp eur nzd cad euro pound dollar yen rupee payment badges vendor badges vendor badge style avatar pill name off linked vendors on budget">
+    <div class="settings-sect" data-sect="display formatting fade completed tasks faded strikethrough dim finished checklist ceremony details event details religion officiant venue budget year budget dates paid owing categories suggest budget links follow-up tasks email appointments auto-mark installments mark paid due soon countdown currency decimals dollars cents currency symbol aud usd gbp eur nzd cad euro pound dollar yen rupee payment badges vendor badges vendor badge style avatar pill name off linked vendors on budget vision board dashboard">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Display &amp; Formatting</div>
       <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
@@ -37434,16 +37434,6 @@ function renderSettings(c, actions){
       </div>
       <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
-          <div style="font-size:13.5px;font-weight:500">Task Alerts Banner</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show the alerts bar at the top of the Checklist page for due and overdue tasks.</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${!STATE.settings.hideTaskAlerts?'checked':''} onchange="STATE.settings.hideTaskAlerts=!this.checked;saveToStorage();if(_currentPage==='checklist')navigate('checklist')"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:16px">
-        <div>
           <div style="font-size:13.5px;font-weight:500">Fade Completed Tasks</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">Dim finished checklist tasks and use a soft strikethrough. Turn off for a solid line and no fade.</div>
         </div>
@@ -37452,29 +37442,9 @@ function renderSettings(c, actions){
           <div class="toggle-track"></div>
         </label>
       </div>
-      <div class="dark-toggle-row" style="margin-bottom:16px">
+      <div class=”dark-toggle-row” style=”margin-bottom:16px”>
         <div>
-          <div style="font-size:13.5px;font-weight:500">Checklist Alert Icon in Menu</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show a warning icon next to “Checklist” in the side menu when a task is overdue or due soon.</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${!STATE.settings.hideChecklistNavIcon?'checked':''} onchange="STATE.settings.hideChecklistNavIcon=!this.checked;saveToStorage();_updateChecklistNavBadge()"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:16px">
-        <div>
-          <div style="font-size:13.5px;font-weight:500">Seating Alert Icon in Menu</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show a count next to “Seating Plan” in the side menu when an attending guest has no seat.</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${!STATE.settings.hideSeatingNavIcon?'checked':''} onchange="STATE.settings.hideSeatingNavIcon=!this.checked;saveToStorage();_updateSeatingNavBadge()"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:16px">
-        <div>
-          <div style="font-size:13.5px;font-weight:500">Ceremony Details</div>
+          <div style=”font-size:13.5px;font-weight:500”>Ceremony Details</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">Show the ceremony details section (religion, officiant, venue) on the Event Details page.</div>
         </div>
         <label class="toggle-switch">
@@ -37499,30 +37469,10 @@ function renderSettings(c, actions){
         </div>
       </div>
 
-      <div class="settings-sublabel" data-settings-sub="display" data-page-hint="budget" style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--gold-deep);margin:6px 0 12px;padding-top:14px;border-top:1px solid var(--border)">Display</div>
-      <div class="dark-toggle-row" style="margin-bottom:16px">
+      <div class=”settings-sublabel” data-settings-sub=”display” data-page-hint=”budget” style=”font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--gold-deep);margin:6px 0 12px;padding-top:14px;border-top:1px solid var(--border)”>Display</div>
+      <div class=”dark-toggle-row” style=”margin-bottom:16px”>
         <div>
-          <div style="font-size:13.5px;font-weight:500">Payment Alerts Banner</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show the alerts bar at the top of the Budget page for due and overdue payments.</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${!STATE.settings.hidePaymentAlerts?'checked':''} onchange="STATE.settings.hidePaymentAlerts=!this.checked;saveToStorage();if(_currentPage==='budget')navigate('budget')"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:16px">
-        <div>
-          <div style="font-size:13.5px;font-weight:500">Budget Alert Icon in Menu</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show a warning icon next to “Budget” in the side menu when a payment is overdue or due soon.</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${!STATE.settings.hideBudgetNavIcon?'checked':''} onchange="STATE.settings.hideBudgetNavIcon=!this.checked;saveToStorage();_updateBudgetNavBadge()"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:16px">
-        <div>
-          <div style="font-size:13.5px;font-weight:500">Show Year on Budget Dates</div>
+          <div style=”font-size:13.5px;font-weight:500”>Show Year on Budget Dates</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">Include the year in budget due, overdue &amp; paid dates.</div>
         </div>
         <label class="toggle-switch">
@@ -37638,6 +37588,61 @@ function renderSettings(c, actions){
       </div>
       ${_badgePickerHtml()}
       ${_vendorBadgeStylePickerHtml()}
+    </div>
+    <div class="settings-sect" data-sect="alerts notifications task alerts banner payment alerts banner checklist alert icon menu budget alert icon menu seating alert icon menu banners menu icons overdue due soon warning">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Alerts &amp; Notifications</div>
+      <div class="settings-sublabel" data-settings-sub="banners" style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--gold-deep);margin:0 0 12px">Banners</div>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
+        <div>
+          <div style="font-size:13.5px;font-weight:500">Task Alerts Banner</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show the alerts bar at the top of the Checklist page for due and overdue tasks.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${!STATE.settings.hideTaskAlerts?'checked':''} onchange="STATE.settings.hideTaskAlerts=!this.checked;saveToStorage();if(_currentPage==='checklist')navigate('checklist')"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
+        <div>
+          <div style="font-size:13.5px;font-weight:500">Payment Alerts Banner</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show the alerts bar at the top of the Budget page for due and overdue payments.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${!STATE.settings.hidePaymentAlerts?'checked':''} onchange="STATE.settings.hidePaymentAlerts=!this.checked;saveToStorage();if(_currentPage==='budget')navigate('budget')"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+      <div class="settings-sublabel" data-settings-sub="menu icons" style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--gold-deep);margin:6px 0 12px;padding-top:14px;border-top:1px solid var(--border)">Menu Icons</div>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
+        <div>
+          <div style="font-size:13.5px;font-weight:500">Checklist Alert Icon in Menu</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show a warning icon next to "Checklist" in the side menu when a task is overdue or due soon.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${!STATE.settings.hideChecklistNavIcon?'checked':''} onchange="STATE.settings.hideChecklistNavIcon=!this.checked;saveToStorage();_updateChecklistNavBadge()"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
+        <div>
+          <div style="font-size:13.5px;font-weight:500">Budget Alert Icon in Menu</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show a warning icon next to "Budget" in the side menu when a payment is overdue or due soon.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${!STATE.settings.hideBudgetNavIcon?'checked':''} onchange="STATE.settings.hideBudgetNavIcon=!this.checked;saveToStorage();_updateBudgetNavBadge()"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
+        <div>
+          <div style="font-size:13.5px;font-weight:500">Seating Alert Icon in Menu</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show a count next to "Seating Plan" in the side menu when an attending guest has no seat.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${!STATE.settings.hideSeatingNavIcon?'checked':''} onchange="STATE.settings.hideSeatingNavIcon=!this.checked;saveToStorage();_updateSeatingNavBadge()"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
     </div>
     <div class="settings-sect" data-sect="pop ups popups prompts ask before marking date paid payment date detect appointments offer save drafts suggest budget links budget-link message emailing appointments follow-up tasks uploading invoices suggest deposits add deposit don't ask again">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Pop ups</div>
@@ -37854,12 +37859,13 @@ const _SETTINGS_PAGE_MAP={
   'Dark Mode':'general',
   'Show Vision Board on Dashboard':'dashboard',
   'Navigation Style':'general',
-  'Task Alerts Banner':'checklist',
-  'Payment Alerts Banner':'budget',
+  'Task Alerts Banner':'alerts',
+  'Payment Alerts Banner':'alerts',
   'Undo Toast on Delete':'general',
   'Fade Completed Tasks':'checklist',
-  'Budget Alert Icon in Menu':'budget',
-  'Checklist Alert Icon in Menu':'checklist',
+  'Budget Alert Icon in Menu':'alerts',
+  'Checklist Alert Icon in Menu':'alerts',
+  'Seating Alert Icon in Menu':'alerts',
   'Ceremony Details':'details',
   'Show Year on Budget Dates':'budget',
   'Show Paid / Left to pay on Budget Categories':'budget',

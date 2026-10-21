@@ -1,4 +1,4 @@
-const CACHE_NAME = 'union-vault-v5';
+const CACHE_NAME = 'union-vault-v6';
 const ASSETS = [
   './',
   './index.html',
