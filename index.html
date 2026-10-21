@@ -27802,7 +27802,7 @@ async function _cloudSave(silent){
     dashWidgetOrder:STATE.dashWidgetOrder,
     dashLayout:STATE.dashLayout, dashHiddenWidgets:STATE.dashHiddenWidgets
   };
-  const rows=_CS.map(s=>({user_id:uid,section:s,data:pay[s]??{}}));
+  const rows=_CS.map(s=>({user_id:uid,section:s,data:pay[s]??{},updated_at:STATE.settings._lastCloudSave}));
   const ok=await _sbUpsert('planner_data',rows);
   if(ok){
     // Persist the updated _lastCloudSave timestamp to localStorage directly
