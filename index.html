@@ -2784,6 +2784,10 @@ body.dark .vlu-msgcomp .snd{color:var(--ink)}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           Account settings
         </button>
+        <button onclick="_showSupportModal();_closeSignoutPop()" style="display:flex;align-items:center;gap:9px;width:100%;padding:9px 13px;background:none;border:none;cursor:pointer;font-family:var(--font-body);font-size:12.5px;color:var(--ink);text-align:left;transition:background .12s" onmouseover="this.style.background='var(--parchment)'" onmouseout="this.style.background='none'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Contact support
+        </button>
         <button onclick="cloudSignOut()" style="display:flex;align-items:center;gap:9px;width:100%;padding:9px 13px;background:none;border:none;cursor:pointer;font-family:var(--font-body);font-size:12.5px;color:#b33;text-align:left;transition:background .12s" onmouseover="this.style.background='var(--parchment)'" onmouseout="this.style.background='none'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Sign out
@@ -3273,11 +3277,13 @@ textarea.contact-input{resize:vertical;min-height:110px}
       <div class="contact-title">Get in <em>touch</em></div>
       <div class="contact-sub">Have a question or want to share feedback? We'd love to hear from you.</div>
     </div>
-    <div class="contact-form">
-      <input class="contact-input" type="text" placeholder="Your name">
-      <input class="contact-input" type="email" placeholder="Your email">
-      <textarea class="contact-input" placeholder="Your message"></textarea>
-      <button class="btn-gold-outline">Send message</button>
+    <div class="contact-form" id="lp-contact-form">
+      <input class="contact-input" id="lp-contact-name" type="text" placeholder="Your name">
+      <input class="contact-input" id="lp-contact-email" type="email" placeholder="Your email">
+      <textarea class="contact-input" id="lp-contact-msg" placeholder="Your message" style="min-height:120px;resize:vertical"></textarea>
+      <div id="lp-contact-status" style="display:none;font-size:13px;padding:10px 14px;border-radius:8px"></div>
+      <button class="btn-gold-outline" onclick="_submitLandingContact(this)">Send message</button>
+      <div style="font-size:12.5px;color:rgba(255,255,255,.38);margin-top:2px">or email us at <a href="mailto:support@unionvault.app" style="color:var(--gold-light);text-decoration:none;border-bottom:1px solid rgba(201,169,110,.35)">support@unionvault.app</a></div>
     </div>
   </div>
 </section>
@@ -27697,6 +27703,7 @@ let _seatingCounts=true;
 const _SB_URL  = 'https://hzafdlfprtzfxtyaebmc.supabase.co';
 const _SB_KEY  = 'sb_publishable_hWMFKVxJTRH3UqcC9GN_WA_gJ2GNX5T';
 const _SB_SK   = 'uv_sb_session';
+const _W3F_KEY = 'YOUR_WEB3FORMS_KEY'; // Get free key at web3forms.com — enter support@unionvault.app
 // One-time migration: carry over any existing session from the old key
 (function(){ try{ const old=localStorage.getItem('ea_sb_session'); if(old&&!localStorage.getItem('uv_sb_session')){ localStorage.setItem('uv_sb_session',old); localStorage.removeItem('ea_sb_session'); } }catch(_){} })();
 let _sbSession = null;
@@ -43080,6 +43087,127 @@ function _closeSignoutPop(){
   const cd=document.getElementById('couple-display-btn');
   if(pop){pop.style.opacity='0';pop.style.transform='translateY(6px)';pop.style.pointerEvents='none';pop.classList.remove('visible');}
   if(cd) cd.classList.remove('open');
+}
+function _showSupportModal(){
+  if(document.getElementById('_supp-overlay')) return;
+  const userEmail=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.user&&_sbSession.user.email)||'';
+  const overlay=document.createElement('div');
+  overlay.id='_supp-overlay';
+  overlay.className='modal-overlay';
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  overlay.innerHTML=`<div class="modal" style="max-width:520px">
+    <div class="modal-header"><div class="modal-title">Contact support</div><button class="modal-close" onclick="document.getElementById('_supp-overlay').remove()">&#x2715;</button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;padding-bottom:8px">
+      <div style="font-size:13px;color:var(--muted)">Have a question or found a bug? We&#8217;ll get back to you at <strong>support@unionvault.app</strong>.</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Your email</label>
+        <input id="_supp-email" type="email" value="${userEmail}" placeholder="your@email.com" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);font-family:var(--font-body);font-size:13px;outline:none;width:100%">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Subject</label>
+        <select id="_supp-subject" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);font-family:var(--font-body);font-size:13px;outline:none;cursor:pointer;width:100%">
+          <option>Bug report</option><option>Feature request</option><option>Question</option><option>Billing</option><option>Other</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Message</label>
+        <textarea id="_supp-msg" placeholder="Describe your issue or question&#x2026;" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);font-family:var(--font-body);font-size:13px;min-height:110px;resize:vertical;outline:none;width:100%"></textarea>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Screenshots <span style="text-transform:none;font-size:10.5px">(optional, max 4 &#xB7; 5 MB each)</span></label>
+        <label id="_supp-file-label" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px dashed var(--border);border-radius:8px;cursor:pointer;color:var(--muted);font-size:13px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Attach images
+          <input id="_supp-files" type="file" accept="image/*" multiple style="display:none" onchange="_suppFilesChanged(this)">
+        </label>
+        <div id="_supp-previews" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
+      <div id="_supp-status" style="display:none;font-size:13px;padding:9px 12px;border-radius:8px"></div>
+    </div>
+    <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:12px 24px 20px">
+      <button onclick="document.getElementById('_supp-overlay').remove()" class="btn btn-outline btn-sm">Cancel</button>
+      <button id="_supp-submit-btn" onclick="_submitSupportForm(this)" class="btn btn-primary btn-sm">Send message</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+function _suppFilesChanged(input){
+  const prev=document.getElementById('_supp-previews');
+  if(!prev) return;
+  prev.innerHTML='';
+  Array.from(input.files||[]).slice(0,4).forEach(function(file,i){
+    const url=URL.createObjectURL(file);
+    const w=document.createElement('div');
+    w.style.cssText='position:relative;width:72px;height:72px';
+    w.innerHTML='<img src="'+url+'" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--border)">'
+      +'<button onclick="_suppRemoveFile('+i+')" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--ink);color:var(--bg);border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">&#x2715;</button>';
+    prev.appendChild(w);
+  });
+}
+function _suppRemoveFile(idx){
+  const inp=document.getElementById('_supp-files');
+  if(!inp) return;
+  const dt=new DataTransfer();
+  Array.from(inp.files).forEach(function(f,i){if(i!==idx)dt.items.add(f);});
+  inp.files=dt.files;
+  _suppFilesChanged(inp);
+}
+async function _submitSupportForm(btn){
+  const email=(document.getElementById('_supp-email')||{}).value||'';
+  const subject=(document.getElementById('_supp-subject')||{}).value||'Other';
+  const msg=(document.getElementById('_supp-msg')||{}).value||'';
+  if(!email.trim()||!msg.trim()){_suppStatus('Please fill in your email and message.',false);return;}
+  btn.disabled=true; btn.textContent='Sending…';
+  try{
+    const files=Array.from((document.getElementById('_supp-files')||{}).files||[]).slice(0,4);
+    const attachments=await Promise.all(files.map(function(file){return new Promise(function(resolve,reject){
+      if(file.size>5*1024*1024){reject(new Error(file.name+' is over 5 MB'));return;}
+      const r=new FileReader();
+      r.onload=function(e){resolve({name:file.name,content:e.target.result.split(',')[1],type:file.type});};
+      r.onerror=reject;
+      r.readAsDataURL(file);
+    });}));
+    const coupleName=(document.getElementById('sidebar-couple-names')||{}).textContent||'';
+    const body={access_key:_W3F_KEY,subject:'['+subject+'] from '+(coupleName||email),from_name:coupleName||'Union Vault user',name:coupleName||email,email:email.trim(),message:msg.trim(),redirect:'false'};
+    if(attachments.length) body.attachments=attachments;
+    const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
+    const data=await res.json();
+    if(!data.success) throw new Error(data.message||'Submission failed');
+    _suppStatus('Message sent ✔ We’ll get back to you shortly.',true);
+    btn.textContent='Sent ✔';
+    setTimeout(function(){const o=document.getElementById('_supp-overlay');if(o)o.remove();},2200);
+  }catch(e){
+    _suppStatus(e.message&&e.message.includes('over 5')? e.message:'Something went wrong — please email support@unionvault.app',false);
+    btn.disabled=false; btn.textContent='Send message';
+  }
+}
+function _suppStatus(msg,ok){
+  const el=document.getElementById('_supp-status');
+  if(!el) return;
+  el.textContent=msg;
+  el.style.cssText='display:block;font-size:13px;padding:9px 12px;border-radius:8px;background:'+(ok?'rgba(100,180,100,.12)':'rgba(180,50,50,.12)')+';color:'+(ok?'#4c4':'#e44');
+}
+async function _submitLandingContact(btn){
+  const name=(document.getElementById('lp-contact-name')||{}).value||'';
+  const email=(document.getElementById('lp-contact-email')||{}).value||'';
+  const msg=(document.getElementById('lp-contact-msg')||{}).value||'';
+  const status=document.getElementById('lp-contact-status');
+  if(!name.trim()||!email.trim()||!msg.trim()){
+    if(status){status.textContent='Please fill in all fields.';status.style.cssText='display:block;font-size:13px;padding:10px 14px;border-radius:8px;background:rgba(180,50,50,.12);color:#e44';}
+    return;
+  }
+  btn.disabled=true; btn.textContent='Sending…';
+  try{
+    const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({access_key:_W3F_KEY,subject:'Contact from '+name.trim(),from_name:name.trim(),name:name.trim(),email:email.trim(),message:msg.trim(),redirect:'false'})});
+    const data=await res.json();
+    if(!data.success) throw new Error(data.message||'Failed');
+    if(status){status.textContent='Message sent ✔ We’ll get back to you shortly.';status.style.cssText='display:block;font-size:13px;padding:10px 14px;border-radius:8px;background:rgba(100,180,100,.1);color:#4c4';}
+    ['lp-contact-name','lp-contact-email','lp-contact-msg'].forEach(function(id){const el=document.getElementById(id);if(el)el.value='';});
+    btn.textContent='Sent ✔';
+  }catch(e){
+    if(status){status.textContent='Something went wrong — please email support@unionvault.app';status.style.cssText='display:block;font-size:13px;padding:10px 14px;border-radius:8px;background:rgba(180,50,50,.12);color:#e44';}
+    btn.disabled=false; btn.textContent='Send message';
+  }
 }
 // Close popover on outside click
 document.addEventListener('click',function(e){
