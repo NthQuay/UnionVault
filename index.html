@@ -999,6 +999,81 @@ body.dark .vendor-lookup-btn{background:var(--surface)!important;border-color:va
 body.dark .vendor-lookup-btn:hover{border-color:var(--gold)!important;color:var(--gold)!important}
 body.dark .vendor-lookup-btn .vendor-lookup-arrow{stroke:var(--gold)}
 body.dark .vendor-lookup-banner{background:var(--surface)!important;border-color:var(--border)!important}
+/* ── Vendor Brief Links section ──────────────────────────────── */
+.vbl-section{border:.5px solid #E3D7C4;background:#FBF8F3;border-radius:12px;padding:14px 15px;margin:10px 0 4px}
+body.dark .vbl-section{background:var(--surface)!important;border-color:var(--border)!important}
+.vbl-header{display:flex;align-items:center;gap:10px;margin-bottom:0}
+.vbl-header-icon{width:34px;height:34px;border-radius:9px;background:rgba(196,168,130,.2);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.vbl-header-text{flex:1;min-width:0}
+.vbl-title{font-size:13px;font-weight:500;color:var(--ink)}
+.vbl-sub{font-size:11.5px;color:var(--muted)}
+.vbl-gen-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;background:#FBF8F3;border:.5px solid #E3D7C4;color:#8B7355;transition:all .15s}
+body.dark .vbl-gen-btn{background:var(--surface)!important;border-color:var(--border)!important;color:var(--gold)!important}
+.vbl-gen-btn:hover{border-color:var(--gold);color:var(--gold-deep)}
+.vbl-links-list{margin-top:11px;border-top:.5px solid rgba(196,168,130,.25);padding-top:10px;display:flex;flex-direction:column;gap:7px}
+.vbl-link-row{display:flex;align-items:center;gap:8px;font-size:12px;min-width:0;flex-wrap:wrap}
+.vbl-link-name{font-weight:500;color:var(--ink);flex-shrink:0;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vbl-link-url{color:var(--gold-deep);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.vbl-badge{font-size:10px;font-weight:600;border-radius:5px;padding:2px 7px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.vbl-badge-active{background:rgba(29,158,117,.12);color:#1D9E75}
+.vbl-badge-expired{background:rgba(180,90,60,.1);color:#B45A3C}
+.vbl-action-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:7px;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;border:.5px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;flex-shrink:0}
+.vbl-action-btn:hover{border-color:var(--gold);color:var(--gold-deep)}
+.vbl-action-btn.danger:hover{border-color:#D9534F;color:#D9534F}
+/* ── Vendor Brief button on cards ─────────────────────────────── */
+.vbtn-brief{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;font-size:11px;font-weight:500;border-radius:7px;border:.5px solid var(--gold);background:rgba(196,168,130,.1);color:var(--gold-deep);cursor:pointer;white-space:nowrap;transition:all .15s}
+.vbtn-brief:hover{background:rgba(196,168,130,.2);border-color:var(--gold-deep)}
+/* ── Vendor Brief modal ──────────────────────────────────────── */
+.vbm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1200;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+.vbm-panel{background:var(--cream);border-radius:16px;padding:24px;max-width:460px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative}
+body.dark .vbm-panel{background:var(--surface-raised,#1e1d20)}
+.vbm-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink);margin:0 0 4px}
+.vbm-sub{font-size:12.5px;color:var(--muted);margin-bottom:18px}
+.vbm-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.vbm-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.vbm-chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:.5px solid var(--border);background:var(--cream);color:var(--muted);cursor:pointer;transition:all .15s;user-select:none}
+body.dark .vbm-chip{background:var(--surface)}
+.vbm-chip.sel{background:rgba(196,168,130,.18);border-color:var(--gold);color:var(--gold-deep);font-weight:600}
+.vbm-expiry-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.vbm-expiry-row label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
+.vbm-expiry-row input[type=date]{border:.5px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;color:var(--ink);background:var(--cream);font-family:'Inter',sans-serif}
+body.dark .vbm-expiry-row input[type=date]{background:var(--surface);color:var(--ink)}
+.vbm-footer{display:flex;gap:9px;justify-content:flex-end;margin-top:6px}
+.vbm-success{background:rgba(29,158,117,.08);border:.5px solid rgba(29,158,117,.35);border-radius:11px;padding:14px 16px;margin-top:4px}
+.vbm-link-display{font-size:12px;color:var(--gold-deep);word-break:break-all;margin:8px 0 12px;line-height:1.5}
+/* ── Public run sheet page (share overlay) ── */
+.prs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1200;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0 40px}
+.prs-panel{background:var(--cream);border-radius:16px;width:100%;max-width:600px;margin:auto;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.prs-head{padding:22px 22px 14px;border-bottom:1px solid var(--border)}
+.prs-names{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--ink);line-height:1.2}
+.prs-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.prs-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;padding:0;margin:-2px -2px 0 0}
+.prs-body{padding:16px 22px 24px}
+.prs-sect{margin-bottom:4px}
+.prs-sect-hd{display:flex;align-items:center;gap:8px;padding:10px 0 8px}
+.prs-sect-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.prs-sect-name{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.prs-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:start;padding:8px 0;border-top:1px solid var(--border)}
+.prs-row:first-of-type{border-top:none}
+.prs-time{font-size:13px;font-weight:700;color:var(--gold-deep);text-align:right;padding-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.prs-event{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:500;color:var(--ink);line-height:1.3}
+.prs-meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.prs-meta-item{display:inline-flex;align-items:center;gap:3px}
+.prs-notes{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45}
+.prs-gap{font-size:10.5px;color:var(--border);text-align:center;padding:4px 0;font-style:italic}
+.prs-empty{text-align:center;padding:40px 0;color:var(--muted);font-size:14px}
+.prs-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.prs-brand{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.prs-copy-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;font-size:12px;font-weight:600;border-radius:8px;border:.5px solid var(--gold);background:rgba(196,168,130,.1);color:var(--gold-deep);cursor:pointer;transition:all .15s;white-space:nowrap}
+.prs-copy-btn:hover{background:rgba(196,168,130,.22)}
+/* Public run sheet standalone page (no overlay) */
+.prs-page{min-height:100vh;background:var(--cream);display:flex;justify-content:center;padding:32px 16px 60px}
+.prs-page-inner{width:100%;max-width:600px}
+.prs-page-head{margin-bottom:22px;border-bottom:1px solid var(--border);padding-bottom:18px}
+.prs-page-names{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--ink)}
+.prs-page-sub{font-size:14px;color:var(--muted);margin-top:5px}
+.prs-page-brand{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);text-align:center}
+body.dark .prs-panel,.prs-page{background:var(--cream)!important}
 .edit-layout-btn{color:#A8A29A;border-color:#EBE4DA}
 .edit-layout-btn:hover{color:var(--gold-deep);border-color:var(--gold)}
 body.dark .edit-layout-btn{color:#74727A;border-color:#2A2A30}
@@ -2916,8 +2991,8 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 .price-feat{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink);font-weight:300;line-height:1.4}
 .price-check{color:var(--gold);flex-shrink:0;margin-top:1px}
 .price-muted{color:var(--muted)}
-.btn-outline{width:100%;padding:12px;background:none;color:var(--gold);border:1px solid var(--gold);border-radius:8px;font-family:var(--font-body);font-size:13px;font-weight:500;cursor:pointer;letter-spacing:.03em;transition:all .15s}
-.btn-outline:hover{background:var(--gold);color:#fff}
+.price-card .btn-outline{width:100%;padding:12px;background:none;color:var(--gold);border:1px solid var(--gold);border-radius:8px;font-family:var(--font-body);font-size:13px;font-weight:500;cursor:pointer;letter-spacing:.03em;transition:all .15s}
+.price-card .btn-outline:hover{background:var(--gold);color:#fff}
 
 /* ══ FAQ ══ */
 #faq{background:var(--cream);border-bottom:1px solid var(--border)}
@@ -5915,10 +5990,12 @@ function tlRenderMusicView(){
 }
 
 function renderTimeline(c, actions){
+  const _pubCount = (STATE.timeline||[]).filter(x=>x.pub).length;
   actions.innerHTML = `
     <button class="btn btn-outline btn-sm tl-tb-btn" onclick="printTimeline(_tlView==='music'?'music':'')" title="${_tlView==='music'?'Print the music sheet':'Print or save as PDF'}" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span class="tl-tb-label">Print${_tlView==='music'?' music':''}</span>
     </button>
+    ${_sbSession && _pubCount > 0 ? `<button class="btn btn-outline btn-sm tl-tb-btn" onclick="_shareRunSheet()" title="Share run sheet link" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="tl-tb-label">Share</span></button>` : ''}
     <button class="btn btn-primary btn-sm tl-tb-btn" onclick="openAddTimelineItem()" title="Add Moment" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="tl-tb-label">Add Moment</span></button>`;
 
   const items = tlSorted();
@@ -6152,6 +6229,148 @@ function deleteTimelineItem(id){
 function confirmDeleteTimelineItem(id){
   const it=STATE.timeline.find(x=>x.id===id);
   _confirmDeleteDialog({title:'Delete Moment', question:'Delete this moment?', name:it?(it.title||it.time||''):'', verb:'Delete', onConfirmJs:`deleteTimelineItem('${id}')`});
+}
+
+// ── Run sheet sharing ─────────────────────────────────────────────────────────
+// Builds the public ?runsheet= URL and shows a share sheet modal.
+function _shareRunSheet(){
+  if(!_sbSession) return;
+  const uid = _sbSession.user.id;
+  const url = window.location.origin + window.location.pathname + '?runsheet=' + encodeURIComponent(uid);
+  const pubItems = (STATE.timeline||[]).filter(x=>x.pub);
+  const existing = document.getElementById('_prs-share-overlay');
+  if(existing) existing.remove();
+
+  const ov = document.createElement('div');
+  ov.id = '_prs-share-overlay';
+  ov.className = 'prs-overlay';
+  ov.innerHTML = `
+    <div class="prs-panel" role="dialog" aria-modal="true" aria-label="Share run sheet">
+      <div class="prs-head">
+        <button class="prs-close" onclick="document.getElementById('_prs-share-overlay').remove()" aria-label="Close">×</button>
+        <div class="prs-names" style="font-size:18px">Share your run sheet</div>
+        <div class="prs-sub">${pubItems.length} moment${pubItems.length!==1?'s':''} marked as visible · anyone with the link can view</div>
+      </div>
+      <div style="padding:18px 22px">
+        <div style="background:var(--soft,var(--cream));border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Link</div>
+          <div style="font-size:13px;color:var(--gold-deep);word-break:break-all;line-height:1.5" id="_prs-url-display">${_escHtml(url)}</div>
+        </div>
+        ${pubItems.length === 0 ? `<div style="background:rgba(180,90,60,.08);border:.5px solid rgba(180,90,60,.3);border-radius:9px;padding:11px 14px;font-size:13px;color:var(--muted);margin-bottom:14px">⚠ No moments are marked visible yet. Edit each moment you want to share and turn on <strong>"Guests can see this"</strong>.</div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="prs-copy-btn" id="_prs-copy-btn" onclick="_prsDoCopy('${_escHtml(url)}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy link
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('_prs-share-overlay').remove()" style="flex:1;min-width:80px">Done</button>
+        </div>
+        <div style="margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6">
+          The link shows only moments with <strong>"Guests can see this"</strong> turned on. Private moments (vendor load-ins, photographer schedule etc.) stay hidden.
+        </div>
+      </div>
+    </div>`;
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+function _prsDoCopy(url, btn){
+  const el = btn || document.getElementById('_prs-copy-btn');
+  const doIt = async ()=>{
+    try{ await navigator.clipboard.writeText(url); }
+    catch(e){ const ta=document.createElement('textarea'); ta.value=url; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select(); try{document.execCommand('copy');}catch(_){} document.body.removeChild(ta); }
+    if(el){ const orig=el.innerHTML; el.innerHTML='✓ Copied!'; el.style.background='rgba(29,158,117,.15)'; el.style.borderColor='var(--green,#1D9E75)'; el.style.color='var(--green,#1D9E75)'; setTimeout(()=>{ el.innerHTML=orig; el.style.background=''; el.style.borderColor=''; el.style.color=''; },2000); }
+  };
+  doIt();
+}
+
+// ── Public run sheet page ─────────────────────────────────────────────────────
+// Called at boot when ?runsheet=<couple_id> is detected.
+// Fetches the couple's cloud-saved timeline (pub moments only) from Supabase and renders a clean read-only page.
+async function _showPublicRunSheet(coupleId){
+  document.body.style.visibility='hidden';
+  // Clear the default app background so our page can paint
+  document.body.style.background='var(--cream,#FBF8F3)';
+
+  let partner1='', partner2='', date='', venue='', timeline=[];
+  try{
+    // Fetch couple's saved state from Supabase cloud_saves table
+    const r = await fetch(`${_SB_URL}/rest/v1/cloud_saves?couple_id=eq.${encodeURIComponent(coupleId)}&order=saved_at.desc&limit=1`, {
+      headers:{ 'apikey':_SB_KEY, 'Authorization':'Bearer '+_SB_KEY }
+    });
+    if(r.ok){
+      const rows = await r.json();
+      if(rows && rows.length){
+        const data = rows[0].data || {};
+        const ev = data.event || {};
+        partner1 = ev.partner1||''; partner2 = ev.partner2||'';
+        date = ev.date||''; venue = ev.venue||'';
+        timeline = (data.timeline||[]).filter(x=>x&&x.pub);
+      }
+    }
+  } catch(e){ /* show empty state */ }
+
+  // Sort by time
+  timeline.sort((a,b)=>{
+    const ma=tlMinutes(a.time), mb=tlMinutes(b.time);
+    if(ma===null) return 1; if(mb===null) return -1; return ma-mb;
+  });
+
+  const names = (partner1||partner2) ? `${_escHtml(partner1)}${partner1&&partner2?' & ':''}${_escHtml(partner2)}` : 'Our Wedding';
+  const dateLine = date ? (()=>{ try{ const d=new Date(date+'T12:00:00'); return d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }catch(e){return date;} })() : '';
+  const subLine = [dateLine, venue ? _escHtml(venue) : ''].filter(Boolean).join(' &nbsp;·&nbsp; ');
+
+  // Group by category
+  const catOrder = ['prep','ceremony','photos','reception','travel','other'];
+  const groups = {};
+  timeline.forEach(it=>{ const k=it.cat||'other'; if(!groups[k]) groups[k]=[]; groups[k].push(it); });
+
+  let bodyHtml = '';
+  if(!timeline.length){
+    bodyHtml = `<div class="prs-empty">No schedule shared yet — check back closer to the date.</div>`;
+  } else {
+    catOrder.forEach(k=>{
+      if(!groups[k]||!groups[k].length) return;
+      const cat = TL_CATS[k]||TL_CATS.other;
+      bodyHtml += `<div class="prs-sect">
+        <div class="prs-sect-hd"><span class="prs-sect-dot" style="background:${cat.dot}"></span><span class="prs-sect-name">${cat.label}</span></div>`;
+      groups[k].forEach((it,idx)=>{
+        const meta=[];
+        if(it.location) meta.push(`<span class="prs-meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${_escHtml(it.location)}</span>`);
+        if(it.who) meta.push(`<span class="prs-meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${_escHtml(it.who)}</span>`);
+        const next = groups[k][idx+1];
+        let gapHtml = '';
+        if(next){ const gap=tlMinutes(next.time)!==null&&tlMinutes(it.time)!==null?tlMinutes(next.time)-tlMinutes(it.time):null; const gl=tlGapLabel(gap); if(gl) gapHtml=`<div class="prs-gap">${gl} later</div>`; }
+        bodyHtml += `<div class="prs-row" style="border-top-color:${idx===0?'transparent':'var(--border)'}">
+          <div class="prs-time">${tlTo12h(it.time)||'—'}</div>
+          <div>
+            <div class="prs-event">${_escHtml(it.title||'Untitled')}</div>
+            ${meta.length?`<div class="prs-meta">${meta.join('')}</div>`:''}
+            ${it.notes?`<div class="prs-notes">${_escHtml(it.notes)}</div>`:''}
+          </div>
+        </div>${gapHtml}`;
+      });
+      bodyHtml += `</div>`;
+    });
+    // Day summary
+    const first=timeline.find(x=>tlMinutes(x.time)!==null), last=[...timeline].reverse().find(x=>tlMinutes(x.time)!==null);
+    if(first&&last&&first!==last){
+      const span=tlGapLabel(tlMinutes(last.time)-tlMinutes(first.time));
+      bodyHtml += `<div style="margin-top:24px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);text-align:center">${tlTo12h(first.time)} – ${tlTo12h(last.time)} · ${span} · ${timeline.length} moment${timeline.length!==1?'s':''}</div>`;
+    }
+  }
+
+  document.body.innerHTML = `
+    <div class="prs-page">
+      <div class="prs-page-inner">
+        <div class="prs-page-head">
+          <div class="prs-page-names">${names}</div>
+          ${subLine?`<div class="prs-page-sub">${subLine}</div>`:''}
+        </div>
+        ${bodyHtml}
+        <div class="prs-page-brand">Created with <strong>UnionVault</strong></div>
+      </div>
+    </div>`;
+  document.body.style.visibility='visible';
 }
 
 // Shared print header bits.
@@ -6695,7 +6914,11 @@ function _fitGuestBtnsImpl(){
       if(free>avail) avail=free;
     } else {
       const par=group.parentElement;
-      if(par) avail=Math.max(avail, par.clientWidth);
+      if(par){
+        const pcs=getComputedStyle(par);
+        const pPad=(parseFloat(pcs.paddingLeft)||0)+(parseFloat(pcs.paddingRight)||0);
+        avail=Math.max(avail, par.clientWidth - pPad);
+      }
     }
     if(!avail) return;
     // Measure natural width with labels shown by summing the real widths of the
@@ -6713,6 +6936,9 @@ function _fitGuestBtnsImpl(){
     const gap=parseFloat(cs.columnGap||cs.gap)||6;
     const measureWidth=()=>{ let w=0, n=0;
       const measure=el=>{ Array.from(el.children).forEach(ch=>{
+        // Skip flex-grow spacers (e.g. the <span style="flex:1 1 auto"> between Import and Edit)
+        // — their scrollWidth grows to fill available space and would falsely inflate the total.
+        if(parseFloat(getComputedStyle(ch).flexGrow)>0) return;
         if(ch.classList && ch.classList.contains('gbtn')){ w+=ch.scrollWidth; n++; }
         else if(ch.children && ch.children.length){ measure(ch); }
         else { w+=ch.scrollWidth; n++; }
@@ -6740,7 +6966,16 @@ function _fitGuestBtnsImpl(){
   // Same measurement for the guest filter chip row (label span + chips + divider).
   document.querySelectorAll('.gfilter-group').forEach(group=>{
     if(!group.isConnected) return;
-    const avail=group.clientWidth;
+    // Derive available width from the parent container (not the group itself, which may
+    // already be collapsed to a small clientWidth in icons-only state).
+    const par=group.parentElement;
+    let avail=group.clientWidth;
+    if(par){
+      const pcs=getComputedStyle(par);
+      const pPad=(parseFloat(pcs.paddingLeft)||0)+(parseFloat(pcs.paddingRight)||0);
+      const parW=par.clientWidth - pPad;
+      if(parW>avail) avail=parW;
+    }
     if(!avail) return;
     const wasIconsOnly=group.classList.contains('icons-only');
     const expandMargin=wasIconsOnly?10:1;
@@ -19808,7 +20043,10 @@ function renderVendors(c, actions){
       </div>
       <button class="vendor-lookup-btn" onclick="openQuotes()" title="Compare quotes" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;background:#FBF8F3;border:.5px solid #E3D7C4;color:#8B7355;transition:all .15s">Open quotes<svg class="vendor-lookup-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9B89C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
     </div>
+    <div id="vbl-placeholder"></div>
     ${listHtml}`;
+  // Asynchronously load brief links into the placeholder (non-blocking)
+  if(_sbSession) _renderVblSection();
 }
 // ── Unified "Planner Links" panel for a vendor card ─────────────
 // Visibility helpers (driven by the Show / hide popup):
@@ -19877,6 +20115,286 @@ function _vendorRelationsPanel(v){
     ${rows.join('')}
   </div>`;
 }
+// ── Vendor Brief Links ──────────────────────────────────────────────────────
+// Cache: { tokens: [...], loading: bool, error: str|null, ts: number }
+let _vblCache = null;
+
+// Fetch vendor_tokens for the signed-in couple from Supabase.
+async function _fetchVendorTokens(){
+  if(!_sbSession) return [];
+  const uid = _sbSession.user.id;
+  const res = await fetch(`${_SB_URL}/rest/v1/vendor_tokens?couple_id=eq.${encodeURIComponent(uid)}&order=created_at.desc&limit=100`,{
+    headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_sbSession.access_token,'Accept':'application/json'}
+  });
+  if(!res.ok) return [];
+  return await res.json();
+}
+
+// Render the "Brief links" collapsible section above the vendor list.
+// tokens: array from Supabase (may be empty). Returns HTML string.
+function _vblSectionHtml(tokens){
+  const now = new Date();
+  const activeTokens = tokens.filter(t => !t.expires_at || new Date(t.expires_at) > now);
+  const baseUrl = window.location.origin + window.location.pathname;
+  const linkIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+  const count = tokens.length;
+  const countBadge = count > 0 ? `<span style="font-size:11px;background:rgba(196,168,130,.18);color:var(--gold-deep);border-radius:10px;padding:1px 7px;font-weight:600;margin-left:4px">${count}</span>` : '';
+
+  let linksHtml = '';
+  if(tokens.length){
+    linksHtml = `<div class="vbl-links-list">` + tokens.map(t=>{
+      const expired = t.expires_at && new Date(t.expires_at) <= now;
+      const badge = expired
+        ? `<span class="vbl-badge vbl-badge-expired">Expired</span>`
+        : `<span class="vbl-badge vbl-badge-active">Active</span>`;
+      const link = `${baseUrl}?vendor=${encodeURIComponent(t.token)}`;
+      const expNote = t.expires_at
+        ? `<span style="font-size:10.5px;color:var(--muted);flex-shrink:0">exp ${fmtBudgetDate(t.expires_at.slice(0,10))}</span>`
+        : '';
+      return `<div class="vbl-link-row">
+        ${badge}
+        <span class="vbl-link-name" title="${_escHtml(t.vendor_name)}">${_escHtml(t.vendor_name)}</span>
+        <span class="vbl-link-url" title="${_escHtml(link)}">${_escHtml(link)}</span>
+        ${expNote}
+        <button class="vbl-action-btn" onclick="_copyVendorLink('${_escHtml(t.token)}',this)" title="Copy link">${linkIcon} Copy</button>
+        <button class="vbl-action-btn danger" onclick="_revokeVendorToken('${_escHtml(t.token)}',this)" title="Revoke this link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Revoke</button>
+      </div>`;
+    }).join('') + `</div>`;
+  }
+
+  return `<div class="vbl-section" id="vbl-section">
+    <div class="vbl-header">
+      <span class="vbl-header-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+      <div class="vbl-header-text">
+        <div class="vbl-title">Vendor brief links${countBadge}</div>
+        <div class="vbl-sub">Share a secure read-only portal with any vendor — no login needed.</div>
+      </div>
+      <button class="vbl-gen-btn" onclick="_openVendorBriefModal(null)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> New brief</button>
+    </div>
+    ${linksHtml}
+  </div>`;
+}
+
+// Open the generate-brief modal. vendorName is pre-filled if coming from a card button.
+function _openVendorBriefModal(vendorName){
+  // Remove any existing overlay
+  const existing = document.getElementById('vbm-overlay');
+  if(existing) existing.remove();
+
+  const esc = _escHtml;
+  const prefill = vendorName || '';
+  const sections = [
+    {id:'timeline', label:'Day timeline'},
+    {id:'budget', label:'Budget summary'},
+    {id:'checklist', label:'Checklist'},
+    {id:'contacts', label:'Contact details'},
+    {id:'notes', label:'Notes / brief'}
+  ];
+  // Default: all selected
+  const chipsHtml = sections.map(s =>
+    `<button type="button" class="vbm-chip sel" data-section="${esc(s.id)}" onclick="this.classList.toggle('sel')">${esc(s.label)}</button>`
+  ).join('');
+
+  // Default expiry: 30 days from today
+  const def30 = (()=>{ const d=new Date(); d.setDate(d.getDate()+30); return d.toISOString().slice(0,10); })();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'vbm-overlay';
+  overlay.id = 'vbm-overlay';
+  overlay.innerHTML = `
+    <div class="vbm-panel" role="dialog" aria-modal="true" aria-label="Create vendor brief link">
+      <div id="vbm-body">
+        <div class="vbm-title">Create vendor brief</div>
+        <div class="vbm-sub">Generate a secure, shareable link for your vendor — no account needed.</div>
+        <div class="vbm-label">Vendor name</div>
+        <input id="vbm-vendor-name" type="text" class="input" placeholder="e.g. Bloom &amp; Co." value="${esc(prefill)}"
+          style="width:100%;box-sizing:border-box;margin-bottom:16px;font-size:13px;padding:9px 11px;border:.5px solid var(--border);border-radius:8px;background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif">
+        <div class="vbm-label">Sections to share</div>
+        <div class="vbm-chips">${chipsHtml}</div>
+        <div class="vbm-label">Expiry (optional)</div>
+        <div class="vbm-expiry-row">
+          <label><input type="checkbox" id="vbm-use-expiry" checked onchange="_vbmToggleExpiry()"> Set expiry date</label>
+          <input type="date" id="vbm-expiry-date" value="${def30}" style="flex:1;min-width:0">
+        </div>
+        <div id="vbm-error" style="display:none;font-size:12px;color:#D9534F;margin-bottom:10px"></div>
+        <div class="vbm-footer">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('vbm-overlay').remove()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="_generateVendorToken()" id="vbm-gen-btn">Generate link</button>
+        </div>
+      </div>
+    </div>`;
+
+  // Close on backdrop click
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  setTimeout(()=>{ const el=document.getElementById('vbm-vendor-name'); if(el){ if(!prefill) el.focus(); else { el.focus(); el.select(); } } }, 50);
+}
+
+function _vbmToggleExpiry(){
+  const chk = document.getElementById('vbm-use-expiry');
+  const inp = document.getElementById('vbm-expiry-date');
+  if(inp) inp.disabled = !chk.checked;
+}
+
+// Generate a vendor token and POST it to Supabase.
+async function _generateVendorToken(){
+  if(!_sbSession){ alert('Please sign in first.'); return; }
+  const nameEl = document.getElementById('vbm-vendor-name');
+  const errEl = document.getElementById('vbm-error');
+  const genBtn = document.getElementById('vbm-gen-btn');
+  const name = (nameEl && nameEl.value.trim()) || '';
+  if(!name){ if(errEl){ errEl.textContent='Please enter a vendor name.'; errEl.style.display=''; } return; }
+  if(errEl) errEl.style.display='none';
+
+  // Collect selected sections
+  const chips = document.querySelectorAll('#vbm-overlay .vbm-chip.sel');
+  const sections = Array.from(chips).map(c => c.dataset.section).filter(Boolean);
+
+  // Expiry
+  const useExpiry = document.getElementById('vbm-use-expiry');
+  const expiryDate = document.getElementById('vbm-expiry-date');
+  let expiresAt = null;
+  if(useExpiry && useExpiry.checked && expiryDate && expiryDate.value){
+    expiresAt = expiryDate.value + 'T23:59:59Z';
+  }
+
+  // Generate a 32-hex-char token
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  const token = Array.from(arr).map(b=>b.toString(16).padStart(2,'0')).join('');
+
+  if(genBtn){ genBtn.disabled=true; genBtn.textContent='Generating…'; }
+
+  try{
+    const payload = { token, couple_id: _sbSession.user.id, vendor_name: name, sections };
+    if(expiresAt) payload.expires_at = expiresAt;
+
+    const res = await fetch(`${_SB_URL}/rest/v1/vendor_tokens`,{
+      method:'POST',
+      headers:{
+        'apikey':_SB_KEY,
+        'Authorization':'Bearer '+_sbSession.access_token,
+        'Content-Type':'application/json',
+        'Prefer':'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const t=await res.text(); throw new Error(t||res.statusText); }
+
+    // Show success state in modal
+    const baseUrl = window.location.origin + window.location.pathname;
+    const fullLink = `${baseUrl}?vendor=${token}`;
+    const body = document.getElementById('vbm-body');
+    if(body) body.innerHTML = `
+      <div class="vbm-title">Link created ✓</div>
+      <div class="vbm-sub">Share this link with <strong>${_escHtml(name)}</strong>. They won't need to log in.</div>
+      <div class="vbm-success">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Vendor brief link</div>
+        <div class="vbm-link-display" id="vbm-result-link">${_escHtml(fullLink)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="_copyVendorLink('${token}',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy link</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('vbm-overlay').remove();_openVendorBriefModal(null)">Create another</button>
+        </div>
+      </div>
+      <div class="vbm-footer" style="margin-top:14px">
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('vbm-overlay').remove();_refreshVendorsPage()">Done</button>
+      </div>`;
+
+    // Invalidate cache so next render re-fetches
+    _vblCache = null;
+
+  } catch(err){
+    if(genBtn){ genBtn.disabled=false; genBtn.textContent='Generate link'; }
+    if(errEl){ errEl.textContent='Error: '+err.message; errEl.style.display=''; }
+  }
+}
+
+// Revoke (delete) a vendor token.
+async function _revokeVendorToken(token, btn){
+  if(!_sbSession) return;
+  if(!confirm('Revoke this brief link? The vendor will no longer be able to access it.')) return;
+  if(btn){ btn.disabled=true; btn.textContent='Revoking…'; }
+  try{
+    const res = await fetch(`${_SB_URL}/rest/v1/vendor_tokens?token=eq.${encodeURIComponent(token)}&couple_id=eq.${encodeURIComponent(_sbSession.user.id)}`,{
+      method:'DELETE',
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_sbSession.access_token}
+    });
+    if(!res.ok){ const t=await res.text(); throw new Error(t||res.statusText); }
+    _vblCache = null;
+    _refreshVendorsPage();
+  } catch(err){
+    if(btn){ btn.disabled=false; btn.textContent='Revoke'; }
+    alert('Could not revoke: '+err.message);
+  }
+}
+
+// Copy a vendor portal link to clipboard.
+async function _copyVendorLink(token, btn){
+  const baseUrl = window.location.origin + window.location.pathname;
+  const link = `${baseUrl}?vendor=${token}`;
+  const origText = btn ? btn.innerHTML : '';
+  try{
+    await navigator.clipboard.writeText(link);
+    if(btn){ btn.innerHTML='✓ Copied!'; setTimeout(()=>{ if(btn) btn.innerHTML=origText; },2000); }
+  } catch(_){
+    // Fallback: select a temp input
+    const tmp = document.createElement('input');
+    tmp.value = link;
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    tmp.remove();
+    if(btn){ btn.innerHTML='✓ Copied!'; setTimeout(()=>{ if(btn) btn.innerHTML=origText; },2000); }
+  }
+}
+
+// Re-render the vendors page (used after token create/revoke).
+function _refreshVendorsPage(){
+  const c=document.getElementById('main-content'), a=document.getElementById('topbar-actions');
+  if(c&&a) renderVendors(c,a);
+}
+
+// Render the Brief links section by fetching fresh data then injecting HTML.
+async function _renderVblSection(){
+  const placeholder = document.getElementById('vbl-placeholder');
+  if(!placeholder) return;
+  if(!_sbSession){ placeholder.innerHTML=''; return; }
+
+  // Show loading shimmer
+  placeholder.innerHTML = `<div class="vbl-section" style="opacity:.6;pointer-events:none">
+    <div class="vbl-header">
+      <span class="vbl-header-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+      <div class="vbl-header-text"><div class="vbl-title">Vendor brief links</div><div class="vbl-sub">Loading…</div></div>
+    </div>
+  </div>`;
+
+  try{
+    // Use cache if fresh (< 30 s)
+    let tokens;
+    if(_vblCache && (Date.now()-_vblCache.ts < 30000)){
+      tokens = _vblCache.tokens;
+    } else {
+      tokens = await _fetchVendorTokens();
+      _vblCache = { tokens, ts: Date.now() };
+    }
+    if(placeholder.isConnected) placeholder.innerHTML = _vblSectionHtml(tokens);
+  } catch(e){
+    if(placeholder.isConnected) placeholder.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:6px 0">Could not load brief links.</div>`;
+  }
+}
+
+// ── Active token helpers ─────────────────────────────────────────────────────
+// Return the first active token for a given vendor name (case-insensitive).
+function _vendorActiveToken(vendorName){
+  if(!_vblCache || !_vblCache.tokens) return null;
+  const nm = String(vendorName||'').toLowerCase().trim();
+  const now = new Date();
+  return _vblCache.tokens.find(t =>
+    t.vendor_name.toLowerCase().trim() === nm &&
+    (!t.expires_at || new Date(t.expires_at) > now)
+  ) || null;
+}
+
 // Jump helpers from the panel.
 function _vendorGoBudget(bid, sid){
   navigate('budget');
@@ -19962,6 +20480,9 @@ function _vendorCardHtml(v){
       <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px;display:inline-flex;align-items:center;gap:4px" onclick="_vendorApplyToAppt('${v.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>Appointments</button>
       <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px;display:inline-flex;align-items:center;gap:4px" onclick="_vendorLinkTaskPicker('${v.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Link task</button>
       <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px;display:inline-flex;align-items:center;gap:4px" onclick="_vluOpenMessages('${v.id}','saved')" title="Message this vendor — coming soon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>Message</button>
+      ${(()=>{ const at=_vendorActiveToken(v.business); return at
+        ? `<button class="vbtn-brief" onclick="_copyVendorLink('${at.token}',this)" title="Copy active brief link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copy brief link</button>`
+        : `<button class="vbtn-brief" onclick="_openVendorBriefModal('${_escHtml(v.business||'')}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Share brief</button>`; })()}
     </div>
   </div>`;
 }
@@ -20009,6 +20530,9 @@ function _vendorRowHtml(v){
     </div>
     <div class="vrow-right">
       ${_vendorOwedPillHtml(v.id)}
+      ${(()=>{ const at=_vendorActiveToken(v.business); return at
+        ? `<button class="vrow-hub vbtn-brief" onclick="event.stopPropagation();_copyVendorLink('${at.token}',this)" title="Copy active brief link" aria-label="Copy brief link" style="padding:0 8px;width:auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`
+        : `<button class="vrow-hub vbtn-brief" onclick="event.stopPropagation();_openVendorBriefModal('${_escHtml(v.business||'')}')" title="Share vendor brief" aria-label="Share vendor brief" style="padding:0 8px;width:auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`; })()}
       <button class="vrow-hub" onclick="event.stopPropagation();_vluOpenMessages('${v.id}','saved')" title="Message this vendor — coming soon" aria-label="Message this vendor"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg></button>
       <button class="vrow-hub" onclick="event.stopPropagation();_vendorOpenHub('${v.id}')" title="Open vendor hub" aria-label="Open vendor hub"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></button>
       <div class="dots-menu">
@@ -44318,8 +44842,9 @@ function _showVendorError(type){
 (async function boot(){
   // ── Stage 5: intercept public URL params BEFORE the normal app boot ────────
   const _bootParams = new URLSearchParams(window.location.search);
-  const _rsvpParam  = _bootParams.get('rsvp');
-  const _vendorParam= _bootParams.get('vendor');
+  const _rsvpParam     = _bootParams.get('rsvp');
+  const _vendorParam   = _bootParams.get('vendor');
+  const _runsheetParam = _bootParams.get('runsheet');
 
   if(_rsvpParam){
     // Hide the app shell entirely — this is a public-facing page
@@ -44339,6 +44864,12 @@ function _showVendorError(type){
     document.body.style.visibility='hidden';
     await _showVendorPortal(_vendorParam);
     document.body.style.visibility='visible';
+    return; // do NOT boot the planner app
+  }
+
+  if(_runsheetParam){
+    // Public run sheet — no login required; fetch couple's public moments from Supabase
+    await _showPublicRunSheet(_runsheetParam);
     return; // do NOT boot the planner app
   }
   // ── End Stage 5 URL intercept ───────────────────────────────────────────────
