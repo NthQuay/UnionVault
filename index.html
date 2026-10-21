@@ -37424,16 +37424,6 @@ function renderSettings(c, actions){
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Display &amp; Formatting</div>
       <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
-          <div style="font-size:13.5px;font-weight:500">Undo Toast on Delete</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show a brief undo option after deleting items. When off, deletes are immediate with no recovery window.</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${STATE.settings.disableUndoToast?'':'checked'} onchange="STATE.settings.disableUndoToast=!this.checked;saveToStorage()"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:16px">
-        <div>
           <div style="font-size:13.5px;font-weight:500">Show Vision Board on Dashboard</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">Display a preview of your pinned inspiration on the dashboard.</div>
         </div>
@@ -37651,6 +37641,16 @@ function renderSettings(c, actions){
     </div>
     <div class="settings-sect" data-sect="pop ups popups prompts ask before marking date paid payment date detect appointments offer save drafts suggest budget links budget-link message emailing appointments follow-up tasks uploading invoices suggest deposits add deposit don't ask again">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Pop ups</div>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
+        <div>
+          <div style="font-size:13.5px;font-weight:500">Undo Toast on Delete</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show a brief undo option after deleting items. When off, deletes are immediate with no recovery window.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${STATE.settings.disableUndoToast?'':'checked'} onchange="STATE.settings.disableUndoToast=!this.checked;saveToStorage()"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
       <div class="settings-sublabel" data-settings-sub="prompts" data-page-hint="budget" style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--gold-deep);margin:0 0 12px">Prompts</div>
       <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
