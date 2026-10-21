@@ -11931,6 +11931,12 @@ function renderRsvpMgr(c, actions){
         <div style="margin-top:20px">
           <div class="form-label" style="margin-bottom:10px">QR Code</div>
           <div id="qrcode-wrap" style="background:#fff;padding:12px;display:inline-block;border-radius:8px;border:1px solid var(--border)"></div>
+          <div style="margin-top:10px">
+            <button class="btn btn-outline btn-sm" style="display:inline-flex;align-items:center;gap:5px;font-size:12px" onclick="_downloadQr('qrcode-wrap','rsvp-qr-code.png')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download QR Code
+            </button>
+          </div>
         </div></div>`:'',
       summary:!hidden.has('summary')?`<div class="card" style="position:relative">
         <div class="rsvp-style-switch">
@@ -32046,9 +32052,88 @@ function _wbSite(){
   if(typeof t.space!=='number') t.space=100;
   if(!t.corners) t.corners='soft';
   if(typeof t.css!=='string') t.css='';
+  // v185: website slug for hash-routing. Auto-generated from partner names, user-editable.
+  if(!w.slug || typeof w.slug!=='string'){
+    const ev=STATE.event||{};
+    const p1=(ev.partner1||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    const p2=(ev.partner2||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    w.slug = [p1,p2].filter(Boolean).join('-') || 'our-wedding';
+  }
   return w;
 }
 
+// ── Website public URL helper ──
+function _wbSiteUrl(){
+  const slug = _wbSite().slug || 'our-wedding';
+  return window.location.origin + window.location.pathname + '#' + encodeURIComponent(slug);
+}
+// ── Download a rendered QR code (from qrcodejs canvas) as a PNG ──
+// `wrapperId` = id of the div containing the QRCode canvas; `filename` = download name.
+function _downloadQr(wrapperId, filename){
+  const wrap = document.getElementById(wrapperId);
+  if(!wrap) return;
+  const canvas = wrap.querySelector('canvas');
+  if(!canvas){ alert('QR code not ready yet — please wait a moment and try again.'); return; }
+  // Draw onto a new canvas with a white background (transparent-bg PNGs look broken when printed)
+  const out = document.createElement('canvas');
+  const pad = 20;
+  out.width  = canvas.width  + pad*2;
+  out.height = canvas.height + pad*2;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,out.width,out.height);
+  ctx.drawImage(canvas, pad, pad);
+  out.toBlob(blob=>{
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename || 'qr-code.png';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  },'image/png');
+}
+// ── Website QR popover toggle ──
+let _wbQrBuilt = false;
+function _wbQrToggle(ev){
+  if(ev) ev.stopPropagation();
+  const pop = document.getElementById('wb-qr-pop');
+  if(!pop) return;
+  const open = !pop.hasAttribute('hidden');
+  if(open){ pop.setAttribute('hidden',''); return; }
+  pop.removeAttribute('hidden');
+  if(!_wbQrBuilt){
+    _wbQrBuild();
+  }
+  setTimeout(()=>{ document.addEventListener('click',_wbQrOutside,{once:true}); },0);
+}
+function _wbQrOutside(ev){
+  const pop=document.getElementById('wb-qr-pop');
+  if(pop && ev.target.closest && ev.target.closest('#wb-qr-pop,#wb-qr-btn')) return;
+  if(pop) pop.setAttribute('hidden','');
+}
+function _wbQrBuild(){
+  const url = _wbSiteUrl();
+  const wrap = document.getElementById('wb-qr-canvas');
+  if(wrap && typeof QRCode!=='undefined'){
+    wrap.innerHTML='';
+    new QRCode(wrap,{text:url,width:160,height:160,colorDark:'#1A1A18',colorLight:'#ffffff'});
+    _wbQrBuilt=true;
+  }
+  const linkEl=document.getElementById('wb-qr-link');
+  if(linkEl) linkEl.textContent=url;
+}
+function _wbSaveSlug(val){
+  const slug = (val||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'our-wedding';
+  _wbSite().slug = slug;
+  _save();
+  // Rebuild QR with new URL
+  _wbQrBuilt=false;
+  const linkEl=document.getElementById('wb-qr-link');
+  const inp=document.getElementById('wb-slug-inp');
+  if(inp) inp.value=slug;
+  const wrap=document.getElementById('wb-qr-canvas');
+  if(wrap) wrap.innerHTML='';
+  _wbQrBuild();
+}
 // ── The section lookup. THE key abstraction of v120.
 // WB_SECTIONS is a constant; custom sections are data. Every read of "what is section X"
 // goes through here, so a custom section is a first-class citizen everywhere — drag,
@@ -32196,7 +32281,35 @@ function renderWebsite(c, actions){
   const w = _wbSite();
   const t = w.theme;
 
-  actions.innerHTML = `<button class="btn btn-outline btn-sm" onclick="openWbPreview()" style="display:inline-flex;align-items:center;gap:6px">
+  _wbQrBuilt=false; // reset so popover rebuilds with current slug on next open
+  const wSlug = (w.slug||'our-wedding');
+  actions.innerHTML = `
+    <div style="position:relative;display:inline-block">
+      <button id="wb-qr-btn" class="btn btn-outline btn-sm" onclick="_wbQrToggle(event)" style="display:inline-flex;align-items:center;gap:6px" title="QR Code &amp; share link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="10" y="10" width="2" height="2"/><rect x="14" y="14" width="2" height="2"/><rect x="18" y="14" width="2" height="2"/><rect x="14" y="18" width="2" height="2"/><rect x="18" y="18" width="2" height="2"/><rect x="10" y="14" width="2" height="2"/><rect x="10" y="18" width="2" height="2"/></svg>
+        QR Code
+      </button>
+      <div id="wb-qr-pop" hidden style="position:absolute;right:0;top:calc(100% + 8px);z-index:9999;width:260px;background:var(--cream);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.16);padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Wedding Website QR</div>
+        <div id="wb-qr-canvas" style="background:#fff;padding:10px;display:inline-block;border-radius:8px;border:1px solid var(--border);align-self:center"></div>
+        <div style="font-size:10.5px;color:var(--muted);word-break:break-all;line-height:1.4" id="wb-qr-link"></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" style="flex:1;font-size:11px" onclick="navigator.clipboard.writeText(_wbSiteUrl()).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',1500)}).catch(()=>{})">Copy link</button>
+          <button class="btn btn-primary btn-sm" style="flex:1;font-size:11px;display:inline-flex;align-items:center;justify-content:center;gap:5px" onclick="_downloadQr('wb-qr-canvas','wedding-site-qr.png')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download PNG
+          </button>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:10px">
+          <div style="font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Your link slug</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input id="wb-slug-inp" class="form-input" value="${_escHtml(wSlug)}" style="flex:1;font-size:11.5px;padding:5px 8px" placeholder="your-names" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')" onblur="_wbSaveSlug(this.value)" onkeydown="if(event.key==='Enter'){_wbSaveSlug(this.value);this.blur();}"/>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:5px;line-height:1.4">Auto-generated from your names. Edit to customise — letters, numbers and hyphens only.</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="openWbPreview()" style="display:inline-flex;align-items:center;gap:6px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>`;
 
   const presetLabel = (WB_PRESETS[t.preset]||{}).label || 'Custom';
