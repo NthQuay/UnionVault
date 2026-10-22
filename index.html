@@ -31987,12 +31987,18 @@ const WB_HERO_H = {
 // Starting points for a new custom section. These are NOT special types — each just
 // pre-fills the name and body of an ordinary custom section.
 const WB_CUSTOM_PRESETS = [
-  {key:'story',   name:'Our story',       body:'How we met, and everything since.'},
-  {key:'party',   name:'The bridal party',body:''},
-  {key:'travel',  name:'Getting there',   body:'Parking, transport and directions.'},
-  {key:'registry',name:'Registry',        body:''},
-  {key:'dress',   name:'Dress code',      body:''},
-  {key:'kids',    name:'Kids',            body:''}
+  {key:'story',    name:'Our story',       body:'How we met, and everything since.'},
+  {key:'party',    name:'The bridal party',body:''},
+  {key:'travel',   name:'Getting there',   body:'Parking, transport and directions.'},
+  {key:'registry', name:'Registry',        body:''},
+  {key:'dress',    name:'Dress code',      body:''},
+  {key:'timeline', name:'Our timeline',    body:'A journey through the moments that brought us here.'},
+  {key:'faq',      name:'FAQ',             body:'Answers to your most common questions.'},
+  {key:'countdown',name:'Countdown',       body:'The big day is almost here!'},
+  {key:'stays',    name:'Accommodation',   body:'Places to stay nearby for our out-of-town guests.'},
+  {key:'tips',     name:'Local tips',      body:'Our favourite spots — things to do, see and eat while you\'re in town.'},
+  {key:'music',    name:'Song requests',   body:'Help us fill the dance floor — drop us a request!'},
+  {key:'photos',   name:'Share photos',    body:'We\'d love to see the day through your eyes. Upload your snaps here.'}
 ];
 
 function _wbSite(){
@@ -32083,6 +32089,10 @@ function _wbSite(){
   if(WB_BTN_STYLES.indexOf(t.btnStyle)<0) t.btnStyle='outline';
   if(typeof t.space!=='number') t.space=100;
   if(!t.corners) t.corners='soft';
+  if(!['none','soft','lifted'].includes(t.shadow)) t.shadow='none';
+  if(!['flat','bordered','bevel'].includes(t.cardStyle)) t.cardStyle='flat';
+  if(!['thin','medium','bold'].includes(t.btnBorder)) t.btnBorder='medium';
+  if(!['center','left'].includes(t.align)) t.align='center';
   if(typeof t.css!=='string') t.css='';
   // v185: website slug for hash-routing. Auto-generated from partner names, user-editable.
   if(!w.slug || typeof w.slug!=='string'){
@@ -32675,6 +32685,37 @@ function _wbThemeBody(){
           <button type="button" class="${t.btnStyle==='soft'?'active':''}" onclick="_wbBtnStyle('soft')">Soft</button>
         </span>
         <div class="wb-blk-hint">Its colour is the <b>Button</b> swatch on the Colours tab.</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Button weight</div>
+        <span class="inv-seg">
+          <button type="button" class="${t.btnBorder==='thin'?'active':''}" onclick="_wbSet('btnBorder','thin')">Thin</button>
+          <button type="button" class="${t.btnBorder==='medium'?'active':''}" onclick="_wbSet('btnBorder','medium')">Medium</button>
+          <button type="button" class="${t.btnBorder==='bold'?'active':''}" onclick="_wbSet('btnBorder','bold')">Bold</button>
+        </span>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow</div>
+        <span class="inv-seg">
+          <button type="button" class="${t.shadow==='none'?'active':''}" onclick="_wbSet('shadow','none')">None</button>
+          <button type="button" class="${t.shadow==='soft'?'active':''}" onclick="_wbSet('shadow','soft')">Soft</button>
+          <button type="button" class="${t.shadow==='lifted'?'active':''}" onclick="_wbSet('shadow','lifted')">Lifted</button>
+        </span>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge</div>
+        <span class="inv-seg">
+          <button type="button" class="${t.cardStyle==='flat'?'active':''}" onclick="_wbSet('cardStyle','flat')">Flat</button>
+          <button type="button" class="${t.cardStyle==='bordered'?'active':''}" onclick="_wbSet('cardStyle','bordered')">Bordered</button>
+          <button type="button" class="${t.cardStyle==='bevel'?'active':''}" onclick="_wbSet('cardStyle','bevel')">Bevel</button>
+        </span>
+      </div>
+      <div>
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Alignment</div>
+        <span class="inv-seg">
+          <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
+          <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
+        </span>
       </div>`;
   }
 
@@ -32785,6 +32826,13 @@ function _wbCorners(c){
   const t=_wbSite().theme;
   if(t.corners===c) return;
   t.corners=c;
+  saveToStorage();
+  _wbRepaintTheme();
+}
+function _wbSet(field, val){
+  const t=_wbSite().theme;
+  if(t[field]===val) return;
+  t[field]=val;
   saveToStorage();
   _wbRepaintTheme();
 }
@@ -35037,11 +35085,12 @@ function _wbBuildSite(forDownload){
       const rsvpUrl = window.location.origin+window.location.pathname+'?rsvp='+uid;
       const btnC = t.button||'#8B7355';
       const btnI = _wbInk(btnC);
+      const bw = t.btnBorder==='thin'?'1px':t.btnBorder==='bold'?'3px':'2px';
       const btnSty = t.btnStyle==='filled'
-        ? `background:${btnC};border:2px solid ${btnC};color:${btnI}`
+        ? `background:${btnC};border:${bw} solid ${btnC};color:${btnI}`
         : t.btnStyle==='soft'
-        ? `background:${btnC}1A;border:2px solid ${btnC};color:${btnC}`
-        : `background:transparent;border:2px solid ${btnC};color:${btnC}`;
+        ? `background:${btnC}1A;border:${bw} solid ${btnC};color:${btnC}`
+        : `background:transparent;border:${bw} solid ${btnC};color:${btnC}`;
       const corners = WB_CORNERS[t.corners]||'4px';
       return wrap(k,`<div style="text-align:center"><a href="${_escHtml(rsvpUrl)}" style="${btnSty};padding:12px 32px;border-radius:${corners};display:inline-block;text-decoration:none;font-size:inherit;letter-spacing:.05em">RSVP</a></div>`);
     }
@@ -35061,12 +35110,16 @@ function _wbBuildSite(forDownload){
   // It measured `accent` before — which was wrong even then, because a filled button drawn
   // in `button` and inked for `accent` is inked for a colour it is not.
   const btnInk = _wbInk(t2.button);
+  const btnBW = t2.btnBorder==='thin'?'1px':t2.btnBorder==='bold'?'3px':'2px';
   const BTN = (()=>{
     const c=t2.button;
-    if(t2.btnStyle==='filled') return `background:${c};border:1px solid ${c};color:${btnInk}`;
-    if(t2.btnStyle==='soft')   return `background:${c}1A;border:1px solid ${c};color:${c}`;
-    return `background:transparent;border:1px solid ${c};color:${c}`;   // outline
+    if(t2.btnStyle==='filled') return `background:${c};border:${btnBW} solid ${c};color:${btnInk}`;
+    if(t2.btnStyle==='soft')   return `background:${c}1A;border:${btnBW} solid ${c};color:${c}`;
+    return `background:transparent;border:${btnBW} solid ${c};color:${c}`;   // outline
   })();
+  const secShadow = t2.shadow==='soft'?'box-shadow:0 2px 16px rgba(0,0,0,.07)':t2.shadow==='lifted'?'box-shadow:0 6px 28px rgba(0,0,0,.13)':'';
+  const secBorder = t2.cardStyle==='bordered'?`;border:1px solid ${t2.heading}1E;border-radius:${rad};padding-left:28px;padding-right:28px`:t2.cardStyle==='bevel'?`;border:1px solid ${t2.heading}18;border-radius:${rad};box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.06);padding-left:28px;padding-right:28px`:'';
+  const secAlign = t2.align==='left'?'left':'center';
   // The mark's colourway, resolved once from the PAGE colour — that is what the footer sits
   // on. Not the accent, and not the app's own theme (which is Mandy's, not her guests').
   const brand = _wbBrand(t2.page);
@@ -35120,7 +35173,7 @@ h1{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,$
 .eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading}}
 .sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scb(15)}px}
-section{max-width:720px;margin:0 auto;padding:${sp(52)}px 24px;border-top:1px solid ${t2.heading}12;text-align:center}
+section{max-width:720px;margin:0 auto;padding:${sp(52)}px 24px;border-top:1px solid ${t2.heading}12;text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
 section.lft{text-align:left}
 section.band{max-width:none;background:${t2.band};border-top:none}
 section.band>*{max-width:720px;margin-left:auto;margin-right:auto}
