@@ -608,9 +608,8 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
      reflow, because the guest site is responsive.
      The whole thing is capped at 1520px so the site never renders wider than a real
      browser would show it. */
-  .wb-shell{max-width:1520px;display:grid;grid-template-columns:300px minmax(0,1fr) 320px;gap:20px;align-items:start}
+  .wb-shell{max-width:960px;display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
   .wb-intro{grid-column:1 / span 2}
-  .wb-pane{display:block;position:sticky;top:0}
   /* At 340px the source chip has nowhere to go — not inline (no room) and not on its own
      line (it would push the row too tall for a list this dense). The SUBLINE is the live
      information and it survives; the chip was a standing reminder and it goes. */
@@ -635,7 +634,7 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
    1100px there is no pane to protect. */
 .wb-editor-col{display:none}
 @media(min-width:1100px){
-  .wb-editor-col{grid-column:3;grid-row:1 / -1;display:flex;flex-direction:column;align-self:start;position:sticky;top:0;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;max-height:calc(100vh - 80px)}
+  .wb-editor-col{grid-column:2;grid-row:1 / -1;display:flex;flex-direction:column;align-self:start;position:sticky;top:0;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;max-height:calc(100vh - 80px)}
   .wb-editor-col.wb-ec-empty{align-items:center;justify-content:center;min-height:200px;gap:8px;color:var(--muted);font-size:12px;text-align:center;padding:24px}
 }
 .wb-ec-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -32408,16 +32407,6 @@ function renderWebsite(c, actions){
         </button>
       </div>
     </div>
-    <div class="wb-pane">
-      <button type="button" class="wb-strip-bar" onclick="_wbStripToggle()" aria-expanded="${_wbStripOpen?'true':'false'}">
-        <span>Preview</span>
-        <svg class="wb-strip-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="wb-pane-inner">
-        <div class="wb-pane-frame"><iframe id="wb-live" title="Live preview of your website" sandbox="allow-same-origin"></iframe></div>
-        <div class="wb-pane-cap" id="wb-pane-cap">Live · resizes with your window</div>
-      </div>
-    </div>
     <div class="wb-editor-col wb-ec-empty" id="wb-editor-col">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".35"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h4"/></svg>
       <span>Click a section to edit</span>
@@ -34582,16 +34571,11 @@ function _wbInspoAdd(){
 // just resizes the frame — the site inside is genuinely responsive, not a separate mock.
 let _wbPreviewMode = 'phone';
 function openWbPreview(){
-  // The Phone/Desktop switcher lives in the SHELL, directly above the frame it resizes —
-  // not in the footer. In the footer it shared one non-wrapping flex row with Close and
-  // Download site; on a phone there was no room, so flex shrank the segment below its
-  // content width and sliced "Desktop" in half. Moving it out fixes the clipping at the
-  // source rather than teaching the footer to wrap, and puts the control next to the
-  // thing it controls. The footer now holds only actions, so it fits at any width.
-  _wbOpenPreviewModal('Website preview', _wbPreviewShell(),
-    `<button class="btn btn-outline" onclick="closeModalDirect()">Close</button>
-     <button class="btn btn-primary" onclick="_wbDownload()">Download site</button>`);
-  _wbPreviewPaint();
+  const html = _wbBuildSite();
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(()=>URL.revokeObjectURL(url), 10000);
 }
 
 // openModal() removes `modal-wide` from the box on EVERY open — it resets the classes so a
@@ -44757,6 +44741,48 @@ function _publicPageShell(innerHtml){
   document.body.innerHTML = innerHtml;
 }
 
+// ── _showPublicWeddingSite: full wedding website rendered from a slug ──────────
+async function _showPublicWeddingSite(slug){
+  document.body.style.background='var(--cream,#FBF8F3)';
+  // Look up which couple owns this slug
+  let uid=null;
+  try{
+    const r1=await fetch(`${_SB_URL}/rest/v1/planner_data?select=user_id&section=eq.website&data->>slug=eq.${encodeURIComponent(slug)}&limit=1`,{
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
+    });
+    if(r1.ok){ const rows=await r1.json(); if(rows&&rows[0]) uid=rows[0].user_id; }
+  }catch(e){ console.warn('Slug lookup failed',e); }
+
+  if(!uid){
+    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Inter',sans-serif;color:#999;flex-direction:column;gap:12px;text-align:center;padding:40px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".4"><circle cx="12" cy="12" r="9"/><path d="M12 9v4"/><circle cx="12" cy="16.5" r=".5" fill="currentColor"/></svg><div style="font-size:15px;font-weight:500">Wedding site not found</div><div style="font-size:12.5px;color:#bbb">The link may have changed or the site is not yet published.</div></div>`;
+    document.body.style.visibility='visible';
+    return;
+  }
+
+  // Fetch the sections needed to build the site
+  try{
+    const r2=await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${encodeURIComponent(uid)}&section=in.(website,event,timeline,guests,wishingwell,inspo)`,{
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
+    });
+    if(r2.ok){
+      const rows=await r2.json();
+      rows.forEach(r=>{
+        if(r.section==='website')    STATE.website=r.data||{};
+        if(r.section==='event')      STATE.event=r.data||{};
+        if(r.section==='timeline')   STATE.timeline=r.data||[];
+        if(r.section==='guests')     STATE.guests=r.data||[];
+        if(r.section==='wishingwell')STATE.wishingwell=r.data||{};
+        if(r.section==='inspo')      STATE.inspo=r.data||{};
+      });
+    }
+  }catch(e){ console.warn('Site data fetch failed',e); }
+
+  const html=_wbBuildSite();
+  document.open();
+  document.write(html);
+  document.close();
+}
+
 function _publicCss(accentHex, pageHex, bandHex, inkHex, textHex, headFont, bodyFont){
   // Returns a <style> block injecting the couple's wedding website palette
   // so the public RSVP/vendor pages feel on-brand.
@@ -45268,6 +45294,14 @@ function _showVendorError(type){
   if(_runsheetParam){
     // Public run sheet — no login required; fetch couple's public moments from Supabase
     await _showPublicRunSheet(_runsheetParam);
+    return; // do NOT boot the planner app
+  }
+
+  const _hashSlug=window.location.hash.slice(1);
+  if(_hashSlug && /^[a-z0-9][a-z0-9-]{0,59}$/.test(_hashSlug)){
+    // Hash matches a wedding site slug — render the public wedding website
+    document.body.style.visibility='hidden';
+    await _showPublicWeddingSite(_hashSlug);
     return; // do NOT boot the planner app
   }
   // ── End Stage 5 URL intercept ───────────────────────────────────────────────
