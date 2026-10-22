@@ -609,7 +609,6 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
      The whole thing is capped at 1520px so the site never renders wider than a real
      browser would show it. */
   .wb-shell{max-width:960px;display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
-  .wb-intro{grid-column:1 / span 2}
   /* At 340px the source chip has nowhere to go — not inline (no room) and not on its own
      line (it would push the row too tall for a list this dense). The SUBLINE is the live
      information and it survives; the chip was a standing reminder and it goes. */
@@ -32395,10 +32394,10 @@ function renderWebsite(c, actions){
     </div>`;
   }).join('');
 
-  c.innerHTML = `<div class="wb-shell${_wbStripOpen?'':' wb-strip-shut'}">
-    <div class="wb-intro" style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:18px">
-      Your site reads from the planner — change a detail there and it changes here. Drag to reorder, tap a section to edit.
-    </div>
+  c.innerHTML = `<div class="wb-intro" style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:14px">
+    Your site reads from the planner — change a detail there and it changes here. Drag to reorder, tap a section to edit.
+  </div>
+  <div class="wb-shell${_wbStripOpen?'':' wb-strip-shut'}">
     <div class="wb-list" style="background:var(--cream);border:1px solid var(--border);border-radius:14px;overflow:hidden">
       ${themeRow}${rows}
       <div style="padding:10px 12px;text-align:center;border-top:1px solid var(--border)">
