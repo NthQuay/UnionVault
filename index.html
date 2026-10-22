@@ -1603,6 +1603,7 @@ body.dark .budget-item.bg-gentle > .bi-head{background:#1E1E23}
   /* Trim heavy side padding on phones so all cards fit comfortably */
   .vb-board.vb-scrapbook.vb-dash{padding-left:8px!important;padding-right:8px!important}
   .vb-page-board{padding-left:8px!important;padding-right:8px!important}
+  .vb-scrapbook-wrap{padding-left:12px!important;padding-right:12px!important}
 }
 /* ── Desktop print-preview sizing (≥561px) ──
    Day-of Timeline and Budget previews are text-only documents, so on desktop we
@@ -36350,15 +36351,16 @@ function renderVisionboard(c,actions){
     // Seamless willow wallpaper behind the cards (theme-aware), with a soft veil for legibility.
     const vbWall = isDark ? VB_WALLPAPER_DARK : VB_WALLPAPER_LIGHT;
     const vbTint = _vbTintLayers(isDark);
-    boardHtml = items.length ? `<div style="position:relative;border-radius:16px;overflow:hidden;border:1px solid ${isDark?'#2A2533':'#E6CFC9'};padding:30px 26px 34px;background-image:${vbTint.grad},url('${vbWall}');background-size:auto,480px;background-repeat:repeat,repeat;background-blend-mode:${vbTint.blend},normal">
+    const _vbMobile = window.innerWidth <= 900;
+    boardHtml = items.length ? `<div class="vb-scrapbook-wrap" style="position:relative;border-radius:16px;overflow:hidden;border:1px solid ${isDark?'#2A2533':'#E6CFC9'};padding:30px 26px 34px;background-image:${vbTint.grad},url('${vbWall}');background-size:auto,480px;background-repeat:repeat,repeat;background-blend-mode:${vbTint.blend},normal">
       <div class="vb-board vb-scrapbook vb-size-${vbSize}" style="position:relative;z-index:1;columns:${vbColMin};column-gap:26px;orphans:1;widows:1">
       ${items.map((item,idx)=>{
         const tilt=tilts[idx%tilts.length];
         const tape=tapeColors[idx%tapeColors.length];
         // Per-card scatter: horizontal nudge, extra tilt jitter and a randomised top margin to break baselines.
-        const nudge=(jit(idx,2.2)*22-11).toFixed(1);                 // -11..+11 px
+        const nudge=_vbMobile ? 0 : (jit(idx,2.2)*22-11).toFixed(1); // -11..+11 px (disabled on mobile)
         const tiltX=(tilt + (jit(idx,6.6)*2.4-1.2)).toFixed(2);      // add ±1.2°
-        const topGap=(8 + jit(idx,8.8)*30).toFixed(0);               // 8..38px stagger
+        const topGap=_vbMobile ? (4+jit(idx,8.8)*12).toFixed(0) : (8 + jit(idx,8.8)*30).toFixed(0); // 4..16px mobile, 8..38px desktop
         return`<div ${dragAttrs(item.id)} style="break-inside:avoid;margin:${topGap}px 0 22px;display:inline-block;width:100%;cursor:grab;transform:translateX(${nudge}px)">
           <div style="position:relative;background:${vbPageImagesOnly?'transparent':cardBg};border-radius:3px;padding:${vbPageImagesOnly?'0':'4px 4px 0'};box-shadow:${vbPageImagesOnly?'none':`3px 4px 14px ${cardShadow}`};transform:rotate(${tiltX}deg);transform-origin:center top;transition:transform .2s" onmouseover="this.style.transform='rotate(0deg) scale(1.02)'" onmouseout="this.style.transform='rotate(${tiltX}deg)'">
             <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(${(tilt*0.4).toFixed(2)}deg);width:48px;height:18px;background:${tape};border-radius:2px;opacity:.85;z-index:2"></div>
