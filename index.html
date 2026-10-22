@@ -27847,13 +27847,21 @@ function _showResetPasswordModal(token){
       <div id="pw-reset-ok" style="display:none;font-size:13px;color:#27ae60;margin-bottom:14px;padding:10px 12px;background:rgba(39,174,96,0.08);border-radius:6px;text-align:center"></div>
       <div style="margin-bottom:14px">
         <label style="display:block;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7a5a;margin-bottom:6px">New password</label>
-        <input id="pw-reset-pw1" type="password" placeholder="At least 8 characters" autocomplete="new-password"
-          style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none">
+        <div style="position:relative">
+          <input id="pw-reset-pw1" type="password" placeholder="At least 8 characters" autocomplete="new-password"
+            style="width:100%;box-sizing:border-box;padding:11px 44px 11px 14px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none">
+          <button type="button" onclick="(function(b){var i=document.getElementById('pw-reset-pw1');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈'})(this)"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1">👁</button>
+        </div>
       </div>
       <div style="margin-bottom:24px">
         <label style="display:block;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7a5a;margin-bottom:6px">Confirm password</label>
-        <input id="pw-reset-pw2" type="password" placeholder="Same password again" autocomplete="new-password"
-          style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none">
+        <div style="position:relative">
+          <input id="pw-reset-pw2" type="password" placeholder="Same password again" autocomplete="new-password"
+            style="width:100%;box-sizing:border-box;padding:11px 44px 11px 14px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none">
+          <button type="button" onclick="(function(b){var i=document.getElementById('pw-reset-pw2');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈'})(this)"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1">👁</button>
+        </div>
       </div>
       <button id="pw-reset-btn" onclick="_doResetPassword('${token}')"
         style="width:100%;padding:13px;background:var(--gold-deep,#b8923a);color:#fff;border:none;border-radius:8px;font-size:15px;font-family:inherit;letter-spacing:0.06em;cursor:pointer;font-weight:600">
