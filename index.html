@@ -31926,7 +31926,7 @@ const WB_SECTIONS = {
   rsvp:          {name:'RSVP',          src:'',             icon:'M22 6l-10 7L2 6'}
 };
 // Sections that cannot be built without a server. Shown, locked, with the reason.
-const WB_LOCKED = { rsvp:"Needs a server — a guest's phone can't write to your browser" };
+const WB_LOCKED = {};
 
 const WB_PRESETS = {
   champagne: {label:'Champagne', page:'#E8DDD0', band:'#DDD3C4', accent:'#C9A227', heading:'#4A3F35', text:'#5A5148', button:'#8B7355'},
@@ -32284,7 +32284,7 @@ function _wbSubline(key){
   if(key==='countdown'){ const d=_wbDaysLeft(); return d===null?'Set a date in Event Details':(d>0?d+' days to go':(d===0?'Today':'Already happened')); }
   if(key==='accommodation'){ const n=w.stays.length; return n===0?'No places listed':(n+' place'+(n===1?'':'s')+' listed'); }
   if(key==='faq'){ const n=w.faq.length; return n===0?'No questions yet':(n+' question'+(n===1?'':'s')); }
-  if(key==='rsvp')  return WB_LOCKED.rsvp;
+  if(key==='rsvp')  return 'Share your link · guests fill it in online';
   const c=w.custom[key];
   if(c){
     const words=String(c.body||'').trim();
@@ -32827,6 +32827,7 @@ function openWbSection(key){
   if(key==='schedule')      return openWbSchedule();
   if(key==='faq')           return openWbFaq();
   if(key==='accommodation') return openWbStays();
+  if(key==='rsvp')          return openWbRsvp();
   // details / wishingwell / countdown hold no site-only TEXT — that still lives in the
   // planner. But they now own their images, so they get a real editor: the images, plus a
   // link to where the words come from.
@@ -32864,6 +32865,32 @@ function _wbSaveHome(){
   h.headline=(document.getElementById('wb-h-head')||{}).value||'';
   h.sub=(document.getElementById('wb-h-sub')||{}).value||'';
   saveToStorage(); closeModalDirect(); navigate('website');
+}
+
+function openWbRsvp(){
+  const url = _rsvpLink();
+  const hasUid = !url.endsWith('?rsvp=true');
+  openModal('RSVP', `<div style="display:flex;flex-direction:column;gap:16px">
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Share this link with your guests. When they open it they'll see a form to submit their RSVP — no login needed.</div>
+    ${hasUid
+      ? `<div style="display:flex;gap:8px;align-items:stretch">
+           <input readonly class="form-input" value="${_escHtml(url)}" id="rsvp-link-inp" style="flex:1;font-size:11.5px;cursor:text" onclick="this.select()"/>
+           <button type="button" class="btn btn-outline" onclick="_copyRsvpLink()" style="white-space:nowrap">Copy</button>
+         </div>`
+      : '<div style="color:var(--red);font-size:12.5px">Sign in to get your RSVP link.</div>'}
+    ${_wbBlocksHtml('rsvp')}
+    ${_wbLayoutHtml('rsvp')}
+  </div>`,
+  `<button class="btn btn-outline" onclick="closeModalDirect();navigate('guests')" style="margin-right:auto">View responses</button>
+   <button class="btn btn-primary" onclick="closeModalDirect();navigate('website')">Done</button>`);
+}
+function _copyRsvpLink(){
+  const inp = document.getElementById('rsvp-link-inp');
+  if(!inp) return;
+  const btn = inp.nextElementSibling;
+  const done = ()=>{ if(btn){ const old=btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=old, 1800); } };
+  if(navigator.clipboard) navigator.clipboard.writeText(inp.value).then(done).catch(()=>{ inp.select(); document.execCommand('copy'); done(); });
+  else { inp.select(); document.execCommand('copy'); done(); }
 }
 
 function openWbGallery(){
@@ -34972,6 +34999,20 @@ function _wbBuildSite(forDownload){
         ? `<div class="faq">${fs.map((f,i)=>`<details${i===0?' open':''}><summary><b>${_escHtml(f.q)}</b></summary><p>${_escHtml(f.a)}</p></details>`).join('')}</div>`
         : `<div class="faq faq-static">${fs.map(f=>`<div class="faq-i"><b>${_escHtml(f.q)}</b><p>${_escHtml(f.a)}</p></div>`).join('')}</div>`;
       return wrap(k, inner);
+    }
+    if(k==='rsvp'){
+      const uid = _sbSession&&_sbSession.user&&_sbSession.user.id;
+      if(!uid) return wrap(k,'');
+      const rsvpUrl = window.location.origin+window.location.pathname+'?rsvp='+uid;
+      const btnC = t.button||'#8B7355';
+      const btnI = _wbInk(btnC);
+      const btnSty = t.btnStyle==='filled'
+        ? `background:${btnC};border:2px solid ${btnC};color:${btnI}`
+        : t.btnStyle==='soft'
+        ? `background:${btnC}1A;border:2px solid ${btnC};color:${btnC}`
+        : `background:transparent;border:2px solid ${btnC};color:${btnC}`;
+      const corners = WB_CORNERS[t.corners]||'4px';
+      return wrap(k,`<div style="text-align:center"><a href="${_escHtml(rsvpUrl)}" style="${btnSty};padding:12px 32px;border-radius:${corners};display:inline-block;text-decoration:none;font-size:inherit;letter-spacing:.05em">RSVP</a></div>`);
     }
     return '';
   }).join('');
