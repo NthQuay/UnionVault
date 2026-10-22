@@ -32605,6 +32605,8 @@ function _wbDragEnd(e){
 let _wbThemeSnapshot = null;
 let _wbHomeSnapshot  = null;
 let _wbLiveViewMode = 'desktop';
+let _wbPanelSaved = false;    // true after explicit Save click since panel open
+let _wbConfirmCbs = null;     // callbacks for the confirm overlay
 function _wbViewSet(mode){
   _wbLiveViewMode=mode;
   ['desktop','mobile'].forEach(m=>{
@@ -32625,7 +32627,7 @@ function openWbTheme(){
   _wbPanel('Theme', _wbThemeBody(),
     `<div style="display:flex;gap:8px">
        <button class="btn btn-outline btn-sm" style="flex:1" onclick="_wbThemeCancel()">Cancel</button>
-       <button class="btn btn-primary btn-sm" style="flex:1" onclick="_wbClosePanel()">Save</button>
+       <button class="btn btn-primary btn-sm" style="flex:1" onclick="_wbSectionSave()">Save</button>
      </div>`);
 }
 function _wbThemeCancel(){
@@ -32960,11 +32962,12 @@ function _wbRepaintTheme(){
 
 // ── Section editors ──
 function _wbPanel(title, body, footer){
+  _wbPanelSaved = false;
   if(window.innerWidth >= 1100){
     const col=document.getElementById('wb-editor-col');
     if(!col){ openModal(title, body, footer); return; }
     col.className='wb-editor-col';
-    col.innerHTML=`<div class="wb-ec-header"><span class="wb-ec-title">${title}</span><button type="button" class="wb-ec-close" onclick="_wbClosePanel()">×</button></div><div class="wb-ec-body" id="wb-ec-body">${body}</div><div class="wb-ec-footer">${footer}</div>`;
+    col.innerHTML=`<div class="wb-ec-header" style="display:flex;align-items:center;gap:6px"><span class="wb-ec-title" style="flex:none">${title}</span><span id="wb-ec-saved" style="flex:1;font-size:11.5px;font-weight:500;color:#3d9e57;opacity:0;transition:opacity .4s;white-space:nowrap">✓ Saved</span><button type="button" class="wb-ec-close" onclick="_wbClosePanel()">×</button></div><div class="wb-ec-body" id="wb-ec-body">${body}</div><div class="wb-ec-footer">${footer}</div>`;
   } else {
     openModal(title, body, footer);
   }
@@ -32982,6 +32985,59 @@ function _wbClosePanel(){
   } else {
     closeModalDirect();
   }
+}
+function _wbSectionSave(){
+  saveToStorage();
+  _wbPanelSaved = true;
+  const el = document.getElementById('wb-ec-saved');
+  if(el){
+    el.textContent = '✓ Saved';
+    el.style.opacity = '1';
+    clearTimeout(el._t);
+    el._t = setTimeout(()=>{ el.style.opacity='0'; }, 3000);
+  }
+}
+function _wbSectionCancel(){
+  _wbConfirm('Close the editor?', null, 'Close', ()=>_wbClosePanel(), 'Keep editing', null);
+}
+function _wbNavGuard(dest){
+  if(!_wbPanelSaved){
+    _wbConfirm(
+      'Save before leaving?',
+      'This section hasn\'t been explicitly saved yet.',
+      'Save & go', ()=>{ _wbSectionSave(); setTimeout(()=>{ _wbClosePanel(); navigate(dest); }, 400); },
+      'Go without saving', ()=>{ _wbClosePanel(); navigate(dest); }
+    );
+  } else {
+    _wbClosePanel(); navigate(dest);
+  }
+}
+function _wbConfirm(title, body, okLabel, okFn, cancelLabel, cancelFn){
+  const existing = document.getElementById('wb-confirm-overlay');
+  if(existing) existing.remove();
+  _wbConfirmCbs = {ok: okFn, cancel: cancelFn};
+  const sub = body ? `<div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px">${body}</div>` : '<div style="margin-bottom:18px"></div>';
+  const cancelBtn = cancelLabel ? `<button class="btn btn-outline" onclick="_wbConfirmDismiss(false)">${cancelLabel}</button>` : '';
+  const el = document.createElement('div');
+  el.id = 'wb-confirm-overlay';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px';
+  el.innerHTML = `<div style="background:var(--card,#fff);border-radius:14px;padding:22px 24px;max-width:300px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:8px">${title}</div>
+    ${sub}
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      ${cancelBtn}
+      <button class="btn btn-primary" onclick="_wbConfirmDismiss(true)">${okLabel}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+}
+function _wbConfirmDismiss(ok){
+  const cbs = _wbConfirmCbs;
+  _wbConfirmCbs = null;
+  const el = document.getElementById('wb-confirm-overlay');
+  if(el) el.remove();
+  const fn = ok ? cbs?.ok : cbs?.cancel;
+  if(fn) fn();
 }
 function openWbSection(key){
   if(WB_LOCKED[key]) return;
@@ -33014,8 +33070,9 @@ function openWbSection(key){
       ${_wbLayoutHtml(key)}
       ${_wbBlocksHtml(key)}
     </div>`,
-    `<button class="btn btn-outline" onclick="_wbClosePanel();navigate('${dest}')" style="margin-right:auto">Go to ${destLabel}</button>
-     <button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
+    `<button class="btn btn-outline" onclick="_wbNavGuard('${dest}')" style="margin-right:auto">Go to ${destLabel}</button>
+     <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+     <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 
 function openWbHome(){
@@ -33055,14 +33112,14 @@ function openWbHome(){
       <div id="wb-cta-hint" style="font-size:12px;color:var(--muted);margin-top:-6px">${ctaMode==='ics'?'Adds a Save the date calendar download.':ctaMode==='rsvp'?'Links guests to your RSVP form.':''}</div>
     </div>`,
     `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbHomeCancel()">Cancel</button>
-     <button class="btn btn-primary" onclick="_wbSaveHome()">Save</button>`);
+     <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbSaveHome(){
   const h=_wbSite().home;
   h.headline=(document.getElementById('wb-h-head')||{}).value||'';
   h.sub=(document.getElementById('wb-h-sub')||{}).value||'';
   _wbHomeSnapshot=null;
-  saveToStorage(); _wbClosePanel(); navigate('website');
+  saveToStorage();
 }
 function _wbHomeCancel(){
   if(_wbHomeSnapshot){
@@ -33115,8 +33172,9 @@ function openWbRsvp(){
     ${_wbLayoutHtml('rsvp')}
     ${_wbBlocksHtml('rsvp')}
   </div>`,
-  `<button class="btn btn-outline" onclick="_wbClosePanel();navigate('guests')" style="margin-right:auto">View responses</button>
-   <button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
+  `<button class="btn btn-outline" onclick="_wbNavGuard('guests')" style="margin-right:auto">View responses</button>
+   <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+   <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _copyRsvpLink(){
   const inp = document.getElementById('rsvp-link-inp');
@@ -33129,7 +33187,8 @@ function _copyRsvpLink(){
 
 function openWbGallery(){
   _wbPanel('Gallery', _wbLayoutHtml('gallery')+`<div id="wb-gallery-shell">${_wbGalleryBody()}</div>`,
-    `<button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
+     <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 // Redraw ONLY the picker shell (grid + intro copy). The Layout box is a sibling node and is
 // left untouched — so picking a photo no longer wipes the heading/intro/align controls (the
@@ -33293,7 +33352,8 @@ function _wbGalleryDeleteUpload(upId){
 
 function openWbSchedule(){
   _wbPanel('Schedule', _wbLayoutHtml('schedule')+_wbScheduleBody()+_wbBlocksHtml('schedule'),
-    `<button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
+     <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbScheduleBody(){
   const all=(STATE.timeline||[]).slice().sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
@@ -33331,7 +33391,8 @@ function _wbScheduleAll(on){
 
 function openWbFaq(){
   _wbPanel('FAQ', _wbLayoutHtml('faq')+_wbFaqBody()+_wbBlocksHtml('faq'),
-    `<button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
+     <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbFaqBody(){
   const faq=_wbSite().faq;
@@ -33393,7 +33454,8 @@ function _wbFaqRemove(id){
 
 function openWbStays(){
   _wbPanel('Accommodation', _wbLayoutHtml('accommodation')+_wbStaysBody()+_wbBlocksHtml('accommodation'),
-    `<button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
+     <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbStaysBody(){
   const stays=_wbSite().stays;
@@ -33633,13 +33695,15 @@ function openWbCustom(id){
       ${_wbBlocksHtml(id)}
     </div>`,
     `<button class="btn btn-danger" onclick="_wbDeleteSection('${id}')" style="margin-right:auto">Delete</button>
-     <button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
+     <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+     <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 
 // ── Hero ──
 function openWbHero(){
   _wbPanel('Hero image', _wbHeroBody(),
-    `<button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
+     <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbHeroBody(){
   const h=_wbSite().hero;
