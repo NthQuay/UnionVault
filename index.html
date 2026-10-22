@@ -32446,6 +32446,8 @@ let _wbLiveFocus = null;
 // go find is the thing we are fixing — but foldable, because a keyboard on a small screen
 // leaves very little room and sometimes the editor needs all of it.
 let _wbStripOpen = (localStorage.getItem('wbStripOpen') !== '0');
+// Set by _showPublicWeddingSite so _wbBuildSite can use the owner's uid without a session
+let _wbPublicOwnerUid = null;
 function _wbStripToggle(){
   _wbStripOpen = !_wbStripOpen;
   localStorage.setItem('wbStripOpen', _wbStripOpen ? '1' : '0');
@@ -35034,7 +35036,7 @@ function _wbBuildSite(forDownload){
       return wrap(k, inner);
     }
     if(k==='rsvp'){
-      const uid = _sbSession&&_sbSession.user&&_sbSession.user.id;
+      const uid = _wbPublicOwnerUid || (_sbSession&&_sbSession.user&&_sbSession.user.id);
       if(!uid) return wrap(k,'');
       const rsvpUrl = window.location.origin+window.location.pathname+'?rsvp='+uid;
       const btnC = t.button||'#8B7355';
@@ -44809,7 +44811,9 @@ async function _showPublicWeddingSite(slug){
     }
   }catch(e){ console.warn('Site data fetch failed',e); }
 
+  _wbPublicOwnerUid = uid;
   const html=_wbBuildSite();
+  _wbPublicOwnerUid = null;
   document.open();
   document.write(html);
   document.close();
