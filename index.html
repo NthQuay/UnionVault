@@ -5587,15 +5587,16 @@ let _hiddenGuestSections=(()=>{
   try{ const s=localStorage.getItem(_HIDDEN_KEY); return s?new Set(JSON.parse(s)):new Set(); }
   catch(e){ return new Set(); }
 })();
-// Group filters (Singles/Couples/Families) default to hidden until the user unhides them
+// Group filters and Groups count default to hidden until the user unhides them
 (()=>{
+  const DEFAULTS=['g_singles','g_couples','g_families','groups'];
   try{
-    if(localStorage.getItem('eternal_group_filters_seeded')!=='1'){
-      ['g_singles','g_couples','g_families'].forEach(k=>_hiddenGuestSections.add(k));
+    if(localStorage.getItem('eternal_group_filters_seeded')!=='2'){
+      DEFAULTS.forEach(k=>_hiddenGuestSections.add(k));
       localStorage.setItem(_HIDDEN_KEY, JSON.stringify([..._hiddenGuestSections]));
-      localStorage.setItem('eternal_group_filters_seeded','1');
+      localStorage.setItem('eternal_group_filters_seeded','2');
     }
-  }catch(e){ ['g_singles','g_couples','g_families'].forEach(k=>_hiddenGuestSections.add(k)); }
+  }catch(e){ DEFAULTS.forEach(k=>_hiddenGuestSections.add(k)); }
 })();
 // Guest card fields: Phone/Email/Address hidden by default; Role/Tags/Dietary shown
 (()=>{
