@@ -31632,7 +31632,7 @@ function saveInspo(editId){
   if(editId){ item=STATE.inspo.items.find(x=>x.id===editId); if(item){item.title=title;item.category=cat;if(image)item.image=image;item.notes=notes;item.link=link;} }
   else { item={id:'i'+Date.now(),title,category:cat,image,notes,link}; STATE.inspo.items.push(item); }
   if(item) applyInspoBudgetLink(item, budgetVal);
-  closeModalDirect(); navigate('inspo');
+  saveToStorage(); closeModalDirect(); navigate('inspo');
 }
 // Enlarged "lightbox" preview of a vision-board idea in its current state.
 // Opened by clicking a card on the full board or the dashboard widget. The footer
