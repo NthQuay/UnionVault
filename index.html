@@ -32063,7 +32063,7 @@ function setWwSort(s){ wwSort=s; navigate('wishingwell'); }
 const WB_SECTIONS = {
   home:          {name:'Home',          src:'Details',      icon:'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'},
   details:       {name:'Event details', src:'Details',      icon:'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'},
-  schedule:      {name:'Order of the day', src:'Timeline',  icon:'M12 6v6l4 2'},
+  schedule:      {name:'Timeline',          src:'Timeline',  icon:'M12 6v6l4 2'},
   gallery:       {name:'Gallery',       src:'Inspiration',  icon:'M21 15l-5-5L5 21'},
   wishingwell:   {name:'Wishing well',  src:'Wishing Well', icon:'M20 12v10H4V12'},
   countdown:     {name:'Countdown',     src:'',             icon:'M12 6v6l4 2'},
@@ -32133,7 +32133,7 @@ const WB_CUSTOM_PRESETS = [
   {key:'travel',   name:'Getting there',   body:'Parking, transport and directions.'},
   {key:'registry', name:'Registry',        body:''},
   {key:'dress',    name:'Dress code',      body:''},
-  {key:'timeline', name:'Our timeline',    body:'A journey through the moments that brought us here.'},
+  {key:'timeline', name:'Our story so far', body:'A journey through the moments that brought us here.'},
   {key:'faq',      name:'FAQ',             body:'Answers to your most common questions.'},
   {key:'countdown',name:'Countdown',       body:'The big day is almost here!'},
   {key:'stays',    name:'Accommodation',   body:'Places to stay nearby for our out-of-town guests.'},
@@ -33542,7 +33542,7 @@ function _wbGalleryDeleteUpload(upId){
 }
 
 function openWbSchedule(){
-  _wbPanel('Schedule', _wbLayoutHtml('schedule')+_wbScheduleBody()+_wbBlocksHtml('schedule'),
+  _wbPanel('Timeline', _wbLayoutHtml('schedule')+_wbScheduleBody()+_wbBlocksHtml('schedule'),
     `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
