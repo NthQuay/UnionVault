@@ -7554,9 +7554,11 @@ function guestGroupOf(g){
 // Families filter includes couples-within-families, and vice-versa.
 function guestInGroup(g, group){
   if(group==='all') return true;
-  if(group==='couples') return !!g.coupleId;
+  // Primary guest with a plus-one counts as a couple; the +1 themselves do not.
+  if(group==='couples') return !!(g.coupleId || g.plusOneId);
   if(group==='families') return (STATE.families||[]).some(f=>f.memberIds.includes(g.id));
-  if(group==='singles') return !g.coupleId && !(STATE.families||[]).some(f=>f.memberIds.includes(g.id));
+  // Singles: truly solo — not coupled, not hosting a +1, not the +1 themselves, not in a family.
+  if(group==='singles') return !g.coupleId && !g.plusOneId && g.isMain!==false && !(STATE.families||[]).some(f=>f.memberIds.includes(g.id));
   return guestGroupOf(g)===group;
 }
 function toggleBListFilter(){
@@ -7597,9 +7599,29 @@ function guestPassesFilter(g){
   if(sf.list==='B'){ if(gList!=='B') return false; }
   else { if(gList==='B') return false; }
   if(!(sf.status==='all'||g.rsvp===sf.status)) return false;
-  if(sf.group&&sf.group!=='all'&&!guestInGroup(g, sf.group)) return false;
+  if(sf.group&&sf.group!=='all'){
+    // Special case: status+singles — a coupled guest whose partner has a different
+    // RSVP status passes through so they can appear solo with a partner note.
+    if(sf.group==='singles'&&sf.status!=='all'&&g.coupleId){
+      const partner=STATE.guests.find(x=>x.id===g.coupleId);
+      const partnerRsvp=partner?(partner.rsvp||'awaiting'):'';
+      if((g.rsvp||'awaiting')===partnerRsvp) return false; // same status → not a special case
+      // falls through — different RSVP, show solo with note
+    } else if(!guestInGroup(g, sf.group)){
+      return false;
+    }
+  }
   if(sf.tags.length&&!sf.tags.every(t=>(g.tags||[]).includes(t))) return false;
   return true;
+}
+function _couplePartnerNote(partner){
+  const status=partner.rsvp||'awaiting';
+  const color=status==='attending'?'var(--green)':status==='declined'?'#c0392b':'var(--muted)';
+  const verb=status==='attending'?'is attending':status==='declined'?'has declined':'is awaiting';
+  return `<div style="font-size:11px;color:var(--muted);padding:3px 14px 9px;display:flex;align-items:center;gap:5px;margin-top:-3px">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="9" cy="12" r="5.2"/><circle cx="15" cy="12" r="5.2"/></svg>
+    <span>Linked: <strong style="font-weight:600">${_escHtml(partner.name)}</strong> <span style="color:${color}">${verb}</span></span>
+  </div>`;
 }
 // ── Editable guest table (rendered in bulk/Edit mode) ──────────────────────
 // Sortable columns (phone/email/address deliberately excluded). 'name' is sortable
@@ -8295,10 +8317,11 @@ function renderGuestList(){
       if(!g||!partner) return;
       const gPass=passesFilt(g), pPass=passesFilt(partner);
       if(!gPass&&!pPass) return;
-      // When RSVP filter is active and members have different statuses, show individually
+      // When RSVP filter is active and members have different statuses, show individually.
+      // When also in singles mode the partner note explains the linked person's status.
       if(sf.status!=='all'&&(!gPass||!pPass)){
-        if(gPass) html+=`<div class="solo-bracket" data-bulk-id="${g.id}" ${reorderDraggable(g.id)}>${guestCardHtml(g)}</div>`;
-        if(pPass) html+=`<div class="solo-bracket" data-bulk-id="${partner.id}" ${reorderDraggable(partner.id)}>${guestCardHtml(partner)}</div>`;
+        if(gPass) html+=`<div class="solo-bracket" data-bulk-id="${g.id}" ${reorderDraggable(g.id)}>${guestCardHtml(g)}${sf.group==='singles'?_couplePartnerNote(partner):''}</div>`;
+        if(pPass) html+=`<div class="solo-bracket" data-bulk-id="${partner.id}" ${reorderDraggable(partner.id)}>${guestCardHtml(partner)}${sf.group==='singles'?_couplePartnerNote(g):''}</div>`;
       } else {
         html+=coupleHtml(g,partner);
       }
