@@ -27856,8 +27856,10 @@ function _showResetPasswordModal(token){
         <div style="position:relative">
           <input id="pw-reset-pw1" type="password" placeholder="At least 8 characters" autocomplete="new-password"
             style="width:100%;box-sizing:border-box;padding:11px 44px 11px 14px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none">
-          <button type="button" onclick="(function(b){var i=document.getElementById('pw-reset-pw1');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈'})(this)"
-            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1">👁</button>
+          <button type="button" onclick="_togglePw('pw-reset-pw1',this)" tabindex="-1" aria-label="Show password"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--muted,#9a8a6a);line-height:1;display:flex;align-items:center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
       </div>
       <div style="margin-bottom:24px">
@@ -27865,8 +27867,10 @@ function _showResetPasswordModal(token){
         <div style="position:relative">
           <input id="pw-reset-pw2" type="password" placeholder="Same password again" autocomplete="new-password"
             style="width:100%;box-sizing:border-box;padding:11px 44px 11px 14px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none">
-          <button type="button" onclick="(function(b){var i=document.getElementById('pw-reset-pw2');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈'})(this)"
-            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1">👁</button>
+          <button type="button" onclick="_togglePw('pw-reset-pw2',this)" tabindex="-1" aria-label="Show password"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--muted,#9a8a6a);line-height:1;display:flex;align-items:center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
       </div>
       <button id="pw-reset-btn" onclick="_doResetPassword('${token}')"
