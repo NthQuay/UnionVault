@@ -32333,7 +32333,7 @@ function renderWebsite(c, actions){
           </button>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:10px">
-          <div style="font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Your link slug</div>
+          <div style="font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Your link name</div>
           <div style="display:flex;gap:6px;align-items:center">
             <input id="wb-slug-inp" class="form-input" value="${_escHtml(wSlug)}" style="flex:1;font-size:11.5px;padding:5px 8px" placeholder="your-names" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')" onblur="_wbSaveSlug(this.value)" onkeydown="if(event.key==='Enter'){_wbSaveSlug(this.value);this.blur();}"/>
           </div>
