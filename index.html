@@ -31926,7 +31926,7 @@ function setWwSort(s){ wwSort=s; navigate('wishingwell'); }
 const WB_SECTIONS = {
   home:          {name:'Home',          src:'Details',      icon:'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'},
   details:       {name:'Event details', src:'Details',      icon:'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'},
-  schedule:      {name:'Schedule',      src:'Timeline',     icon:'M12 6v6l4 2'},
+  schedule:      {name:'Order of the day', src:'Timeline',  icon:'M12 6v6l4 2'},
   gallery:       {name:'Gallery',       src:'Inspiration',  icon:'M21 15l-5-5L5 21'},
   wishingwell:   {name:'Wishing well',  src:'Wishing Well', icon:'M20 12v10H4V12'},
   countdown:     {name:'Countdown',     src:'',             icon:'M12 6v6l4 2'},
@@ -32010,8 +32010,10 @@ function _wbSite(){
   if(!STATE.website) STATE.website = { order:Object.keys(WB_SECTIONS), on:{}, theme:{}, home:{}, gallery:[], faq:[], stays:[] };
   const w = STATE.website;
   if(!Array.isArray(w.order)) w.order = Object.keys(WB_SECTIONS);
+  if(!w.removed || typeof w.removed!=='object') w.removed={};
   // Any section added in a later version won't be in a saved order — append it.
-  Object.keys(WB_SECTIONS).forEach(k=>{ if(w.order.indexOf(k)<0) w.order.push(k); });
+  // Skip sections the user has explicitly removed.
+  Object.keys(WB_SECTIONS).forEach(k=>{ if(w.order.indexOf(k)<0 && !w.removed[k]) w.order.push(k); });
   if(!w.on) w.on = {};
   if(!w.theme) w.theme = {};
   if(!w.home) w.home = {};
@@ -32026,6 +32028,8 @@ function _wbSite(){
   if(!Array.isArray(w.stays)) w.stays = [];
   if(!w.custom || typeof w.custom!=='object') w.custom={};
   if(!w.layout || typeof w.layout!=='object') w.layout={};
+  if(!w.details || typeof w.details!=='object') w.details={};
+  if(!w.details.hide || typeof w.details.hide!=='object') w.details.hide={};
   if(!w.hero || typeof w.hero!=='object') w.hero={mediaId:'', style:'over', scrim:35, ink:'light'};
   // v121: the names over a hero photo used to be hardcoded white. They're now a choice.
   // An older STATE has no `ink` — 'light' is what it was already doing, so nobody's site
@@ -32418,6 +32422,7 @@ function renderWebsite(c, actions){
         <input type="checkbox" id="wb-on-${key}" ${on?'checked':''} onchange="_wbToggle('${key}',this.checked)"/>
         <span class="toggle-track"></span>
       </label>
+      ${key!=='home'?`<button type="button" title="Remove section" onclick="event.stopPropagation();_wbRemoveSection('${key}')" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--muted);opacity:.6;padding:3px;display:flex;align-items:center" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity='.6'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>`:''}
     </div>`;
   }).join('');
 
@@ -33065,15 +33070,16 @@ function openWbSection(key){
   _wbLivePaint();
   if(_wbIsCustom(key))      return openWbCustom(key);
   if(key==='home')          return openWbHome();
+  if(key==='details')       return openWbDetails();
   if(key==='gallery')       return openWbGallery();
   if(key==='schedule')      return openWbSchedule();
   if(key==='faq')           return openWbFaq();
   if(key==='accommodation') return openWbStays();
   if(key==='rsvp')          return openWbRsvp();
-  // details / wishingwell / countdown hold no site-only TEXT — that still lives in the
+  // wishingwell / countdown hold no site-only TEXT — that still lives in the
   // planner. But they now own their images, so they get a real editor: the images, plus a
   // link to where the words come from.
-  const dest = key==='details'?'details' : (key==='wishingwell'?'wishingwell':'details');
+  const dest = key==='wishingwell'?'wishingwell':'details';
   const destLabel = dest==='wishingwell'?'Wishing Well':'Event Details';
   const what = key==='countdown'
     ? 'The countdown reads the wedding date from Event Details.'
@@ -33198,6 +33204,41 @@ function _copyRsvpLink(){
   else { inp.select(); document.execCommand('copy'); done(); }
 }
 
+function openWbDetails(){
+  const w=_wbSite(); const e=STATE.event||{};
+  const dh=w.details.hide;
+  const tog=(id,field,label)=>`<label class="tl-pub-row" for="${id}" style="padding:9px 10px">
+    <span class="tl-pub-title">${label}</span>
+    <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
+      <input type="checkbox" id="${id}" ${!dh[field]?'checked':''} onchange="_wbDetailHide('${field}',!this.checked)"/>
+      <span class="toggle-track"></span>
+    </span>
+  </label>`;
+  _wbPanel('Event details', `<div style="display:flex;flex-direction:column;gap:14px">
+    ${_wbLayoutHtml('details')}
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Show on site</div>
+    <div style="display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:-8px">
+      ${tog('wb-dh-venue','venue','Venue')}
+      ${tog('wb-dh-address','address','Address')}
+      ${tog('wb-dh-ceremony','ceremony','Ceremony')}
+      ${tog('wb-dh-date','date','Date')}
+      ${tog('wb-dh-time','time','Time')}
+    </div>
+    <div class="form-group"><label class="form-label">Ceremony time <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <input class="form-input" value="${_escHtml(e.time||'')}" placeholder="e.g. 3:00 PM"
+             oninput="STATE.event.time=this.value;saveToStorage();_wbLiveSoon()"/></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:-8px;line-height:1.5">Other details (venue, date…) are set in <b>Event Details</b> in your planner.</div>
+    ${_wbBlocksHtml('details')}
+  </div>`,
+  `<button class="btn btn-outline" onclick="_wbNavGuard('details')" style="margin-right:auto">Go to Event Details</button>
+   <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+   <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
+}
+function _wbDetailHide(field, hide){
+  const dh=_wbSite().details.hide;
+  if(hide) dh[field]=true; else delete dh[field];
+  saveToStorage(); _wbLiveSoon();
+}
 function openWbGallery(){
   _wbPanel('Gallery', _wbLayoutHtml('gallery')+`<div id="wb-gallery-shell">${_wbGalleryBody()}</div>`,
     `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
@@ -33514,7 +33555,17 @@ function _wbStayRemove(id){
 // The only things it can do that a built-in can't: be renamed, and be deleted.
 
 function openWbAddSection(){
+  const w=_wbSite();
+  const removed=Object.keys(w.removed||{}).filter(k=>WB_SECTIONS[k]);
+  const restoreHtml=removed.length?`<div style="margin-bottom:14px">
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px">Restore removed section</div>
+    ${removed.map(k=>`<button type="button" class="wb-cblank" onclick="_wbRestoreSection('${k}')" style="margin-bottom:5px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
+      <span><span style="display:block">${_escHtml(WB_SECTIONS[k].name)}</span></span>
+    </button>`).join('')}
+  </div>`:'';
   _wbPanel('Add a section', `<div>
+      ${restoreHtml}
       <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:13px">Start from a common one, or build your own.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
         ${WB_CUSTOM_PRESETS.map(p=>`<button type="button" class="wb-cpreset" onclick="_wbAddSection('${p.key}')">
@@ -33564,6 +33615,45 @@ function _wbDeleteSectionDo(id){
     if(w.blocks) delete w.blocks[id];
     w.order=w.order.filter(k=>k!==id);
   }, 'website');
+}
+function _wbRemoveSection(key){
+  const isCustom=_wbIsCustom(key);
+  _wbConfirm(
+    'Remove section?',
+    isCustom ? 'This will delete the section and its content permanently.'
+              : 'You can restore it later from "Add section".',
+    'Remove', ()=>_wbRemoveSectionDo(key),
+    'Keep', null
+  );
+}
+function _wbRemoveSectionDo(key){
+  _wbClosePanel();
+  const w=_wbSite();
+  if(_wbIsCustom(key)){
+    delete w.custom[key];
+    delete w.layout[key];
+    if(w.images) delete w.images[key];
+    if(w.blocks) delete w.blocks[key];
+  } else {
+    w.removed[key]=true;
+  }
+  delete w.on[key];
+  w.order=w.order.filter(k=>k!==key);
+  saveToStorage();
+  navigate('website');
+}
+function _wbRestoreSection(key){
+  const w=_wbSite();
+  delete w.removed[key];
+  w.on[key]=true;
+  if(w.order.indexOf(key)<0){
+    const r=w.order.indexOf('rsvp');
+    if(r>=0) w.order.splice(r,0,key); else w.order.push(key);
+  }
+  saveToStorage();
+  _wbClosePanel();
+  navigate('website');
+  setTimeout(()=>openWbSection(key), 60);
 }
 function _wbCustomEdit(id, field, val){
   const c=_wbSite().custom[id];
@@ -35294,11 +35384,13 @@ function _wbBuildSite(forDownload){
       // guest's, so a build-time userAgent check would send Android guests to Apple Maps
       // whenever Mandy happened to build on a Mac. The site's own script swaps it at load.
       const mapA = (addr)=>`<a class="maplink" data-addr="${_escHtml(addr)}" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer">Map</a>`;
+      const dh=(w.details||{}).hide||{};
       const rows=[
-        e.venue?['Venue', _escHtml(e.venue)]:null,
-        e.venueAddress?['Address', _escHtml(e.venueAddress)+' '+mapA(e.venueAddress)]:null,
-        e.ceremonyVenue?['Ceremony', _escHtml(e.ceremonyVenue)]:null,
-        e.date?['Date', _escHtml(fmtDate(e.date))]:null
+        (!dh.venue && e.venue)?['Venue', _escHtml(e.venue)]:null,
+        (!dh.address && e.venueAddress)?['Address', _escHtml(e.venueAddress)+' '+mapA(e.venueAddress)]:null,
+        (!dh.ceremony && e.ceremonyVenue)?['Ceremony', _escHtml(e.ceremonyVenue)]:null,
+        (!dh.date && e.date)?['Date', _escHtml(fmtDate(e.date))]:null,
+        (!dh.time && e.time)?['Time', _escHtml(e.time)]:null
       ].filter(Boolean);
       return wrap(k, rows.length?`<dl>${rows.map(r=>`<div><dt>${_escHtml(r[0])}</dt><dd>${r[1]}</dd></div>`).join('')}</dl>`:'');
     }
