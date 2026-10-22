@@ -608,7 +608,8 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
      reflow, because the guest site is responsive.
      The whole thing is capped at 1520px so the site never renders wider than a real
      browser would show it. */
-  .wb-shell{max-width:960px;display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
+  .wb-shell{max-width:1400px;display:grid;grid-template-columns:300px minmax(0,1fr) 360px;gap:20px;align-items:start}
+  .wb-pane{display:block}
   /* At 340px the source chip has nowhere to go — not inline (no room) and not on its own
      line (it would push the row too tall for a list this dense). The SUBLINE is the live
      information and it survives; the chip was a standing reminder and it goes. */
@@ -633,7 +634,7 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
    1100px there is no pane to protect. */
 .wb-editor-col{display:none}
 @media(min-width:1100px){
-  .wb-editor-col{grid-column:2;grid-row:1 / -1;display:flex;flex-direction:column;align-self:start;position:sticky;top:0;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;max-height:calc(100vh - 80px)}
+  .wb-editor-col{grid-column:3;display:flex;flex-direction:column;align-self:start;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
   .wb-editor-col.wb-ec-empty{align-items:center;justify-content:center;min-height:200px;gap:8px;color:var(--muted);font-size:12px;text-align:center;padding:24px}
 }
 .wb-ec-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -32404,6 +32405,16 @@ function renderWebsite(c, actions){
         <button type="button" class="wb-addsec" onclick="openWbAddSection()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add section
         </button>
+      </div>
+    </div>
+    <div class="wb-pane">
+      <div class="wb-strip-bar" onclick="_wbStripToggle()" aria-expanded="${_wbStripOpen?'true':'false'}">
+        <span style="display:flex;align-items:center;gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Preview</span>
+        <svg class="wb-strip-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="${_wbStripOpen?'M18 15l-6-6-6 6':'M6 9l6 6 6-6'}"/></svg>
+      </div>
+      <div class="wb-pane-inner">
+        <div class="wb-pane-frame"><iframe id="wb-live" title="Live preview of your website" sandbox="allow-same-origin"></iframe></div>
+        <div class="wb-pane-cap">Live · updates as you edit</div>
       </div>
     </div>
     <div class="wb-editor-col wb-ec-empty" id="wb-editor-col">
