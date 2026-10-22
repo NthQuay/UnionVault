@@ -2968,6 +2968,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 .btn-gold:hover{background:var(--gold-deep)}
 .auth-links{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .auth-links a{font-size:13px;color:var(--gold);text-decoration:none}
+@keyframes lp-spin{to{transform:rotate(360deg)}}
 .auth-legal{font-size:11px;color:var(--muted);text-align:center;line-height:1.6}
 .auth-legal a{color:var(--gold);text-decoration:none}
 
@@ -3128,7 +3129,7 @@ textarea.contact-input{resize:vertical;min-height:110px}
           <div id="lp-in-ok" style="display:none;font-size:12px;color:#27ae60;margin-bottom:8px;padding:8px 10px;background:rgba(39,174,96,0.08);border-radius:6px"></div>
           <button class="btn-gold" id="lp-in-btn" onclick="_lpSignIn()">Sign in</button>
           <div class="auth-links">
-            <button onclick="_lpForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--gold-deep,#b8923a);cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;margin-top:6px">Forgot password?</button>
+            <button id="lp-forgot-btn" onclick="_lpForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--gold-deep,#b8923a);cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;margin-top:6px">Forgot password?</button>
             <div class="auth-legal">By continuing you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy</a></div>
           </div>
         </div>
@@ -3353,11 +3354,16 @@ async function _lpForgotPassword() {
   var errEl = document.getElementById('lp-in-err');
   var okEl  = document.getElementById('lp-in-ok');
   var btn   = document.getElementById('lp-in-btn');
+  var fpBtn = document.getElementById('lp-forgot-btn');
   errEl.style.display = 'none'; okEl.style.display = 'none';
   if(!email){ errEl.textContent = 'Enter your email address above, then click "Forgot password?".'; errEl.style.display = ''; return; }
   btn.disabled = true;
+  fpBtn.disabled = true;
+  fpBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:lp-spin 0.8s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Sending…</span>';
   var r = await _sbResetPassword(email);
   btn.disabled = false;
+  fpBtn.disabled = false;
+  fpBtn.innerHTML = 'Forgot password?';
   if(!r.ok){ errEl.textContent = r.error; errEl.style.display = ''; return; }
   okEl.textContent = 'Password reset email sent to ' + email + '. Check your inbox.';
   okEl.style.display = '';
