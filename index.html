@@ -27922,13 +27922,13 @@ async function _sbEnsureFreshToken(){
   if(r.ok) _sbPersist({access_token:r.b.access_token,refresh_token:r.b.refresh_token,user:{id:r.b.user.id,email:r.b.user.email}});
 }
 
-async function _sbUpsert(table,rows,conflict){
+async function _sbUpsert(table,rows,conflict,keepalive){
   const url=conflict?`${_SB_URL}/rest/v1/${table}?on_conflict=${encodeURIComponent(conflict)}`:`${_SB_URL}/rest/v1/${table}`;
-  const r=await fetch(url,{
-    method:'POST',
-    headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-    body:JSON.stringify(rows)
-  });
+  const body=JSON.stringify(rows);
+  // keepalive keeps the request alive through tab close (browser limit ~64KB)
+  const opts={method:'POST',headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body};
+  if(keepalive && body.length<60000) opts.keepalive=true;
+  const r=await fetch(url,opts);
   return r.ok;
 }
 async function _sbSelect(table,filter){
@@ -27945,7 +27945,7 @@ const _CS=['event','settings','guests','checklist','vendors','quotes',
   'website','timeline','events','tagDefs','families',
   'invites','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'];
 
-async function _cloudSave(silent){
+async function _cloudSave(silent,keepalive){
   if(!_sbSession) return {error:'Not signed in'};
   await _sbEnsureFreshToken();
   const uid=_sbSession.user.id;
@@ -27968,7 +27968,7 @@ async function _cloudSave(silent){
     dashLayout:STATE.dashLayout, dashHiddenWidgets:STATE.dashHiddenWidgets
   };
   const rows=_CS.map(s=>({user_id:uid,section:s,data:pay[s]??{},updated_at:STATE.settings._lastCloudSave}));
-  const ok=await _sbUpsert('planner_data',rows,'user_id,section');
+  const ok=await _sbUpsert('planner_data',rows,'user_id,section',keepalive);
   if(ok){
     // Persist the updated _lastCloudSave timestamp to localStorage directly
     // (avoids recursion since saveToStorage → _autoSyncSchedule → flush loop)
@@ -43992,13 +43992,13 @@ function _autoSyncSchedule(){
   _autoSyncTimer=setTimeout(_autoSyncFlush,_AUTOSYNC_DEBOUNCE);
 }
 
-async function _autoSyncFlush(){
+async function _autoSyncFlush(keepalive){
   _autoSyncTimer=null;
   if(!_autoSyncEnabled()) return;
   window._autoSyncState='saving';
   _syncStatusRefresh();
   try{
-    const r=await _cloudSave(true);
+    const r=await _cloudSave(true,keepalive);
     if(r&&r.ok){ window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now(); }
     else { window._autoSyncState='error'; }
   }catch(e){
@@ -44012,7 +44012,7 @@ async function _autoSyncFlush(){
 let _lastVisibilitySync=0;
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='hidden'){
-    if(_autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; _autoSyncFlush(); }
+    if(_autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; _autoSyncFlush(true); }
   } else if(document.visibilityState==='visible'){
     // PWA resumed from background — re-check cloud for newer data (throttled to once per 5 min)
     const now=Date.now();
@@ -44026,8 +44026,8 @@ window.addEventListener('beforeunload',function(){
   if(_autoSyncTimer){
     clearTimeout(_autoSyncTimer);
     _autoSyncTimer=null;
-    // fire-and-forget; sendBeacon-style best effort
-    _autoSyncFlush();
+    // keepalive:true lets the fetch survive tab close (browser allows up to ~64KB)
+    _autoSyncFlush(true);
   }
 });
 
@@ -44052,7 +44052,9 @@ async function _autoSyncCheckOnBoot(){
     if(!rows[0].updated_at) return;
     const cloudTs=new Date(rows[0].updated_at).getTime();
     if(cloudTs-localTs>60000){
-      _showConflictDialog(cloudTs,localTs);
+      // Cloud is newer — auto-load silently (this device previously synced, so local
+      // data came from the cloud; any local edits since then were already pushed by auto-sync)
+      cloudLoadClick(true);
     } else {
       // cloud is same or older — push local up silently if auto-sync on
       if(_autoSyncEnabled()) _autoSyncSchedule();
