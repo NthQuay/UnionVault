@@ -27823,6 +27823,67 @@ async function _sbResetPassword(email){
   if(!r.ok) return {error:r.b.msg||r.b.error_description||r.b.message||r.b.error||'Reset failed'};
   return {ok:true};
 }
+async function _sbUpdatePassword(accessToken, newPassword){
+  const r=await fetch(_SB_URL+'/auth/v1/user',{
+    method:'PUT',
+    headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
+    body:JSON.stringify({password:newPassword})
+  });
+  const b=await r.json().catch(()=>({}));
+  if(!r.ok) return {error:b.msg||b.error_description||b.message||b.error||'Update failed'};
+  return {ok:true};
+}
+function _showResetPasswordModal(token){
+  const overlay=document.createElement('div');
+  overlay.id='pw-reset-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:var(--cream,#f5f0e8);font-family:var(--font-serif,Georgia,serif)';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.14);padding:40px 36px;width:100%;max-width:400px;margin:20px">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-deep,#b8923a);margin-bottom:8px">Union Vault</div>
+        <h2 style="margin:0;font-size:22px;font-weight:normal;color:#2c2416;letter-spacing:0.03em">Choose a new password</h2>
+      </div>
+      <div id="pw-reset-err" style="display:none;font-size:12px;color:#c0392b;margin-bottom:14px;padding:8px 10px;background:rgba(192,57,43,0.08);border-radius:6px"></div>
+      <div id="pw-reset-ok" style="display:none;font-size:13px;color:#27ae60;margin-bottom:14px;padding:10px 12px;background:rgba(39,174,96,0.08);border-radius:6px;text-align:center"></div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7a5a;margin-bottom:6px">New password</label>
+        <input id="pw-reset-pw1" type="password" placeholder="At least 8 characters" autocomplete="new-password"
+          style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none">
+      </div>
+      <div style="margin-bottom:24px">
+        <label style="display:block;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7a5a;margin-bottom:6px">Confirm password</label>
+        <input id="pw-reset-pw2" type="password" placeholder="Same password again" autocomplete="new-password"
+          style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;outline:none">
+      </div>
+      <button id="pw-reset-btn" onclick="_doResetPassword('${token}')"
+        style="width:100%;padding:13px;background:var(--gold-deep,#b8923a);color:#fff;border:none;border-radius:8px;font-size:15px;font-family:inherit;letter-spacing:0.06em;cursor:pointer;font-weight:600">
+        Set new password
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+async function _doResetPassword(token){
+  const pw1=(document.getElementById('pw-reset-pw1').value||'').trim();
+  const pw2=(document.getElementById('pw-reset-pw2').value||'').trim();
+  const errEl=document.getElementById('pw-reset-err');
+  const okEl=document.getElementById('pw-reset-ok');
+  const btn=document.getElementById('pw-reset-btn');
+  errEl.style.display='none'; okEl.style.display='none';
+  if(pw1.length<8){errEl.textContent='Password must be at least 8 characters.';errEl.style.display='';return;}
+  if(pw1!==pw2){errEl.textContent='Passwords do not match.';errEl.style.display='';return;}
+  btn.disabled=true; btn.textContent='Saving…';
+  const r=await _sbUpdatePassword(token,pw1);
+  btn.disabled=false; btn.textContent='Set new password';
+  if(!r.ok){errEl.textContent=r.error;errEl.style.display='';return;}
+  okEl.textContent='Password updated! Signing you in…';
+  okEl.style.display='';
+  // Wait a beat then remove overlay and boot the app normally
+  setTimeout(()=>{
+    const el=document.getElementById('pw-reset-overlay');
+    if(el) el.remove();
+    location.reload();
+  },1800);
+}
 setInterval(async()=>{
   if(!_sbSession||!_sbSession.refresh_token) return;
   const r=await _sbAuthPost('/token?grant_type=refresh_token',{refresh_token:_sbSession.refresh_token});
@@ -45821,6 +45882,15 @@ function _showVendorError(type){
   if(_runsheetParam){
     // Public run sheet — no login required; fetch couple's public moments from Supabase
     await _showPublicRunSheet(_runsheetParam);
+    return; // do NOT boot the planner app
+  }
+
+  // Recovery token from password-reset email: #access_token=...&type=recovery
+  const _hashParams=new URLSearchParams(window.location.hash.slice(1));
+  if(_hashParams.get('type')==='recovery'){
+    const _recoveryToken=_hashParams.get('access_token');
+    history.replaceState(null,'',window.location.pathname+window.location.search);
+    _showResetPasswordModal(_recoveryToken);
     return; // do NOT boot the planner app
   }
 
