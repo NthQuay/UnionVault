@@ -819,7 +819,7 @@ body.icon-sidebar .sidebar.collapsed .sidebar-expand-btn:hover{color:var(--ink);
 .nav-seat-count{font-size:11px;font-weight:500;background:var(--gold);color:#fff;border-radius:8px;padding:0 5px;line-height:15px;min-width:15px;text-align:center}
 body.dark .nav-seat-count{background:var(--gold);color:#1B1A1E}
 .sidebar.collapsed .nav-budget-badge{display:none!important}
-.sidebar-footer{padding:14px;border-top:1px solid var(--border);transition:opacity .2s}
+.sidebar-footer{padding:14px;border-top:1px solid var(--border);transition:opacity .2s;flex-shrink:0}
 .sidebar.collapsed .sidebar-footer{display:none}
 .couple-display{display:flex;align-items:center;gap:10px}.couple-display:hover{background:var(--parchment)}
 .couple-avatar{width:36px;height:36px;border-radius:50%;background:var(--parchment);display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -2088,7 +2088,7 @@ body.dark .gt-mp-av{background:rgba(196,168,130,.16);color:var(--gold)}
 
 /* RESPONSIVE */
 @media(max-width:900px){
-  .sidebar{position:fixed;height:100vh;box-shadow:4px 0 20px rgba(0,0,0,.12);width:260px}
+  .sidebar{position:fixed;height:100vh;height:100dvh;box-shadow:4px 0 20px rgba(0,0,0,.12);width:260px}
   .sidebar.collapsed{width:0!important;border-right:none}
   .content{padding:10px 16px 20px;overflow-x:hidden}
   /* Bulk guest table: visible horizontal scrollbar + grab-to-pan, desktop (fine pointer) only. */
