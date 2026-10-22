@@ -32551,7 +32551,7 @@ function renderWebsite(c, actions){
         onclick="openWbSection('${key}')">
       <svg class="wb-grip" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
       <div class="wb-rowmain" style="flex:1;min-width:0" title="${_escHtml(sub)}">
-        <div class="wb-name">${_escHtml(_wbHeading(key))}${meta.custom?'<span class="wb-custom-badge">Custom</span>':''}</div>
+        <div class="wb-name">${_escHtml(meta.name)}${meta.custom?'<span class="wb-custom-badge">Custom</span>':''}</div>
         <div class="wb-sub">${_escHtml(sub)}</div>
       </div>
       ${meta.src?`<span class="wb-src wb-src-inline">From ${_escHtml(meta.src)}</span>`:''}
@@ -33693,7 +33693,7 @@ function _wbStayRemove(id){
 
 function openWbAddSection(){
   const w=_wbSite();
-  const removed=Object.keys(w.removed||{}).filter(k=>WB_SECTIONS[k]);
+  const removed=Object.keys(WB_SECTIONS).filter(k=>k!=='home'&&w.order.indexOf(k)<0);
   const restoreHtml=removed.length?`<div style="margin-bottom:14px">
     <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px">Restore removed section</div>
     ${removed.map(k=>`<button type="button" class="wb-cblank" onclick="_wbRestoreSection('${k}')" style="margin-bottom:5px">
