@@ -3125,8 +3125,10 @@ textarea.contact-input{resize:vertical;min-height:110px}
             </div>
           </div>
           <div id="lp-in-err" style="display:none;font-size:12px;color:#c0392b;margin-bottom:8px;padding:8px 10px;background:rgba(192,57,43,0.08);border-radius:6px"></div>
+          <div id="lp-in-ok" style="display:none;font-size:12px;color:#27ae60;margin-bottom:8px;padding:8px 10px;background:rgba(39,174,96,0.08);border-radius:6px"></div>
           <button class="btn-gold" id="lp-in-btn" onclick="_lpSignIn()">Sign in</button>
           <div class="auth-links">
+            <button onclick="_lpForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--gold-deep,#b8923a);cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;margin-top:6px">Forgot password?</button>
             <div class="auth-legal">By continuing you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy</a></div>
           </div>
         </div>
@@ -3346,10 +3348,26 @@ function toggleFaq(btn) {
   if(!isOpen){ btn.classList.add('open'); answer.classList.add('open'); }
 }
 
+async function _lpForgotPassword() {
+  var email = (document.getElementById('auth-in-email').value || '').trim();
+  var errEl = document.getElementById('lp-in-err');
+  var okEl  = document.getElementById('lp-in-ok');
+  var btn   = document.getElementById('lp-in-btn');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  if(!email){ errEl.textContent = 'Enter your email address above, then click "Forgot password?".'; errEl.style.display = ''; return; }
+  btn.disabled = true;
+  var r = await _sbResetPassword(email);
+  btn.disabled = false;
+  if(!r.ok){ errEl.textContent = r.error; errEl.style.display = ''; return; }
+  okEl.textContent = 'Password reset email sent to ' + email + '. Check your inbox.';
+  okEl.style.display = '';
+}
+
 async function _lpSignIn() {
   var email = (document.getElementById('auth-in-email').value || '').trim();
   var pw = document.getElementById('auth-in-pw').value || '';
   var errEl = document.getElementById('lp-in-err');
+  var okEl  = document.getElementById('lp-in-ok');
   var btn = document.getElementById('lp-in-btn');
   errEl.style.display = 'none';
   if(!email || !pw){ errEl.textContent = 'Please enter your email and password.'; errEl.style.display = ''; return; }
@@ -27799,6 +27817,11 @@ async function _sbSignOut(){
   }
   _sbPersist(null);
   try{ localStorage.removeItem(_SB_SK); }catch(_){}
+}
+async function _sbResetPassword(email){
+  const r=await _sbAuthPost('/recover',{email});
+  if(!r.ok) return {error:r.b.msg||r.b.error_description||r.b.message||r.b.error||'Reset failed'};
+  return {ok:true};
 }
 setInterval(async()=>{
   if(!_sbSession||!_sbSession.refresh_token) return;
