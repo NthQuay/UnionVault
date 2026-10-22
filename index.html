@@ -7554,10 +7554,20 @@ function guestGroupOf(g){
 // Families filter includes couples-within-families, and vice-versa.
 function guestInGroup(g, group){
   if(group==='all') return true;
-  // Primary guest with a plus-one counts as a couple; the +1 themselves do not.
-  if(group==='couples') return !!(g.coupleId || g.plusOneId);
+  if(group==='couples'){
+    // Primary host of a +1 pair: has plusOneId
+    if(g.plusOneId) return true;
+    // Member of a proper couple: mutual coupleId links (both point to each other)
+    if(g.coupleId){
+      const partner=(STATE.guests||[]).find(x=>x.id===g.coupleId);
+      // Mutual link → proper couple member
+      if(partner && partner.coupleId===g.id) return true;
+      // partner.plusOneId===g.id → this guest IS the +1, not the host; handled via plusone slot
+    }
+    return false;
+  }
   if(group==='families') return (STATE.families||[]).some(f=>f.memberIds.includes(g.id));
-  // Singles: truly solo — not coupled, not hosting a +1, not the +1 themselves, not in a family.
+  // Singles: truly solo — not coupled, not hosting a +1, not a +1 themselves, not in a family.
   if(group==='singles') return !g.coupleId && !g.plusOneId && g.isMain!==false && !(STATE.families||[]).some(f=>f.memberIds.includes(g.id));
   return guestGroupOf(g)===group;
 }
@@ -7600,10 +7610,11 @@ function guestPassesFilter(g){
   else { if(gList==='B') return false; }
   if(!(sf.status==='all'||g.rsvp===sf.status)) return false;
   if(sf.group&&sf.group!=='all'){
-    // Special case: status+singles — a coupled guest whose partner has a different
+    // Special case: status+singles — a coupled/plusone guest whose partner has a different
     // RSVP status passes through so they can appear solo with a partner note.
-    if(sf.group==='singles'&&sf.status!=='all'&&g.coupleId){
-      const partner=STATE.guests.find(x=>x.id===g.coupleId);
+    if(sf.group==='singles'&&sf.status!=='all'&&(g.coupleId||g.plusOneId)){
+      const partnerId=g.coupleId||g.plusOneId;
+      const partner=STATE.guests.find(x=>x.id===partnerId);
       const partnerRsvp=partner?(partner.rsvp||'awaiting'):'';
       if((g.rsvp||'awaiting')===partnerRsvp) return false; // same status → not a special case
       // falls through — different RSVP, show solo with note
@@ -8333,8 +8344,8 @@ function renderGuestList(){
       if(!gPass&&!pPass) return;
       // When RSVP filter active and statuses differ, show individually
       if(sf.status!=='all'&&(!gPass||!pPass)){
-        if(gPass) html+=`<div class="solo-bracket" data-bulk-id="${g.id}" ${reorderDraggable(g.id)}>${guestCardHtml(g)}</div>`;
-        if(pPass) html+=`<div class="solo-bracket" data-bulk-id="${plusGuest.id}" ${reorderDraggable(plusGuest.id)}>${guestCardHtml(plusGuest)}</div>`;
+        if(gPass) html+=`<div class="solo-bracket" data-bulk-id="${g.id}" ${reorderDraggable(g.id)}>${guestCardHtml(g)}${sf.group==='singles'?_couplePartnerNote(plusGuest):''}</div>`;
+        if(pPass) html+=`<div class="solo-bracket" data-bulk-id="${plusGuest.id}" ${reorderDraggable(plusGuest.id)}>${guestCardHtml(plusGuest)}${sf.group==='singles'?_couplePartnerNote(g):''}</div>`;
       } else {
         html+=plusOneHtml(g,plusGuest);
       }
