@@ -32102,6 +32102,7 @@ function _wbSite(){
   if(!['flat','bordered','bevel'].includes(t.cardStyle)) t.cardStyle='flat';
   if(!['thin','medium','bold'].includes(t.btnBorder)) t.btnBorder='medium';
   if(!['center','left'].includes(t.align)) t.align='center';
+  if(!['left','center','justify'].includes(t.bodyAlign)) t.bodyAlign='left';
   if(typeof t.css!=='string') t.css='';
   // v185: website slug for hash-routing. Auto-generated from partner names, user-editable.
   if(!w.slug || typeof w.slug!=='string'){
@@ -32602,6 +32603,7 @@ function _wbDragEnd(e){
 
 // ── Theme panel: live specimen on top, role assignment below ──
 let _wbThemeSnapshot = null;
+let _wbHomeSnapshot  = null;
 let _wbLiveViewMode = 'desktop';
 function _wbViewSet(mode){
   _wbLiveViewMode=mode;
@@ -32718,73 +32720,87 @@ function _wbThemeBody(){
         <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Corners</div>
-        <span class="inv-seg">
-          ${Object.keys(WB_CORNERS).map(c=>`<button type="button" class="${t.corners===c?'active':''}" onclick="_wbCorners('${c}')">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join('')}
-        </span>
-      </div>
-      <div style="margin-bottom:4px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Button style</div>
-        <span class="inv-seg" style="margin-bottom:8px">
-          <button type="button" class="${t.btnStyle==='outline'?'active':''}" onclick="_wbBtnStyle('outline')">Outline</button>
-          <button type="button" class="${t.btnStyle==='filled'?'active':''}" onclick="_wbBtnStyle('filled')">Filled</button>
-          <button type="button" class="${t.btnStyle==='soft'?'active':''}" onclick="_wbBtnStyle('soft')">Soft</button>
-        </span>
-        <div class="wb-blk-hint" style="margin-bottom:10px">Its colour is the <b>Button</b> swatch on the Colours tab.</div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Button size</div>
-        <span class="inv-seg">
-          <button type="button" class="${t.btnSize==='sm'?'active':''}" onclick="_wbSet('btnSize','sm')">S</button>
-          <button type="button" class="${t.btnSize==='md'?'active':''}" onclick="_wbSet('btnSize','md')">M</button>
-          <button type="button" class="${t.btnSize==='lg'?'active':''}" onclick="_wbSet('btnSize','lg')">L</button>
-        </span>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Button weight</div>
-        <span class="inv-seg">
-          <button type="button" class="${t.btnBorder==='thin'?'active':''}" onclick="_wbSet('btnBorder','thin')">Thin</button>
-          <button type="button" class="${t.btnBorder==='medium'?'active':''}" onclick="_wbSet('btnBorder','medium')">Medium</button>
-          <button type="button" class="${t.btnBorder==='bold'?'active':''}" onclick="_wbSet('btnBorder','bold')">Bold</button>
-        </span>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Button shadow</div>
-        <span class="inv-seg">
-          <button type="button" class="${t.btnShadow==='none'?'active':''}" onclick="_wbSet('btnShadow','none')">None</button>
-          <button type="button" class="${t.btnShadow==='soft'?'active':''}" onclick="_wbSet('btnShadow','soft')">Soft</button>
-          <button type="button" class="${t.btnShadow==='strong'?'active':''}" onclick="_wbSet('btnShadow','strong')">Strong</button>
-        </span>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Button bevel</div>
-        <span class="inv-seg">
-          <button type="button" class="${!t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',false)">Off</button>
-          <button type="button" class="${t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',true)">On</button>
-        </span>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow</div>
-        <span class="inv-seg">
-          <button type="button" class="${t.shadow==='none'?'active':''}" onclick="_wbSet('shadow','none')">None</button>
-          <button type="button" class="${t.shadow==='soft'?'active':''}" onclick="_wbSet('shadow','soft')">Soft</button>
-          <button type="button" class="${t.shadow==='lifted'?'active':''}" onclick="_wbSet('shadow','lifted')">Lifted</button>
-        </span>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge</div>
-        <span class="inv-seg">
-          <button type="button" class="${t.cardStyle==='flat'?'active':''}" onclick="_wbSet('cardStyle','flat')">Flat</button>
-          <button type="button" class="${t.cardStyle==='bordered'?'active':''}" onclick="_wbSet('cardStyle','bordered')">Bordered</button>
-          <button type="button" class="${t.cardStyle==='bevel'?'active':''}" onclick="_wbSet('cardStyle','bevel')">Bevel</button>
-        </span>
-      </div>
-      <div>
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Alignment</div>
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
         <span class="inv-seg">
           <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
           <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
         </span>
+      </div>
+      <div style="margin-bottom:20px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Body text alignment</div>
+        <span class="inv-seg">
+          <button type="button" class="${(t.bodyAlign||'left')==='left'?'active':''}" onclick="_wbSet('bodyAlign','left')">Left</button>
+          <button type="button" class="${t.bodyAlign==='center'?'active':''}" onclick="_wbSet('bodyAlign','center')">Centre</button>
+          <button type="button" class="${t.bodyAlign==='justify'?'active':''}" onclick="_wbSet('bodyAlign','justify')">Justify</button>
+        </span>
+      </div>
+      <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">BUTTONS</div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button shape</div>
+          <span class="inv-seg">
+            ${Object.keys(WB_CORNERS).map(c=>`<button type="button" class="${t.corners===c?'active':''}" onclick="_wbCorners('${c}')">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join('')}
+          </span>
+        </div>
+        <div style="margin-bottom:4px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button style</div>
+          <span class="inv-seg" style="margin-bottom:8px">
+            <button type="button" class="${t.btnStyle==='outline'?'active':''}" onclick="_wbBtnStyle('outline')">Outline</button>
+            <button type="button" class="${t.btnStyle==='filled'?'active':''}" onclick="_wbBtnStyle('filled')">Filled</button>
+            <button type="button" class="${t.btnStyle==='soft'?'active':''}" onclick="_wbBtnStyle('soft')">Soft</button>
+          </span>
+          <div class="wb-blk-hint" style="margin-bottom:10px">Its colour is the <b>Button</b> swatch on the Colours tab.</div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button size</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.btnSize==='sm'?'active':''}" onclick="_wbSet('btnSize','sm')">S</button>
+            <button type="button" class="${t.btnSize==='md'?'active':''}" onclick="_wbSet('btnSize','md')">M</button>
+            <button type="button" class="${t.btnSize==='lg'?'active':''}" onclick="_wbSet('btnSize','lg')">L</button>
+          </span>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button weight</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.btnBorder==='thin'?'active':''}" onclick="_wbSet('btnBorder','thin')">Thin</button>
+            <button type="button" class="${t.btnBorder==='medium'?'active':''}" onclick="_wbSet('btnBorder','medium')">Medium</button>
+            <button type="button" class="${t.btnBorder==='bold'?'active':''}" onclick="_wbSet('btnBorder','bold')">Bold</button>
+          </span>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button shadow</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.btnShadow==='none'?'active':''}" onclick="_wbSet('btnShadow','none')">None</button>
+            <button type="button" class="${t.btnShadow==='soft'?'active':''}" onclick="_wbSet('btnShadow','soft')">Soft</button>
+            <button type="button" class="${t.btnShadow==='strong'?'active':''}" onclick="_wbSet('btnShadow','strong')">Strong</button>
+          </span>
+        </div>
+        <div>
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button bevel</div>
+          <span class="inv-seg">
+            <button type="button" class="${!t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',false)">Off</button>
+            <button type="button" class="${t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',true)">On</button>
+          </span>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;padding-top:4px;border-top:1px solid var(--border)">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">SECTIONS</div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.shadow==='none'?'active':''}" onclick="_wbSet('shadow','none')">None</button>
+            <button type="button" class="${t.shadow==='soft'?'active':''}" onclick="_wbSet('shadow','soft')">Soft</button>
+            <button type="button" class="${t.shadow==='lifted'?'active':''}" onclick="_wbSet('shadow','lifted')">Lifted</button>
+          </span>
+        </div>
+        <div>
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.cardStyle==='flat'?'active':''}" onclick="_wbSet('cardStyle','flat')">Flat</button>
+            <button type="button" class="${t.cardStyle==='bordered'?'active':''}" onclick="_wbSet('cardStyle','bordered')">Bordered</button>
+            <button type="button" class="${t.cardStyle==='bevel'?'active':''}" onclick="_wbSet('cardStyle','bevel')">Bevel</button>
+          </span>
+        </div>
       </div>`;
   }
 
@@ -33004,15 +33020,30 @@ function openWbSection(key){
 
 function openWbHome(){
   const h=_wbSite().home;
+  const hero=_wbSite().hero;
   const ctaMode=h.ctaMode||'ics';
+  _wbHomeSnapshot=JSON.stringify({home:h, hero:{showNames:hero.showNames, showDate:hero.showDate}});
+  const tog=(id,label,checked,fn)=>`<label class="tl-pub-row" for="${id}" style="padding:9px 10px">
+      <span class="tl-pub-title">${label}</span>
+      <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
+        <input type="checkbox" id="${id}" ${checked?'checked':''} onchange="${fn}(this.checked)"/>
+        <span class="toggle-track"></span>
+      </span>
+    </label>`;
   _wbPanel('Home', `<div style="display:flex;flex-direction:column;gap:14px">
-      <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Your names and date come from Event Details. These two lines are the site's own. Images save as you add them.</div>
       <button type="button" class="btn btn-outline btn-sm" onclick="closeModalDirect();openWbHero()" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Hero image${_wbSite().hero.mediaId?' · set':''}</button>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Hero image${hero.mediaId?' · set':''}</button>
+      <div style="display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        ${tog('wb-h-snames','Names',hero.showNames!==false,'_wbHomeHeroSet.bind(null,\'showNames\')')}
+        ${tog('wb-h-sdate','Date',hero.showDate!==false,'_wbHomeHeroSet.bind(null,\'showDate\')')}
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:-8px;line-height:1.5">Turn these off if your hero image already has them, or to use a different layout.</div>
       <div class="form-group"><label class="form-label">Headline <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-        <input class="form-input" id="wb-h-head" placeholder="e.g. We're getting married" value="${_escHtml(h.headline||'')}"/></div>
+        <input class="form-input" id="wb-h-head" placeholder="e.g. We're getting married" value="${_escHtml(h.headline||'')}"
+               oninput="_wbLiveHomeUpdate()"/></div>
       <div class="form-group"><label class="form-label">Welcome message <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-        <textarea class="form-input" id="wb-h-sub" rows="3" placeholder="A line or two for your guests…" style="resize:vertical">${_escHtml(h.sub||'')}</textarea></div>
+        <textarea class="form-input" id="wb-h-sub" rows="3" placeholder="A line or two for your guests…" style="resize:vertical"
+                  oninput="_wbLiveHomeUpdate()">${_escHtml(h.sub||'')}</textarea></div>
       <div class="wb-blk-ctl">
         <span class="wb-slot-lbl">Button</span>
         <span class="inv-seg">
@@ -33023,14 +33054,39 @@ function openWbHome(){
       </div>
       <div id="wb-cta-hint" style="font-size:12px;color:var(--muted);margin-top:-6px">${ctaMode==='ics'?'Adds a Save the date calendar download.':ctaMode==='rsvp'?'Links guests to your RSVP form.':''}</div>
     </div>`,
-    `<button class="btn btn-outline" onclick="_wbClosePanel()">Cancel</button>
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbHomeCancel()">Cancel</button>
      <button class="btn btn-primary" onclick="_wbSaveHome()">Save</button>`);
 }
 function _wbSaveHome(){
   const h=_wbSite().home;
   h.headline=(document.getElementById('wb-h-head')||{}).value||'';
   h.sub=(document.getElementById('wb-h-sub')||{}).value||'';
+  _wbHomeSnapshot=null;
   saveToStorage(); _wbClosePanel(); navigate('website');
+}
+function _wbHomeCancel(){
+  if(_wbHomeSnapshot){
+    try{
+      const snap=JSON.parse(_wbHomeSnapshot);
+      const w=_wbSite();
+      Object.assign(w.home, snap.home);
+      Object.assign(w.hero, snap.hero);
+      saveToStorage(); _wbLivePaint();
+    }catch(e){}
+    _wbHomeSnapshot=null;
+  }
+  _wbClosePanel();
+}
+function _wbLiveHomeUpdate(){
+  const h=_wbSite().home;
+  h.headline=(document.getElementById('wb-h-head')||{}).value||'';
+  h.sub=(document.getElementById('wb-h-sub')||{}).value||'';
+  saveToStorage(); _wbLiveSoon();
+}
+function _wbHomeHeroSet(field, val){
+  const hero=_wbSite().hero;
+  hero[field]=val;
+  saveToStorage(); _wbLiveSoon();
 }
 function _wbSetCtaMode(mode){
   const h=_wbSite().home;
@@ -35060,8 +35116,8 @@ function _wbBuildSite(forDownload){
       // the couple's own site no longer tells you whose it is. So: the toggles apply to the
       // "names over photo" case, and everywhere else the names always show.
       const canHide  = over;
-      const wantName = !canHide || hero.showNames!==false;
-      const wantDate = !canHide || hero.showDate !==false;
+      const wantName = hero.showNames!==false;
+      const wantDate = hero.showDate !==false;
       const wantIcs  = !canHide || hero.showIcs  !==false;
       const ctaM     = h.ctaMode || 'ics';
 
@@ -35322,7 +35378,7 @@ h2{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(24)}px,4vw,$
 .intro{max-width:52ch;margin:0 auto ${sp(24)}px;color:${t2.text};font-size:${scb(15)}px}
 section.lft .intro{margin-left:0}
 h2+.imgs-grid,h2+.imgs-rows,.intro+.imgs-grid,.intro+.imgs-rows{margin-top:${sp(18)}px}
-.para{max-width:60ch;margin:0 auto ${sp(16)}px;text-align:left;color:${t2.text}}
+.para{max-width:60ch;margin:0 auto ${sp(16)}px;text-align:${(['left','center','justify'].includes(t2.bodyAlign)?t2.bodyAlign:'left')};${t2.bodyAlign==='justify'?'hyphens:auto;-webkit-hyphens:auto;':''}color:${t2.text}}
 section.lft .para{margin-left:0}
 section.b-center .para{text-align:center}
 section.b-justify .para{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
