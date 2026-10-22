@@ -44331,7 +44331,7 @@ function loadFromStorage(){
       document.documentElement.setAttribute('data-theme','light');
     }
     document.body.classList.toggle('cl-no-fade', STATE.settings.checklistCompletedFade===false);
-    if(saved.sidebarMode==='icon') document.body.classList.add('icon-sidebar');
+    if(saved.sidebarMode==='icon' && window.innerWidth>900) document.body.classList.add('icon-sidebar');
 
     // Data integrity: clean up any stale couple/plus-one links pointing to non-existent guests
     const guestIds=new Set(STATE.guests.map(g=>g.id));
@@ -44587,7 +44587,8 @@ if(!alreadySetUp && window.matchMedia && window.matchMedia('(prefers-color-schem
   const sidebar=document.getElementById('sidebar');
   const overlay=document.getElementById('sidebar-overlay');
   if(isMobile){
-    // Mobile: hamburger drawer, closed by default
+    // Mobile: hamburger drawer — ensure icon-sidebar mode from a synced desktop setting is never applied here
+    document.body.classList.remove('icon-sidebar');
     const saved=localStorage.getItem('uv_sb_mobile')||'closed';
     sidebar.classList.toggle('collapsed',saved!=='open');
     if(overlay) overlay.classList.toggle('visible',saved==='open');
