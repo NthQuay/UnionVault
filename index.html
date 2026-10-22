@@ -32526,6 +32526,7 @@ function _wbLiveScrollY(f){
 }
 
 function _wbLivePaint(){
+  _wbMarkChanged();
   const f=document.getElementById('wb-live');
   if(!f) return;
   const prev=_wbLiveScrollY(f);
@@ -32565,6 +32566,7 @@ function _wbLiveFocusOff(){ _wbLiveFocus = null; }
 let _wbLiveTimer=null;
 function _wbLiveSoon(){
   if(!document.getElementById('wb-live')) return;
+  _wbMarkChanged();
   clearTimeout(_wbLiveTimer);
   _wbLiveTimer=setTimeout(_wbLivePaint, 400);
 }
@@ -33000,8 +33002,13 @@ function _wbSectionSave(){
     el.textContent = '✓ Saved';
     el.style.opacity = '1';
     clearTimeout(el._t);
-    el._t = setTimeout(()=>{ el.style.opacity='0'; }, 3000);
   }
+}
+function _wbMarkChanged(){
+  if(!_wbPanelSaved) return;
+  _wbPanelSaved = false;
+  const el = document.getElementById('wb-ec-saved');
+  if(el) el.style.opacity = '0';
 }
 function _wbSectionCancel(){
   _wbConfirm('Close the editor?', null, 'Close', ()=>_wbClosePanel(), 'Keep editing', null);
@@ -34320,8 +34327,15 @@ function _wbLinkDel(key,bid,ix){
 }
 function _wbLinkModeSet(key,bid,ix,mode){
   const b=_wbBlock(key,bid); if(!b||!b.items[ix]) return;
-  b.items[ix].urlMode=mode;
-  if(mode!=='custom') b.items[ix].url='';
+  const item=b.items[ix];
+  const prevMode=item.urlMode||'custom';
+  const prevAutoLabel=prevMode==='ics'?'Save the date':prevMode==='rsvp'?'RSVP':'';
+  item.urlMode=mode;
+  if(mode!=='custom') item.url='';
+  if(mode==='ics' && (!item.label||item.label===prevAutoLabel||item.label==='RSVP'))
+    item.label='Save the date';
+  else if(mode==='rsvp' && (!item.label||item.label===prevAutoLabel||item.label==='Save the date'))
+    item.label='RSVP';
   saveToStorage();
   _wbBlocksRepaint(key);
 }
@@ -34590,7 +34604,15 @@ function _wbBlockBody(key,b){
           <button type="button" class="${b.layout==='stack'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','layout','stack')">Stacked</button>
           <button type="button" class="${b.layout==='rows'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','layout','rows')">Rows</button>
         </span>
-      </div>`:`<div class="wb-blk-hint">Buttons use your <b>Button</b> colour and style, from the Theme — the same as Save the date.</div>`}
+      </div>`:`<div class="wb-blk-hint">Buttons use your <b>Button</b> colour and style, from the Theme — the same as Save the date.</div>
+      <div class="wb-blk-ctl">
+        <span class="wb-slot-lbl">Alignment</span>
+        <span class="inv-seg">
+          <button type="button" class="${(b.align||'center')==='left'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','align','left')">Left</button>
+          <button type="button" class="${(b.align||'center')==='center'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','align','center')">Centre</button>
+          <button type="button" class="${(b.align||'center')==='right'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','align','right')">Right</button>
+        </span>
+      </div>`}
       ${b.items.some(x=>String(x.label||'').trim() && (x.urlMode||'custom')==='custom' && !String(x.url||'').trim())
         ? `<div class="wb-blk-hint">A ${isBtn?'button':'link'} with no address ${isBtn?'is not shown at all':'shows as plain text, not a link that goes nowhere'}.</div>` : ''}
     </div>`;
@@ -35063,7 +35085,8 @@ function _wbBuildSite(forDownload){
           return String(x.url||'').trim();
         });
         if(!rows.length) return '';
-        return `<div class="btns">${rows.map(x=>{
+        const btnsJustify=b.align==='left'?'flex-start':b.align==='right'?'flex-end':'center';
+        return `<div class="btns" style="justify-content:${btnsJustify}">${rows.map(x=>{
           const um=x.urlMode||'custom';
           const href=um==='ics'?(_wbIcs()||''):um==='rsvp'?_rsvpLink():_normalizeUrl(x.url);
           const attrs=um==='ics'?'download="save-the-date.ics"':'target="_blank" rel="noopener noreferrer"';
