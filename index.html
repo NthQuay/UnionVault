@@ -32975,8 +32975,8 @@ function openWbSection(key){
     : 'The words in this section come from your planner. Edit them where they live and the site follows.';
   _wbPanel(meta.name, `<div style="display:flex;flex-direction:column;gap:14px">
       <div style="font-size:12.5px;color:var(--muted);line-height:1.55">${what}</div>
-      ${_wbBlocksHtml(key)}
       ${_wbLayoutHtml(key)}
+      ${_wbBlocksHtml(key)}
     </div>`,
     `<button class="btn btn-outline" onclick="_wbClosePanel();navigate('${dest}')" style="margin-right:auto">Go to ${destLabel}</button>
      <button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
@@ -33031,7 +33031,7 @@ function _copyRsvpLink(){
 }
 
 function openWbGallery(){
-  _wbPanel('Gallery', `<div id="wb-gallery-shell">${_wbGalleryBody()}</div>`+_wbLayoutHtml('gallery'),
+  _wbPanel('Gallery', _wbLayoutHtml('gallery')+`<div id="wb-gallery-shell">${_wbGalleryBody()}</div>`,
     `<button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
 }
 // Redraw ONLY the picker shell (grid + intro copy). The Layout box is a sibling node and is
@@ -33195,7 +33195,7 @@ function _wbGalleryDeleteUpload(upId){
 }
 
 function openWbSchedule(){
-  _wbPanel('Schedule', _wbScheduleBody()+_wbBlocksHtml('schedule')+_wbLayoutHtml('schedule'),
+  _wbPanel('Schedule', _wbLayoutHtml('schedule')+_wbScheduleBody()+_wbBlocksHtml('schedule'),
     `<button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
 }
 function _wbScheduleBody(){
@@ -33295,7 +33295,7 @@ function _wbFaqRemove(id){
 }
 
 function openWbStays(){
-  _wbPanel('Accommodation', _wbStaysBody()+_wbBlocksHtml('accommodation')+_wbLayoutHtml('accommodation'),
+  _wbPanel('Accommodation', _wbLayoutHtml('accommodation')+_wbStaysBody()+_wbBlocksHtml('accommodation'),
     `<button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
 }
 function _wbStaysBody(){
@@ -33532,8 +33532,8 @@ function openWbCustom(id){
   // textarea would be two editors writing one field — which is precisely how Home ended
   // up with five controls that did nothing (v125). One field, one editor.
   _wbPanel(c.name||'Section', `<div style="display:flex;flex-direction:column;gap:0">
-      ${_wbBlocksHtml(id)}
       ${_wbLayoutHtml(id)}
+      ${_wbBlocksHtml(id)}
     </div>`,
     `<button class="btn btn-danger" onclick="_wbDeleteSection('${id}')" style="margin-right:auto">Delete</button>
      <button class="btn btn-primary" onclick="_wbClosePanel();navigate('website')">Done</button>`);
