@@ -27759,6 +27759,20 @@ setInterval(async()=>{
   if(r.ok) _sbPersist({access_token:r.b.access_token,refresh_token:r.b.refresh_token,user:{id:r.b.user.id,email:r.b.user.email}});
 },55*60*1000);
 
+function _sbTokenExpired(){
+  if(!_sbSession||!_sbSession.access_token) return true;
+  try{
+    const payload=JSON.parse(atob(_sbSession.access_token.split('.')[1]));
+    return payload.exp*1000-Date.now()<5*60*1000; // refresh if <5 min remaining
+  }catch(_){ return false; }
+}
+async function _sbEnsureFreshToken(){
+  if(!_sbTokenExpired()) return;
+  if(!_sbSession||!_sbSession.refresh_token) return;
+  const r=await _sbAuthPost('/token?grant_type=refresh_token',{refresh_token:_sbSession.refresh_token});
+  if(r.ok) _sbPersist({access_token:r.b.access_token,refresh_token:r.b.refresh_token,user:{id:r.b.user.id,email:r.b.user.email}});
+}
+
 async function _sbUpsert(table,rows,conflict){
   const url=conflict?`${_SB_URL}/rest/v1/${table}?on_conflict=${encodeURIComponent(conflict)}`:`${_SB_URL}/rest/v1/${table}`;
   const r=await fetch(url,{
@@ -27784,6 +27798,7 @@ const _CS=['event','settings','guests','checklist','vendors','quotes',
 
 async function _cloudSave(silent){
   if(!_sbSession) return {error:'Not signed in'};
+  await _sbEnsureFreshToken();
   const uid=_sbSession.user.id;
   // Stamp the last-save timestamp so conflict check can compare
   if(!STATE.settings) STATE.settings={};
@@ -43346,6 +43361,7 @@ window.addEventListener('beforeunload',function(){
 
 async function _autoSyncCheckOnBoot(){
   if(!_sbSession||!alreadySetUp) return;
+  await _sbEnsureFreshToken();
   try{
     const res=await fetch(`${_SB_URL}/rest/v1/planner_data?user_id=eq.${_sbSession.user.id}&select=updated_at`,{
       headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_sbSession.access_token}
