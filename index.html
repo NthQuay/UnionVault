@@ -34583,11 +34583,7 @@ function _wbInspoAdd(){
 // just resizes the frame — the site inside is genuinely responsive, not a separate mock.
 let _wbPreviewMode = 'phone';
 function openWbPreview(){
-  const html = _wbBuildSite();
-  const blob = new Blob([html], {type:'text/html'});
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-  setTimeout(()=>URL.revokeObjectURL(url), 10000);
+  window.open(_wbSiteUrl(), '_blank');
 }
 
 // openModal() removes `modal-wide` from the box on EVERY open — it resets the classes so a
