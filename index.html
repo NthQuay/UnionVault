@@ -43311,9 +43311,9 @@ async function _autoSyncFlush(){
   window._autoSyncState='saving';
   _syncStatusRefresh();
   try{
-    await _cloudSave(true); // silent=true → no toast on success
-    window._autoSyncState='saved';
-    window._autoSyncLastSaved=Date.now();
+    const r=await _cloudSave(true);
+    if(r&&r.ok){ window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now(); }
+    else { window._autoSyncState='error'; }
   }catch(e){
     console.warn('Auto-sync flush failed',e);
     window._autoSyncState='error';
@@ -43321,12 +43321,18 @@ async function _autoSyncFlush(){
   _syncStatusRefresh();
 }
 
-// visibilitychange + beforeunload — flush immediately if pending
+// visibilitychange + beforeunload — flush immediately if pending, check cloud on resume
+let _lastVisibilitySync=0;
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='hidden'&&_autoSyncTimer){
-    clearTimeout(_autoSyncTimer);
-    _autoSyncTimer=null;
-    _autoSyncFlush();
+  if(document.visibilityState==='hidden'){
+    if(_autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; _autoSyncFlush(); }
+  } else if(document.visibilityState==='visible'){
+    // PWA resumed from background — re-check cloud for newer data (throttled to once per 5 min)
+    const now=Date.now();
+    if(now-_lastVisibilitySync>5*60*1000){
+      _lastVisibilitySync=now;
+      setTimeout(_autoSyncCheckOnBoot,1500);
+    }
   }
 });
 window.addEventListener('beforeunload',function(){
