@@ -35341,21 +35341,43 @@ ${blocks}
 function _wbIcs(){
   const e=STATE.event||{};
   if(!e.date) return '';
-  const d=String(e.date).replace(/-/g,'');            // YYYY-MM-DD -> YYYYMMDD
+  const d=String(e.date).replace(/-/g,'');
   if(!/^\d{8}$/.test(d)) return '';
-  const nx=new Date(e.date+'T00:00:00');
-  if(isNaN(nx)) return '';
-  nx.setDate(nx.getDate()+1);
-  const end=nx.getFullYear()+String(nx.getMonth()+1).padStart(2,'0')+String(nx.getDate()).padStart(2,'0');
+  if(isNaN(new Date(e.date+'T00:00:00'))) return '';
   const esc=(s)=>String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
   const where=[e.venue, e.venueAddress].filter(Boolean).join(', ');
+  const title=(_wbCouple()||'Our Wedding')+"'s Wedding";
+  // Find ceremony start from timeline; use last moment's time + 1 hr as end
+  const sorted=(STATE.timeline||[]).slice().sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+  const cerMom=sorted.find(m=>m.cat==='ceremony'||/ceremony/i.test(m.title||''));
+  const cerTime=cerMom&&cerMom.time;
+  const lastTime=(sorted[sorted.length-1]||{}).time;
+  let dtStart, dtEnd;
+  if(cerTime && /^\d{2}:\d{2}$/.test(cerTime)){
+    const [ch,cm]=cerTime.split(':').map(Number);
+    dtStart='DTSTART:'+d+'T'+String(ch).padStart(2,'0')+String(cm).padStart(2,'0')+'00';
+    let endH, endM;
+    if(lastTime && lastTime!==cerTime && /^\d{2}:\d{2}$/.test(lastTime)){
+      const [lh,lm]=lastTime.split(':').map(Number);
+      endH=Math.min(lh+1,23); endM=lm;
+    } else {
+      endH=Math.min(ch+4,23); endM=cm;
+    }
+    dtEnd='DTEND:'+d+'T'+String(endH).padStart(2,'0')+String(endM).padStart(2,'0')+'00';
+  } else {
+    // No ceremony time — fall back to all-day
+    const nx=new Date(e.date+'T00:00:00');
+    nx.setDate(nx.getDate()+1);
+    const end=nx.getFullYear()+String(nx.getMonth()+1).padStart(2,'0')+String(nx.getDate()).padStart(2,'0');
+    dtStart='DTSTART;VALUE=DATE:'+d;
+    dtEnd='DTEND;VALUE=DATE:'+end;
+  }
   const lines=[
     'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Union Vault//Wedding//EN','BEGIN:VEVENT',
     'UID:'+d+'-elegantaffair@local',
     'DTSTAMP:'+d+'T000000Z',
-    'DTSTART;VALUE=DATE:'+d,
-    'DTEND;VALUE=DATE:'+end,
-    'SUMMARY:'+esc(_wbCouple()),
+    dtStart, dtEnd,
+    'SUMMARY:'+esc(title),
     where?('LOCATION:'+esc(where)):'',
     'END:VEVENT','END:VCALENDAR'
   ].filter(Boolean);
