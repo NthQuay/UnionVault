@@ -644,7 +644,7 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
 .wb-ec-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
 .wb-ec-title{font-size:14px;font-weight:600;color:var(--ink)}
 .wb-ec-close{border:1px solid var(--border);background:var(--cream);border-radius:8px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--muted);line-height:1;flex-shrink:0;font-family:inherit}
-.wb-ec-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:16px}
+.wb-ec-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:14px 16px;display:flex;flex-direction:column;gap:16px}
 .wb-ec-footer{flex-shrink:0;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
 .wb-row.wb-selected,.wb-theme-row.wb-selected{background:rgba(160,132,92,.08)!important}
 /* ── The phone strip (v144) ──────────────────────────────────────────────────────────
@@ -33120,6 +33120,7 @@ function _wbPanel(title, body, footer){
     const _hasSave=footer&&footer.includes('_wbSectionSave');
     const _footerHtml=_hasSave?footer.replace(/<button[^>]*btn-primary[^>]*>\s*Save\s*<\/button>/,''):footer;
     col.innerHTML=`<div class="wb-ec-header" style="display:flex;align-items:center;gap:6px"><span class="wb-ec-title" style="flex:none">${title}</span><span id="wb-ec-saved" style="flex:1;font-size:11.5px;font-weight:500;color:#3d9e57;opacity:0;transition:opacity .4s;white-space:nowrap">✓ Saved</span>${_hasSave?'<button type="button" class="btn btn-primary" style="font-size:12px;padding:5px 14px;flex-shrink:0" onclick="_wbSectionSave()">Save</button>':''}<button type="button" class="wb-ec-close" onclick="_wbClosePanel()">×</button></div><div class="wb-ec-body" id="wb-ec-body">${body}</div>${_footerHtml.trim()?'<div class="wb-ec-footer">'+_footerHtml+'</div>':''}`;
+    const _b=document.getElementById('wb-ec-body'); if(_b) _b.scrollTop=0;
   } else {
     openModal(title, body, footer);
   }
