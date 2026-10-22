@@ -32586,11 +32586,28 @@ function _wbDragEnd(e){
 }
 
 // ── Theme panel: live specimen on top, role assignment below ──
+let _wbThemeSnapshot = null;
 function openWbTheme(){
   document.querySelectorAll('.wb-row.wb-selected,.wb-theme-row.wb-selected').forEach(r=>r.classList.remove('wb-selected'));
   document.querySelector('.wb-theme-row')?.classList.add('wb-selected');
+  _wbThemeSnapshot = JSON.stringify(_wbSite().theme);
   _wbPanel('Theme', _wbThemeBody(),
-    `<button class="btn btn-primary" onclick="_wbClosePanel()">Done</button>`);
+    `<div style="display:flex;gap:8px">
+       <button class="btn btn-outline btn-sm" style="flex:1" onclick="_wbThemeCancel()">Cancel</button>
+       <button class="btn btn-primary btn-sm" style="flex:1" onclick="_wbClosePanel()">Save</button>
+     </div>`);
+}
+function _wbThemeCancel(){
+  if(_wbThemeSnapshot){
+    try{
+      const w=_wbSite();
+      w.theme=JSON.parse(_wbThemeSnapshot);
+      saveToStorage();
+      _wbLivePaint();
+    }catch(e){}
+    _wbThemeSnapshot=null;
+  }
+  _wbClosePanel();
 }
 let _wbThemeTab = 'colour';
 function _wbSetThemeTab(t){ _wbThemeTab=t; _wbRepaintTheme(); }
