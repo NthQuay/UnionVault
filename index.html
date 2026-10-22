@@ -36331,11 +36331,11 @@ function renderVisionboard(c,actions){
     const chipBg=isDark?'#2A2418':'#F3EEE4';
     const chipFg=isDark?'#CBBBA0':'#8B7355';
     const chipBorder=isDark?'#3A332A':'#E0D5C5';
-    return `<div style="margin-top:6px">
-      <span onclick="event.stopPropagation();jumpToBudget('${item.budgetId}')" title="Go to budget item"
-        style="font-size:10px;padding:2px 7px;border-radius:11px;background:${chipBg};color:${chipFg};display:inline-flex;align-items:center;gap:4px;cursor:pointer;border:1px solid ${chipBorder}">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9.5a3 3 0 0 0-5.6 1.2c0 2.5 4 1.8 4 4a3 3 0 0 1-5.6 1.2"/><line x1="12" y1="6.5" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="17.5"/></svg>
-        ${label}
+    return `<div style="margin-top:6px;max-width:100%;overflow:hidden">
+      <span onclick="event.stopPropagation();jumpToBudget('${item.budgetId}')" title="${label}"
+        style="font-size:10px;padding:2px 7px;border-radius:11px;background:${chipBg};color:${chipFg};display:flex;align-items:center;gap:4px;cursor:pointer;border:1px solid ${chipBorder};max-width:100%;min-width:0;overflow:hidden">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="9"/><path d="M14.8 9.5a3 3 0 0 0-5.6 1.2c0 2.5 4 1.8 4 4a3 3 0 0 1-5.6 1.2"/><line x1="12" y1="6.5" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="17.5"/></svg>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${label}</span>
       </span>
     </div>`;
   }
@@ -36361,7 +36361,7 @@ function renderVisionboard(c,actions){
         const nudge=_vbMobile ? 0 : (jit(idx,2.2)*22-11).toFixed(1); // -11..+11 px (disabled on mobile)
         const tiltX=(tilt + (jit(idx,6.6)*2.4-1.2)).toFixed(2);      // add ±1.2°
         const topGap=_vbMobile ? (4+jit(idx,8.8)*12).toFixed(0) : (8 + jit(idx,8.8)*30).toFixed(0); // 4..16px mobile, 8..38px desktop
-        return`<div ${dragAttrs(item.id)} style="break-inside:avoid;margin:${topGap}px 0 22px;display:inline-block;width:100%;cursor:grab;transform:translateX(${nudge}px)">
+        return`<div ${dragAttrs(item.id)} style="break-inside:avoid;margin:${topGap}px 0 ${_vbMobile?'12px':'22px'};display:inline-block;width:100%;cursor:grab;transform:translateX(${nudge}px)">
           <div style="position:relative;background:${vbPageImagesOnly?'transparent':cardBg};border-radius:3px;padding:${vbPageImagesOnly?'0':'4px 4px 0'};box-shadow:${vbPageImagesOnly?'none':`3px 4px 14px ${cardShadow}`};transform:rotate(${tiltX}deg);transform-origin:center top;transition:transform .2s" onmouseover="this.style.transform='rotate(0deg) scale(1.02)'" onmouseout="this.style.transform='rotate(${tiltX}deg)'">
             <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(${(tilt*0.4).toFixed(2)}deg);width:48px;height:18px;background:${tape};border-radius:2px;opacity:.85;z-index:2"></div>
             ${cardContent(item)}
