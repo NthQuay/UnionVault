@@ -33180,8 +33180,9 @@ function _wbConfirm(title, body, okLabel, okFn, cancelLabel, cancelFn){
   const el = document.createElement('div');
   el.id = 'wb-confirm-overlay';
   el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px';
-  el.innerHTML = `<div style="background:var(--card,#fff);border-radius:14px;padding:22px 24px;max-width:300px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18)">
-    <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:8px">${title}</div>
+  el.innerHTML = `<div style="background:var(--card,#fff);border-radius:14px;padding:22px 24px;max-width:300px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18);position:relative">
+    <button onclick="_wbConfirmClose()" aria-label="Close" style="position:absolute;top:10px;right:10px;border:1px solid var(--border);background:var(--cream,#faf8f4);border-radius:8px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--muted);line-height:1;font-family:inherit;flex-shrink:0">×</button>
+    <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:8px;padding-right:32px">${title}</div>
     ${sub}
     <div style="display:flex;gap:8px;justify-content:flex-end">
       ${cancelBtn}
@@ -33197,6 +33198,11 @@ function _wbConfirmDismiss(ok){
   if(el) el.remove();
   const fn = ok ? cbs?.ok : cbs?.cancel;
   if(fn) fn();
+}
+function _wbConfirmClose(){
+  _wbConfirmCbs = null;
+  const el = document.getElementById('wb-confirm-overlay');
+  if(el) el.remove();
 }
 function openWbSection(key){
   if(WB_LOCKED[key]) return;
