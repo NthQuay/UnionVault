@@ -32205,9 +32205,15 @@ function _wbIsCustom(key){ return !!_wbSite().custom[key]; }
 // rename it).
 function _wbHeading(key){
   const lay=_wbSite().layout[key]||{};
-  if(lay.heading) return lay.heading;
+  if(lay.heading != null) return lay.heading;  // '' = explicitly cleared → no heading
   const m=_wbMeta(key);
   return m?(m.siteName||m.name):'';
+}
+function _wbNavLabel(key){
+  const lay=_wbSite().layout[key]||{};
+  if(lay.heading) return lay.heading;           // custom heading if non-empty
+  const m=_wbMeta(key);
+  return m?(m.siteName||m.name):'';            // always fall back for nav
 }
 function _wbLayout(key){
   const w=_wbSite();
@@ -33635,19 +33641,19 @@ function _wbLaySet(key, field, val){
   // v149: text fields (heading, intro) patch the live iframe IMMEDIATELY so typing feels
   // instant, instead of waiting out the 400ms debounce and looking like nothing happened.
   // The debounced full reload still follows as the source of truth (align/bg/block moves).
-  // Two cases can't be a pure text-patch and must fall back to a reload:
+  // Two cases can't be a pure text-patch and must fall back to an immediate reload:
   //   - the very first intro character (the <p class="intro"> element doesn't exist yet —
   //     the block is created on the next _wbBlocks read), and
-  //   - a heading cleared to empty (the <h2> content reverts to the DEFAULT heading, which
-  //     the patch does handle via _wbHeading, so that one is fine).
+  //   - a heading cleared to '' (the <h2> element must vanish, not just go empty).
+  const headCleared = (field==='heading' && !val);
   let patched=false;
-  if(field==='heading' || field==='intro'){
+  if((field==='heading' || field==='intro') && !headCleared){
     if(!(field==='intro' && wasEmptyIntro)){    // first-ever intro char needs the reload
       patched=_wbLivePatchText(key, field);
     }
   }
-  if(field==='intro' && wasEmptyIntro){
-    _wbLivePaint();                              // insert the new intro element now, once
+  if((field==='intro' && wasEmptyIntro) || headCleared){
+    _wbLivePaint();                              // immediate reload: element appears/vanishes
   } else {
     _wbLiveSoon();                               // debounced reload as the source of truth
   }
@@ -34978,7 +34984,7 @@ function _wbBuildSite(forDownload){
   };
 
   const navLinks=sections.filter(k=>k!=='home').map(k=>
-    `<a href="#${k}">${_escHtml(_wbHeading(k))}</a>`).join('');
+    `<a href="#${k}">${_escHtml(_wbNavLabel(k))}</a>`).join('');
   const nav = navLinks
     ? `<button type="button" class="navtoggle" aria-expanded="false" aria-controls="navlinks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>Menu</button><span class="navlinks" id="navlinks">${navLinks}</span>`
     : '';
@@ -35013,7 +35019,7 @@ function _wbBuildSite(forDownload){
     // Render ONE block. Returns '' when the block has nothing in it — an intro with no
     // text, an images block with no images. An empty block is not a gap; it is nothing.
     const one=(b)=>{
-      if(b.type==='head')  return `<h2>${_escHtml(_wbHeading(k))}</h2>`;
+      if(b.type==='head') { const hd=_wbHeading(k); return hd ? `<h2>${_escHtml(hd)}</h2>` : ''; }
       if(b.type==='intro') return l.intro ? `<p class="intro">${_escHtml(l.intro)}</p>` : '';
       if(b.type==='body')  return content || '';
       if(b.type==='img')   return imgHtml(b);
