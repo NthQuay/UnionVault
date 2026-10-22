@@ -32432,7 +32432,13 @@ function renderWebsite(c, actions){
         <svg class="wb-strip-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="${_wbStripOpen?'M18 15l-6-6-6 6':'M6 9l6 6 6-6'}"/></svg>
       </div>
       <div class="wb-pane-inner">
-        <div class="wb-pane-frame"><iframe id="wb-live" title="Live preview of your website" sandbox="allow-same-origin"></iframe></div>
+        <div style="display:flex;justify-content:center;padding:0 0 8px">
+          <span class="inv-seg">
+            <button type="button" id="wb-view-desktop" class="${_wbLiveViewMode==='desktop'?'active':''}" onclick="_wbViewSet('desktop')">Desktop</button>
+            <button type="button" id="wb-view-mobile"  class="${_wbLiveViewMode==='mobile' ?'active':''}" onclick="_wbViewSet('mobile')">Mobile</button>
+          </span>
+        </div>
+        <div class="wb-pane-frame" style="${_wbLiveViewMode==='mobile'?'max-width:390px;margin:0 auto;border-radius:20px':''}"><iframe id="wb-live" title="Live preview of your website" sandbox="allow-same-origin"></iframe></div>
         <div class="wb-pane-cap">Live · updates as you edit</div>
       </div>
     </div>
@@ -32596,6 +32602,20 @@ function _wbDragEnd(e){
 
 // ── Theme panel: live specimen on top, role assignment below ──
 let _wbThemeSnapshot = null;
+let _wbLiveViewMode = 'desktop';
+function _wbViewSet(mode){
+  _wbLiveViewMode=mode;
+  ['desktop','mobile'].forEach(m=>{
+    const b=document.getElementById('wb-view-'+m);
+    if(b) b.classList.toggle('active',m===mode);
+  });
+  const frame=document.querySelector('.wb-pane-frame');
+  if(frame){
+    frame.style.maxWidth    = mode==='mobile'?'390px':'';
+    frame.style.margin      = mode==='mobile'?'0 auto':'';
+    frame.style.borderRadius= mode==='mobile'?'20px':'';
+  }
+}
 function openWbTheme(){
   document.querySelectorAll('.wb-row.wb-selected,.wb-theme-row.wb-selected').forEach(r=>r.classList.remove('wb-selected'));
   document.querySelector('.wb-theme-row')?.classList.add('wb-selected');
@@ -32984,6 +33004,7 @@ function openWbSection(key){
 
 function openWbHome(){
   const h=_wbSite().home;
+  const ctaMode=h.ctaMode||'ics';
   _wbPanel('Home', `<div style="display:flex;flex-direction:column;gap:14px">
       <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Your names and date come from Event Details. These two lines are the site's own. Images save as you add them.</div>
       <button type="button" class="btn btn-outline btn-sm" onclick="closeModalDirect();openWbHero()" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px">
@@ -32992,7 +33013,15 @@ function openWbHome(){
         <input class="form-input" id="wb-h-head" placeholder="e.g. We're getting married" value="${_escHtml(h.headline||'')}"/></div>
       <div class="form-group"><label class="form-label">Welcome message <span style="color:var(--muted);font-weight:400">(optional)</span></label>
         <textarea class="form-input" id="wb-h-sub" rows="3" placeholder="A line or two for your guests…" style="resize:vertical">${_escHtml(h.sub||'')}</textarea></div>
-      
+      <div class="wb-blk-ctl">
+        <span class="wb-slot-lbl">Button</span>
+        <span class="inv-seg">
+          <button type="button" id="wb-cta-ics"  class="${ctaMode==='ics' ?'active':''}" onclick="_wbSetCtaMode('ics')">Save the date</button>
+          <button type="button" id="wb-cta-rsvp" class="${ctaMode==='rsvp'?'active':''}" onclick="_wbSetCtaMode('rsvp')">RSVP</button>
+          <button type="button" id="wb-cta-none" class="${ctaMode==='none'?'active':''}" onclick="_wbSetCtaMode('none')">None</button>
+        </span>
+      </div>
+      <div id="wb-cta-hint" style="font-size:12px;color:var(--muted);margin-top:-6px">${ctaMode==='ics'?'Adds a Save the date calendar download.':ctaMode==='rsvp'?'Links guests to your RSVP form.':''}</div>
     </div>`,
     `<button class="btn btn-outline" onclick="_wbClosePanel()">Cancel</button>
      <button class="btn btn-primary" onclick="_wbSaveHome()">Save</button>`);
@@ -33002,6 +33031,18 @@ function _wbSaveHome(){
   h.headline=(document.getElementById('wb-h-head')||{}).value||'';
   h.sub=(document.getElementById('wb-h-sub')||{}).value||'';
   saveToStorage(); _wbClosePanel(); navigate('website');
+}
+function _wbSetCtaMode(mode){
+  const h=_wbSite().home;
+  h.ctaMode=mode;
+  saveToStorage();
+  _wbLiveSoon();
+  ['ics','rsvp','none'].forEach(m=>{
+    const b=document.getElementById('wb-cta-'+m);
+    if(b) b.classList.toggle('active',m===mode);
+  });
+  const hint=document.getElementById('wb-cta-hint');
+  if(hint) hint.textContent=mode==='ics'?'Adds a Save the date calendar download.':mode==='rsvp'?'Links guests to your RSVP form.':'';
 }
 
 function openWbRsvp(){
@@ -33915,7 +33956,8 @@ function _wbBlockDefaults(b){
     b.items = b.items.filter(x=>x && typeof x==='object').map(x=>({
       id: x.id||uid(),
       label: typeof x.label==='string' ? x.label : '',
-      url:   typeof x.url==='string'   ? x.url   : ''
+      url:   typeof x.url==='string'   ? x.url   : '',
+      urlMode: ['custom','ics','rsvp'].includes(x.urlMode) ? x.urlMode : 'custom'
     }));
     if(b.type==='links' && b.layout!=='stack' && b.layout!=='rows') b.layout='stack';
   }
@@ -34150,6 +34192,13 @@ function _wbLinkDel(key,bid,ix){
   saveToStorage();
   _wbBlocksRepaint(key);
 }
+function _wbLinkModeSet(key,bid,ix,mode){
+  const b=_wbBlock(key,bid); if(!b||!b.items[ix]) return;
+  b.items[ix].urlMode=mode;
+  if(mode!=='custom') b.items[ix].url='';
+  saveToStorage();
+  _wbBlocksRepaint(key);
+}
 
 // ── Video.
 function _wbVideoSet(key,bid,field,val){
@@ -34273,7 +34322,10 @@ function _wbAddMenuToggle(key,ev){
   // Position using fixed coords so it escapes overflow:hidden parents
   if(trig){
     const r=trig.getBoundingClientRect();
-    menu.style.top=(r.bottom+5)+'px';
+    const MENU_H=220;
+    const topBelow=r.bottom+5;
+    const topAbove=r.top-MENU_H-5;
+    menu.style.top=(topBelow+MENU_H>window.innerHeight&&topAbove>0?topAbove:topBelow)+'px';
     // align left edge, but keep on screen
     const leftEdge=Math.min(r.left, window.innerWidth - 190);
     menu.style.left=Math.max(8, leftEdge)+'px';
@@ -34374,13 +34426,33 @@ function _wbBlockBody(key,b){
   // they are deliberately different TYPES.
   if(b.type==='links' || b.type==='btns'){
     const isBtn = b.type==='btns';
-    const rows=b.items.map((x,ix)=>`<div class="wb-lk-row">
-      <input class="form-input" value="${_escHtml(x.label)}" placeholder="${isBtn?'Book your room':'Gift registry'}"
-             oninput="_wbLinkSet('${key}','${b.id}',${ix},'label',this.value)"/>
-      <input class="form-input" value="${_escHtml(x.url)}" placeholder="example.com"
-             oninput="_wbLinkSet('${key}','${b.id}',${ix},'url',this.value)"/>
-      <button type="button" class="wb-blk-x" title="Remove" onclick="_wbLinkDel('${key}','${b.id}',${ix})">✕</button>
-    </div>`).join('');
+    const rows=b.items.map((x,ix)=>{
+      if(!isBtn){
+        return `<div class="wb-lk-row">
+          <input class="form-input" value="${_escHtml(x.label)}" placeholder="Gift registry"
+                 oninput="_wbLinkSet('${key}','${b.id}',${ix},'label',this.value)"/>
+          <input class="form-input" value="${_escHtml(x.url)}" placeholder="example.com"
+                 oninput="_wbLinkSet('${key}','${b.id}',${ix},'url',this.value)"/>
+          <button type="button" class="wb-blk-x" title="Remove" onclick="_wbLinkDel('${key}','${b.id}',${ix})">✕</button>
+        </div>`;
+      }
+      const um=x.urlMode||'custom';
+      return `<div style="display:flex;flex-direction:column;gap:4px">
+        <div class="wb-lk-row">
+          <input class="form-input" value="${_escHtml(x.label)}" placeholder="Button name"
+                 oninput="_wbLinkSet('${key}','${b.id}',${ix},'label',this.value)"/>
+          <select class="form-input" style="height:32px;padding:0 8px;font-size:12px" onchange="_wbLinkModeSet('${key}','${b.id}',${ix},this.value)">
+            <option value="custom"${um==='custom'?' selected':''}>Custom URL</option>
+            <option value="ics"${um==='ics'?' selected':''}>Save the date</option>
+            <option value="rsvp"${um==='rsvp'?' selected':''}>RSVP link</option>
+          </select>
+          <button type="button" class="wb-blk-x" title="Remove" onclick="_wbLinkDel('${key}','${b.id}',${ix})">✕</button>
+        </div>
+        ${um==='custom'?`<input class="form-input" value="${_escHtml(x.url)}" placeholder="https://…"
+               oninput="_wbLinkSet('${key}','${b.id}',${ix},'url',this.value)"
+               style="font-size:12px;height:32px;padding:0 8px"/>`:``}
+      </div>`;
+    }).join('');
     return `<div class="wb-blk-body">
       ${rows}
       <button type="button" class="wb-blk-addbtn" style="align-self:flex-start" onclick="_wbLinkAdd('${key}','${b.id}')">
@@ -34393,7 +34465,7 @@ function _wbBlockBody(key,b){
           <button type="button" class="${b.layout==='rows'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','layout','rows')">Rows</button>
         </span>
       </div>`:`<div class="wb-blk-hint">Buttons use your <b>Button</b> colour and style, from the Theme — the same as Save the date.</div>`}
-      ${b.items.some(x=>String(x.label||'').trim() && !String(x.url||'').trim())
+      ${b.items.some(x=>String(x.label||'').trim() && (x.urlMode||'custom')==='custom' && !String(x.url||'').trim())
         ? `<div class="wb-blk-hint">A ${isBtn?'button':'link'} with no address ${isBtn?'is not shown at all':'shows as plain text, not a link that goes nowhere'}.</div>` : ''}
     </div>`;
   }
@@ -34857,11 +34929,20 @@ function _wbBuildSite(forDownload){
       // treatment with Save the date, so a site cannot end up with two kinds of button
       // that look almost but not quite the same.
       if(b.type==='btns'){
-        const rows=b.items.filter(x=>String(x.label||'').trim() && String(x.url||'').trim());
+        const rows=b.items.filter(x=>{
+          const lbl=String(x.label||'').trim();
+          if(!lbl) return false;
+          const um=x.urlMode||'custom';
+          if(um==='ics'||um==='rsvp') return true;
+          return String(x.url||'').trim();
+        });
         if(!rows.length) return '';
-        return `<div class="btns">${rows.map(x=>
-          `<a class="ics" href="${_escHtml(_normalizeUrl(x.url))}" target="_blank" rel="noopener noreferrer">${_escHtml(x.label)}</a>`
-        ).join('')}</div>`;
+        return `<div class="btns">${rows.map(x=>{
+          const um=x.urlMode||'custom';
+          const href=um==='ics'?(_wbIcs()||''):um==='rsvp'?_rsvpLink():_normalizeUrl(x.url);
+          const attrs=um==='ics'?'download="save-the-date.ics"':'target="_blank" rel="noopener noreferrer"';
+          return `<a class="ics" href="${_escHtml(href)}" ${attrs}>${_escHtml(x.label)}</a>`;
+        }).join('')}</div>`;
       }
 
       // ── Video.
@@ -34982,13 +35063,15 @@ function _wbBuildSite(forDownload){
       const wantName = !canHide || hero.showNames!==false;
       const wantDate = !canHide || hero.showDate !==false;
       const wantIcs  = !canHide || hero.showIcs  !==false;
+      const ctaM     = h.ctaMode || 'ics';
 
-      // Save the date. The .ics is built here and inlined as a data: URL — no server, no
-      // library, and it survives the download (unlike anything resolved against local
-      // state, which is the bug this app keeps re-learning).
-      const icsBtn = (wantIcs && _wbIcs())
-        ? `<a class="ics" href="${_wbIcs()}" download="save-the-date.ics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="12" y1="13" x2="12" y2="18"/><line x1="9.5" y1="15.5" x2="14.5" y2="15.5"/></svg>Save the date</a>`
-        : '';
+      // Save the date / RSVP / None. The .ics is inlined as a data: URL — no server needed.
+      let icsBtn = '';
+      if(ctaM==='rsvp'){
+        icsBtn = `<a class="ics" href="${_escHtml(_rsvpLink())}" target="_blank" rel="noopener noreferrer">RSVP</a>`;
+      } else if(ctaM!=='none' && wantIcs && _wbIcs()){
+        icsBtn = `<a class="ics" href="${_wbIcs()}" download="save-the-date.ics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="12" y1="13" x2="12" y2="18"/><line x1="9.5" y1="15.5" x2="14.5" y2="15.5"/></svg>Save the date</a>`;
+      }
 
       // The hero now has a REAL HEIGHT. It used to be sized by its padding alone, so
       // `cover` cropped the photo to whatever accidental shape the text happened to make —
