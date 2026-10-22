@@ -636,6 +636,10 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
 @media(min-width:1100px){
   .wb-editor-col{grid-column:3;display:flex;flex-direction:column;align-self:start;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
   .wb-editor-col.wb-ec-empty{align-items:center;justify-content:center;min-height:200px;gap:8px;color:var(--muted);font-size:12px;text-align:center;padding:24px}
+  /* Sticky left + middle: they follow the viewport as the user scrolls the tall editor panel */
+  .wb-list{position:sticky;top:0;max-height:100vh;overflow-y:auto;overflow-x:hidden}
+  .wb-pane{position:sticky;top:0}
+  .wb-pane-frame{height:clamp(300px,calc(100vh - 140px),640px)}
 }
 .wb-ec-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
 .wb-ec-title{font-size:14px;font-weight:600;color:var(--ink)}
@@ -31957,7 +31961,7 @@ const WB_FONTS = [
   ["'Raleway',sans-serif",       'Raleway'],
   ["'Josefin Sans',sans-serif",  'Josefin Sans']
 ];
-const WB_CORNERS = { sharp:'0px', soft:'4px', round:'14px' };
+const WB_CORNERS = { sharp:'0px', round:'10px', pill:'999px' };
 
 // Per-block IMAGE SHAPE — distinct from WB_CORNERS above, which is the site-wide corner
 // style for buttons and cards as well. 'rounded' is the default and emits NO class, so
@@ -32088,7 +32092,12 @@ function _wbSite(){
   // a colour that has existed in every preset since v120 and was rendered by NOTHING.
   if(WB_BTN_STYLES.indexOf(t.btnStyle)<0) t.btnStyle='outline';
   if(typeof t.space!=='number') t.space=100;
-  if(!t.corners) t.corners='soft';
+  // Migrate old corner keys (soft→round) and validate
+  if(t.corners==='soft') t.corners='round';
+  if(!WB_CORNERS[t.corners]) t.corners='round';
+  if(!['none','sm','md','lg'].includes(t.btnSize)) t.btnSize='md';
+  if(!['none','soft','strong'].includes(t.btnShadow)) t.btnShadow='none';
+  if(typeof t.btnBevel!=='boolean') t.btnBevel=false;
   if(!['none','soft','lifted'].includes(t.shadow)) t.shadow='none';
   if(!['flat','bordered','bevel'].includes(t.cardStyle)) t.cardStyle='flat';
   if(!['thin','medium','bold'].includes(t.btnBorder)) t.btnBorder='medium';
@@ -32694,14 +32703,22 @@ function _wbThemeBody(){
           ${Object.keys(WB_CORNERS).map(c=>`<button type="button" class="${t.corners===c?'active':''}" onclick="_wbCorners('${c}')">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join('')}
         </span>
       </div>
-      <div>
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Save the date button</div>
+      <div style="margin-bottom:4px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Button style</div>
         <span class="inv-seg" style="margin-bottom:8px">
           <button type="button" class="${t.btnStyle==='outline'?'active':''}" onclick="_wbBtnStyle('outline')">Outline</button>
           <button type="button" class="${t.btnStyle==='filled'?'active':''}" onclick="_wbBtnStyle('filled')">Filled</button>
           <button type="button" class="${t.btnStyle==='soft'?'active':''}" onclick="_wbBtnStyle('soft')">Soft</button>
         </span>
-        <div class="wb-blk-hint">Its colour is the <b>Button</b> swatch on the Colours tab.</div>
+        <div class="wb-blk-hint" style="margin-bottom:10px">Its colour is the <b>Button</b> swatch on the Colours tab.</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Button size</div>
+        <span class="inv-seg">
+          <button type="button" class="${t.btnSize==='sm'?'active':''}" onclick="_wbSet('btnSize','sm')">S</button>
+          <button type="button" class="${t.btnSize==='md'?'active':''}" onclick="_wbSet('btnSize','md')">M</button>
+          <button type="button" class="${t.btnSize==='lg'?'active':''}" onclick="_wbSet('btnSize','lg')">L</button>
+        </span>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Button weight</div>
@@ -32709,6 +32726,21 @@ function _wbThemeBody(){
           <button type="button" class="${t.btnBorder==='thin'?'active':''}" onclick="_wbSet('btnBorder','thin')">Thin</button>
           <button type="button" class="${t.btnBorder==='medium'?'active':''}" onclick="_wbSet('btnBorder','medium')">Medium</button>
           <button type="button" class="${t.btnBorder==='bold'?'active':''}" onclick="_wbSet('btnBorder','bold')">Bold</button>
+        </span>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Button shadow</div>
+        <span class="inv-seg">
+          <button type="button" class="${t.btnShadow==='none'?'active':''}" onclick="_wbSet('btnShadow','none')">None</button>
+          <button type="button" class="${t.btnShadow==='soft'?'active':''}" onclick="_wbSet('btnShadow','soft')">Soft</button>
+          <button type="button" class="${t.btnShadow==='strong'?'active':''}" onclick="_wbSet('btnShadow','strong')">Strong</button>
+        </span>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Button bevel</div>
+        <span class="inv-seg">
+          <button type="button" class="${!t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',false)">Off</button>
+          <button type="button" class="${t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',true)">On</button>
         </span>
       </div>
       <div style="margin-bottom:14px">
@@ -35108,8 +35140,12 @@ function _wbBuildSite(forDownload){
         : t.btnStyle==='soft'
         ? `background:${btnC}1A;border:${bw} solid ${btnC};color:${btnC}`
         : `background:transparent;border:${bw} solid ${btnC};color:${btnC}`;
-      const corners = WB_CORNERS[t.corners]||'4px';
-      return wrap(k,`<div style="text-align:center"><a href="${_escHtml(rsvpUrl)}" style="${btnSty};padding:12px 32px;border-radius:${corners};display:inline-block;text-decoration:none;font-size:inherit;letter-spacing:.05em">RSVP</a></div>`);
+      const corners = WB_CORNERS[t.corners]||'10px';
+      const rPad = t.btnSize==='sm'?'7px 16px':t.btnSize==='lg'?'14px 36px':'10px 24px';
+      const rShad = t.btnShadow==='soft'?'0 2px 12px rgba(0,0,0,.14)':t.btnShadow==='strong'?'0 4px 22px rgba(0,0,0,.28)':'none';
+      const rBev  = t.btnBevel?'inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.12)':'none';
+      const rShadFull=[rShad,rBev].filter(x=>x!=='none').join(',') || 'none';
+      return wrap(k,`<div style="text-align:center"><a href="${_escHtml(rsvpUrl)}" style="${btnSty};padding:${rPad};border-radius:${corners};display:inline-block;text-decoration:none;letter-spacing:.05em;box-shadow:${rShadFull}">RSVP</a></div>`);
     }
     return '';
   }).join('');
@@ -35122,12 +35158,17 @@ function _wbBuildSite(forDownload){
   const scb = (n)=>Math.round(n*(Number(t2.bodyScale)||100)/100);   // body + furniture
   const sc  = scb;   // legacy alias — every call site below is re-pointed explicitly
   const sp = (n)=>Math.round(n*(Number(t2.space)||100)/100);
-  const rad = WB_CORNERS[t2.corners]||'4px';
+  const rad = WB_CORNERS[t2.corners]||'10px';
   // v129: the button's ink is measured against THE BUTTON'S OWN COLOUR, not the accent.
   // It measured `accent` before — which was wrong even then, because a filled button drawn
   // in `button` and inked for `accent` is inked for a colour it is not.
   const btnInk = _wbInk(t2.button);
   const btnBW = t2.btnBorder==='thin'?'1px':t2.btnBorder==='bold'?'3px':'2px';
+  const btnPad = t2.btnSize==='sm'?'7px 16px':t2.btnSize==='lg'?'14px 36px':'10px 24px';
+  const btnFs  = t2.btnSize==='sm'?scb(11):t2.btnSize==='lg'?scb(14):scb(12);
+  const btnShad= t2.btnShadow==='soft'?'0 2px 12px rgba(0,0,0,.14)':t2.btnShadow==='strong'?'0 4px 22px rgba(0,0,0,.28)':'none';
+  const btnBevInset = t2.btnBevel?'inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.12)':'none';
+  const btnShadFull = [btnShad, btnBevInset].filter(x=>x!=='none').join(',') || 'none';
   const BTN = (()=>{
     const c=t2.button;
     if(t2.btnStyle==='filled') return `background:${c};border:${btnBW} solid ${c};color:${btnInk}`;
@@ -35181,7 +35222,7 @@ header.hero.heroink-dark h1,header.hero.heroink-dark .eyebrow,header.hero.heroin
    context — on the photo, off the photo, everywhere. The colour you pick is the colour you
    get; the preview shows you the result. A shadow keeps it legible on a busy photo without
    overriding the colour. */
-.ics{display:inline-flex;align-items:center;gap:7px;margin-top:${sp(18)}px;padding:9px 18px;${BTN};border-radius:${rad};text-decoration:none;font-size:${scb(12)}px;letter-spacing:.1em;text-transform:uppercase}
+.ics{display:inline-flex;align-items:center;gap:7px;margin-top:${sp(18)}px;padding:${btnPad};${BTN};border-radius:${rad};text-decoration:none;font-size:${btnFs}px;letter-spacing:.1em;text-transform:uppercase;box-shadow:${btnShadFull}}
 header.hero .ics{box-shadow:0 2px 14px rgba(0,0,0,.22)}
 .ics svg{width:${scb(14)}px;height:${scb(14)}px;flex-shrink:0}
 .maplink{white-space:nowrap;margin-left:8px;color:${t2.accent};text-decoration:none;font-size:${scb(13)}px;border-bottom:1px solid ${t2.accent}66}
