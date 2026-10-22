@@ -44552,6 +44552,8 @@ async function _sbPhotoFetch(id){
 // After a cloud data load, queue background fetch for any media IDs missing locally
 async function _mediaCloudSync(){
   if(!_sbSession) return;
+  // Ensure the access token is fresh before making signed-URL requests
+  await _sbEnsureFreshToken();
   // Collect all media IDs referenced in STATE
   const refs = new Set();
   _mediaRefs(STATE,'id').forEach(h=>{ const v=h.get(); if(v) refs.add(v); });
@@ -44562,6 +44564,7 @@ async function _mediaCloudSync(){
     await _sbPhotoFetch(id);
     // Re-render current page each time a photo lands so images appear progressively
     if(typeof renderPage==='function') try{ renderPage(); }catch(_){}
+    if(typeof _wbLivePaint==='function' && document.getElementById('wb-live')) try{ _wbLivePaint(); }catch(_){}
   }
 }
 
