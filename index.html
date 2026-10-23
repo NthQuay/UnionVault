@@ -44747,6 +44747,8 @@ function _mediaMissing(ref){
   if(!ref) return false;
   const s = String(ref);
   if(s.startsWith('http')||s.startsWith('data:')||s.startsWith('blob:')) return false;
+  // On the public wedding site images are served from Supabase Storage directly — not from local IDB
+  if(_wbPublicOwnerUid) return false;
   return !MEDIA[s];
 }
 
