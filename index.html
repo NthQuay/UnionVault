@@ -36940,7 +36940,7 @@ function _wwPrintList(){
       <td style="padding:6px 10px;text-align:right">${fmt(c.amount)}</td>
       <td style="padding:6px 10px">${(c.method||'—').replace(/&/g,'&amp;')}</td>
       <td style="padding:6px 10px">${c.date||'—'}</td>
-      <td style="padding:6px 10px">${(c.address||'').trim()?'Yes':'No'}</td>
+      <td style="padding:6px 10px;word-break:break-word">${(c.address||'').trim().replace(/&/g,'&amp;').replace(/</g,'&lt;')}</td>
       <td style="padding:6px 10px;text-align:center">${c.thanked?'✓':'—'}</td>
     </tr>`;
   }).join('');
@@ -36968,7 +36968,7 @@ td{font-size:12px;border-bottom:1px solid #F0EBE3;vertical-align:top}
 <div class="subtitle">${contribs.length} contribution${contribs.length!==1?'s':''} &middot; Total: $${total.toFixed(2)}</div>
 <table>
 <thead><tr>
-  <th>Name</th><th>Amount</th><th>Method</th><th>Date</th><th>Address?</th><th style="text-align:center">Thanked</th>
+  <th style="width:22%">Name</th><th style="width:9%;text-align:right">Amount</th><th style="width:9%">Method</th><th style="width:10%">Date</th><th>Address</th><th style="width:7%;text-align:center">Thanked</th>
 </tr></thead>
 <tbody>${rows}</tbody>
 <tfoot><tr class="tfoot">
