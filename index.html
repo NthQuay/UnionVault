@@ -3392,7 +3392,19 @@ async function _lpSignIn() {
   var r = await _sbSignIn(email, pw);
   btn.disabled = false; btn.textContent = 'Sign in';
   if(!r.ok){ errEl.style.color='#c0392b'; errEl.textContent = r.error; errEl.style.display = ''; return; }
-  // Success — hide landing, go to dashboard
+  // Success — guard against cross-account data contamination.
+  // uv_uid is a lightweight key separate from the app data blob.
+  // If it differs from the just-signed-in user (or is absent = old data), wipe app data and reload.
+  // The boot sequence will detect _sbSession + !alreadySetUp and auto-load from cloud.
+  var _storedUID = null;
+  try{ _storedUID = localStorage.getItem('uv_uid'); }catch(_){}
+  if(_storedUID !== r.user.id){
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+    try{ localStorage.setItem('uv_uid', r.user.id); }catch(_){}
+    location.reload();
+    return;
+  }
+  // Same user — fall through to normal success flow.
   document.getElementById('welcome-overlay').classList.add('hidden');
   if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
   if(typeof _cloudToast !== 'undefined') _cloudToast('Signed in as ' + r.user.email);
@@ -3419,19 +3431,9 @@ async function _lpSignIn() {
       _showSetupModal();
     }
   } else {
-    // alreadySetUp=true: verify this local data belongs to the user who just signed in
-    var _lsSaved = null;
-    try{ _lsSaved = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null'); }catch(_){}
-    if(_lsSaved && _lsSaved.userId && _lsSaved.userId === r.user.id){
-      // Same user — local data is valid, proceed normally
-      if(typeof navigate !== 'undefined') navigate('dashboard');
-      setTimeout(_autoSyncCheckOnBoot, 800);
-    } else {
-      // Different user (or pre-fix data with no userId) — wipe local data and reload.
-      // The boot sequence will detect _sbSession + !alreadySetUp and auto-load from cloud.
-      try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
-      location.reload();
-    }
+    // alreadySetUp=true and uv_uid matched: same user, local data is valid.
+    if(typeof navigate !== 'undefined') navigate('dashboard');
+    setTimeout(_autoSyncCheckOnBoot, 800);
   }
 }
 
