@@ -2165,6 +2165,8 @@ body.dark .gt-mp-av{background:rgba(196,168,130,.16);color:var(--gold)}
 /* WELCOME / INTRO PAGE */
 .welcome-overlay{position:fixed;inset:0;z-index:2000;display:block;padding:0;background:var(--cream)}
 .welcome-overlay.hidden{display:none}
+/* Suppress overlay flash: if session detected before first paint, keep overlay hidden */
+html[data-uv-auth] #welcome-overlay{display:none!important}
 .welcome-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .welcome-bg svg{position:absolute;opacity:.04}
 .welcome-card{position:relative;background:#fff;border-radius:24px;padding:48px 44px;max-width:540px;width:100%;box-shadow:0 24px 80px rgba(26,26,24,.12);border:1px solid var(--border);max-height:95vh;overflow-y:auto}
@@ -2728,6 +2730,7 @@ body.dark .vlu-msgcomp .snd{color:var(--ink)}
 </style>
 </head>
 <body>
+<script>(function(){try{var s=localStorage.getItem('uv_sb_session');if(s&&s!=='null')document.documentElement.setAttribute('data-uv-auth','');}catch(_){}}());</script>
 <div id="undo-toast-wrap"></div>
 <div class="app" id="app">
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -2842,7 +2845,7 @@ body.dark .vlu-msgcomp .snd{color:var(--ink)}
 </div>
 
 <!-- WELCOME INTRO -->
-<div class="welcome-overlay hidden" id="welcome-overlay">
+<div class="welcome-overlay" id="welcome-overlay">
 <div class="lp-wrap" id="lp-wrap">
 <style>
 /* ── Landing Page styles (scoped to .lp-wrap) ── */
