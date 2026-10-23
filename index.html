@@ -39968,6 +39968,8 @@ async function applyImportedData(){
     tryWrite(data);                 /* the rest -> localStorage (now small) */
     _pendingImportData = null;
     closeModalDirect();
+    // Flag the reload as a post-import boot so auto-sync pushes UP instead of loading down
+    try{ sessionStorage.setItem('uv_import_pending', '1'); }catch(_){}
     location.reload();
   } catch(e){
     _importing = false;
@@ -44411,6 +44413,19 @@ window.addEventListener('beforeunload',function(){
 
 async function _autoSyncCheckOnBoot(){
   if(!_sbSession) return;
+  // If we just reloaded after a JSON import, push local data UP — don't load from cloud.
+  var _importFlag = null;
+  try{ _importFlag = sessionStorage.getItem('uv_import_pending'); }catch(_){}
+  if(_importFlag){
+    try{ sessionStorage.removeItem('uv_import_pending'); }catch(_){}
+    var _ir = await _cloudSave(false);
+    if(_ir && _ir.ok){
+      window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
+      if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
+      if(typeof _cloudToast !== 'undefined') _cloudToast('Imported data saved to cloud ✓');
+    }
+    return;
+  }
   await _sbEnsureFreshToken();
   // If token refresh failed (expired refresh token), clear session and prompt re-login
   if(_sbTokenExpired()){
