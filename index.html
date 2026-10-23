@@ -44190,35 +44190,46 @@ window.addEventListener('beforeunload',function(){
 });
 
 async function _autoSyncCheckOnBoot(){
-  if(!_sbSession||!alreadySetUp) return;
+  if(!_sbSession) return;
   await _sbEnsureFreshToken();
+  // If token refresh failed (expired refresh token), clear session and prompt re-login
+  if(_sbTokenExpired()){
+    _sbPersist(null);
+    const ol=document.getElementById('welcome-overlay');
+    if(ol) ol.classList.remove('hidden');
+    return;
+  }
   try{
     const res=await fetch(`${_SB_URL}/rest/v1/planner_data?user_id=eq.${_sbSession.user.id}&select=updated_at`,{
       headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_sbSession.access_token}
     });
-    if(!res.ok) return;
+    if(!res.ok){
+      // 401 = token was rejected; clear session and show login prompt
+      if(res.status===401){ _sbPersist(null); const ol=document.getElementById('welcome-overlay'); if(ol) ol.classList.remove('hidden'); }
+      return;
+    }
     const rows=await res.json();
     if(!rows||!rows.length) return;
     const localTsRaw=STATE.settings&&STATE.settings._lastCloudSave;
-    const localTs=localTsRaw?new Date(localTsRaw).getTime():0;
     if(!localTsRaw){
       // Never cloud-synced on this device — restore with toast so user sees it happen
       cloudLoadClick(false);
       return;
     }
-    // Need updated_at to compare — skip if unavailable
     if(!rows[0].updated_at) return;
     const cloudTs=new Date(rows[0].updated_at).getTime();
-    if(cloudTs-localTs>60000){
-      // Cloud is newer — auto-load silently (this device previously synced, so local
-      // data came from the cloud; any local edits since then were already pushed by auto-sync)
-      cloudLoadClick(true);
+    const localTs=new Date(localTsRaw).getTime();
+    if(cloudTs-localTs>5000){
+      // Cloud is newer — load and notify the user so they see the sync happened
+      cloudLoadClick(false);
     } else {
-      // cloud is same or older — push local up silently if auto-sync on
+      // Cloud is same age or older — push local up if auto-sync is on
       if(_autoSyncEnabled()) _autoSyncSchedule();
     }
   }catch(e){ console.warn('Boot conflict check failed',e); }
 }
+// Poll for cloud updates every 5 minutes while a session is active
+setInterval(function(){ if(_sbSession) _autoSyncCheckOnBoot(); }, 5*60*1000);
 
 function _showConflictDialog(cloudTs,localTs){
   const fmt=ts=>ts?new Date(ts).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'Unknown';
