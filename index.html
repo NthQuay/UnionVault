@@ -32106,10 +32106,10 @@ const WB_CORNERS = { sharp:'0px', round:'10px', pill:'999px' };
 // Per-block IMAGE SHAPE — distinct from WB_CORNERS above, which is the site-wide corner
 // style for buttons and cards as well. 'rounded' is the default and emits NO class, so
 // every existing block keeps exactly the look it has today with no migration.
-const WB_SHAPES = { rounded:'Rounded', square:'Square', round:'Circle' };
+const WB_SHAPES = { rounded:'Rounded', square:'Square', round:'Circle', original:'Original' };
 function _wbShapeCls(b){
   const sh=b && b.shape;
-  return (sh==='square') ? ' sh-square' : (sh==='round' ? ' sh-round' : '');
+  return (sh==='square') ? ' sh-square' : (sh==='round' ? ' sh-round' : (sh==='original' ? ' sh-original' : ''));
 }
 
 // How the Save-the-date button is drawn. The COLOUR is theme.button — which, until v129,
@@ -35116,6 +35116,7 @@ function _wbBlockBody(key,b){
         </span>
       </div>
       ${(b.shape==='round' && b.layout==='rows')?`<div class="wb-blk-hint">Circle crops each photo to a square — the left and right edges of a wide photo won't be shown.</div>`:''}
+      ${(b.shape==='original')?`<div class="wb-blk-hint">Original shows each photo at its natural proportions — no cropping. Landscape and portrait photos will have different heights.</div>`:''}
       ${(b.layout==='grid' && b.side==='full')?`
       <div class="wb-blk-ctl">
         <span class="wb-slot-lbl">Grid images</span>
@@ -35400,7 +35401,8 @@ function _wbBuildSite(forDownload){
     const ids=b.ids.filter(id=>!_mediaMissing(id));
     if(!ids.length) return '';
     const cls=(b.layout==='rows') ? 'imgs-rows' : ('imgs-grid' + (b.align==='center'?' ctr':''));
-    return `<div class="${cls}${_wbShapeCls(b)}">${ids.map(id=>`<img src="${_mediaUrl(id)}" alt="" loading="lazy"/>`).join('')}</div>`;
+    const nCol=Math.min(ids.length,3);
+    return `<div class="${cls}${_wbShapeCls(b)}" style="--n:${nCol}">${ids.map(id=>`<img src="${_mediaUrl(id)}" alt="" loading="lazy"/>`).join('')}</div>`;
   };
 
   const imgHtml=(b)=>{
@@ -35967,8 +35969,8 @@ section.b-left .btns,section.b-justify .btns{justify-content:flex-start}
 .dv-leaf{display:flex;align-items:center;gap:14px;width:64%}
 .dv-leaf span{flex:1;height:1px;background:${t2.accent}44}
 .dv-leaf i{color:${t2.accent};font-style:normal;font-size:${scb(15)}px;line-height:1}
-.imgs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin:${sp(22)}px 0}
-.imgs-grid.ctr{grid-template-columns:repeat(auto-fit,160px);justify-content:center}
+.imgs-grid{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:8px;margin:${sp(22)}px 0}
+.imgs-grid.ctr{grid-template-columns:repeat(var(--n,3),minmax(0,160px));justify-content:center}
 .imgs-grid img{width:100%;aspect-ratio:1;object-fit:cover;display:block;border-radius:${imgRad}}
 .imgs-rows{display:flex;flex-direction:column;gap:12px;margin:${sp(22)}px 0}
 .imgs-rows img{width:100%;height:auto;display:block;border-radius:${imgRad}}
@@ -35976,6 +35978,8 @@ section.b-left .btns,section.b-justify .btns{justify-content:flex-start}
    about THESE images, not a site-wide corner style. Absent class = theme default. */
 .sh-square img{border-radius:0!important}
 .sh-round img{border-radius:50%!important}
+/* ORIGINAL shows images at their natural aspect ratio — no crop, no squash. */
+.sh-original.imgs-grid img{aspect-ratio:auto;height:auto;object-fit:initial}
 /* CIRCLE FORCES A SQUARE CROP. A rows image is height:auto — its natural proportions —
    and a 50% radius on a landscape photo makes an ELLIPSE. Cropping loses the edges of the
    frame; squashing distorts the faces IN it. Crop. */
@@ -35997,11 +36001,6 @@ header .imgs-grid,header .imgs-rows{max-width:560px;margin-left:auto;margin-righ
    said out loud in the builder, next to the control, rather than discovered later. */
 @media(max-width:700px){
   .beside{grid-template-columns:1fr;gap:${sp(14)}px}
-  /* Keep up to 3 photos on ONE line on a phone (shrinking to fit) instead of letting
-     auto-fill wrap a single photo to a second row. --n (set per block, capped at 3) is
-     the column count; 4+ photos still wrap because --n never exceeds 3. Not applied to
-     .ctr (fixed-width centred) or .beside (already one column) grids. */
-  .imgs-grid:not(.ctr){grid-template-columns:repeat(var(--n,3),1fr)}
   .beside .imgs-grid{grid-template-columns:1fr}
 }
 .count p:not(.intro){font-family:${t2.headFont};font-size:clamp(${sch(26)}px,5vw,${sch(38)}px);color:${t2.accent}}
