@@ -32300,7 +32300,15 @@ function _wbSite(){
   // a colour that has existed in every preset since v120 and was rendered by NOTHING.
   if(WB_BTN_STYLES.indexOf(t.btnStyle)<0) t.btnStyle='outline';
   if(typeof t.space!=='number') t.space=100;
-  if(typeof t.gap!=='number') t.gap=100;
+  // Migrate gap: old range was 50–160 (scaling multiplier); new range is 0–100 (direct px gap).
+  // gapV=2 marks that the new system is active; without it we run the one-time conversion.
+  if(t.gapV!==2){
+    const old=typeof t.gap==='number'?t.gap:100;
+    t.gap=old>100?Math.min(100,Math.round((old-100)*0.8)):0;
+    t.gapV=2;
+  }
+  if(t.gap<0||t.gap>100) t.gap=0;
+  if(typeof t.secpad!=='number') t.secpad=52;
   if(!['top','side'].includes(t.navPos)) t.navPos='top';
   if(typeof w.published!=='boolean') w.published=false;
   // Migrate old corner keys (soft→round) and validate
@@ -32986,9 +32994,14 @@ function _wbThemeBody(){
         <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap<95?'Compact':(t.gap>105?'Spacious':'Normal')}</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:5px;line-height:1.45">Space between each section on the page.</div>
-        <input type="range" min="50" max="160" step="10" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap} px</div>
+        <input type="range" min="0" max="100" step="4" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad||52} px</div>
+        <input type="range" min="0" max="200" step="4" value="${t.secpad||52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
@@ -33165,7 +33178,7 @@ function _wbBtnStyle(v){
   _wbRepaintTheme();
 }
 function _wbNum(field, v){
-  const n=Number(v)||100;
+  const n=(v===''||v===null||v===undefined||isNaN(+v))?100:+v;
   // The two text scales have a real range (85–125). Clamp INTO it rather than resetting to
   // 100 on anything unexpected — a slider that jumps to the middle when it disagrees with
   // you is worse than one that stops at its own edge.
@@ -33180,7 +33193,8 @@ function _wbNum(field, v){
     if(l.textContent.indexOf('Heading size')===0) l.textContent='Heading size · '+t.headScale+'%';
     if(l.textContent.indexOf('Body size')===0)    l.textContent='Body size · '+t.bodyScale+'%';
     if(l.textContent.indexOf('Spacing')===0)      l.textContent='Spacing · '+(t.space<95?'Snug':(t.space>105?'Airy':'Normal'));
-    if(l.textContent.indexOf('Section gap')===0)  l.textContent='Section gap · '+(t.gap<95?'Compact':(t.gap>105?'Spacious':'Normal'));
+    if(l.textContent.indexOf('Section gap')===0)  l.textContent='Section gap · '+t.gap+' px';
+    if(l.textContent.indexOf('Section padding')===0) l.textContent='Section padding · '+(t.secpad||52)+' px';
   });
   // The font specimen is a HEADING sample, so it follows the heading scale.
   const sp=document.getElementById('wb-spec-name');
@@ -33287,9 +33301,14 @@ function _wbRepaintTheme(){
         <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap<95?'Compact':(t.gap>105?'Spacious':'Normal')}</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:5px;line-height:1.45">Space between each section on the page.</div>
-        <input type="range" min="50" max="160" step="10" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap} px</div>
+        <input type="range" min="0" max="100" step="4" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad||52} px</div>
+        <input type="range" min="0" max="200" step="4" value="${t.secpad||52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
@@ -34303,11 +34322,9 @@ function _wbLayoutHtml(key){
         </span>
       </div>`:''}
       <div>
-        <div class="wb-slot-lbl" style="margin-bottom:5px">Background</div>
-        <span class="inv-seg">
-          <button type="button" class="${l.bg==='page'?'active':''}" onclick="_wbLaySet('${key}','bg','page')">Page</button>
-          <button type="button" class="${(!l.bg||l.bg==='band')?'active':''}" onclick="_wbLaySet('${key}','bg','band')">Band</button>
-        </span>
+        ${(()=>{const bv=(!l.bg||l.bg==='page')?0:(l.bg==='band'?100:Math.min(100,Math.max(0,Number(l.bg)||0)));const lbl=bv>=100?'Band':bv>0?'Wide page':'Page';return `<div id="wb-bg-lbl-${key}" class="wb-slot-lbl" style="margin-bottom:5px">Width · ${lbl}</div>
+        <input type="range" min="0" max="100" step="10" value="${bv}" oninput="_wbBg('${key}',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Page</span><span>Band</span></div>`;})()}
       </div>
     </div>
   </div>`;
@@ -34348,6 +34365,18 @@ function _wbLaySet(key, field, val){
     const box=document.getElementById('wb-lay-'+key);
     if(box) box.outerHTML=_wbLayoutHtml(key);
   }
+}
+// Section width/band slider. Updates l.bg in place and schedules a debounced reload.
+// Does NOT call _wbLaySet so the panel isn't re-rendered mid-drag (which would kill the slider).
+function _wbBg(key, v){
+  const n=Math.round(Math.min(100,Math.max(0,+v)));
+  const l=_wbLayout(key);
+  const s=String(n);
+  l.bg=s;
+  saveToStorage();
+  const lbl=document.getElementById('wb-bg-lbl-'+key);
+  if(lbl) lbl.textContent='Width · '+(n>=100?'Band':n>0?'Wide page':'Page');
+  _wbLiveSoon();
 }
 // Patch the live iframe's heading or intro text in place, with no reload — so typing shows
 // up immediately. Returns true if it found and updated the node, false if it couldn't (the
@@ -35709,7 +35738,12 @@ function _wbBuildSite(forDownload){
   // one that quietly declines to make one.
   const wrap=(k, content, extra)=>{
     const l=(w.layout||{})[k]||{};
-    const band = l.bg!=='page';
+    // bg is 0–100 (px max-width scale); legacy 'page'/'band' strings also handled.
+    const bgV = (!l.bg||l.bg==='page')?0:(l.bg==='band'?100:Math.min(100,Math.max(0,Number(l.bg)||0)));
+    const band = bgV >= 100;
+    // Wide page (1 ≤ bgV < 100): section keeps page bg but gets a wider max-width.
+    // max-width grows from 720px (bgV=0) toward no cap at bgV=100.
+    const secWideMaxW = (!band && bgV > 0) ? Math.round(720 + bgV / 100 * 680) : null;
     const left = l.align==='left';
     // Two independent aligns. `lft` = the heading and intro; `b-*` = the section's own
     // content. v121 and earlier had only `lft`, and the body was hardcoded left in the
@@ -35863,7 +35897,7 @@ function _wbBuildSite(forDownload){
     // blank stripe on the site that looks like a bug. If there is nothing to show, show
     // nothing. (Same rule as the hero, v125.)
     if(!inner) return '';
-    return `<section id="${k}"${cls?` class="${cls}"`:''}>
+    return `<section id="${k}"${cls?` class="${cls}"`:''} ${secWideMaxW?`style="max-width:${secWideMaxW}px"`:''}>
       ${inner}
     </section>`;
   };
@@ -36073,10 +36107,8 @@ function _wbBuildSite(forDownload){
   const scb = (n)=>Math.round(n*(Number(t2.bodyScale)||100)/100);   // body + furniture
   const sc  = scb;   // legacy alias — every call site below is re-pointed explicitly
   const sp = (n)=>Math.round(n*(Number(t2.space)||100)/100);
-  const sg = (n)=>Math.round(n*(Number(t2.gap)||100)/100);
-  // secGap: gap in px between consecutive sections. Zero until slider passes centre (100),
-  // then grows linearly so the right half of the slider opens space between sections.
-  const secGap = Math.max(0, Math.round(((Number(t2.gap)||100) - 100) * 0.8));
+  const secGap = Math.max(0, Number(t2.gap)||0);
+  const secPad = Math.max(0, Number(t2.secpad)||52);
   const rad = WB_CORNERS[t2.corners]||'10px';
   // imgRad caps at 10px — pill (999px) is for buttons only, not images or cards
   const imgRad = t2.corners==='sharp'?'0px':'10px';
@@ -36159,7 +36191,7 @@ h1{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,$
 .eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading}}
 .sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scb(15)}px}
-section{max-width:720px;margin:0 auto;padding:${sg(52)}px 24px;border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
+section{max-width:720px;margin:0 auto;padding:${secPad}px 24px;border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
 section+section{margin-top:${secGap}px}
 section.lft{text-align:left}
 section.band{max-width:none;background:${t2.band};border-top:none}
