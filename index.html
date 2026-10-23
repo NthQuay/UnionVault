@@ -44639,6 +44639,11 @@ function _mediaUrl(ref){
   // (async fetch is triggered separately by _mediaCloudSync after cloud load)
   const cached = _sbSignedCache[s];
   if(cached && cached.expires - Date.now() > 0) return cached.url;
+  // Public wedding website context: use the public storage URL.
+  // Requires the 'photos' Supabase bucket to have public access enabled.
+  if(_wbPublicOwnerUid){
+    return `${_SB_URL}/storage/v1/object/public/${_SB_BUCKET}/${_wbPublicOwnerUid}/${s}`;
+  }
   return '';
 }
 
@@ -45559,6 +45564,26 @@ async function _showPublicWeddingSite(slug){
   }catch(e){ console.warn('Site data fetch failed',e); }
 
   _wbPublicOwnerUid = uid;
+
+  // If the owner is viewing their own site (session is loaded and UID matches),
+  // pre-generate signed URLs for all website media so images resolve without
+  // needing the bucket to be public.
+  if(_sbSession && _sbSession.user && _sbSession.user.id === uid){
+    await _sbEnsureFreshToken();
+    const _collectIds = (obj, out) => {
+      if(!obj || typeof obj !== 'object') return;
+      if(Array.isArray(obj)){ obj.forEach(v=>_collectIds(v,out)); return; }
+      Object.entries(obj).forEach(([k,v])=>{
+        if(k==='mediaId' && v && typeof v==='string' && !v.startsWith('http') && !v.startsWith('data:')) out.add(v);
+        else if(typeof v==='object') _collectIds(v,out);
+      });
+    };
+    const ids = new Set();
+    _collectIds(STATE.website, ids);
+    _collectIds(STATE.inspo, ids);
+    await Promise.all([...ids].map(id=>_sbPhotoSignedUrl(id)));
+  }
+
   const html=_wbBuildSite();
   _wbPublicOwnerUid = null;
   document.open();
@@ -46089,6 +46114,9 @@ function _showVendorError(type){
     return; // do NOT boot the planner app
   }
 
+  // Load session before public site render so the owner can generate signed URLs for their own photos
+  _sbLoadSession();
+
   const _hashSlug=window.location.hash.slice(1);
   if(_hashSlug && /^[a-z0-9][a-z0-9-]{0,59}$/.test(_hashSlug)){
     // Hash matches a wedding site slug — render the public wedding website
@@ -46097,8 +46125,6 @@ function _showVendorError(type){
     return; // do NOT boot the planner app
   }
   // ── End Stage 5 URL intercept ───────────────────────────────────────────────
-
-  _sbLoadSession();
   try{
     await _mediaLoadAll();
     await _mediaMigrate();
