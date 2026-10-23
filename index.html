@@ -3417,7 +3417,7 @@ async function _lpSignIn() {
     var cloudChk = await _cloudLoad();
     console.log('[UV] cloudLoad result:', JSON.stringify({ok:cloudChk.ok, empty:cloudChk.empty, error:cloudChk.error, sections:cloudChk.saved?Object.keys(cloudChk.saved):[]}));
     if(cloudChk.ok && !cloudChk.empty) {
-      // Cloud data exists — load it silently, go to dashboard
+      // Cloud data exists — load it into STATE
       if(cloudChk.saved.event)    Object.assign(STATE.event, cloudChk.saved.event);
       if(cloudChk.saved.settings) Object.assign(STATE.settings, cloudChk.saved.settings);
       ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
@@ -3425,12 +3425,17 @@ async function _lpSignIn() {
       saveToStorage();
       if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
       if(typeof navigate !== 'undefined') navigate('dashboard');
-      if(typeof _cloudToast !== 'undefined') _cloudToast('Your data has been restored from the cloud ✓');
-      window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
-      if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
-      setTimeout(_mediaCloudSync, 800);
+      // Only skip setup if partner names were actually entered (guards against blank auto-saved state)
+      if(STATE.event.partner1 || STATE.event.partner2){
+        if(typeof _cloudToast !== 'undefined') _cloudToast('Your data has been restored from the cloud ✓');
+        window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
+        if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
+        setTimeout(_mediaCloudSync, 800);
+      } else {
+        _showSetupModal();
+      }
     } else {
-      // Genuinely new account — show setup
+      // No cloud data — show setup
       if(typeof navigate !== 'undefined') navigate('dashboard');
       _showSetupModal();
     }
@@ -46405,10 +46410,15 @@ function _showVendorError(type){
       document.getElementById('welcome-overlay').classList.add('hidden');
       updateTopbarSub();
       navigate('dashboard');
-      if(typeof _cloudToast !== 'undefined') _cloudToast('Your data has been restored from the cloud ✓');
-      window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
-      if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
-      setTimeout(_mediaCloudSync, 800);
+      // Only skip setup if partner names were actually entered
+      if(STATE.event.partner1 || STATE.event.partner2){
+        if(typeof _cloudToast !== 'undefined') _cloudToast('Your data has been restored from the cloud ✓');
+        window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
+        if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
+        setTimeout(_mediaCloudSync, 800);
+      } else {
+        _showSetupModal();
+      }
     } else {
       // No cloud data for this account → show setup
       document.getElementById('welcome-overlay').classList.add('hidden');
