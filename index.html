@@ -778,7 +778,7 @@ body.dark .wb-custom-badge{background:rgba(196,168,130,.15);color:#C3B69E}
 .wb-cpreset-n{display:block;font-size:12.5px;color:var(--ink)}
 .wb-cblank{width:100%;display:flex;align-items:center;gap:9px;text-align:left;padding:11px 12px;border:1px dashed var(--sw-border,#E3D7C4);border-radius:8px;background:transparent;color:var(--gold-deep);cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;transition:all .15s}
 .wb-cblank:hover{border-color:var(--gold);background:var(--surface)}
-.toggle-switch{position:relative;width:48px;height:26px;flex-shrink:0}
+.toggle-switch{position:relative;display:inline-flex;width:48px;height:26px;flex-shrink:0}
 .toggle-switch input{opacity:0;width:0;height:0;position:absolute;-webkit-appearance:none;appearance:none}
 .toggle-track{position:absolute;inset:0;background:var(--border);border-radius:26px;cursor:pointer;transition:background .25s}
 .toggle-track::after{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
@@ -39915,6 +39915,7 @@ function _applySettingsView(mode){
         card._settingsBlockHomes.push({block, parent:sec});
       });
     });
+    card._settingsPageModeUsed=false;
   }
   const origSects=card._settingsSnapshot;
 
@@ -39922,12 +39923,17 @@ function _applySettingsView(mode){
   card.querySelectorAll(':scope > .settings-page-group').forEach(n=>n.remove());
 
   if(mode!=='page'){
-    // CATEGORY: re-append each block to its original section in recorded order
-    // (header stays first since it's never moved), then restore section order.
-    card._settingsBlockHomes.forEach(({block,parent})=>{ block.style.display=''; parent.appendChild(block); });
-    origSects.forEach(sec=>{ sec.style.display=''; card.appendChild(sec); });
+    // CATEGORY: only restore if page mode was actually used (blocks were moved).
+    // Sections are never moved by page mode (only hidden), so we don't need to
+    // reorder them — just un-hide and move blocks back to their original sections.
+    if(card._settingsPageModeUsed){
+      card._settingsBlockHomes.forEach(({block,parent})=>{ block.style.display=''; parent.appendChild(block); });
+      origSects.forEach(sec=>{ sec.style.display=''; });
+      card._settingsPageModeUsed=false;
+    }
     return;
   }
+  card._settingsPageModeUsed=true;
 
   // PAGE: hide original sections, distribute their setting blocks into page groups.
   // Collect blocks (direct children of each section, excluding the header div).
