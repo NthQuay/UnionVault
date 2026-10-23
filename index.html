@@ -3365,7 +3365,7 @@ async function _lpForgotPassword() {
   fpBtn.disabled = false;
   fpBtn.innerHTML = 'Forgot password?';
   if(!r.ok){ errEl.textContent = r.error; errEl.style.display = ''; return; }
-  okEl.textContent = 'Password reset email sent to ' + email + '. Check your inbox.';
+  okEl.textContent = 'Password reset email sent to ' + email + '. Check your inbox — if you can\'t find it, check your junk or spam folder.';
   okEl.style.display = '';
 }
 
