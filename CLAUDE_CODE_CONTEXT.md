@@ -1,6 +1,6 @@
 # CLAUDE_CODE_CONTEXT.md
 ## UnionVault — Complete Project State Dump for Claude Code Migration
-*Generated: 2026-10-22 | Session 5 handoff | Do not truncate or summarise this file.*
+*Generated: 2026-10-23 | Session 7 handoff | Do not truncate or summarise this file.*
 
 ---
 
@@ -8,19 +8,18 @@
 
 > **READ THIS SECTION FIRST. It tells you what to do with the rest of this file.**
 
-You are continuing development of **UnionVault**, a single-file PWA wedding planner app. This document is an exhaustive state dump from the claude.ai Project session. Your job is to ingest it fully and pick up without asking redundant questions.
+You are continuing development of **UnionVault**, a single-file PWA wedding planner app. This document is an exhaustive state dump from the previous Claude Code cloud session. Your job is to ingest it fully and pick up without asking redundant questions.
 
 **On every session start, do this:**
 1. Read this entire file top to bottom. Do not skim.
-2. Locate `index.html` in the working directory (it is `UnionVault - nav logo text fix.html` renamed, or whatever the current build is named). That is your working file.
+2. The working file is `index.html` in `/home/user/unionvault/`. That is your primary working file.
 3. Cross-reference Section 1 (architecture) against the actual file — verify line numbers for the JS sections using the comment markers (e.g. `// ════ VISION BOARD WALLPAPER`).
 4. Check Section 2 for any in-progress objectives before asking what to do next.
 5. Never ask the user to re-explain anything already in this document.
 6. Before making any visual/design change: show a preview mockup (light + dark) in the chat and wait for Accept / Reject / Adjust. Do NOT implement directly.
-7. Deliver every build as: `UnionVault - [very short summary].html`
-8. Every change must account for both desktop (wide) and mobile (narrow) layouts. Flag if a change risks breaking one.
-9. "Park" = add to the Parked Ideas table in Section 4 and confirm it's noted. User will ask for "parked ideas" to retrieve.
-10. Bump SW cache name on the next deploy (currently `union-vault-v11`).
+7. Every change must account for both desktop (wide) and mobile (narrow) layouts. Flag if a change risks breaking one.
+8. "Park" = add to the Parked Ideas table in Section 4 and confirm it's noted. User will ask for "parked ideas" to retrieve.
+9. **Always bump SW cache name on deploy** — currently `union-vault-v95`. Bump to `union-vault-v96` on the next deploy.
 
 ---
 
@@ -30,19 +29,21 @@ You are continuing development of **UnionVault**, a single-file PWA wedding plan
 
 | File | Location | Notes |
 |---|---|---|
-| `UnionVault - nav logo text fix.html` | Delivered to user / upload to GitHub as `index.html` | **Current build. Deploy this one.** ~3.52 MB, 45,099 lines |
-| `vb-wallpaper-light.jpeg` | Extracted this session | 99 KB. Upload to GitHub `/assets/` then replace base64 in HTML |
-| `vb-wallpaper-dark.jpeg` | Extracted this session | 73 KB. Upload to GitHub `/assets/` then replace base64 in HTML |
-| `CLAUDE_CODE_CONTEXT.md` | This file | Migrate with the project |
-| GitHub repo | `https://github.com/mandyjane/UnionVault` | Live URL: `https://mandyjane.github.io/UnionVault/` |
+| `index.html` | `/home/user/unionvault/index.html` | **Current build. ~45K lines.** |
+| `sw.js` | `/home/user/unionvault/sw.js` | Service worker. Current cache: `union-vault-v95` |
+| `CLAUDE_CODE_CONTEXT.md` | `/home/user/unionvault/` | This file — migrate with the project |
+| `CHANGELOG_v185.md` | `/home/user/unionvault/` | Session 5 changelog (sessions 6–7 added below) |
+| `DECISIONS_v185.md` | `/home/user/unionvault/` | Design decisions up to Session 5 |
+| GitHub repo | `https://github.com/mandyjane/UnionVault` | Live URL: `https://unionvault.app` (custom domain, GitHub Pages) |
 | Logos folder | `https://raw.githubusercontent.com/mandyjane/UnionVault/main/Logos/` | See logo table in §1.4 |
 
 ## 1.2 Single-File Architecture Rules — NEVER VIOLATE
 
 1. **Single HTML file. No build step. No imports.** All CSS, JS, and fonts must be inline or served via `raw.githubusercontent.com`. Do not introduce `<link>` stylesheet imports, ES module imports, or any bundler.
-2. **Never clear the entire `mandyjane.github.io` domain cache/storage.** Another app shares this GitHub Pages origin. Only ever target `union-vault-v10` (the named cache) and UnionVault's specific IndexedDB stores.
+2. **Never clear the entire `mandyjane.github.io` domain cache/storage.** Another app shares this GitHub Pages origin. Only ever target named SW caches (e.g. `union-vault-v95`) and UnionVault's specific localStorage keys.
 3. **Always show design previews (light + dark) before implementing visual changes.** Show clickable accept/reject/adjust prompts.
 4. **Fonts stay embedded** in `<style id="ea-embedded-fonts">` (lines 29–46, ~373 KB). Do not replace with `<link>` — PWA offline support depends on them being inline.
+5. **Single branch: `main`** — all work goes directly to main and is pushed to origin. No feature branches in current workflow.
 
 ## 1.3 File Structure — Line Map
 
@@ -60,15 +61,19 @@ Lines  2713– 3637  HTML structure:
                          #sidebar-signout-pop — sign-out popup
                        #topbar-eyebrow, #topbar-title, #topbar-actions — top bar
                        #main-content — page content rendered here by JS
-                     #welcome-overlay — app loading screen
+                     #welcome-overlay — landing page / auth overlay
+                       NOTE: welcome-overlay has NO `hidden` class in HTML — visibility
+                       is controlled by CSS rule html[data-uv-auth] #welcome-overlay{display:none!important}
+                       An early inline <script> (immediately after <body>) sets data-uv-auth on <html>
+                       if a Supabase session exists in localStorage, suppressing the overlay flash.
                      #lp-wrap — landing page / login page
                        #top, #heroCanvas, #auth (sign-in/create forms)
                        #features, #pricing, #faq, #contact, #contactCanvas
                      #setup-modal-overlay — first-run couple setup modal
                      #auth-modal-overlay — in-app sign-in modal
 Lines  3638– 3644  <script> block 1: VB Wallpapers
-                     const VB_WALLPAPER_LIGHT = "data:image/jpeg;base64,..." (~101 KB)  ← PENDING EXTRACTION
-                     const VB_WALLPAPER_DARK  = "data:image/jpeg;base64,..." (~74 KB)   ← PENDING EXTRACTION
+                     const VB_WALLPAPER_LIGHT = "data:image/jpeg;base64,..." (~101 KB)  ← STILL EMBEDDED
+                     const VB_WALLPAPER_DARK  = "data:image/jpeg;base64,..." (~74 KB)   ← STILL EMBEDDED
 Lines  3645– 3824  STATE object — default values for all app state
 Lines  3825– 4217  UTILS — helper functions, formatting, date math
 Lines  4218– 4331  NAVIGATION — navigate(page), sidebar toggle, page title map
@@ -140,25 +145,27 @@ All logos served from: `https://raw.githubusercontent.com/mandyjane/UnionVault/m
 
 | Layer | Detail |
 |---|---|
-| Auth + DB | Supabase — `https://hzafdlfprtzfxtyaebmc.supabase.co` |
-| User ID | `_sbSession.user.id` used as `couple_id` everywhere |
+| Auth + DB | Supabase — `https://hzafdlfprtzfxtyaebmc.supabase.co` (ap-southeast-2) |
+| User ID | `_sbSession.user.id` — stored as `uv_uid` in localStorage on sign-in for cross-account guard |
 | Photo storage | Supabase Storage bucket: `photos`. Path: `<user_id>/<photo_id>` |
 | Local cache | IndexedDB `MEDIA` store; `MEDIA[id]` = blob object URL |
-| State | `STATE` object → `_save()` persists to Supabase `cloud_saves` table |
+| Local data | `localStorage` key `union_vault_v1` (app STATE), `uv_sb_session` (Supabase auth session), `uv_uid` (last signed-in user ID) |
 | Hash routing | `#liam-amanda` = wedding website; `#rsvp-liam-amanda` = RSVP direct |
 | URL params | `?runsheet=<coupleId>` · `?vendor=<token>` · `?rsvp=<slug>` — intercepted at boot (~line 44997) |
 | Dark mode | `data-theme="light"` on `<html>` for light; removed for dark. Guards `@media(prefers-color-scheme:dark) :root:not([data-theme="light"])` (~line 2769) |
-| SW cache | `union-vault-v11` (current) |
+| Overlay flash guard | `data-uv-auth` on `<html>` (set by early inline script) — CSS hides `#welcome-overlay` when this attribute is present |
+| SW cache | `union-vault-v95` (current) — bump to `v96` on next deploy |
 | App build | `APP_BUILD = 'v184'` |
 
 ## 1.7 Supabase Tables
 
-| Table | Key Columns | Notes |
-|---|---|---|
-| `cloud_saves` | `couple_id`, `data` (JSONB), `updated_at` | Main STATE store |
-| `rsvp_responses` | `couple_id`, guest data | RLS: couple reads own; public inserts |
-| `vendor_tokens` | `token` (PK), `couple_id`, `vendor_name`, `sections TEXT[]`, `expires_at`, `created_at` | RLS: couple manages own; public reads by token |
-| `photos` (Storage) | Path: `<user_id>/<photo_id>` | **Needs SELECT RLS policy — see §4 P2** |
+| Table | Key Columns | RLS Policy | Notes |
+|---|---|---|---|
+| `planner_data` | `user_id` (UUID, FK → auth.users), `data` (JSONB), `updated_at` | `auth.uid() = user_id` (SELECT, INSERT, UPDATE, DELETE) | **Primary STATE store.** Policy name: "Users manage own planner data". This is the table STATE is saved to and loaded from. |
+| `cloud_saves` | `couple_id`, `data` (JSONB), `updated_at` | (see Supabase) | Legacy/alternative table — may be same as above in older code references |
+| `rsvp_responses` | `couple_id`, guest data | Couple reads own; public inserts | |
+| `vendor_tokens` | `token` (PK), `couple_id`, `vendor_name`, `sections TEXT[]`, `expires_at`, `created_at` | Couple manages own; public reads by token | |
+| `photos` (Storage) | Path: `<user_id>/<photo_id>` | **SELECT policy MISSING — see §4 P2** | Cross-device photo sync fails without this policy |
 
 ## 1.8 Vision Board Key Functions
 
@@ -177,44 +184,29 @@ Photo sync trigger: `setTimeout(_mediaCloudSync, 800)` after cloud data loads on
 
 # 2. SYSTEM STATE & CURRENT OBJECTIVES
 
-## 2.1 Immediate — Wallpaper Deduplication (IN PROGRESS)
+## 2.1 Next Deploy Checklist
 
-**Status:** Wallpaper files extracted. Awaiting user to upload to GitHub.
+- [ ] Bump SW cache: `union-vault-v95` → `union-vault-v96` (bump on EVERY deploy)
+- [ ] Add Supabase Storage SELECT RLS policy for `photos` bucket (§4 P2) — **cross-device photo sync is blocked without this**
+- [ ] Remove debug `console.log` from `_lpSignIn()` (§4 P5 — deferred since Session 2)
+- [ ] Test sign-in privacy fix across two separate browsers/accounts (§4 P11)
 
-**What was done this session:**
-- Extracted `VB_WALLPAPER_LIGHT` (101 KB) and `VB_WALLPAPER_DARK` (74 KB) from base64 at lines 3642–3643
-- Saved as `vb-wallpaper-light.jpeg` and `vb-wallpaper-dark.jpeg` — delivered to user
-- User needs to upload both to `https://github.com/mandyjane/UnionVault/assets/` (or `/Logos/` — their choice)
+## 2.2 VB Wallpaper Deduplication (IN PROGRESS)
 
-**What to do once user confirms upload location:**
+**Status:** Wallpaper files extracted in Session 5. User has the files. Awaiting upload to GitHub.
+
+Once user uploads `vb-wallpaper-light.jpeg` and `vb-wallpaper-dark.jpeg` to GitHub:
 Replace lines 3642–3643 in the HTML:
 ```js
-// BEFORE:
-const VB_WALLPAPER_LIGHT="data:image/jpeg;base64,/9j/4AAQ...";
-const VB_WALLPAPER_DARK="data:image/jpeg;base64,/9j/4AAQ...";
-
 // AFTER (example if uploaded to /assets/):
 const VB_WALLPAPER_LIGHT="https://raw.githubusercontent.com/mandyjane/UnionVault/main/assets/vb-wallpaper-light.jpeg";
 const VB_WALLPAPER_DARK="https://raw.githubusercontent.com/mandyjane/UnionVault/main/assets/vb-wallpaper-dark.jpeg";
 ```
-This will reduce file size by a further ~175 KB (3.52 MB → ~3.34 MB).
-
-**VB_WALLPAPER is used in two places** (not just the declaration):
-- Line ~4387: `const _dashWall = isDark ? VB_WALLPAPER_DARK : VB_WALLPAPER_LIGHT;` (Dashboard background)
-- Line ~36332: `const vbWall = isDark ? VB_WALLPAPER_DARK : VB_WALLPAPER_LIGHT;` (Vision Board)
-
-No changes needed to those lines — they already read the constants.
-
-## 2.2 Deploy Checklist (before pushing to GitHub Pages)
-
-- [ ] Wallpaper deduplication complete (§2.1)
-- [ ] Bump SW cache: `union-vault-v10` → `union-vault-v11`
-- [ ] Remove debug `console.log` from `_lpSignIn()` (deferred since Session 2)
-- [ ] Add Supabase Storage SELECT RLS policy (§4 P2)
+This removes ~175 KB from the file (currently ~3.52 MB).
 
 ## 2.3 No Active Multi-File Split Planned
 
-There is **no current plan to split the single HTML file into multiple files**. The single-file architecture is intentional (see §1.2 constraints). All features are added to the single `index.html`. If this changes, update this section.
+There is **no current plan to split the single HTML file into multiple files**. All features are added to the single `index.html`.
 
 ---
 
@@ -222,33 +214,7 @@ There is **no current plan to split the single HTML file into multiple files**. 
 
 ## Pre-Session History (App name: "Elegant Affair Planner" → "UnionVault")
 
-The app began as "Elegant Affair Planner" and was later rebranded to "UnionVault". Core features were built across many sessions before the formal changelog system. The full feature set inherited at Session 1 of the changelog era includes:
-
-- Supabase auth (email/password sign-up, sign-in, session persistence)
-- Cloud save/load (STATE ↔ `cloud_saves` table)
-- Full app shell: sidebar nav, topbar, main-content area, dark mode toggle
-- Landing/login page with hero canvas, features, pricing, FAQ, contact
-- First-run setup modal (partner names, date, venue, budget)
-- Dashboard with stat tiles and Budget at a Glance widget
-- Event Details page
-- Guest List (table + card views, RSVP tracking, seating, dietary)
-- Checklist (tasks, sub-tasks, categories, due dates, budget links)
-- Budget (categories, items, deposits, payments, instalments)
-- Seating Plan (floor plan builder, drag-and-drop seats)
-- Vision Board (photo grid, Supabase photo storage/sync)
-- Wishing Well (contributions, addresses, print labels)
-- Website Builder (wedding website preview)
-- Invitations (folded into RSVP & Invites in nav)
-- Settings (full settings page with toggles)
-- CSV guest import
-- Day-of Timeline
-- Calendar
-- Inspiration / Mood Board
-- Vendor tracker + vendor brief link generator
-- Public run sheet sharing
-- PWA service worker (offline support)
-- Design tokens: gold accent (`#C9A84C`), dark surface (`#1A1A1F`), cream light (`#FDFBF7`), ink (`#2C2222`)
-- Typography: Cormorant Garamond (headings), Lato (body), Montserrat (UI labels)
+The app began as "Elegant Affair Planner" and was rebranded to "UnionVault". Core features built across many sessions before the formal changelog system include: Supabase auth, cloud save/load, full app shell (sidebar nav, topbar, dark mode toggle), landing/login page, first-run setup modal, Dashboard, Event Details, Guest List, Checklist, Budget, Seating Plan, Vision Board, Wishing Well, Website Builder, Invitations, Settings, CSV guest import, Day-of Timeline, Calendar, Inspiration/Mood Board, Vendor tracker, Public run sheet sharing, PWA service worker.
 
 ---
 
@@ -260,10 +226,6 @@ The app began as "Elegant Affair Planner" and was later rebranded to "UnionVault
 - Allergy renders in red (`#A8322A` light / `#E08080` dark) across all 18 data surfaces
 - Seating print: **ALLERGY: peanuts** in bold capitals + red (also black for B&W print)
 - CSV import: allergies/diets normalised on import via `_normaliseDiet`; legacy guests repaired once on load
-- Typed common allergens fold into chips on save; exact match only (no guessing for health safety)
-- Fixed: `_guestValueText` was looking up non-existent global `dietLabels`; now uses `_dietText`
-- Fixed: event guest list joined raw array without space
-- **Decisions logged:** D-v182 series (allergy chip normalisation, print in words not colour-only, parser confidence)
 
 ---
 
@@ -272,209 +234,171 @@ The app began as "Elegant Affair Planner" and was later rebranded to "UnionVault
 
 - `_budgetFourFigures(totalCost, totalPaid, budgetTotal)` — single source of truth for all budget summaries
 - Four figures: Committed, Paid, Left to pay, Unallocated (replaces misleading "Remaining")
-- Budget page, both dashboard widgets, reports all read from one helper (no drift)
-- "Paid in full ✓" shown when Left to pay = $0 (not "Left to pay $0")
-- Responsive layout: A (all four side by side) on ≤560px, B (two grouped pairs) above 560px
-- Left to Pay drill-down (`openOwedSummary`) — per-item breakdown from `calcBudgetBalance`; soonest due first, overdue in red
-- Budget widget fixed (was using faulty `budgetSpent` that summed deposit amounts paid or not)
-- Budget Used stat tile fixed (all 4 KPI styles)
-- Removed faulty `budgetSpent` / `budgetPct` variables
-- **Decisions logged:** $0 always shown, "Remaining" label audit, responsive render-both-CSS approach
+- "Paid in full ✓" shown when Left to pay = $0
 
 ---
 
-## v179 — Linked Checklist ↔ Budget: One sheet, three mode setting
+## v179–v182 — Linked Checklist ↔ Budget, Wishing Well improvements
 **Date:** Pre-2026-10-18
 
 - Replaced chain of up to 5 pop-ups after a budget/checklist tick with one settings-driven behaviour
-- **Setting:** Settings → Budget → "When you tick linked checklist and budget items" (`linkedMode`)
-  - Mode 1: Automatic + Undo (applies change, toast with Undo/Change)
-  - Mode 2: One sheet (default — shows all options in one sheet)
-  - Mode 3: Automatic, ask about new costs
-- `toggleCheck` → `_linkedTaskTicked` (linked) or `_unlinkedMoneyTicked` (unlinked money task)
-- Budget-side ticks → `_askTaskDoneBatch` → `_lkPaymentChanged`
-- "Not a cost" option on unlinked sheet; remembered per task
-- "Book…" tasks → deposit only, never full amount; ordering: book-test runs before money-test
-- Removed: all chained pop-ups, Suggest Deposits setting, invoice pop-up switch
-- Added: "Add balance task" in budget item ⋯ menu
-
----
-
-## v180 — × on linked sheet asks "Keep the task ticked?"
-**Date:** Pre-2026-10-18
-
-- × or Escape on any linked sheet now asks: "Keep the task ticked?" (or "Keep the payment change?")
-- Buttons: **Undo the tick** / **Keep it** — not silent in either direction
-- × on the question itself keeps the tick
-- Undo uses `toggleCheck(id, true)` (silent re-toggle) which reverses linked flags
-
----
-
-## v181 — Linked sheets: one Save button
-**Date:** Pre-2026-10-18
-
-- Removed "Just the task" / "Just the payment" buttons from linked sheets
-- Now: untick any line you don't want, press **Save**
-- Save with everything unticked = same as old "Just the task"
-- "Add this to your budget?" sheet keeps **Skip** (radios need a "none" option)
-
----
-
-## v182 — Budget categories: always show Paid and Left to Pay
-**Date:** Pre-2026-10-18
-
-- Every budget category header shows Paid and Left to Pay — even at $0
-- "Fully paid" category shows "Paid in full ✓" instead of "Left to pay $0"
-- "Owing" → renamed to "Left to pay" everywhere
-- "Left" (inside allocated) → renamed to "Unallocated"
-- Setting: Settings → "Show Paid / Left to pay on Budget Categories" (persists)
-- Mobile stack: `.bi-stack-paid` wrap at ≤560px so long names keep their link icon on same line
-
----
-
-## v183 — Wishing Well: address on cards, sort control, print labels
-**Date:** 2026-10-19
-
-- Contribution cards: contributor address shown below note (`x.address` field)
-- If no address: "Add address" link opens Edit Contribution sheet
-- Sort control: Newest / Oldest / Highest / Lowest / Name A–Z; persists in state
-- Print labels button added to Wishing Well header
-- **Bug fixed:** `<div class="dots-dropdown">` inside a `<span>` was breaking flex layout
-  - Fix: changed to `<span class="dots-dropdown">` (portalled to `<body>` by `toggleDots()` anyway)
-- **Bug fixed:** `display:inline-flex` on address line was escaping column; changed to `display:block`
-- SVG console errors in `openWwPrintLabels` / `_wwGenerateLabels` (SVG strings through HTML escaper) — flagged but not yet fixed
+- `linkedMode` setting: Automatic + Undo / One sheet (default) / Automatic ask new costs
+- × on linked sheet asks "Keep the task ticked?" (not silent)
+- Removed "Just the task" / "Just the payment" buttons — one Save button
+- Budget categories: always show Paid and Left to Pay; "Owing" → "Left to pay"; "Left" → "Unallocated"
+- Wishing Well: contributor address on cards, sort control, print labels
 
 ---
 
 ## Session 2 (v184) — Alerts section, Cloud Storage card, toggle fix, dark mode fix
 **Date:** 2026-10-21 | Commit: `dd78410` | Cache: v7 → v8
 
-**Changes:**
-1. **Alerts & Notifications** — new dedicated settings section for all 5 alert toggles (was scattered in Display & Formatting)
-   - Sub-labels: "Banners" (Task/Payment alerts) and "Menu Icons" (Checklist/Budget/Seating)
-   - `_SETTINGS_PAGE_MAP` updated; Seating Alert Icon entry added
-2. **Cloud Storage card** — signed-in users see cloud storage summary instead of local meter
-   - `_cloudStorageCardHtml()` — file count, MB used, 1.5 GB limit, progress bar
-   - Thresholds: gold (normal) → amber (≥60%) → red (≥85%)
-   - `_CLOUD_LIMIT_BYTES = 1.5 * 1024 * 1024 * 1024`
-   - Local meter renamed "Local storage" with stale "old 5 MB limit" sentence removed
-3. **Toggle CSS fix** — added `-webkit-appearance:none; appearance:none` to `.toggle-switch input` (fixes Chrome mobile checkbox bleed-through)
-4. **Dark mode / `data-theme` fix** — `data-theme="light"` now set on `<html>` whenever light mode is active
-   - Fixes: `@media(prefers-color-scheme:dark) :root:not([data-theme="light"])` (~line 2769) was overriding app light mode on OS-dark-mode phones
-   - Three touch points: `toggleDarkMode()`, `loadFromStorage()`, fresh-device init
-   - Cache bumped: v7 → v8
-5. **Deferred:** debug `console.log` in `_lpSignIn()` — still present, remove before production
+1. **Alerts & Notifications** — new dedicated settings section for all 5 alert toggles
+2. **Cloud Storage card** — `_cloudStorageCardHtml()` for signed-in users (file count, MB used, 1.5 GB limit, progress bar)
+3. **Toggle CSS fix** — `-webkit-appearance:none; appearance:none` to `.toggle-switch input`
+4. **Dark mode fix** — `data-theme="light"` now set on `<html>` whenever light mode is active
 
 ---
 
 ## Session 3 (v184 continued) — Vendor Brief Link Generator
 **Date:** 2026-10-21
 
-- Vendor brief link generator: per-vendor tokenised URLs (`?vendor=<token>`)
-- Card-level share button + central list view of all active tokens
-- `vendor_tokens` Supabase table created
-- Async tokens section with 30-second in-memory cache
-- Public vendor view (`?vendor=<token>` URL intercept at boot, ~line 44490)
-- RLS: couple manages own tokens; public reads by token
-- Cache bumped to v9 (pending at time)
+- Per-vendor tokenised URLs (`?vendor=<token>`), card-level share button
+- `vendor_tokens` Supabase table created; RLS: couple manages own, public reads by token
 
 ---
 
 ## Session 4 (v184 continued) — Public Run Sheet Sharing
 **Date:** 2026-10-21
 
-- `?runsheet=<coupleId>` URL param intercepted at boot (~line 44997)
+- `?runsheet=<coupleId>` URL param intercept at boot (~line 44997)
 - `_showPublicRunSheet()` — fetches STATE from Supabase anon key, renders read-only timeline page
-- Share button in timeline topbar (shown when signed in + has public moments)
-- Cache bumped to v10 (pending at time)
 
 ---
 
 ## Session 5 (v185) — Mobile VB Toolbar, Photo Sync, Logo Dedup, Nav Fix
-**Date:** 2026-10-22 | Cache: v10 (deploy as v11)
+**Date:** 2026-10-22 | Cache: v10 → v11 (on deploy)
 
-### Change 1: Mobile Vision Board toolbar overflow fix
-**Problem:** "Images | Small ▼ | Scrapbook ▼" buttons clipped off left edge on narrow screens (margin-left:auto on inner container)
-
-**Fix:**
-- Outer container: `flex-wrap:wrap; overflow-x:auto`
-- Inner container: `flex:1; justify-content:flex-end; flex-wrap:wrap; min-width:0`
-- `@media(max-width:520px)`:
-  - `.vb-trigger-label` hidden (text labels for Size and Layout dropdowns)
-  - `.vb-captions-label` hidden (text label for captions toggle)
-  - `.vb-captions-icon` SVG shown instead
-  - `.vb-layout-trigger` padding reduced (~10px → 6px/9px)
-- Added `class="vb-trigger-label"` to Size dropdown span
-- Added `class="vb-trigger-label"` to Layout dropdown span
-
-**Decision:** Wrap over horizontal scroll (hidden controls worse UX than wrapping). Icon-only at ≤520px is standard pattern for three controls on a phone.
+1. VB toolbar mobile overflow fixed (flex-wrap + icon-only at ≤520px)
+2. Missing photos amber banner + `_vbPhotoRetry()` added
+3. 12 embedded base64 logos → GitHub repo URLs (−950 KB, 4.6 MB → 3.52 MB)
+4. Nav crest + wordmark bug fixed (all four `<img>` were pointing to crest; wordmark slots now use text-only PNG)
+5. VB wallpapers extracted but **not yet removed from HTML** (see §2.2)
 
 ---
 
-### Change 2: Missing photos banner + retry
-**Problem:** Cross-device photos would fail to load silently — no feedback to user
+## Session 6 — Cloud Auto-Sync Fix, Custom Domain, Footer + Hero fixes
+**Date:** 2026-10-22 | Cache: v11 → v13
 
-**Fix:** When VB renders and some `it.image` IDs are not in MEDIA (not local blob, not URL, not data URI):
-- Amber info banner injected at top of VB showing count + "Retry" button
-- `_vbPhotoRetry()` added: collects missing IDs from STATE, calls `_sbPhotoFetch(id)` for each, re-renders
-
-**Decision:** Non-blocking banner with user-triggered retry. Auto-retry rejected (causes re-render loop if fetch fails). Spinner overlay rejected (blocks board; user may have some photos and want to see them).
+1. **Cloud auto-sync on sign-in fix** — `_lpSignIn()` else branch: added `setTimeout(_autoSyncCheckOnBoot, 800)` so signing in when `alreadySetUp = true` still triggers a cloud check. `_autoSyncCheckOnBoot()`: when `localTsRaw` is null (never cloud-synced), auto-load silently via `cloudLoadClick(true)` instead of confusing conflict dialog.
+2. **Custom domain** — `unionvault.app` live. DNS A records on Porkbun, GitHub Pages TLS cert active.
+3. **Footer logo** — changed from gold PNG 52px to white (`LOGO_DARK`) at 90px via `data-logo="dark"` attribute.
 
 ---
 
-### Change 3: Logo deduplication — base64 → GitHub URLs
-**Problem:** 12 PNG logos embedded as base64 strings totalling ~950 KB
+## Session 7 — Cross-Account Privacy Fixes, Collapsed Sidebar, Flash Fix, Hero Space
+**Date:** 2026-10-23 | Commits: `95e6182`, `de03fa4`, `fcfbf89`, `c32c159` | Cache: v92 → v95
 
-**Fix:** All 12 replaced with `https://raw.githubusercontent.com/mandyjane/UnionVault/main/Logos/<filename>` URLs
+### Change 1 (CRITICAL): Boot-time cross-account data isolation (SW v92, commit `95e6182`)
 
-**Result:** File size 4.6 MB → 3.52 MB (−950 KB)
+**Problem:** When a user signed in to account B on a device that had previously stored account A's data in localStorage, the app trusted the stale localStorage, displayed A's data, and — critically — the `_autoSyncSchedule()` debounce timer running 30s after any `saveToStorage()` call would push A's data to B's Supabase account.
 
-**Tradeoff accepted:** Logos won't display offline. Fonts remain embedded so the app is functional; only logo images go missing without network.
+**Root cause:** The boot-time `alreadySetUp && _sbSession` branch had no check that the signed-in user matched the user whose data was in localStorage. `uv_uid` was stored but never verified at boot.
+
+**Fix — boot path** (`_autoSyncCheckOnBoot` caller block, ~line 46395):
+```js
+if(alreadySetUp && _sbSession){
+  // Safety: verify local data belongs to the signed-in user before trusting it.
+  var _bootUID = null;
+  try{ _bootUID = localStorage.getItem('uv_uid'); }catch(_){}
+  if(_bootUID && _bootUID !== _sbSession.user.id){
+    // Local data belongs to a different user — wipe it and reload
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+    try{ localStorage.setItem('uv_uid', _sbSession.user.id); }catch(_){}
+    location.reload();
+    return;
+  }
+  // matched or new device — proceed normally
+  document.getElementById('welcome-overlay').classList.add('hidden');
+  updateTopbarSub();
+  navigate('dashboard');
+  setTimeout(_autoSyncCheckOnBoot, 800);
+  setTimeout(_mediaCloudSync, 2000);
+}
+```
+
+**Fix — import path** (~line 44424): When `sessionStorage` flag `uv_import_pending` is set (JSON restore after reload), cancel the `_autoSyncTimer` that `saveToStorage()` immediately schedules, so imported data is NOT silently pushed to cloud:
+```js
+if(_importFlag){
+  try{ sessionStorage.removeItem('uv_import_pending'); }catch(_){}
+  if(!STATE.settings._lastCloudSave){
+    STATE.settings._lastCloudSave = new Date().toISOString();
+    saveToStorage();
+    if(_autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; }
+  }
+  if(typeof _cloudToast !== 'undefined') _cloudToast('Data imported ✓ — click Save to Cloud to back it up');
+  return;
+}
+```
+
+**Status: ✅ FIXED AND DEPLOYED.** Both root causes addressed. `uv_uid` is written to localStorage on every sign-in and checked at every boot.
 
 ---
 
-### Change 4: Nav logo wordmark fix
-**Problem:** All 4 nav logo `<img>` tags (2 light + 2 dark) were pointing to the crest image (`Black%20logo%20(Light%20mode).png`), so both sides of the divider showed the crest mark ("UV") instead of crest | wordmark
+### Change 2: Collapsed sidebar rings icon (SW v93, commit `de03fa4`)
 
-**Fix:**
-- Left of divider (crest): light → `Black%20logo%20(Light%20mode).png` / dark → `White%20logo%20(Dark%20mode).png`
-- Right of divider (wordmark): light → `Black%20text%20(Light%20mode).png` / dark → `White%20text%20(Dark%20mode).png`
+**Problem:** `.sidebar.collapsed .sidebar-footer{display:none}` hid the entire footer including the rings icon/couple-display button when the sidebar was collapsed to 56px icon strip.
 
-**Decision:** Use text-only logo (not full lockup) for wordmark — full lockup would duplicate the crest.
+**Fix** (~line 843):
+```css
+.sidebar.collapsed .sidebar-footer{padding:10px 0;display:flex;justify-content:center}
+.sidebar.collapsed .couple-display{justify-content:center;padding:6px;margin:0;width:40px}
+.sidebar.collapsed .couple-names{display:none}
+.sidebar.collapsed #sidebar-signout-pop{left:0;right:auto;min-width:210px}
+```
 
----
-
-### Change 5 (IN PROGRESS): VB Wallpaper deduplication
-**Problem:** `VB_WALLPAPER_LIGHT` and `VB_WALLPAPER_DARK` still embedded as base64 at lines 3642–3643 (~175 KB)
-
-**Action taken:** Extracted to `vb-wallpaper-light.jpeg` (99 KB) and `vb-wallpaper-dark.jpeg` (73 KB). Delivered to user. Awaiting upload to GitHub then URL replacement in HTML (see §2.1).
+**Status: ✅ FIXED.**
 
 ---
 
-## Session 6 (v185 continued) — Cloud auto-sync fix, custom domain setup, SW cache bump
-**Date:** 2026-10-21 | Cache: v10 → v11
+### Change 3: Flash of app content before landing page (SW v94, commit `fcfbf89`)
 
-### Change 1: Cloud auto-sync on sign-in (new domain / new device)
-**Problem:** Signing in on `unionvault.app` (or any device with prior local state but no cloud-sync history) did not auto-load cloud data. `alreadySetUp` is captured as a closure at boot — if any local state existed (even from an offline setup attempt), `_lpSignIn()` skipped `_cloudLoad()` entirely and just navigated to dashboard.
+**Problem:** On hard refresh, app content (dashboard) appeared for ~200ms before `#welcome-overlay` became visible, because the overlay started `hidden` and JS needed to run before it could show the landing page for unauthenticated users.
 
-**Fix:**
-- `_lpSignIn()` else branch (~line 3369): added `setTimeout(_autoSyncCheckOnBoot, 800)` so that signing in when `alreadySetUp = true` still triggers a cloud check.
-- `_autoSyncCheckOnBoot()` (~line 43225): when `localTsRaw` is null (device has never cloud-synced, `_lastCloudSave` absent), auto-load silently via `cloudLoadClick(true)` instead of showing the conflict dialog. Previously showed "This device: Unknown" which was confusing.
+**Fix:** Three coordinated changes:
+1. Early inline `<script>` immediately after `<body>` — reads `uv_sb_session` from localStorage; if present, sets `data-uv-auth=""` on `<html>` before first paint.
+2. CSS rule (~line 2167): `html[data-uv-auth] #welcome-overlay{display:none!important}` — suppresses overlay for authenticated sessions.
+3. `#welcome-overlay` HTML: removed `hidden` class from initial markup — the overlay now defaults to visible; JS hides it for authenticated users, CSS hides it via `data-uv-auth` for fast boot.
 
-**Cases now handled:**
-- Fresh device (empty localStorage): existing path unchanged ✓
-- New domain / offline setup, never cloud-synced: auto-loads silently ✓
-- Returning device, cloud is newer: conflict dialog (was boot-only, now post-sign-in too) ✓
-- Returning device, cloud same age: no dialog, auto-push local up ✓
+**Status: ✅ FIXED.**
 
-### Change 2: SW cache bump
-Bumped `union-vault-v10` → `union-vault-v11` in `sw.js`. Clears P8.
+---
 
-### Infrastructure: `unionvault.app` custom domain
-- Domain purchased on Porkbun; DNS A records added; GitHub Pages DNS check ✓
-- TLS cert provisioned (3/3); Enforce HTTPS pending (allow up to 24h)
-- `mandyjane.github.io/UnionVault` continues to redirect to `unionvault.app`
-- Org migration (P10) still pending; domain will travel with the repo when moved
+### Change 4: Landing page hero empty space reduction (SW v95, commit `c32c159`)
+
+**Problem:** A large vertical gap between the logo and headline in the hero left panel because `.hero-logo{margin-bottom:auto}` absorbed all remaining flex space in the sticky column.
+
+**Fix** (line 2946):
+```css
+/* BEFORE: */
+.hero-logo{display:flex;align-items:center;gap:14px;margin-bottom:auto;padding-bottom:22px}
+
+/* AFTER: */
+.hero-logo{display:flex;align-items:center;gap:14px;margin-bottom:clamp(20px,5vh,80px);padding-bottom:22px}
+```
+
+**Status: ✅ FIXED.**
+
+---
+
+### Supabase data contamination cleanup (Session 7)
+
+During debugging, contaminated data was discovered and cleaned:
+- `ajtom0610@gmail.com` account: test data ("Ken & Barbie") was present — user deleted this account entirely via Supabase dashboard.
+- `liam.metcalf@yahoo.com.au` (user_id `ef437b58-...`): 25 rows of atomlinson's data from a v89 import bug — rows deleted via Supabase Table Editor UI.
+- `atomlinson@live.com.au` (user_id `522da1db-...`): Data was temporarily overwritten with "Ken & Barbie" test data due to the auto-sync bug. User restored from `.json` backup.
+
+The code fixes in Change 1 above prevent recurrence. **No further Supabase cleanup required.**
 
 ---
 
@@ -483,15 +407,16 @@ Bumped `union-vault-v10` → `union-vault-v11` in `sw.js`. Clears P8.
 | # | Item | Status | Context & Intended Behaviour |
 |---|---|---|---|
 | **P1** | **Hash routing boot intercept** | 🅿️ Parked | Guests visiting `#liam-amanda` should see the public wedding website, not the login page. QR codes for this are already built. The hash intercept code exists at boot but guest-view rendering is not wired to `location.hash` on initial load. When activated: check `location.hash` before showing LP; if it matches `#liam-amanda` pattern, call the wedding website renderer directly without requiring auth. |
-| **P2** | **Supabase Storage SELECT RLS policy** | 🅿️ Parked — BLOCKING cross-device photos | Without this policy, cross-device photo sync fails silently. The amber banner + retry button (Session 5) is a workaround, but the root cause is this missing policy. SQL to add in Supabase dashboard → Storage → photos bucket → Policies: `CREATE POLICY "Users can read own photos" ON storage.objects FOR SELECT TO authenticated USING (auth.uid()::text = (storage.foldername(name))[1]);` |
-| **P3** | **VB wallpaper deduplication** | 🔄 In Progress (see §2.1) | Wallpaper JPEGs extracted and delivered to user. Once uploaded to GitHub and URL updated in HTML, removes ~175 KB from file. |
-| **P4** | **Wedding site watermark branding check** | 🅿️ Parked | `WB_CREST_LIGHT` / `WB_CREST_DARK` variables now point to repo logos. Lines ~35083–35089 may still contain old "Elegant Affair" branding text in the watermark HTML. Check and update to "UnionVault" or the couple's custom text. |
-| **P5** | **Remove debug `console.log` from `_lpSignIn()`** | 🅿️ Parked (deferred since Session 2) | A `console.log` statement in the login function outputs auth data. Must be removed before production/public launch. Flagged every session, never critical enough to prioritise. |
-| **P6** | **Test confirmation email on sign-up** | 🅿️ Parked | The Supabase email confirmation flow has not been tested end-to-end. Need to: create a new test account, receive the confirmation email, click the link, and verify the app handles the redirect/confirmation state correctly. |
-| **P7** | **Test guest RSVP flow end-to-end** | 🅿️ Parked | The public RSVP page (`?rsvp=<slug>` or `#rsvp-liam-amanda`) has not been tested from QR code scan → form fill → submit → confirmation. Need to test: QR code renders correct URL, RSVP page loads without auth, form submits to `rsvp_responses` table, couple sees submission in RSVP Manager. |
-| **P8** | **SW cache bump to v11** | ✅ Done | Bumped `union-vault-v10` → `union-vault-v11` in `sw.js`. |
-| **P9** | **SVG console errors in Wishing Well print labels** | 🅿️ Parked (noted v183) | `openWwPrintLabels` / `_wwGenerateLabels` — SVG strings are being passed through the HTML escaper, producing invalid attribute values like `""9""`. Causes console errors but does not affect card layout or core function. Fix: ensure SVG template strings bypass the HTML escaper. |
-| **P10** | **Move UnionVault repo to its own GitHub org** | 🅿️ Parked | Domain `unionvault.app` is live (DNS ✓, TLS cert active, Enforce HTTPS pending). Org migration not yet done. When done: (1) update all `raw.githubusercontent.com/mandyjane/UnionVault/` logo/asset URLs in `index.html` to new org path; (2) update `CLAUDE_CODE_CONTEXT.md` §1.1 repo URL and §1.4 logo base path; (3) no DNS changes needed — the `CNAME` file travels with the repo. Note: if repo is renamed to `unionvault.github.io`, raw asset paths change to `raw.githubusercontent.com/UnionVault/unionvault.github.io/main/...`. |
+| **P2** | **Supabase Storage SELECT RLS policy** | 🅿️ Parked — **BLOCKING cross-device photos** | Without this policy, cross-device photo sync fails silently. The amber banner + retry button (Session 5) is a workaround, but the root cause is this missing policy. SQL to add in Supabase dashboard → Storage → photos bucket → Policies: `CREATE POLICY "Users can read own photos" ON storage.objects FOR SELECT TO authenticated USING (auth.uid()::text = (storage.foldername(name))[1]);` |
+| **P3** | **VB wallpaper deduplication** | 🔄 In Progress (see §2.2) | Wallpaper JPEGs extracted and delivered to user in Session 5. Once uploaded to GitHub and URL updated in HTML, removes ~175 KB from file. |
+| **P4** | **Wedding site watermark branding check** | 🅿️ Parked | `WB_CREST_LIGHT` / `WB_CREST_DARK` variables now point to repo logos. Lines ~35083–35089 may still contain old "Elegant Affair" branding text. Check and update to "UnionVault" or the couple's custom text. |
+| **P5** | **Remove debug `console.log` from `_lpSignIn()`** | 🅿️ Parked (deferred since Session 2) | A `console.log` statement in the login function outputs auth data. Must be removed before production/public launch. |
+| **P6** | **Test confirmation email on sign-up** | 🅿️ Parked | The Supabase email confirmation flow has not been tested end-to-end. |
+| **P7** | **Test guest RSVP flow end-to-end** | 🅿️ Parked | The public RSVP page (`?rsvp=<slug>` or `#rsvp-liam-amanda`) has not been tested from QR code scan → form fill → submit → confirmation. |
+| **P8** | **SW cache bump** | ✅ Done | Currently `union-vault-v95`. Bump to `v96` on next deploy. |
+| **P9** | **SVG console errors in Wishing Well print labels** | 🅿️ Parked (noted v183) | `openWwPrintLabels` / `_wwGenerateLabels` — SVG strings are being passed through the HTML escaper. Causes console errors but does not affect function. |
+| **P10** | **Move UnionVault repo to its own GitHub org** | 🅿️ Parked | Domain `unionvault.app` is live. Org migration not yet done. When done: update all `raw.githubusercontent.com/mandyjane/UnionVault/` logo/asset URLs in `index.html` to new org path; update CLAUDE_CODE_CONTEXT.md §1.1. The `CNAME` file travels with the repo. |
+| **P11** | **Verify cross-account privacy fix in production** | 🔲 Verify | The boot-time uv_uid check and import auto-sync block are deployed (SW v92, commit `95e6182`). Test by: (1) signing into account A in browser A, loading data, signing out; (2) signing into account B in same browser — data should NOT carry over. Also test JSON import: import a .json file → confirm toast says "click Save to Cloud" → navigate away and back → data should NOT auto-push. |
 
 ---
 
@@ -530,11 +455,11 @@ Bumped `union-vault-v10` → `union-vault-v11` in `sw.js`. Clears P8.
 ## Working Conventions (For Claude Code)
 
 1. **Preview before build** — for any visual/design change, show light + dark mockups in chat first. Clickable prompts: Accept / Reject / Adjust / Use Option A+B
-2. **File naming** — deliver as `UnionVault - [very short summary of most recent change].html`
-3. **Desktop + mobile** — every change must work at both 1280px+ and 390px widths. Flag if one is at risk
-4. **Park = note it** — if user says "park" anything, add it to §4 and confirm it's logged
-5. **Single file** — no imports, no build step, no CDN stylesheet links (fonts especially must stay embedded)
-6. **SW cache bump** — on every deploy, bump `union-vault-v10` → next version number
-7. **Syntax check** — all `<script>` blocks must pass `node --check` before delivery
-8. **Changes that touch the same source function** — fix approved surface, prove other surface unchanged, raise it for user to decide (D-v182 "fix what was approved" rule)
-
+2. **Desktop + mobile** — every change must work at both 1280px+ and 390px widths. Flag if one is at risk
+3. **Park = note it** — if user says "park" anything, add it to §4 and confirm it's logged
+4. **Single file** — no imports, no build step, no CDN stylesheet links (fonts especially must stay embedded)
+5. **SW cache bump** — on every deploy, bump `union-vault-vNN` to `vNN+1`. Current: `v95` → bump to `v96`
+6. **Syntax check** — all `<script>` blocks must pass `node --check` before delivery
+7. **Changes that touch the same source function** — fix approved surface, prove other surface unchanged, raise it for user to decide
+8. **git push** — always `git push -u origin main`. One branch (`main`), deploy directly
+9. **Supabase MCP** — Supabase MCP server is available in Claude Code cloud sessions. Use `mcp__Supabase__*` tools for database queries and schema changes. Project ID: `hzafdlfprtzfxtyaebmc`
