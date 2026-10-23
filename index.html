@@ -44430,9 +44430,11 @@ async function _autoSyncCheckOnBoot(){
     if(!STATE.settings._lastCloudSave){
       STATE.settings._lastCloudSave = new Date().toISOString();
       saveToStorage();
+      // Cancel the auto-sync that saveToStorage() just scheduled.
+      // Imported data must be pushed to cloud ONLY when the user explicitly clicks "Save to Cloud".
+      if(_autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; }
     }
     if(typeof _cloudToast !== 'undefined') _cloudToast('Data imported ✓ — click Save to Cloud to back it up');
-    if(_autoSyncEnabled()) _autoSyncSchedule();
     return;
   }
   await _sbEnsureFreshToken();
@@ -46393,6 +46395,17 @@ function _showVendorError(type){
   }
 
   if(alreadySetUp && _sbSession){
+    // Safety: verify local data belongs to the signed-in user before trusting it.
+    // This catches stale localStorage left by a different account (e.g. previous session on shared device).
+    var _bootUID = null;
+    try{ _bootUID = localStorage.getItem('uv_uid'); }catch(_){}
+    if(_bootUID && _bootUID !== _sbSession.user.id){
+      // Local data belongs to a different user — wipe it and reload so we fetch our own cloud data.
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+      try{ localStorage.setItem('uv_uid', _sbSession.user.id); }catch(_){}
+      location.reload();
+      return;
+    }
     // Fully set up + signed in → go straight to app, then check for cloud conflict
     document.getElementById('welcome-overlay').classList.add('hidden');
     updateTopbarSub();
