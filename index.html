@@ -32651,7 +32651,18 @@ function _wbStripToggle(){
 // remain reachable and the scroll-restore below is unaffected.
 const _wbBlobUrls = { live:null, pv:null };
 function _wbFrameLoad(f, slot, html){
-  if(!f) return;
+  if(!f) return false;
+  // After the first src-based load, write directly into the existing document to avoid
+  // the blank-flash that changing f.src causes. document.write() keeps the document's
+  // current URL intact, so #anchor links inside the frame still resolve correctly.
+  if(_wbBlobUrls[slot]){
+    try{
+      const d=f.contentDocument;
+      if(d){ d.open(); d.write(html); d.close(); return true; }
+    }catch(e){}
+  }
+  // First load: set src to a blob URL so the frame gets a real document URL
+  // (srcdoc resolves anchors against the parent URL, which breaks in-page nav).
   const old = _wbBlobUrls[slot];
   _wbBlobUrls[slot] = URL.createObjectURL(new Blob([html], {type:'text/html'}));
   f.src = _wbBlobUrls[slot];
@@ -32660,6 +32671,7 @@ function _wbFrameLoad(f, slot, html){
   // safe for the outgoing frame. At most one live url per surface is ever outstanding;
   // they replace rather than accumulate.
   if(old) setTimeout(function(){ URL.revokeObjectURL(old); }, 0);
+  return false;
 }
 
 function _wbLiveScrollY(f){
@@ -32676,30 +32688,39 @@ function _wbLivePaint(){
   if(!f) return;
   const prev=_wbLiveScrollY(f);
   const focus=_wbLiveFocus;
-  f.onload=()=>{
+  // The section being edited wins. If it is toggled off (or is Home, which is a
+  // <header> with no section id), fall through to the remembered offset rather than
+  // sitting at the top — a missing anchor must not COST you your place.
+  const land=()=>{
     try{
       const d=f.contentDocument, wdw=f.contentWindow;
       if(!d||!wdw) return;
-      // The section being edited wins. If it is toggled off (or is Home, which is a
-      // <header> with no section id), fall through to the remembered offset rather than
-      // sitting at the top — a missing anchor must not COST you your place.
-      const land=()=>{
-        const el = focus ? d.getElementById(focus) : null;
-        if(el) el.scrollIntoView({block:'start'});
-        else   wdw.scrollTo(0, prev);
-      };
-      // Land once now, then AGAIN after layout settles. `onload` for a srcdoc can fire
+      const el = focus ? d.getElementById(focus) : null;
+      if(el) el.scrollIntoView({block:'start'});
+      else   wdw.scrollTo(0, prev);
+    }catch(e){}
+  };
+  // onload fires only on f.src changes; document.write() paints don't trigger it.
+  f.onload=()=>{
+    try{
+      const wdw=f.contentWindow; if(!wdw) return;
+      // Land once now, then AGAIN after layout settles. `onload` for a blob url can fire
       // before the iframe's images have loaded and taken up their height — so a section
       // sitting BELOW images (Accommodation, under the Gallery) scrolls to where it was
       // before the images pushed it down, and lands short. Re-running after a frame, and
       // once more after a beat, corrects for late image layout. (Cheap: scrollIntoView on
       // an already-correct position is a no-op.)
-      land();
-      wdw.requestAnimationFrame(land);
-      setTimeout(land, 220);
+      land(); wdw.requestAnimationFrame(land); setTimeout(land, 220);
     }catch(e){}
   };
-  _wbFrameLoad(f, 'live', _wbBuildSite());
+  const wrote=_wbFrameLoad(f, 'live', _wbBuildSite());
+  if(wrote){
+    // document.write() is synchronous — restore scroll immediately, then re-check after
+    // layout settles (images that load after the write can shift content down).
+    land();
+    try{ f.contentWindow.requestAnimationFrame(land); }catch(e){}
+    setTimeout(land, 220);
+  }
 }
 
 // Called when a section editor opens/closes. Paint is left to the caller — this only
