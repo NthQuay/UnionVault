@@ -27831,6 +27831,11 @@ async function _sbAuthPost(path, payload){
 function _sbPersist(s){
   _sbSession=s;
   try{ localStorage.setItem(_SB_SK,JSON.stringify(s)); }catch(_){}
+  // When clearing the session, remove data-uv-auth so the CSS overlay guard lifts immediately.
+  // Without this, html[data-uv-auth]#welcome-overlay{display:none!important} keeps the landing
+  // page hidden after token expiry, leaving the Settings sign-in modal as the only auth path —
+  // which has historically been a cross-account contamination vector.
+  if(!s){ try{ document.documentElement.removeAttribute('data-uv-auth'); }catch(_){} }
   _sbListeners.forEach(fn=>{ try{fn(s?s.user:null);}catch(_){} });
 }
 function _sbLoadSession(){
@@ -27994,7 +27999,7 @@ async function _cloudSave(silent,keepalive){
   if(!STATE.settings) STATE.settings={};
   STATE.settings._lastCloudSave=new Date().toISOString();
   const pay={
-    event:STATE.event, settings:STATE.settings, guests:STATE.guests,
+    event:STATE.event, settings:Object.assign({},STATE.settings,{_ownerUid:uid}), guests:STATE.guests,
     checklist:STATE.checklist, vendors:STATE.vendors||[], quotes:STATE.quotes||[],
     checklistCategories:STATE.checklistCategories||[],
     checklistDrafts:STATE.checklistDrafts||[],
@@ -28032,6 +28037,11 @@ async function _cloudLoad(){
   if(!rows.length) return {ok:true,empty:true};
   const saved={hasSetup:true};
   rows.forEach(r=>{saved[r.section]=r.data;});
+  // Sanity check: if data was stamped with a different owner UID, it's contaminated — treat as empty.
+  // _ownerUid is written by _cloudSave; old data without it passes through unchecked.
+  if(saved.settings&&saved.settings._ownerUid&&saved.settings._ownerUid!==uid){
+    return {ok:true,empty:true};
+  }
   return {ok:true,saved};
 }
 
@@ -44130,6 +44140,20 @@ async function _authSignIn(){
   const r=await _sbSignIn(email,pw);
   btn.disabled=false;btn.textContent='Sign in';
   if(!r.ok){errEl.textContent=r.error;errEl.style.display='';return;}
+  // Guard against cross-account data contamination — same logic as _lpSignIn.
+  // If local data belongs to a different user, wipe it and reload so the boot
+  // path fetches the correct account's cloud data fresh.
+  if(alreadySetUp){
+    var _amUID=null;
+    try{_amUID=localStorage.getItem('uv_uid');}catch(_){}
+    if(_amUID!==r.user.id){
+      try{localStorage.removeItem(STORAGE_KEY);}catch(_){}
+      try{localStorage.setItem('uv_uid',r.user.id);}catch(_){}
+      location.reload();
+      return;
+    }
+  }
+  try{localStorage.setItem('uv_uid',r.user.id);}catch(_){}
   closeAuthModal();
   if(typeof _currentPage!=='undefined'&&_currentPage==='settings') navigate('settings');
   _cloudToast('Signed in as '+r.user.email);
