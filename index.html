@@ -27834,6 +27834,8 @@ async function _sbSignOut(){
   }
   _sbPersist(null);
   try{ localStorage.removeItem(_SB_SK); }catch(_){}
+  // Clear app data so a different user signing in on the same device starts clean
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
 }
 async function _sbResetPassword(email){
   const r=await _sbAuthPost('/recover',{email});
@@ -44272,15 +44274,9 @@ document.addEventListener('click',function(e){
 },true);
 async function cloudSignOut(){
   await _sbSignOut();
-  // Return to landing page on sign-out
-  const overlay=document.getElementById('welcome-overlay');
-  if(overlay) overlay.classList.remove('hidden');
-  // Close the sign-out popover if open
-  const pop=document.getElementById('sidebar-signout-pop');
-  if(pop) pop.classList.remove('visible');
-  const cd=document.getElementById('couple-display-btn');
-  if(cd) cd.classList.remove('open');
-  _cloudToast('Signed out.');
+  // Reload the page — clears in-memory STATE and resets alreadySetUp (a boot-time const)
+  // so the next sign-in always starts from a clean slate.
+  location.reload();
 }
 
 function _cloudAccountHtml(){
