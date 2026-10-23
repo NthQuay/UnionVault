@@ -32926,7 +32926,7 @@ function _wbThemeBody(){
     </div>`;
 
   const TABS=[['colour','Colour'],['type','Type'],['advanced','Advanced']];
-  const tabs = `<span class="inv-seg" style="margin-bottom:14px;display:flex">
+  const tabs = `<span id="wb-theme-tabs" class="inv-seg" style="margin-bottom:14px;display:flex">
       ${TABS.map(x=>`<button type="button" class="${_wbThemeTab===x[0]?'active':''}" style="flex:1;padding:8px 11px" onclick="_wbSetThemeTab('${x[0]}')">${x[1]}</button>`).join('')}
     </span>`;
 
@@ -33094,7 +33094,7 @@ function _wbThemeBody(){
       ${t.css?`<button type="button" class="btn btn-outline btn-sm" onclick="_wbCssClear()" style="margin-top:10px">Clear custom CSS</button>`:''}`;
   }
 
-  return specimen + tabs + `<div id="wb-theme-body">${body}</div>`;
+  return tabs + specimen + `<div id="wb-theme-body">${body}</div>`;
 }
 // Black or white ink, whichever reads on the given background. Guests get one look, so
 // this has to be right without a dark-mode escape hatch.
@@ -33395,7 +33395,7 @@ function _wbRepaintTheme(){
     }
     tbody.innerHTML=body;
     // Update active state on the tab buttons without rebuilding them
-    tbody.previousElementSibling?.querySelectorAll('button[onclick*="_wbSetThemeTab"]').forEach(btn=>{
+    document.getElementById('wb-theme-tabs')?.querySelectorAll('button[onclick*="_wbSetThemeTab"]').forEach(btn=>{
       const m=btn.getAttribute('onclick').match(/_wbSetThemeTab\('([^']+)'\)/);
       if(m) btn.classList.toggle('active', m[1]===_wbThemeTab);
     });
