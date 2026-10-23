@@ -32136,7 +32136,6 @@ const WB_CUSTOM_PRESETS = [
   {key:'travel',   name:'Getting there',   body:'Parking, transport and directions.'},
   {key:'registry', name:'Registry',        body:''},
   {key:'dress',    name:'Dress code',      body:''},
-  {key:'timeline', name:'Our story so far', body:'A journey through the moments that brought us here.'},
   {key:'faq',      name:'FAQ',             body:'Answers to your most common questions.'},
   {key:'countdown',name:'Countdown',       body:'The big day is almost here!'},
   {key:'stays',    name:'Accommodation',   body:'Places to stay nearby for our out-of-town guests.'},
@@ -32236,6 +32235,8 @@ function _wbSite(){
   // a colour that has existed in every preset since v120 and was rendered by NOTHING.
   if(WB_BTN_STYLES.indexOf(t.btnStyle)<0) t.btnStyle='outline';
   if(typeof t.space!=='number') t.space=100;
+  if(typeof t.gap!=='number') t.gap=100;
+  if(typeof w.published!=='boolean') w.published=false;
   // Migrate old corner keys (soft→round) and validate
   if(t.corners==='soft') t.corners='round';
   if(!WB_CORNERS[t.corners]) t.corners='round';
@@ -32517,6 +32518,20 @@ function renderWebsite(c, actions){
   const presetLabel = (WB_PRESETS[t.preset]||{}).label || 'Custom';
   const fontLabel = (t.heading||'').replace(/['"]/g,'').split(',')[0];
 
+  const published = !!w.published;
+  const publishRow = `<div class="wb-theme-row" onclick="_wbTogglePublish()" style="background:${published?'rgba(74,99,73,.07)':'var(--surface)'}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${published?'#4a6349':'var(--muted)'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">${published?'<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>':'<circle cx="12" cy="12" r="9"/><path d="M12 9v3l2 2"/><circle cx="12" cy="16.5" r=".4" fill="currentColor"/>'}
+      </svg>
+      <div style="flex:1;min-width:0">
+        <div class="wb-name" style="${published?'color:#4a6349':''}">Site ${published?'published':'not published'}</div>
+        <div class="wb-sub">${published?'Guests can view your site':'Private — click to publish'}</div>
+      </div>
+      <label class="toggle-switch" onclick="event.stopPropagation()" style="transform:scale(.68);transform-origin:right center;pointer-events:none">
+        <input type="checkbox" ${published?'checked':''} tabindex="-1"/>
+        <span class="toggle-track"></span>
+      </label>
+    </div>`;
+
   const themeRow = `<div class="wb-theme-row" onclick="openWbTheme()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
       <div style="flex:1;min-width:0">
@@ -32571,7 +32586,7 @@ function renderWebsite(c, actions){
   </div>
   <div class="wb-shell${_wbStripOpen?'':' wb-strip-shut'}">
     <div class="wb-list" style="background:var(--cream);border:1px solid var(--border);border-radius:14px;overflow:hidden">
-      ${themeRow}${rows}
+      ${publishRow}${themeRow}${rows}
       <div style="padding:10px 12px;text-align:center;border-top:1px solid var(--border)">
         <button type="button" class="wb-addsec" onclick="openWbAddSection()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add section
@@ -32794,6 +32809,12 @@ function _wbViewSet(mode){
     frame.style.borderRadius= mode==='mobile'?'20px':'';
   }
 }
+function _wbTogglePublish(){
+  const w=_wbSite();
+  w.published=!w.published;
+  saveToStorage();
+  navigate('website');
+}
 function openWbTheme(){
   document.querySelectorAll('.wb-row.wb-selected,.wb-theme-row.wb-selected').forEach(r=>r.classList.remove('wb-selected'));
   document.querySelector('.wb-theme-row')?.classList.add('wb-selected');
@@ -32894,6 +32915,11 @@ function _wbThemeBody(){
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
         <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap<95?'Compact':(t.gap>105?'Spacious':'Normal')}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:5px;line-height:1.45">Space between each section on the page.</div>
+        <input type="range" min="50" max="160" step="10" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
@@ -33078,6 +33104,7 @@ function _wbNum(field, v){
     if(l.textContent.indexOf('Heading size')===0) l.textContent='Heading size · '+t.headScale+'%';
     if(l.textContent.indexOf('Body size')===0)    l.textContent='Body size · '+t.bodyScale+'%';
     if(l.textContent.indexOf('Spacing')===0)      l.textContent='Spacing · '+(t.space<95?'Snug':(t.space>105?'Airy':'Normal'));
+    if(l.textContent.indexOf('Section gap')===0)  l.textContent='Section gap · '+(t.gap<95?'Compact':(t.gap>105?'Spacious':'Normal'));
   });
   // The font specimen is a HEADING sample, so it follows the heading scale.
   const sp=document.getElementById('wb-spec-name');
@@ -33822,16 +33849,29 @@ function _wbStayRemove(id){
 
 function openWbAddSection(){
   const w=_wbSite();
-  const removed=Object.keys(WB_SECTIONS).filter(k=>k!=='home'&&w.order.indexOf(k)<0);
-  const restoreHtml=removed.length?`<div style="margin-bottom:14px">
-    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px">Restore removed section</div>
-    ${removed.map(k=>`<button type="button" class="wb-cblank" onclick="_wbRestoreSection('${k}')" style="margin-bottom:5px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
-      <span><span style="display:block">${_escHtml(WB_SECTIONS[k].name)}</span></span>
-    </button>`).join('')}
+  // Built-in sections that are off (toggled) or removed — need action to appear on site
+  const needsAction=Object.keys(WB_SECTIONS).filter(k=>{
+    if(k==='home') return false;
+    const inOrder=w.order.indexOf(k)>=0;
+    return !inOrder || !w.on[k];
+  });
+  const builtinHtml=needsAction.length?`<div style="margin-bottom:14px">
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px">Standard sections</div>
+    ${needsAction.map(k=>{
+      const meta=WB_SECTIONS[k];
+      const inOrder=w.order.indexOf(k)>=0;
+      const label=inOrder?'Hidden — tap to show':'Removed — tap to restore';
+      const fn=inOrder?`_wbTurnOnSection('${k}')`:`_wbRestoreSection('${k}')`;
+      const icon=inOrder
+        ?`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+        :`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>`;
+      return `<button type="button" class="wb-cblank" onclick="${fn}" style="margin-bottom:5px">${icon}
+        <span><span style="display:block">${_escHtml(meta.name)}</span><span style="display:block;font-size:10.5px;color:var(--muted)">${label}</span></span>
+      </button>`;
+    }).join('')}
   </div>`:'';
   _wbPanel('Add a section', `<div>
-      ${restoreHtml}
+      ${builtinHtml}
       <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:13px">Start from a common one, or build your own.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
         ${WB_CUSTOM_PRESETS.map(p=>`<button type="button" class="wb-cpreset" onclick="_wbAddSection('${p.key}')">
@@ -33921,6 +33961,13 @@ function _wbRestoreSection(key){
   navigate('website');
   setTimeout(()=>openWbSection(key), 60);
 }
+function _wbTurnOnSection(key){
+  const w=_wbSite();
+  w.on[key]=true;
+  saveToStorage();
+  _wbClosePanel();
+  navigate('website');
+}
 function _wbCustomEdit(id, field, val){
   const c=_wbSite().custom[id];
   if(c){ c[field]=val; saveToStorage(); _wbLiveSoon(); }
@@ -33984,7 +34031,7 @@ function _wbLayoutHtml(key){
         <div class="wb-slot-lbl" style="margin-bottom:5px">Background</div>
         <span class="inv-seg">
           <button type="button" class="${l.bg==='page'?'active':''}" onclick="_wbLaySet('${key}','bg','page')">Page</button>
-          <button type="button" class="${l.bg==='band'?'active':''}" onclick="_wbLaySet('${key}','bg','band')">Band</button>
+          <button type="button" class="${(!l.bg||l.bg==='band')?'active':''}" onclick="_wbLaySet('${key}','bg','band')">Band</button>
         </span>
       </div>
     </div>
@@ -35384,7 +35431,7 @@ function _wbBuildSite(forDownload){
   // one that quietly declines to make one.
   const wrap=(k, content, extra)=>{
     const l=(w.layout||{})[k]||{};
-    const band = l.bg==='band';
+    const band = l.bg!=='page';
     const left = l.align==='left';
     // Two independent aligns. `lft` = the heading and intro; `b-*` = the section's own
     // content. v121 and earlier had only `lft`, and the body was hardcoded left in the
@@ -35748,6 +35795,7 @@ function _wbBuildSite(forDownload){
   const scb = (n)=>Math.round(n*(Number(t2.bodyScale)||100)/100);   // body + furniture
   const sc  = scb;   // legacy alias — every call site below is re-pointed explicitly
   const sp = (n)=>Math.round(n*(Number(t2.space)||100)/100);
+  const sg = (n)=>Math.round(n*(Number(t2.gap)||100)/100);
   const rad = WB_CORNERS[t2.corners]||'10px';
   // imgRad caps at 10px — pill (999px) is for buttons only, not images or cards
   const imgRad = t2.corners==='sharp'?'0px':'10px';
@@ -35823,7 +35871,7 @@ h1{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,$
 .eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading}}
 .sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scb(15)}px}
-section{max-width:720px;margin:0 auto;padding:${sp(52)}px 24px;border-top:1px solid ${t2.heading}12;text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
+section{max-width:720px;margin:0 auto;padding:${sg(52)}px 24px;border-top:1px solid ${t2.heading}12;text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
 section.lft{text-align:left}
 section.band{max-width:none;background:${t2.band};border-top:none}
 section.band>*{max-width:720px;margin-left:auto;margin-right:auto}
@@ -45680,6 +45728,21 @@ async function _showPublicWeddingSite(slug){
       });
     }
   }catch(e){ console.warn('Site data fetch failed',e); }
+
+  // Check publish gate — unpublished sites are private to the owner
+  const _isOwner = _sbSession && _sbSession.user && _sbSession.user.id === uid;
+  _wbSite(); // normalise STATE.website (ensures w.published defaults to false)
+  if(!STATE.website.published && !_isOwner){
+    const ev=STATE.event||{};
+    const names=[ev.partner1,ev.partner2].filter(Boolean).join(' & ')||'This wedding site';
+    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Inter',sans-serif;flex-direction:column;gap:18px;text-align:center;padding:40px;background:#FBF8F3">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="1.2" stroke-linecap="round" opacity=".7"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <div style="font-size:17px;font-weight:500;color:#4A3F35">${_escHtml(names)}</div>
+      <div style="font-size:13.5px;color:#9A8C7A;max-width:280px;line-height:1.6">This site is coming soon. Check back later!</div>
+    </div>`;
+    document.body.style.visibility='visible';
+    return;
+  }
 
   _wbPublicOwnerUid = uid;
 
