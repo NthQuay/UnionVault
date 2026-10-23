@@ -44327,9 +44327,10 @@ document.addEventListener('click',function(e){
 },true);
 async function cloudSignOut(){
   await _sbSignOut();
-  // Reload the page — clears in-memory STATE and resets alreadySetUp (a boot-time const)
-  // so the next sign-in always starts from a clean slate.
-  location.reload();
+  // Navigate to the bare pathname (strips any hash) so the boot router doesn't
+  // misinterpret a section hash like #website or #checklist as a wedding site slug
+  // and show "Wedding site not found" instead of the landing page.
+  location.href=location.pathname;
 }
 
 function _cloudAccountHtml(){
@@ -44373,7 +44374,7 @@ function _syncStatusHtml(){
 window._autoSyncState='idle';
 window._autoSyncLastSaved=null;
 let _autoSyncTimer=null;
-const _AUTOSYNC_DEBOUNCE=30000; // 30 s
+const _AUTOSYNC_DEBOUNCE=5000; // 5 s
 
 function _autoSyncEnabled(){
   return _sbSession && (typeof STATE==='undefined' || STATE.settings==null || STATE.settings.autoSync!==false);
