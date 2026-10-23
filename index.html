@@ -28023,6 +28023,9 @@ async function cloudLoadClick(silent){
   ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
   ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
   saveToStorage();
+  // Cancel the auto-sync push-back that saveToStorage just scheduled — data came FROM the cloud
+  // so there is nothing to push; the next real user edit will reschedule it naturally
+  if(typeof _autoSyncTimer!=='undefined' && _autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; }
   if(typeof updateTopbarSub==='function') updateTopbarSub();
   navigate(_currentPage||'dashboard');
   if(!silent) _cloudToast('Loaded from cloud ✓');
