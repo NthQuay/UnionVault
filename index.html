@@ -32910,15 +32910,18 @@ function _wbThemeBody(){
   const t=_wbSite().theme;
   const pal = (STATE.inspo && Array.isArray(STATE.inspo.colors)) ? STATE.inspo.colors : [];
 
-  const specimen = `<div style="border-radius:12px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px">
-      <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:24px 16px;text-align:center">
-        <div id="wb-spec-name" style="font-family:${t.headFont};font-size:${Math.round(26*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:3px">${_escHtml(_wbCouple())}</div>
-        <div style="font-family:${t.bodyFont};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:12px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
-        <span style="display:inline-block;font-family:${t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)}">Our story</span>
-      </div>
-      <div style="background:${_escHtml(t.band)};padding:12px 16px;text-align:center">
-        <div style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)}">A banded section</div>
-        <div style="font-family:${t.bodyFont};font-size:11px;color:${_escHtml(t.text)};margin-top:${Math.round(5*t.space/100)}px">Body text sits here.</div>
+  const specimen = `<div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px">Preview</div>
+      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 2px 14px rgba(0,0,0,.1)">
+        <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:24px 16px;text-align:center">
+          <div id="wb-spec-name" style="font-family:${t.headFont};font-size:${Math.round(26*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:3px">${_escHtml(_wbCouple())}</div>
+          <div style="font-family:${t.bodyFont};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:12px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
+          <span style="display:inline-block;font-family:${t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)}">Our story</span>
+        </div>
+        <div style="background:${_escHtml(t.band)};padding:12px 16px;text-align:center">
+          <div style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)}">A banded section</div>
+          <div style="font-family:${t.bodyFont};font-size:11px;color:${_escHtml(t.text)};margin-top:${Math.round(5*t.space/100)}px">Body text sits here.</div>
+        </div>
       </div>
     </div>`;
 
