@@ -3409,6 +3409,7 @@ async function _lpSignIn() {
       // The boot sequence will detect _sbSession + !alreadySetUp and auto-load from cloud.
       try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
       try{ localStorage.setItem('uv_uid', r.user.id); }catch(_){}
+      window._uvWipeInProgress = true; // prevent beforeunload saveToStorage() re-writing contaminated STATE
       location.reload();
       return;
     }
@@ -44149,6 +44150,7 @@ async function _authSignIn(){
     if(_amUID!==r.user.id){
       try{localStorage.removeItem(STORAGE_KEY);}catch(_){}
       try{localStorage.setItem('uv_uid',r.user.id);}catch(_){}
+      window._uvWipeInProgress = true; // prevent beforeunload saveToStorage() re-writing contaminated STATE
       location.reload();
       return;
     }
@@ -44581,6 +44583,7 @@ const STORAGE_KEY = 'union_vault_v1';
 
 function saveToStorage(){
   if(_importing) return; // don't clobber a freshly-imported payload on reload/autosave
+  if(window._uvWipeInProgress) return; // beforeunload guard: don't re-save contaminated STATE after a mismatch wipe
   const payload = {
     hasSetup: true,
     userId: (_sbSession && _sbSession.user && _sbSession.user.id) || null,
