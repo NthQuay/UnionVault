@@ -32236,6 +32236,7 @@ function _wbSite(){
   if(WB_BTN_STYLES.indexOf(t.btnStyle)<0) t.btnStyle='outline';
   if(typeof t.space!=='number') t.space=100;
   if(typeof t.gap!=='number') t.gap=100;
+  if(!['top','side'].includes(t.navPos)) t.navPos='top';
   if(typeof w.published!=='boolean') w.published=false;
   // Migrate old corner keys (soft→round) and validate
   if(t.corners==='soft') t.corners='round';
@@ -33007,7 +33008,14 @@ function _wbThemeBody(){
   }
 
   if(_wbThemeTab==='advanced'){
-    body = `<div class="wb-slot-lbl" style="margin-bottom:6px">Custom CSS <span style="color:var(--red);font-weight:400;text-transform:none;letter-spacing:0">· advanced</span></div>
+    body = `<div style="margin-bottom:14px">
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Navigation style</div>
+      <span class="inv-seg">
+        <button type="button" class="${(t.navPos||'top')==='top'?'active':''}" onclick="_wbSet('navPos','top')">Top bar</button>
+        <button type="button" class="${t.navPos==='side'?'active':''}" onclick="_wbSet('navPos','side')">Side bar</button>
+      </span>
+    </div>
+    <div class="wb-slot-lbl" style="margin-bottom:6px">Custom CSS <span style="color:var(--red);font-weight:400;text-transform:none;letter-spacing:0">· advanced</span></div>
       <textarea class="form-input" id="wb-css" rows="7" spellcheck="false" placeholder="h1 { letter-spacing: .08em; }"
         oninput="_wbCss(this.value)"
         style="font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:11.5px;resize:vertical;line-height:1.6">${_escHtml(t.css||'')}</textarea>
@@ -35408,7 +35416,8 @@ function _wbBuildSite(forDownload){
     return `<div class="${cls}${_wbShapeCls(b)}" style="--n:${nCol}">${ids.map(id=>`<img src="${_mediaUrl(id)}" alt="" loading="lazy"/>`).join('')}</div>`;
   };
 
-  const navLinks=sections.filter(k=>k!=='home').map(k=>
+  const homeLink = sections.includes('home') ? `<a href="#home">Home</a>` : '';
+  const navLinks = homeLink + sections.filter(k=>k!=='home').map(k=>
     `<a href="#${k}">${_escHtml(_wbNavLabel(k))}</a>`).join('');
   const nav = navLinks
     ? `<button type="button" class="navtoggle" aria-expanded="false" aria-controls="navlinks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>Menu</button><span class="navlinks" id="navlinks">${navLinks}</span>`
@@ -35830,10 +35839,17 @@ function _wbBuildSite(forDownload){
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:${t2.page};color:${t2.text};font-family:${t2.bodyFont};font-size:${scb(16)}px;line-height:1.7}
-nav{padding:${sp(16)}px;border-bottom:1px solid ${t2.heading}1A}
+nav{position:sticky;top:0;z-index:100;background:${t2.page};padding:${sp(16)}px;border-bottom:1px solid ${t2.heading}1A}
 .navlinks{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 22px}
 nav a{color:${t2.heading};text-decoration:none;font-size:${scb(12)}px;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
 nav a:hover{opacity:1;color:${t2.accent}}
+body.sidenav{display:flex;align-items:flex-start}
+body.sidenav nav{position:sticky;top:0;height:100dvh;overflow-y:auto;width:${scb(200)}px;flex-shrink:0;border-bottom:none;border-right:1px solid ${t2.heading}1A;padding:${sp(24)}px ${sp(16)}px;display:flex;flex-direction:column}
+body.sidenav .navlinks{flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;gap:0;margin-top:${sp(8)}px}
+body.sidenav nav a{display:block;padding:${sp(9)}px ${sp(6)}px;opacity:.7}
+body.sidenav .navtoggle{display:none}
+.site-content{flex:1;min-width:0}
+@media(max-width:620px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{flex-direction:row;flex-wrap:wrap;justify-content:center;margin-top:0}body.sidenav nav a{display:inline;padding:0}}
 header{text-align:center;padding:${sp(72)}px 24px ${sp(60)}px}
 /* v125: min-height is set INLINE (it depends on hero.height), so the padding here is only
    breathing room, not the thing that sizes the box. Before, padding WAS the height — and
@@ -36047,9 +36063,9 @@ footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-
 }
 ${_wbCssSafe(t2.css)}
 </style></head>
-<body>
+<body${t2.navPos==='side'?' class="sidenav"':''}>
 ${nav?`<nav>${nav}</nav>`:''}
-${blocks}
+${t2.navPos==='side'?`<div class="site-content">${blocks}</div>`:blocks}
 <footer>
   ${_escHtml(_wbCouple())}
   ${w.brandOff ? '' : `<div class="madewith">
