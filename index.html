@@ -32927,7 +32927,7 @@ function _wbThemeBody(){
 
   const TABS=[['colour','Colour'],['type','Type'],['advanced','Advanced']];
   const tabs = `<span class="inv-seg" style="margin-bottom:14px;display:flex">
-      ${TABS.map(x=>`<button type="button" class="${_wbThemeTab===x[0]?'active':''}" style="flex:1" onclick="_wbSetThemeTab('${x[0]}')">${x[1]}</button>`).join('')}
+      ${TABS.map(x=>`<button type="button" class="${_wbThemeTab===x[0]?'active':''}" style="flex:1;padding:8px 11px" onclick="_wbSetThemeTab('${x[0]}')">${x[1]}</button>`).join('')}
     </span>`;
 
   let body='';
@@ -33232,8 +33232,10 @@ function _wbFont(which, val){
 function _wbRepaintTheme(){
   const box=document.getElementById('wb-ec-body')||document.getElementById('modal-body');
   if(box) box.innerHTML=_wbThemeBody();
-  // The pane sits behind the modal. Keep it in step so closing reveals the truth, not
-  // a stale render that flickers into place a moment later.
+  // After innerHTML replacement the scroll container resets to top on mobile.
+  // Scroll the tab bar back into view so the active tab is immediately visible.
+  const tabEl=box&&box.querySelector('.inv-seg');
+  if(tabEl) tabEl.scrollIntoView({block:'nearest',behavior:'instant'});
   _wbLiveSoon();
 }
 
