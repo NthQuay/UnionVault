@@ -33094,7 +33094,7 @@ function _wbThemeBody(){
       ${t.css?`<button type="button" class="btn btn-outline btn-sm" onclick="_wbCssClear()" style="margin-top:10px">Clear custom CSS</button>`:''}`;
   }
 
-  return specimen + tabs + body;
+  return specimen + tabs + `<div id="wb-theme-body">${body}</div>`;
 }
 // Black or white ink, whichever reads on the given background. Guests get one look, so
 // this has to be right without a dark-mode escape hatch.
@@ -33230,12 +33230,181 @@ function _wbFont(which, val){
 }
 // Redraw the modal body in place so the specimen updates live without closing.
 function _wbRepaintTheme(){
+  const tbody = document.getElementById('wb-theme-body');
+  if(tbody){
+    // Panel is open — swap only the tab content; specimen and tab bar stay in place.
+    const t=_wbSite().theme;
+    const pal=(STATE.inspo&&Array.isArray(STATE.inspo.colors))?STATE.inspo.colors:[];
+    let body='';
+    if(_wbThemeTab==='colour'){
+      const presets=`<div class="wb-slot-lbl" style="margin-bottom:8px">Presets</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">
+        ${Object.keys(WB_PRESETS).map(k=>{ const p=WB_PRESETS[k]; const sel=t.preset===k;
+          return `<button type="button" onclick="_wbPreset('${k}')" title="${p.label}" style="padding:0;border:2px solid ${sel?'var(--gold)':'transparent'};border-radius:8px;background:transparent;cursor:pointer;overflow:hidden">
+            <span style="display:flex;height:24px"><span style="flex:1;background:${p.page}"></span><span style="flex:1;background:${p.accent}"></span><span style="flex:1;background:${p.heading}"></span></span>
+            <span style="display:block;font-family:'Inter',sans-serif;font-size:10px;color:${sel?'var(--gold-deep)':'var(--muted)'};padding:3px 0">${p.label}</span>
+          </button>`; }).join('')}
+      </div>`;
+      const ROLES=[['page','Page'],['band','Band'],['accent','Accent'],['heading','Heading'],['item','Item titles'],['text','Body text'],['button','Button']];
+      const roleRow=(role,label)=>`<div class="wb-role">
+        <span class="wb-role-name">${label}</span>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;align-items:center">
+          ${pal.map(hex=>`<button type="button" class="wb-pal-sw ${t[role]===hex?'on':''}" style="background:${_escHtml(hex)}" onclick="_wbRole('${role}','${_escHtml(hex)}')" title="${_escHtml(hex)}"></button>`).join('')}
+          <label class="wb-pal-sw" style="background:${_escHtml(t[role])};border:2px dashed var(--border);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+            <input type="color" value="${_escHtml(t[role])}" onchange="_wbRole('${role}',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer"/>
+          </label>
+        </div>
+      </div>`;
+      body=presets+`<div class="wb-slot-lbl" style="margin-bottom:2px;display:flex;justify-content:space-between;align-items:center">
+        <span>Colours</span>${pal.length?'<span class="wb-src">From Inspiration</span>':''}
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin:6px 0 10px;line-height:1.5">${pal.length?'Give each colour a job. The dashed swatch opens a picker for anything not in your palette.':'Add colours on the Inspiration page and they will appear here. The dashed swatch opens a picker.'}</div>
+      <div>${ROLES.map(r=>roleRow(r[0],r[1])).join('')}</div>`;
+    }
+    if(_wbThemeTab==='type'){
+      body=`<div class="form-group" style="margin-bottom:11px">
+        <label class="form-label">Heading font</label>
+        <select class="form-input" onchange="_wbFont('headFont',this.value)" style="font-family:${t.headFont}">
+          ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.headFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Body font</label>
+        <select class="form-input" onchange="_wbFont('bodyFont',this.value)" style="font-family:${t.bodyFont}">
+          ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.bodyFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
+        <input type="range" min="85" max="125" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Body size · ${t.bodyScale}%</div>
+        <input type="range" min="85" max="125" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
+        <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap<95?'Compact':(t.gap>105?'Spacious':'Normal')}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:5px;line-height:1.45">Space between each section on the page.</div>
+        <input type="range" min="50" max="160" step="10" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
+        <span class="inv-seg">
+          <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
+          <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
+        </span>
+      </div>
+      <div style="margin-bottom:20px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Body text alignment</div>
+        <span class="inv-seg">
+          <button type="button" class="${(t.bodyAlign||'left')==='left'?'active':''}" onclick="_wbSet('bodyAlign','left')">Left</button>
+          <button type="button" class="${t.bodyAlign==='center'?'active':''}" onclick="_wbSet('bodyAlign','center')">Centre</button>
+          <button type="button" class="${t.bodyAlign==='justify'?'active':''}" onclick="_wbSet('bodyAlign','justify')">Justify</button>
+        </span>
+      </div>
+      <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">BUTTONS</div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button shape</div>
+          <span class="inv-seg">
+            ${Object.keys(WB_CORNERS).map(c=>`<button type="button" class="${t.corners===c?'active':''}" onclick="_wbCorners('${c}')">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join('')}
+          </span>
+        </div>
+        <div style="margin-bottom:4px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button style</div>
+          <span class="inv-seg" style="margin-bottom:8px">
+            <button type="button" class="${t.btnStyle==='outline'?'active':''}" onclick="_wbBtnStyle('outline')">Outline</button>
+            <button type="button" class="${t.btnStyle==='filled'?'active':''}" onclick="_wbBtnStyle('filled')">Filled</button>
+            <button type="button" class="${t.btnStyle==='soft'?'active':''}" onclick="_wbBtnStyle('soft')">Soft</button>
+          </span>
+          <div class="wb-blk-hint" style="margin-bottom:10px">Its colour is the <b>Button</b> swatch on the Colours tab.</div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button size</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.btnSize==='sm'?'active':''}" onclick="_wbSet('btnSize','sm')">S</button>
+            <button type="button" class="${t.btnSize==='md'?'active':''}" onclick="_wbSet('btnSize','md')">M</button>
+            <button type="button" class="${t.btnSize==='lg'?'active':''}" onclick="_wbSet('btnSize','lg')">L</button>
+          </span>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button weight</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.btnBorder==='thin'?'active':''}" onclick="_wbSet('btnBorder','thin')">Thin</button>
+            <button type="button" class="${t.btnBorder==='medium'?'active':''}" onclick="_wbSet('btnBorder','medium')">Medium</button>
+            <button type="button" class="${t.btnBorder==='bold'?'active':''}" onclick="_wbSet('btnBorder','bold')">Bold</button>
+          </span>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button shadow</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.btnShadow==='none'?'active':''}" onclick="_wbSet('btnShadow','none')">None</button>
+            <button type="button" class="${t.btnShadow==='soft'?'active':''}" onclick="_wbSet('btnShadow','soft')">Soft</button>
+            <button type="button" class="${t.btnShadow==='strong'?'active':''}" onclick="_wbSet('btnShadow','strong')">Strong</button>
+          </span>
+        </div>
+        <div>
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Button bevel</div>
+          <span class="inv-seg">
+            <button type="button" class="${!t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',false)">Off</button>
+            <button type="button" class="${t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',true)">On</button>
+          </span>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;padding-top:4px;border-top:1px solid var(--border)">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">SECTIONS</div>
+        <div style="margin-bottom:14px">
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.shadow==='none'?'active':''}" onclick="_wbSet('shadow','none')">None</button>
+            <button type="button" class="${t.shadow==='soft'?'active':''}" onclick="_wbSet('shadow','soft')">Soft</button>
+            <button type="button" class="${t.shadow==='lifted'?'active':''}" onclick="_wbSet('shadow','lifted')">Lifted</button>
+          </span>
+        </div>
+        <div>
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge</div>
+          <span class="inv-seg">
+            <button type="button" class="${t.cardStyle==='flat'?'active':''}" onclick="_wbSet('cardStyle','flat')">Flat</button>
+            <button type="button" class="${t.cardStyle==='bordered'?'active':''}" onclick="_wbSet('cardStyle','bordered')">Bordered</button>
+            <button type="button" class="${t.cardStyle==='bevel'?'active':''}" onclick="_wbSet('cardStyle','bevel')">Bevel</button>
+          </span>
+        </div>
+      </div>`;
+    }
+    if(_wbThemeTab==='advanced'){
+      body=`<div style="margin-bottom:14px">
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Navigation style</div>
+      <span class="inv-seg">
+        <button type="button" class="${(t.navPos||'top')==='top'?'active':''}" onclick="_wbSet('navPos','top')">Top bar</button>
+        <button type="button" class="${t.navPos==='side'?'active':''}" onclick="_wbSet('navPos','side')">Side bar</button>
+      </span>
+    </div>
+    <div class="wb-slot-lbl" style="margin-bottom:6px">Custom CSS <span style="color:var(--red);font-weight:400;text-transform:none;letter-spacing:0">· advanced</span></div>
+      <textarea class="form-input" id="wb-css" rows="7" spellcheck="false" placeholder="h1 { letter-spacing: .08em; }"
+        oninput="_wbCss(this.value)"
+        style="font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:11.5px;resize:vertical;line-height:1.6">${_escHtml(t.css||'')}</textarea>
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding:9px 11px;background:rgba(192,57,43,.07);border-radius:8px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div style="font-size:11.5px;color:var(--muted);line-height:1.55">This can break your site in ways the preview won't warn you about. It only ever touches the guest site — never the planner — and <b style="color:var(--ink)">clearing the box always restores it</b>.</div>
+      </div>
+      ${t.css?`<button type="button" class="btn btn-outline btn-sm" onclick="_wbCssClear()" style="margin-top:10px">Clear custom CSS</button>`:''}`;
+    }
+    tbody.innerHTML=body;
+    // Update active state on the tab buttons without rebuilding them
+    tbody.previousElementSibling?.querySelectorAll('button[onclick*="_wbSetThemeTab"]').forEach(btn=>{
+      const m=btn.getAttribute('onclick').match(/_wbSetThemeTab\('([^']+)'\)/);
+      if(m) btn.classList.toggle('active', m[1]===_wbThemeTab);
+    });
+    _wbLiveSoon();
+    return;
+  }
+  // Full repaint — panel not yet open or DOM was cleared
   const box=document.getElementById('wb-ec-body')||document.getElementById('modal-body');
   if(box) box.innerHTML=_wbThemeBody();
-  // After innerHTML replacement the scroll container resets to top on mobile.
-  // Scroll the tab bar back into view so the active tab is immediately visible.
-  const tabEl=box&&box.querySelector('.inv-seg');
-  if(tabEl) tabEl.scrollIntoView({block:'nearest',behavior:'instant'});
   _wbLiveSoon();
 }
 
