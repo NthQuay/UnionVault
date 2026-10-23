@@ -39816,6 +39816,7 @@ const _SETTINGS_PAGE_MAP={
   'Vendor Badges on Budget':'budget'
 };
 const _SETTINGS_PAGE_ORDER=[
+  ['account','Account & Cloud','Cloud & sign-in'],
   ['general','General & App-wide','Applies everywhere'],
   ['dashboard','Dashboard','Affects the Dashboard'],
   ['checklist','Checklist','Affects the Checklist'],
@@ -39827,7 +39828,7 @@ const _SETTINGS_PAGE_ORDER=[
 ];
 // Section-level fallback: whole-section blocks (Data, Testing, badge pickers)
 // that have no per-row label go to these pages by their section header text.
-const _SETTINGS_SECTION_PAGE={ 'Data':'datatesting', 'Testing':'datatesting' };
+const _SETTINGS_SECTION_PAGE={ 'Data':'datatesting', 'Testing':'datatesting', 'Account & Cloud':'account' };
 
 function _settingsBlockPage(block){
   // Explicit page hint wins (used by the Display/Prompts sub-labels).
