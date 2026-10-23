@@ -32926,7 +32926,7 @@ function _wbThemeBody(){
     </div>`;
 
   const TABS=[['colour','Colour'],['type','Type'],['advanced','Advanced']];
-  const tabs = `<span id="wb-theme-tabs" class="inv-seg" style="margin-bottom:14px;display:flex">
+  const tabs = `<span id="wb-theme-tabs" class="inv-seg" style="display:flex;margin-bottom:14px">
       ${TABS.map(x=>`<button type="button" class="${_wbThemeTab===x[0]?'active':''}" style="flex:1;padding:8px 11px" onclick="_wbSetThemeTab('${x[0]}')">${x[1]}</button>`).join('')}
     </span>`;
 
@@ -33435,6 +33435,17 @@ function _wbPanel(title, body, footer){
     const _hasSave=footer&&footer.includes('_wbSectionSave');
     const _footerHtml=_hasSave?footer.replace(/<button[^>]*btn-primary[^>]*>\s*Save\s*<\/button>/,''):footer;
     col.innerHTML=`<div class="wb-ec-header" style="display:flex;align-items:center;gap:6px"><span class="wb-ec-title" style="flex:none">${title}</span><span id="wb-ec-saved" style="flex:1;font-size:11.5px;font-weight:500;color:#3d9e57;opacity:0;transition:opacity .4s;white-space:nowrap">✓ Saved</span>${_hasSave?'<button type="button" class="btn btn-primary" style="font-size:12px;padding:5px 14px;flex-shrink:0" onclick="_wbSectionSave()">Save</button>':''}<button type="button" class="wb-ec-close" onclick="_wbClosePanel()">×</button></div><div class="wb-ec-body" id="wb-ec-body">${body}</div>${_footerHtml.trim()?'<div class="wb-ec-footer">'+_footerHtml+'</div>':''}`;
+    // If the body included a tab bar (e.g. the Theme panel), hoist it out of the
+    // scrollable body into a dedicated non-scrolling row so it can never scroll off screen.
+    const _thTabs=document.getElementById('wb-theme-tabs');
+    if(_thTabs){
+      const _tabRow=document.createElement('div');
+      _tabRow.style.cssText='flex-shrink:0;padding:10px 14px;border-bottom:1px solid var(--border)';
+      _thTabs.style.marginBottom='0';
+      _tabRow.appendChild(_thTabs);
+      const _ecBody=document.getElementById('wb-ec-body');
+      if(_ecBody) col.insertBefore(_tabRow, _ecBody);
+    }
     const _mc=document.getElementById('main-content'); if(_mc) _mc.scrollTop=0;
     const _b=document.getElementById('wb-ec-body'); if(_b) _b.scrollTop=0;
   } else {
