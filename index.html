@@ -33683,9 +33683,23 @@ function openWbStays(){
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbStaysBody(){
+  return _wbStaysSearchHtml()+_wbStaysListHtml();
+}
+function _wbStaysSearchHtml(){
+  const addr=[STATE.event.venueAddress,STATE.event.venue].filter(Boolean).join(', ');
+  if(!addr) return `<div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:12px">Places for guests who need somewhere to stay. Add your venue address in <strong>Wedding Details</strong> to search for nearby accommodation.</div>`;
+  return `<div style="margin-bottom:12px">
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:8px">Places for guests who need somewhere to stay.</div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="_wbStaysSearch()" style="margin-bottom:8px;display:inline-flex;align-items:center;gap:5px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Find nearby
+    </button>
+    <div id="wb-stays-search"></div>
+  </div>`;
+}
+function _wbStaysListHtml(){
   const stays=_wbSite().stays;
   return `<div id="wb-stays-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
-      <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Places for guests who need somewhere to stay.</div>
       ${stays.length?stays.map(s=>`<div style="border:1px solid var(--border);border-radius:10px;padding:11px 13px">
         <div style="display:flex;align-items:flex-start;gap:8px">
           <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
@@ -33696,18 +33710,99 @@ function _wbStaysBody(){
           <button type="button" onclick="_wbStayRemove('${s.id}')" title="Remove" style="flex-shrink:0;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;padding:4px">✕</button>
         </div>
       </div>`).join(''):`<div style="font-size:13px;color:var(--muted)">Nothing listed yet.</div>`}
-      <button type="button" class="btn btn-outline btn-sm" onclick="_wbStayAdd()" style="align-self:flex-start">Add a place</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="_wbStayAdd()" style="align-self:flex-start">Add manually</button>
     </div>`;
 }
-function _wbStayEdit(id, field, val){
+var _wbStaySearchResults=[];
+async function _wbStaysSearch(){
+  const addr=[STATE.event.venueAddress,STATE.event.venue].filter(Boolean).join(', ');
+  const box=document.getElementById('wb-stays-search');
+  if(!box) return;
+  box.innerHTML='<div style="font-size:12.5px;color:var(--muted);padding:4px 0">Searching…</div>';
+  try{
+    const geo=await _wbStaysGeocode(addr);
+    if(!geo){ box.innerHTML='<div style="font-size:12.5px;color:var(--error,#c0392b)">Could not find your venue location. Try updating the address in Wedding Details.</div>'; return; }
+    const raw=await _wbStaysOverpass(geo.lat,geo.lon,10000);
+    if(!raw.length){ box.innerHTML='<div style="font-size:12.5px;color:var(--muted)">No accommodation found within 10 km.</div>'; return; }
+    _wbStaySearchResults=raw;
+    _wbStaysRenderResults(5);
+  }catch(e){
+    box.innerHTML='<div style="font-size:12.5px;color:var(--error,#c0392b)">Search failed. Check your internet connection and try again.</div>';
+  }
+}
+async function _wbStaysGeocode(address){
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(address),{headers:{'Accept':'application/json','User-Agent':'UnionVaultApp/1.0'}});
+  const d=await r.json();
+  return d&&d.length?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;
+}
+async function _wbStaysOverpass(lat,lon,radius){
+  const q=`[out:json][timeout:25];(node["tourism"~"hotel|motel|hostel|guest_house|apartment|bed_and_breakfast"](around:${radius},${lat},${lon});way["tourism"~"hotel|motel|hostel|guest_house|apartment|bed_and_breakfast"](around:${radius},${lat},${lon}););out center tags;`;
+  const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
+  const d=await r.json();
+  const typeLabel={hotel:'Hotel',motel:'Motel',hostel:'Hostel',guest_house:'Guest house',apartment:'Apartment',bed_and_breakfast:'B&B'};
+  return (d.elements||[]).map(el=>{
+    const t=el.tags||{};
+    const elLat=el.lat||(el.center&&el.center.lat)||lat;
+    const elLon=el.lon||(el.center&&el.center.lon)||lon;
+    const dist=_haversinKm(lat,lon,elLat,elLon);
+    const type=typeLabel[t.tourism]||'Accommodation';
+    const name=t.name||t['name:en']||type;
+    const website=t.website||t['contact:website']||t['url']||'';
+    const stars=t.stars?` · ${t.stars}★`:'';
+    return{name,type,note:`${dist.toFixed(1)} km from venue${stars}`,website,dist};
+  }).sort((a,b)=>a.dist-b.dist);
+}
+function _haversinKm(la1,lo1,la2,lo2){
+  const R=6371,dL=(la2-la1)*Math.PI/180,dO=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dO/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function _wbStaysRenderResults(maxKm){
+  const box=document.getElementById('wb-stays-search');
+  if(!box) return;
+  const all=_wbStaySearchResults;
+  const fil=all.filter(r=>r.dist<=maxKm);
+  box.innerHTML=`<div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:2px">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--muted)">Within</span>
+      <select id="wb-stays-radius" onchange="_wbStaysFilterResults()" style="font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--ink)">
+        ${[1,2,3,5,10].map(km=>`<option value="${km}"${km===maxKm?' selected':''}>${km} km</option>`).join('')}
+      </select>
+      <span style="font-size:12px;color:var(--muted)">of venue — <strong>${fil.length}</strong> found</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;max-height:260px;overflow-y:auto">
+      ${fil.length?fil.map((r,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:7px;border:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(r.name)}</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:1px">${_escHtml(r.type)} · ${_escHtml(r.note)}</div>
+        </div>
+        <button type="button" onclick="_wbStaysAddFromSearch(${all.indexOf(r)})" style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 11px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap">+ Add</button>
+      </div>`).join(''):`<div style="font-size:12.5px;color:var(--muted);padding:2px 0">None found — try a wider range.</div>`}
+    </div>
+  </div>`;
+}
+function _wbStaysFilterResults(){
+  const sel=document.getElementById('wb-stays-radius');
+  if(sel) _wbStaysRenderResults(parseFloat(sel.value));
+}
+function _wbStaysAddFromSearch(i){
+  const r=_wbStaySearchResults[i];
+  if(!r) return;
+  _wbSite().stays.push({id:uid(),name:r.name,note:r.note,link:r.website});
+  saveToStorage();
+  const box=document.getElementById('wb-stays-list');
+  if(box) box.outerHTML=_wbStaysListHtml();
+  _wbLiveSoon();
+}
+function _wbStayEdit(id,field,val){
   const s=_wbSite().stays.find(x=>x.id===id);
   if(s){ s[field]=val; saveToStorage(); _wbLiveSoon(); }
 }
 function _wbStayAdd(){
-  _wbSite().stays.push({id:uid(), name:'', note:'', link:''});
+  _wbSite().stays.push({id:uid(),name:'',note:'',link:''});
   saveToStorage();
   const box=document.getElementById('wb-stays-list');
-  if(box) box.outerHTML=_wbStaysBody();
+  if(box) box.outerHTML=_wbStaysListHtml();
   _wbLiveSoon();
 }
 function _wbStayRemove(id){
@@ -33715,7 +33810,7 @@ function _wbStayRemove(id){
   w.stays=w.stays.filter(x=>x.id!==id);
   saveToStorage();
   const box=document.getElementById('wb-stays-list');
-  if(box) box.outerHTML=_wbStaysBody();
+  if(box) box.outerHTML=_wbStaysListHtml();
   _wbLiveSoon();
 }
 
