@@ -3393,18 +3393,22 @@ async function _lpSignIn() {
   btn.disabled = false; btn.textContent = 'Sign in';
   if(!r.ok){ errEl.style.color='#c0392b'; errEl.textContent = r.error; errEl.style.display = ''; return; }
   // Success — guard against cross-account data contamination.
-  // uv_uid is a lightweight key separate from the app data blob.
-  // If it differs from the just-signed-in user (or is absent = old data), wipe app data and reload.
-  // The boot sequence will detect _sbSession + !alreadySetUp and auto-load from cloud.
-  var _storedUID = null;
-  try{ _storedUID = localStorage.getItem('uv_uid'); }catch(_){}
-  if(_storedUID !== r.user.id){
-    try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
-    try{ localStorage.setItem('uv_uid', r.user.id); }catch(_){}
-    location.reload();
-    return;
+  // Only check when alreadySetUp=true: there's local data that might belong to a different user.
+  // On a clean device (alreadySetUp=false) there is nothing to contaminate, so skip the reload.
+  if(alreadySetUp){
+    var _storedUID = null;
+    try{ _storedUID = localStorage.getItem('uv_uid'); }catch(_){}
+    if(_storedUID !== r.user.id){
+      // Different user (or pre-fix data with no uv_uid) — wipe local data and reload.
+      // The boot sequence will detect _sbSession + !alreadySetUp and auto-load from cloud.
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+      try{ localStorage.setItem('uv_uid', r.user.id); }catch(_){}
+      location.reload();
+      return;
+    }
   }
-  // Same user — fall through to normal success flow.
+  // Stamp uv_uid now (covers first sign-in on a clean device).
+  try{ localStorage.setItem('uv_uid', r.user.id); }catch(_){}
   document.getElementById('welcome-overlay').classList.add('hidden');
   if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
   if(typeof _cloudToast !== 'undefined') _cloudToast('Signed in as ' + r.user.email);
