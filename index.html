@@ -36074,6 +36074,9 @@ function _wbBuildSite(forDownload){
   const sc  = scb;   // legacy alias — every call site below is re-pointed explicitly
   const sp = (n)=>Math.round(n*(Number(t2.space)||100)/100);
   const sg = (n)=>Math.round(n*(Number(t2.gap)||100)/100);
+  // secGap: gap in px between consecutive sections. Zero until slider passes centre (100),
+  // then grows linearly so the right half of the slider opens space between sections.
+  const secGap = Math.max(0, Math.round(((Number(t2.gap)||100) - 100) * 0.8));
   const rad = WB_CORNERS[t2.corners]||'10px';
   // imgRad caps at 10px — pill (999px) is for buttons only, not images or cards
   const imgRad = t2.corners==='sharp'?'0px':'10px';
@@ -36156,7 +36159,8 @@ h1{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,$
 .eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading}}
 .sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scb(15)}px}
-section{max-width:720px;margin:0 auto;padding:${sg(52)}px 24px;border-top:1px solid ${t2.heading}12;text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
+section{max-width:720px;margin:0 auto;padding:${sg(52)}px 24px;border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
+section+section{margin-top:${secGap}px}
 section.lft{text-align:left}
 section.band{max-width:none;background:${t2.band};border-top:none}
 section.band>*{max-width:720px;margin-left:auto;margin-right:auto}
