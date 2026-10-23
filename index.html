@@ -44423,12 +44423,16 @@ async function _autoSyncCheckOnBoot(){
   try{ _importFlag = sessionStorage.getItem('uv_import_pending'); }catch(_){}
   if(_importFlag){
     try{ sessionStorage.removeItem('uv_import_pending'); }catch(_){}
-    var _ir = await _cloudSave(false);
-    if(_ir && _ir.ok){
-      window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
-      if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
-      if(typeof _cloudToast !== 'undefined') _cloudToast('Imported data saved to cloud ✓');
+    // Stamp a recent _lastCloudSave so the conflict checker treats local as up-to-date
+    // and does NOT pull old cloud data over the freshly imported data.
+    // We do NOT auto-cloud-save here: the user should verify the import looks right first.
+    // The regular auto-sync schedule will push it up after the next manual save or auto-push interval.
+    if(!STATE.settings._lastCloudSave){
+      STATE.settings._lastCloudSave = new Date().toISOString();
+      saveToStorage();
     }
+    if(typeof _cloudToast !== 'undefined') _cloudToast('Data imported ✓ — click Save to Cloud to back it up');
+    if(_autoSyncEnabled()) _autoSyncSchedule();
     return;
   }
   await _sbEnsureFreshToken();
