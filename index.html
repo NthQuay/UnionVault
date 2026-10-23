@@ -3419,8 +3419,19 @@ async function _lpSignIn() {
       _showSetupModal();
     }
   } else {
-    if(typeof navigate !== 'undefined') navigate('dashboard');
-    setTimeout(_autoSyncCheckOnBoot, 800);
+    // alreadySetUp=true: verify this local data belongs to the user who just signed in
+    var _lsSaved = null;
+    try{ _lsSaved = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null'); }catch(_){}
+    if(_lsSaved && _lsSaved.userId && _lsSaved.userId === r.user.id){
+      // Same user — local data is valid, proceed normally
+      if(typeof navigate !== 'undefined') navigate('dashboard');
+      setTimeout(_autoSyncCheckOnBoot, 800);
+    } else {
+      // Different user (or pre-fix data with no userId) — wipe local data and reload.
+      // The boot sequence will detect _sbSession + !alreadySetUp and auto-load from cloud.
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+      location.reload();
+    }
   }
 }
 
@@ -44508,6 +44519,7 @@ function saveToStorage(){
   if(_importing) return; // don't clobber a freshly-imported payload on reload/autosave
   const payload = {
     hasSetup: true,
+    userId: (_sbSession && _sbSession.user && _sbSession.user.id) || null,
     darkMode: document.body.classList.contains('dark'),
     sidebarMode: STATE.settings.sidebarMode || 'hamburger',
     event: STATE.event,
@@ -46359,6 +46371,30 @@ function _showVendorError(type){
     setTimeout(_autoSyncCheckOnBoot, 800);
     // Stage 4: fetch any photos missing locally (runs after conflict check)
     setTimeout(_mediaCloudSync, 2000);
+  } else if(!alreadySetUp && _sbSession){
+    // Signed in but no local data: triggered by sign-in on a device that had another account's data
+    // (the mismatch handler in _lpSignIn cleared localStorage and reloaded). Auto-load from cloud.
+    var _bootCloud = await _cloudLoad();
+    if(_bootCloud.ok && !_bootCloud.empty){
+      if(_bootCloud.saved.event)    Object.assign(STATE.event, _bootCloud.saved.event);
+      if(_bootCloud.saved.settings) Object.assign(STATE.settings, _bootCloud.saved.settings);
+      ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
+      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
+      saveToStorage();
+      document.getElementById('welcome-overlay').classList.add('hidden');
+      updateTopbarSub();
+      navigate('dashboard');
+      if(typeof _cloudToast !== 'undefined') _cloudToast('Your data has been restored from the cloud ✓');
+      window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
+      if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
+      setTimeout(_mediaCloudSync, 800);
+    } else {
+      // No cloud data for this account → show setup
+      document.getElementById('welcome-overlay').classList.add('hidden');
+      updateTopbarSub();
+      navigate('dashboard');
+      _showSetupModal();
+    }
   } else if(alreadySetUp && !_sbSession){
     // Has local data but not signed in → show landing (auth prompt)
     updateTopbarSub();
