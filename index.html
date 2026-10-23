@@ -33399,6 +33399,23 @@ function _wbRepaintTheme(){
       const m=btn.getAttribute('onclick').match(/_wbSetThemeTab\('([^']+)'\)/);
       if(m) btn.classList.toggle('active', m[1]===_wbThemeTab);
     });
+    // Keep the specimen card in sync with the latest theme values
+    const _hero=document.getElementById('wb-spec-hero');
+    if(_hero){
+      _hero.style.background=t.page;
+      const _nm=document.getElementById('wb-spec-name');
+      if(_nm){ _nm.style.color=t.heading; _nm.style.fontFamily=t.headFont; _nm.style.fontSize=Math.round(26*(t.headScale||t.scale||100)/100)+'px'; }
+      const _band=_hero.nextElementSibling;
+      if(_band){
+        _band.style.background=t.band;
+        const _bh=_band.firstElementChild;
+        if(_bh){ _bh.style.color=t.heading; _bh.style.fontFamily=t.headFont; _bh.style.fontSize=Math.round(15*(t.headScale||t.scale||100)/100)+'px'; }
+        const _bb=_band.lastElementChild;
+        if(_bb){ _bb.style.color=t.text; }
+      }
+      const _btn=_hero.querySelector('span[style*="background"]');
+      if(_btn){ _btn.style.background=t.button; _btn.style.color=_wbInk(t.button); _btn.style.fontFamily=t.bodyFont; _btn.style.borderRadius=WB_CORNERS[t.corners]||WB_CORNERS.round; }
+    }
     _wbLiveSoon();
     return;
   }
@@ -43541,6 +43558,7 @@ function openModal(title,body,footer){
   const _mo=document.getElementById('modal-overlay'); if(_mo){ _mo.classList.remove('budget-summary-overlay'); _mo.classList.remove('print-hub-overlay'); _mo.classList.remove('seating-preview-overlay'); _mo.classList.remove('export-prev-guests','export-prev-timeline','export-prev-budget','export-prev-seating'); }
   document.getElementById('modal-body').innerHTML=body;
   document.getElementById('modal-footer').innerHTML=footer||'';
+  const _mbx=document.getElementById('modal-box'); if(_mbx) _mbx.scrollTop=0;
   document.getElementById('modal-overlay').classList.remove('hidden');
 }
 function closeModal(e){ /* Outside-click close disabled — use the × or Cancel button to close. */ }
