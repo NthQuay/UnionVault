@@ -28204,7 +28204,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v193';
+const APP_BUILD='v194';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -36183,7 +36183,7 @@ function _wbBuildSite(forDownload){
       if(b.type==='head') {
         const hd=_wbHeading(k);
         if(!hd) return '';
-        if(t2.format==='editorial'){
+        if(t.format==='editorial'){
           const _ewMap={details:'The Big Day',timeline:'The Day',rsvp:'Attend',gallery:'Moments',accommodation:'Stay',wishing:'With Gratitude',countdown:'Save the Date',faq:'Questions',registry:'Registry'};
           const ew=_wbIsCustom(k)?'':(_ewMap[k]||'');
           return (ew?`<p class="edit-eyebrow">${_escHtml(ew.toUpperCase())}</p>`:'')+`<h2>${_escHtml(hd)}</h2>`;
@@ -36236,7 +36236,7 @@ function _wbBuildSite(forDownload){
         const btnsJustify=b.align==='left'?'flex-start':b.align==='right'?'flex-end':'center';
         return `<div class="btns" style="justify-content:${btnsJustify}">${rows.map(x=>{
           const um=x.urlMode||'custom';
-          if(um==='rsvp'&&t2.rsvpMode==='modal') return `<button type="button" class="ics" onclick="_uvOpenRsvp()">${_escHtml(x.label)}</button>`;
+          if(um==='rsvp'&&t.rsvpMode==='modal') return `<button type="button" class="ics" onclick="_uvOpenRsvp()">${_escHtml(x.label)}</button>`;
           const href=um==='ics'?(_wbIcs()||''):um==='rsvp'?_rsvpLink():_normalizeUrl(x.url);
           const attrs=um==='ics'?'download="save-the-date.ics"':'target="_blank" rel="noopener noreferrer"';
           return `<a class="ics" href="${_escHtml(href)}" ${attrs}>${_escHtml(x.label)}</a>`;
