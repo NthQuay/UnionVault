@@ -44566,7 +44566,7 @@ async function _submitSupportForm(btn){
       fd.append('email',email.trim());
       fd.append('message',msg.trim());
       fd.append('redirect','false');
-      files.forEach(function(f,i){fd.append('attachment['+i+']',f,f.name);});
+      files.forEach(function(f){fd.append('attachment[]',f,f.name);});
       res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Accept':'application/json'},body:fd});
     }else{
       const body={access_key:_W3F_KEY,subject:'['+subject+'] from '+(coupleName||email),from_name:coupleName||'Union Vault user',name:coupleName||email,email:email.trim(),message:msg.trim(),redirect:'false'};
@@ -44578,7 +44578,7 @@ async function _submitSupportForm(btn){
     btn.textContent='Sent ✔';
     setTimeout(function(){const o=document.getElementById('_supp-overlay');if(o)o.remove();},2200);
   }catch(e){
-    _suppStatus(e.message&&e.message.includes('over 5')? e.message:'Something went wrong — please email support@unionvault.app',false);
+    _suppStatus(e.message&&e.message.includes('over 5')? e.message:('Something went wrong: '+(e.message||'unknown error')),false);
     btn.disabled=false; btn.textContent='Send message';
   }
 }
