@@ -28308,7 +28308,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v186';
+const APP_BUILD='v187';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -33471,6 +33471,26 @@ function _wbRepaintTheme(){
     const pal=(STATE.inspo&&Array.isArray(STATE.inspo.colors))?STATE.inspo.colors:[];
     let body='';
     if(_wbThemeTab==='colour'){
+      const fmtStyle=`<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:4px">FORMAT STYLE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div onclick="_wbSet('format','modern')" style="cursor:pointer;border:1.5px solid ${t.format==='modern'?'var(--gold)':'var(--border)'};background:${t.format==='modern'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+          <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;padding:2px">
+            <span style="font-size:5.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
+            <span style="font-size:12px;font-weight:700;color:#3A302A;font-family:Inter,sans-serif;letter-spacing:-.01em">Event Details</span>
+          </div>
+          <div style="font-size:11px;font-weight:500;color:${t.format==='modern'?'var(--gold)':'var(--sub)'}">Modern${t.format==='modern'?' ✓':''}</div>
+        </div>
+        <div onclick="_wbSet('format','editorial')" style="cursor:pointer;border:1.5px solid ${t.format==='editorial'?'var(--gold)':'var(--border)'};background:${t.format==='editorial'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+          <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;padding:2px">
+            <span style="font-size:4.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
+            <div style="width:16px;height:0.5px;background:#C4A882;margin:1px 0"></div>
+            <span style="font-size:11px;font-weight:400;font-style:italic;color:#3A302A;font-family:'Cormorant Garamond',Georgia,serif">Event Details</span>
+          </div>
+          <div style="font-size:11px;font-weight:500;color:${t.format==='editorial'?'var(--gold)':'var(--sub)'}">Editorial${t.format==='editorial'?' ✓':''}</div>
+        </div>
+      </div>
+    </div>`;
       const presets=`<div class="wb-slot-lbl" style="margin-bottom:8px">Presets</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">
         ${Object.keys(WB_PRESETS).map(k=>{ const p=WB_PRESETS[k]; const sel=t.preset===k;
@@ -33489,7 +33509,7 @@ function _wbRepaintTheme(){
           </label>
         </div>
       </div>`;};
-      body=presets+`<div class="wb-slot-lbl" style="margin-bottom:2px;display:flex;justify-content:space-between;align-items:center">
+      body=fmtStyle+presets+`<div class="wb-slot-lbl" style="margin-bottom:2px;display:flex;justify-content:space-between;align-items:center">
         <span>Colours</span>${pal.length?'<span class="wb-src">From Inspiration</span>':''}
       </div>
       <div style="font-size:11.5px;color:var(--muted);margin:6px 0 10px;line-height:1.5">${pal.length?'Give each colour a job. The dashed swatch opens a picker for anything not in your palette.':'Add colours on the Inspiration page and they will appear here. The dashed swatch opens a picker.'}</div>
@@ -33628,7 +33648,26 @@ function _wbRepaintTheme(){
       </div>`;
     }
     if(_wbThemeTab==='advanced'){
-      body=`<div style="margin-bottom:14px">
+      body=`<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:4px">RSVP DISPLAY</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div onclick="_wbSet('rsvpMode','modal')" style="cursor:pointer;border:1.5px solid ${t.rsvpMode==='modal'?'var(--gold)':'var(--border)'};background:${t.rsvpMode==='modal'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+            <div style="height:36px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+              <svg width="38" height="32" viewBox="0 0 38 32" fill="none"><rect x="1" y="2" width="36" height="24" rx="3" stroke="${t.rsvpMode==='modal'?'#C4A882':'#7A7470'}" stroke-width="1.2" fill="none" opacity=".4"/><rect x="1" y="14" width="36" height="14" rx="3" fill="${t.rsvpMode==='modal'?'#C4A882':'#5A5048'}" opacity="${t.rsvpMode==='modal'?'.2':'.12'}"/><rect x="1" y="14" width="36" height="14" rx="3" stroke="${t.rsvpMode==='modal'?'#C4A882':'#7A7470'}" stroke-width="1.2" fill="none"/><rect x="10" y="18" width="18" height="2" rx="1" fill="${t.rsvpMode==='modal'?'#C4A882':'#7A7470'}" opacity=".7"/><rect x="13" y="22" width="12" height="4" rx="2" fill="${t.rsvpMode==='modal'?'#C4A882':'#7A7470'}" opacity=".4"/></svg>
+            </div>
+            <div style="font-size:11px;font-weight:500;color:${t.rsvpMode==='modal'?'var(--gold)':'var(--sub)'}">Pop-up${t.rsvpMode==='modal'?' ✓':''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">Stays on site</div>
+          </div>
+          <div onclick="_wbSet('rsvpMode','page')" style="cursor:pointer;border:1.5px solid ${t.rsvpMode==='page'?'var(--gold)':'var(--border)'};background:${t.rsvpMode==='page'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+            <div style="height:36px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+              <svg width="38" height="32" viewBox="0 0 38 32" fill="none"><rect x="1" y="2" width="36" height="24" rx="3" stroke="${t.rsvpMode==='page'?'#C4A882':'#7A7470'}" stroke-width="1.2" fill="none"/><rect x="5" y="7" width="20" height="3" rx="1.5" fill="${t.rsvpMode==='page'?'#C4A882':'#7A7470'}" opacity=".4"/><rect x="5" y="13" width="14" height="2" rx="1" fill="${t.rsvpMode==='page'?'#C4A882':'#7A7470'}" opacity=".3"/><rect x="5" y="17" width="10" height="2" rx="1" fill="${t.rsvpMode==='page'?'#C4A882':'#7A7470'}" opacity=".2"/><path d="M30 1 L36 7" stroke="#C4A882" stroke-width="1.5" stroke-linecap="round"/><path d="M36 1 L30 7" stroke="#C4A882" stroke-width="1.5" stroke-linecap="round" opacity=".5"/></svg>
+            </div>
+            <div style="font-size:11px;font-weight:500;color:${t.rsvpMode==='page'?'var(--gold)':'var(--sub)'}">New Page${t.rsvpMode==='page'?' ✓':''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">Opens separately</div>
+          </div>
+        </div>
+      </div>
+    <div style="margin-bottom:14px">
       <div class="wb-slot-lbl" style="margin-bottom:6px">Navigation style</div>
       <span class="inv-seg">
         <button type="button" class="${(t.navPos||'top')==='top'?'active':''}" onclick="_wbSet('navPos','top')">Top bar</button>
