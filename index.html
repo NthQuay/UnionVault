@@ -44565,7 +44565,11 @@ async function _submitSupportForm(btn){
         if(!r.ok) throw new Error('Screenshot upload failed: '+r.status);
         return _SB_URL+'/storage/v1/object/public/support/'+path;
       }));
-      fullMsg+=urls.map(function(u,i){return '\n\nScreenshot '+(i+1)+': '+u;}).join('');
+      const screenshotHtml=urls.map(function(u,i){
+        return '<p style="margin:12px 0"><strong>Screenshot '+(i+1)+'</strong><br>'
+          +'<a href="'+u+'"><img src="'+u+'" style="max-width:560px;max-height:420px;display:block;border:1px solid #ddd;border-radius:4px;margin:6px 0" alt="Screenshot '+(i+1)+'"></a></p>';
+      }).join('');
+      fullMsg+='\n\n'+screenshotHtml;
     }
     const body={access_key:_W3F_KEY,subject:'['+subject+'] from '+(coupleName||email),from_name:coupleName||'Union Vault user',name:coupleName||email,email:email.trim(),message:fullMsg,redirect:'false'};
     const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
