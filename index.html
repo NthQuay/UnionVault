@@ -4582,7 +4582,12 @@ let dragDashId = null;
 // Expand invite slot keys (solo/couple/plusone/fam) to a Set of invited guest ids.
 // Shared by the dashboard counts and the RSVP & Invites table.
 function _invitedGuestIdSet(){
+  // A guest counts as "invited" if their slot is in STATE.invites (invite sent)
+  // OR if their slot's save-the-date has been marked sent.
   const inviteKeys=new Set(STATE.invites||[]);
+  if(STATE.inviteMeta){
+    Object.entries(STATE.inviteMeta).forEach(([k,m])=>{ if(m&&m.savedate&&m.savedate.sent) inviteKeys.add(k); });
+  }
   const invited=new Set();
   const seen=new Set();
   (STATE.guests||[]).forEach(g=>{
@@ -4633,6 +4638,7 @@ function renderDashboard(c, actions){
 
   // Calculate invited guests — expand invite slot keys to individual guest IDs
   const _inviteKeys=new Set(STATE.invites||[]);
+  if(STATE.inviteMeta){Object.entries(STATE.inviteMeta).forEach(([k,m])=>{if(m&&m.savedate&&m.savedate.sent)_inviteKeys.add(k);});}
   const _invitedGuestIds=new Set();
   const _seen=new Set();
   STATE.guests.forEach(g=>{
@@ -28317,7 +28323,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v189';
+const APP_BUILD='v190';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
