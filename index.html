@@ -28365,7 +28365,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v211';
+const APP_BUILD='v212';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47299,7 +47299,7 @@ async function _showRsvpForm(coupleId,mode){
         </div>
         <button class="rf-submit" id="rf-submit" onclick="_rfSubmit('${coupleId}')" hidden>Send my RSVP</button>
       </div>
-      <div class="rf-footer" data-uv-scheme="${_palDark===null?'auto':_palDark?'dark':'light'}">
+      <div class="rf-footer" data-uv-scheme="${_palDark?'dark':'light'}">
         <span class="uv-ft-lbl">Powered by</span>
         <div class="uv-ft-lock">
           <a href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault">
