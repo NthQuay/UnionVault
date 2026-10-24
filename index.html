@@ -7728,7 +7728,15 @@ function guestPassesFilter(g){
   const sf=STATE.guestFilter;
   const q=sf.query||'';
   if(q){
-    const hay=[g.name,g.phone||'',g.email||'',g.address||'',g.relationship||'',...(g.tags||[])].join(' ').toLowerCase();
+    const _byId=(STATE.guests||[]).reduce((m,x)=>{m[x.id]=x;return m;},{});
+    const linkedNames=[];
+    const fam=(STATE.families||[]).find(f=>f.memberIds&&f.memberIds.includes(g.id));
+    if(fam) fam.memberIds.forEach(id=>{if(id!==g.id&&_byId[id])linkedNames.push(_byId[id].name||'');});
+    if(g.coupleId&&_byId[g.coupleId]) linkedNames.push(_byId[g.coupleId].name||'');
+    if(g.plusOneId&&_byId[g.plusOneId]) linkedNames.push(_byId[g.plusOneId].name||'');
+    const host=(STATE.guests||[]).find(x=>x.plusOneId===g.id);
+    if(host) linkedNames.push(host.name||'');
+    const hay=[g.name,g.phone||'',g.email||'',g.address||'',g.relationship||'',...(g.tags||[]),...linkedNames].join(' ').toLowerCase();
     if(!hay.includes(q)) return false;
   }
   const gList=g.listType||'A';
@@ -12174,6 +12182,23 @@ function renderRsvpMgr(c, actions){
   // ── Option B: filtered + searched guest list (A-list only; B-list excluded) ──
   const q=rsvpQuery.trim().toLowerCase();
   const _filterInvitedIds = (rsvpFilter==='invited'||rsvpFilter==='notsent') ? _invitedGuestIdSet() : null;
+  // Build family-expanded search set: if a guest matches, include all their family/group members
+  let _rsvpSearchIds=null;
+  if(q){
+    const directHits=new Set(STATE.guests.filter(g=>g.name.toLowerCase().includes(q)).map(g=>g.id));
+    _rsvpSearchIds=new Set(directHits);
+    directHits.forEach(id=>{
+      const fam=(STATE.families||[]).find(f=>f.memberIds.includes(id));
+      if(fam) fam.memberIds.forEach(mid=>_rsvpSearchIds.add(mid));
+      const g=STATE.guests.find(x=>x.id===id);
+      if(g){
+        if(g.coupleId) _rsvpSearchIds.add(g.coupleId);
+        if(g.plusOneId) _rsvpSearchIds.add(g.plusOneId);
+        const host=STATE.guests.find(x=>x.plusOneId===id);
+        if(host) _rsvpSearchIds.add(host.id);
+      }
+    });
+  }
   const list=STATE.guests.filter(g=>{
     if((g.listType||'A')==='B') return false;
     const st=(!g.rsvp||g.rsvp==='awaiting')?'awaiting':g.rsvp;
@@ -12184,7 +12209,7 @@ function renderRsvpMgr(c, actions){
     } else if(rsvpFilter==='notsent'){
       if(_filterInvitedIds.has(g.id)) return false;
     }
-    if(q&&!g.name.toLowerCase().includes(q)) return false;
+    if(_rsvpSearchIds&&!_rsvpSearchIds.has(g.id)) return false;
     return true;
   });
 
@@ -28340,7 +28365,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v210';
+const APP_BUILD='v211';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47101,7 +47126,7 @@ async function _showRsvpForm(coupleId,mode){
   // mode: 'page' (default — for ?rsvp= URL) | 'modal' (preview from within app)
   let eventName='',eventDate='',eventVenue='',theme={},guestObjs=[],rsvp={},rfields={};
   try{
-    const res=await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website)`,{
+    const res=await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website,families)`,{
       headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
     });
     if(res.ok){
@@ -47117,9 +47142,14 @@ async function _showRsvpForm(coupleId,mode){
       rsvp=(sec.website&&sec.website.rsvp)||{};
       rfields=rsvp.fields||{};
       // Build guest objects with relationship data for group RSVP
+      const _famData=sec.families||[];
       guestObjs=(sec.guests||[])
         .filter(g=>(g.listType||'A')!=='B'&&g.name)
-        .map(g=>({id:g.id,name:g.name.trim(),coupleId:g.coupleId||null,plusOneId:g.plusOneId||null}));
+        .map(g=>{
+          const fam=_famData.find(f=>f.memberIds&&f.memberIds.includes(g.id));
+          const groupIds=fam?fam.memberIds.filter(id=>id!==g.id):[];
+          return {id:g.id,name:g.name.trim(),coupleId:g.coupleId||null,plusOneId:g.plusOneId||null,groupIds};
+        });
     }
   }catch(e){console.warn('RSVP data fetch failed',e);}
 
@@ -47354,6 +47384,12 @@ function _rfPickName(name){
     add(guest);
     if(guest.coupleId)add(byId[guest.coupleId]);
     if(guest.plusOneId)add(byId[guest.plusOneId]);
+    // Family/household group members
+    if(guest.groupIds&&guest.groupIds.length){
+      guest.groupIds.forEach(id=>add(byId[id]));
+      // If a family member has a plus-one, include them too
+      guest.groupIds.forEach(id=>{const m=byId[id];if(m&&m.plusOneId)add(byId[m.plusOneId]);});
+    }
   }
 
   // Reset attendance state
