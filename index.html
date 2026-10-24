@@ -31495,6 +31495,8 @@ function brushSwatchHtml(hex, name, idx){
 function renderInspo(c,actions){
   actions.innerHTML=`<button class="btn btn-primary btn-sm" onclick="openAddInspo()" style="display:inline-flex;align-items:center;gap:5px">${_plusIcon()}Add Idea</button>`;
 
+  const _inspoCollapsed=(()=>{try{return new Set(JSON.parse(localStorage.getItem('uv_inspo_collapsed')||'[]'));}catch(_){return new Set();}})();
+
   // Build grouped colour palette
   const groups=[...new Set(WEDDING_COLORS.map(c=>c.group))];
   const allCustom=STATE.inspo.customColors||[];
@@ -31510,10 +31512,10 @@ function renderInspo(c,actions){
   </div>`;
 
   html+=`<div id="inspo-palette" style="scroll-margin-top:20px"><div class="palette-section">
-    <button type="button" class="toggle-section-btn open" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('hidden')" style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500">
+    <button type="button" class="toggle-section-btn${_inspoCollapsed.has('inspo-palette')?'':' open'}" onclick="_toggleInspoSection(this,'inspo-palette')" style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500">
       <span>Colour Palette</span><span class="arrow">▼</span>
     </button>
-    <div style="padding-top:16px">
+    <div style="padding-top:16px"${_inspoCollapsed.has('inspo-palette')?' class="hidden"':''}>
     <div style="font-size:13px;color:var(--muted);margin-bottom:18px">Choose the colours that speak to your day</div>
 
     ${groups.map(group=>{
@@ -31584,10 +31586,10 @@ function renderInspo(c,actions){
     const anchorId='inspo-'+cat.replace(/[^a-zA-Z0-9]/g,'-');
     const items=grouped[cat]||[];
     html+=`<div id="${anchorId}" style="scroll-margin-top:20px" class="card" style="margin-bottom:14px">
-      <button type="button" class="toggle-section-btn open" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('hidden')">
+      <button type="button" class="toggle-section-btn${_inspoCollapsed.has(anchorId)?'':' open'}" onclick="_toggleInspoSection(this,'${anchorId}')">
         <span style="font-size:17px">${cat}</span><span class="arrow">▼</span>
       </button>
-      <div style="padding-top:12px">
+      <div style="padding-top:12px"${_inspoCollapsed.has(anchorId)?' class="hidden"':''}>
         ${items.length?`<div class="grid-3">${items.map(i=>inspoCardHtml(i)).join('')}</div>`:`<div class="empty-state" style="padding:20px"><div class="empty-state-text">No ${cat.toLowerCase()} ideas yet</div></div>`}
         <button class="btn btn-ghost btn-sm" onclick="openAddInspo('${cat}')" style="margin-top:10px;display:inline-flex;align-items:center;gap:5px">${_plusIcon()}Add ${cat} Idea</button>
       </div>
@@ -31598,6 +31600,17 @@ function renderInspo(c,actions){
   const picker=document.getElementById('custom-colour-picker');
   const hexIn=document.getElementById('custom-hex-input');
   if(picker&&hexIn){ hexIn.value='C4A882'; }
+}
+
+function _toggleInspoSection(btn, id){
+  btn.classList.toggle('open');
+  const nowCollapsed=!btn.classList.contains('open');
+  btn.nextElementSibling.classList.toggle('hidden', nowCollapsed);
+  try{
+    const s=new Set(JSON.parse(localStorage.getItem('uv_inspo_collapsed')||'[]'));
+    if(nowCollapsed)s.add(id);else s.delete(id);
+    localStorage.setItem('uv_inspo_collapsed',JSON.stringify([...s]));
+  }catch(_){}
 }
 
 function isLightColor(hex){
