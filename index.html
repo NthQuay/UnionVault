@@ -28317,7 +28317,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v188';
+const APP_BUILD='v189';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -36293,7 +36293,16 @@ function _wbBuildSite(forDownload){
     // Render ONE block. Returns '' when the block has nothing in it — an intro with no
     // text, an images block with no images. An empty block is not a gap; it is nothing.
     const one=(b)=>{
-      if(b.type==='head') { const hd=_wbHeading(k); return hd ? `<h2>${_escHtml(hd)}</h2>` : ''; }
+      if(b.type==='head') {
+        const hd=_wbHeading(k);
+        if(!hd) return '';
+        if(t2.format==='editorial'){
+          const _ewMap={details:'The Big Day',timeline:'The Day',rsvp:'Attend',gallery:'Moments',accommodation:'Stay',wishing:'With Gratitude',countdown:'Save the Date',faq:'Questions',registry:'Registry'};
+          const ew=_wbIsCustom(k)?'':(_ewMap[k]||'');
+          return (ew?`<p class="edit-eyebrow">${_escHtml(ew.toUpperCase())}</p>`:'')+`<h2>${_escHtml(hd)}</h2>`;
+        }
+        return `<h2>${_escHtml(hd)}</h2>`;
+      }
       if(b.type==='intro') return l.intro ? `<p class="intro">${_escHtml(l.intro)}</p>` : '';
       if(b.type==='body')  return content || '';
       if(b.type==='img')   return imgHtml(b);
@@ -36902,11 +36911,16 @@ dd{flex:1}
    nothing is actually centred. The row has to become a column first. */
 section.b-center dl div{flex-direction:column;gap:2px;text-align:center}
 section.b-center dt{width:auto;padding-top:0}
-.sched{list-style:none;text-align:left}
+.sched{list-style:none}
+section.lft .sched{text-align:left}
+/* When section heading is centred (no .lft), constrain the timeline list width and
+   centre it so it doesn't hang left against a centred heading. */
+section:not(.lft) .sched{max-width:520px;margin-left:auto;margin-right:auto}
 .sched li{display:flex;gap:18px;padding:${sp(14)}px 0;border-bottom:1px solid ${t2.heading}12}
 .sched li:last-child{border-bottom:none}
 .sched .t{width:82px;flex-shrink:0;font-size:${scb(13)}px;letter-spacing:.06em;color:${t2.accent};padding-top:3px}
 .sched .d{flex:1}
+section.b-center .sched{text-align:center}
 section.b-center .sched li{flex-direction:column;gap:2px;text-align:center}
 section.b-center .sched .t{width:auto;padding-top:0}
 .sched .d b{display:block;font-family:${t2.headFont};font-size:${sch(20)}px;font-weight:500;color:${t2.item}}
@@ -37050,7 +37064,15 @@ footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-
   nav.js.open .navlinks{display:flex}
   nav.js .navlinks a{padding:11px 0;font-size:${scb(12)}px}
 }
-${t2.format==='editorial'?`h2{font-style:italic!important;font-weight:300!important;letter-spacing:.02em}h2::after{content:'';display:block;width:36px;height:1px;background:${t2.accent};opacity:.65;margin:${sp(10)}px auto 0}section.lft h2::after,section.b-left h2::after{margin-left:0;margin-right:auto}.intro{font-weight:300;letter-spacing:.03em}`:''}
+${t2.format==='editorial'?`
+.edit-eyebrow{font-size:${scb(10)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent};margin:0 0 ${sp(10)}px;opacity:.8;font-family:${t2.bodyFont}}
+section.lft .edit-eyebrow{text-align:left}
+h2{font-weight:300!important;letter-spacing:.04em!important}
+h2::after{content:'';display:block;width:44px;height:1px;background:${t2.accent};opacity:.55;margin:${sp(12)}px auto 0}
+section.lft h2::after{margin-left:0;margin-right:auto}
+.intro{font-weight:300;letter-spacing:.03em}
+dl dt{font-size:${scb(9.5)}px!important;opacity:.5!important;letter-spacing:.18em!important}
+`:''}
 ${_wbCssSafe(t2.css)}
 </style></head>
 <body${t2.navPos==='side'?' class="sidenav"':''}>
