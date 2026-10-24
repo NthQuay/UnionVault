@@ -28274,7 +28274,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v200';
+const APP_BUILD='v201';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47054,7 +47054,7 @@ async function _showRsvpForm(coupleId,mode){
     return`<style>:root,:root[data-theme="light"],:root[data-theme="dark"]{--pub-page:${_c.bg||'#e8ddd0'}!important;--pub-band:${_c.surf||_c.bg||'#ded6c8'}!important;--pub-surface:${_c.surf||_c.bg||'#ede6d8'}!important;--pub-accent:${_c.accent||'#a08050'}!important;--pub-ink:${_c.ink||'#3a3020'}!important;--pub-text:${_c.ink||'#3a3020'}!important;--pub-btn:${_c.accent||'#a08050'}!important;--pub-btn-fg:${_bfg}!important;color-scheme:${_dk?'dark':'light'}!important}body{background:${_c.bg||'#e8ddd0'}!important;color:${_c.ink||'#3a3020'}!important}</style>`;
   })();
 
-  const _uvMark=`<svg width="20" height="16" viewBox="0 0 44 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><path d="M6 4 C6 4 6 22 6 24 C6 30 11 34 22 34 C33 34 38 30 38 24 C38 22 38 4 38 4" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/><path d="M22 4 L30 26" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/><path d="M22 4 L14 26" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>`;
+  const _uvMark=`<svg width="20" height="16" viewBox="0 0 44 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 4 C7 4 7 22 7 24 C7 30 12 34 22 34 C32 34 37 30 37 24 C37 22 37 4 37 4" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M13 8 L22 28 L31 8" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
 
   const isModal=mode==='modal';
   const htmlContent=`
@@ -47096,6 +47096,7 @@ async function _showRsvpForm(coupleId,mode){
       .rf-diet-chip.on{background:color-mix(in srgb,var(--pub-accent) 12%,var(--pub-surface) 88%);border-color:var(--pub-accent)}
       .rf-chk{width:13px;height:13px;border-radius:3px;border:1.5px solid var(--pub-border);background:var(--pub-surface);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
       .rf-diet-chip.on .rf-chk{background:var(--pub-accent);border-color:var(--pub-accent);color:var(--pub-btn-fg,#fff)}
+      .rf-chk svg{visibility:hidden}.rf-diet-chip.on .rf-chk svg{visibility:visible}
       .rf-addr-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-top:8px}
       .rf-submit{width:100%;padding:14px;font-size:15px;font-weight:600;font-family:inherit;color:var(--pub-btn-fg,#fff);background:var(--pub-btn);border:none;border-radius:12px;cursor:pointer;transition:opacity .15s;margin-top:6px}
       .rf-submit:hover{opacity:.88}
@@ -47128,20 +47129,17 @@ async function _showRsvpForm(coupleId,mode){
           <div id="rf-group-rows"></div>
         </div>
         <div id="rf-contact-group" hidden>
-          ${rfields.dietary===false?'':`<div class="rf-card">
-          <div class="rf-lbl">Dietary requirements <span class="opt">(optional)</span></div>
-          <div class="rf-diet-grid">${dietHtml}</div>
-        </div>`}
+          ${rfields.dietary===false?'':`<div id="rf-per-diet"></div>`}
           ${rfields.email===false?'':`<div class="rf-card">
-          <div class="rf-lbl">Email address <span class="opt">(optional)</span></div>
+          <div class="rf-lbl">Email address</div>
           <input class="rf-inp" id="rf-email" type="email" placeholder="So we can reach you"/>
         </div>`}
           ${rfields.phone===false?'':`<div class="rf-card">
-          <div class="rf-lbl">Phone number <span class="opt">(optional)</span></div>
+          <div class="rf-lbl">Phone number</div>
           <input class="rf-inp" id="rf-phone" type="tel" placeholder="For day-of contact"/>
         </div>`}
           ${rfields.address===false?'':`<div class="rf-card">
-          <div class="rf-lbl">Postal address <span class="opt">(optional)</span></div>
+          <div class="rf-lbl">Postal address</div>
           <input class="rf-inp" id="rf-street" placeholder="Street address"/>
           <div class="rf-addr-row">
             <input class="rf-inp" id="rf-suburb" placeholder="Suburb"/>
@@ -47168,13 +47166,14 @@ async function _showRsvpForm(coupleId,mode){
       data-btn-yes='${btnYes.replace(/'/g,"&#39;")}'
       data-btn-no='${btnNo.replace(/'/g,"&#39;")}'>
     </div>
+    ${rfields.dietary===false?'':`<template id="rf-diet-template">${dietHtml}</template>`}
   `;
 
   if(isModal){
     document.getElementById('rsvp-form-overlay')?.remove();
     const overlay=document.createElement('div');
     overlay.id='rsvp-form-overlay';
-    overlay.style.cssText='position:fixed;inset:0;z-index:9000;overflow-y:auto;padding:24px 16px 40px;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center';
+    overlay.style.cssText='position:fixed;inset:0;z-index:9000;overflow-y:auto;padding:24px 16px 40px;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center';
     overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
     const card=document.createElement('div');
     card.style.cssText='position:relative;width:100%;max-width:480px;border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.35)';
@@ -47311,6 +47310,17 @@ function _rfSetAttend(val){
   const sb=document.getElementById('rf-submit');
   if(cg)cg.hidden=(val!=='yes');
   if(sb){sb.hidden=false;setTimeout(()=>sb.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
+  const pd=document.getElementById('rf-per-diet');
+  const tmpl=document.getElementById('rf-diet-template');
+  if(pd&&tmpl){
+    if(val==='yes'&&!document.getElementById('rf-diet-s0')){
+      const card=document.createElement('div');card.className='rf-card';
+      const lbl=document.createElement('div');lbl.className='rf-lbl';lbl.textContent='Dietary requirements';
+      const grid=document.createElement('div');grid.className='rf-diet-grid';grid.id='rf-diet-s0';
+      grid.appendChild(tmpl.content.cloneNode(true));
+      card.appendChild(lbl);card.appendChild(grid);pd.innerHTML='';pd.appendChild(card);
+    }else if(val!=='yes'){pd.innerHTML='';}
+  }
 }
 function _rfSetMemberAttend(memberId,val){
   _rfMemberAttend[memberId]=val;
@@ -47327,6 +47337,22 @@ function _rfSetMemberAttend(memberId,val){
   const sb=document.getElementById('rf-submit');
   if(cg)cg.hidden=!anyYes;
   if(sb){sb.hidden=!allSet;if(allSet)setTimeout(()=>sb.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
+  const pd=document.getElementById('rf-per-diet');
+  const tmpl=document.getElementById('rf-diet-template');
+  if(pd&&tmpl){
+    if(val==='yes'&&!document.getElementById('rf-diet-'+eid)){
+      const mrow=document.querySelector('#rf-group-rows [data-mid="'+memberId+'"] .rf-member-name');
+      const mname=mrow?mrow.textContent:'Guest';
+      const card=document.createElement('div');card.className='rf-card';card.id='rf-diet-card-'+eid;
+      const lbl=document.createElement('div');lbl.className='rf-lbl';lbl.textContent=mname+'’s dietary requirements';
+      const grid=document.createElement('div');grid.className='rf-diet-grid';grid.id='rf-diet-'+eid;
+      grid.appendChild(tmpl.content.cloneNode(true));
+      card.appendChild(lbl);card.appendChild(grid);pd.appendChild(card);
+    }else if(val!=='yes'){
+      const dietCard=document.getElementById('rf-diet-card-'+eid);
+      if(dietCard)dietCard.remove();
+    }
+  }
 }
 
 async function _rfSubmit(coupleId){
@@ -47344,7 +47370,7 @@ async function _rfSubmit(coupleId){
     if(!_rfAttending)return;
   }
 
-  const diet=Array.from(document.querySelectorAll('.rf-diet-chip.on')).map(el=>el.dataset.diet);
+  const diet=Array.from(document.querySelectorAll('#rf-diet-s0 .rf-diet-chip.on')).map(el=>el.dataset.diet);
   const street=(document.getElementById('rf-street')||{}).value||'';
   const suburb=(document.getElementById('rf-suburb')||{}).value||'';
   const state=(document.getElementById('rf-state')||{}).value||'';
@@ -47365,7 +47391,9 @@ async function _rfSubmit(coupleId){
       const memberIds=[...rows].map(r=>r.dataset.mid);
       payloads=memberIds.map(id=>{
         const g=objs.find(o=>o.id===id)||{name};
-        return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:diet.length?diet:null};
+        const eid2=id.replace(/[^a-z0-9]/gi,'');
+        const mDiet=Array.from(document.querySelectorAll('#rf-diet-'+eid2+' .rf-diet-chip.on')).map(el=>el.dataset.diet);
+        return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:mDiet.length?mDiet:null};
       });
     } else {
       payloads=[{couple_id:coupleId,guest_name:name,email,phone,address,message,attending:_rfAttending,dietary:diet.length?diet:null}];
