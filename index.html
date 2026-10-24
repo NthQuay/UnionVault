@@ -28332,7 +28332,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v205';
+const APP_BUILD='v206';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32597,12 +32597,16 @@ function _wbSite(){
   if(!['center','left'].includes(t.align)) t.align='center';
   if(!['left','center','justify'].includes(t.bodyAlign)) t.bodyAlign='left';
   if(typeof t.css!=='string') t.css='';
-  // v185: website slug for hash-routing. Auto-generated from partner names, user-editable.
+  // v185: website slug for hash-routing. Auto-generated from partner names + unique user suffix.
   if(!w.slug || typeof w.slug!=='string'){
     const ev=STATE.event||{};
     const p1=(ev.partner1||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     const p2=(ev.partner2||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-    w.slug = [p1,p2].filter(Boolean).join('-') || 'our-wedding';
+    const base=[p1,p2].filter(Boolean).join('-')||'our-wedding';
+    // Append 5 chars from the user's ID so two couples with identical names never share a slug
+    const uid=(_sbSession&&_sbSession.user&&_sbSession.user.id)||'';
+    const suffix=uid.replace(/-/g,'').slice(0,5)||Math.random().toString(36).slice(2,7);
+    w.slug=base+'-'+suffix;
   }
   return w;
 }
