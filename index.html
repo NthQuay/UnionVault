@@ -28232,7 +28232,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v196';
+const APP_BUILD='v197';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -40737,11 +40737,12 @@ async function _exportDataJsonInner(){
   const mb = (blob.size/1024/1024).toFixed(1);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const p1 = STATE.event.partner1||'Partner1';
-  const p2 = STATE.event.partner2||'Partner2';
+  const _slug=s=>s.replace(/[^a-zA-Z0-9]/g,'');
+  const p1 = _slug(STATE.event.partner1||'Partner1');
+  const p2 = _slug(STATE.event.partner2||'Partner2');
   const date = new Date().toISOString().slice(0,10);
   a.href = url;
-  a.download = `eternal-${p1}-${p2}-${date}.json`;
+  a.download = `UnionVault-${p1}-${p2}-${date}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
