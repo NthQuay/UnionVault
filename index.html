@@ -33003,6 +33003,13 @@ function _wbThemeBody(){
         <input type="range" min="0" max="200" step="4" value="${t.secpad||52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
       </div>
+      <div class="dark-toggle-row" style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${t.globalWidth!==false?'checked':''} onchange="_wbSetGlobal('globalWidth')"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
         <span class="inv-seg">
@@ -33017,6 +33024,13 @@ function _wbThemeBody(){
           <button type="button" class="${t.bodyAlign==='center'?'active':''}" onclick="_wbSet('bodyAlign','center')">Centre</button>
           <button type="button" class="${t.bodyAlign==='justify'?'active':''}" onclick="_wbSet('bodyAlign','justify')">Justify</button>
         </span>
+      </div>
+      <div class="dark-toggle-row" style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:0">Apply alignment globally</div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${t.alignGlobal!==false?'checked':''} onchange="_wbSetGlobal('alignGlobal')"/>
+          <div class="toggle-track"></div>
+        </label>
       </div>
       <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
         <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">BUTTONS</div>
@@ -33214,6 +33228,17 @@ function _wbSet(field, val){
   saveToStorage();
   _wbRepaintTheme();
 }
+function _wbSetGlobal(field){
+  const t=_wbSite().theme;
+  t[field] = t[field]===false ? true : false;
+  saveToStorage();
+  _wbRepaintTheme();
+  document.querySelectorAll('[id^="wb-lay-"]').forEach(box=>{
+    const key=box.id.slice(7);
+    box.outerHTML=_wbLayoutHtml(key);
+  });
+  _wbLivePaint();
+}
 // The custom CSS lands raw inside the guest site's <style> block. A stray "</style>" in
 // the box would close that block early and drop the rest of the CSS into the document as
 // text — which looks like a mystery rendering bug, not a typo. Neutralise it on write.
@@ -33310,6 +33335,13 @@ function _wbRepaintTheme(){
         <input type="range" min="0" max="200" step="4" value="${t.secpad||52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
       </div>
+      <div class="dark-toggle-row" style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${t.globalWidth!==false?'checked':''} onchange="_wbSetGlobal('globalWidth')"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
         <span class="inv-seg">
@@ -33324,6 +33356,13 @@ function _wbRepaintTheme(){
           <button type="button" class="${t.bodyAlign==='center'?'active':''}" onclick="_wbSet('bodyAlign','center')">Centre</button>
           <button type="button" class="${t.bodyAlign==='justify'?'active':''}" onclick="_wbSet('bodyAlign','justify')">Justify</button>
         </span>
+      </div>
+      <div class="dark-toggle-row" style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:0">Apply alignment globally</div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${t.alignGlobal!==false?'checked':''} onchange="_wbSetGlobal('alignGlobal')"/>
+          <div class="toggle-track"></div>
+        </label>
       </div>
       <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
         <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">BUTTONS</div>
@@ -34284,6 +34323,7 @@ function _wbLayoutHtml(key){
   if(WB_NO_LAYOUT.indexOf(key)>=0) return '';
   const l=_wbLayout(key);
   const m=_wbMeta(key)||{};
+  const t=_wbSite().theme;
   return `<div id="wb-lay-${key}" class="wb-lay" style="margin-top:10px">
     <div class="wb-slot-lbl" style="margin-bottom:9px">Layout</div>
     <div class="form-group" style="margin-bottom:9px">
@@ -34298,7 +34338,7 @@ function _wbLayoutHtml(key){
       ${key==='wishingwell'?`<div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5">This sits <b>above</b> your welcome message (“Your presence is the greatest gift…”). To change that message, <a href="javascript:void(0)" onclick="closeModalDirect();navigate('wishingwell');openWwSettings()" style="color:var(--gold-deep);text-decoration:underline;cursor:pointer">edit it in Wishing Well</a>.</div>`:''}
     </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:9px">
-      <div>
+      ${t.alignGlobal!==false?'':`<div>
         <div class="wb-slot-lbl" style="margin-bottom:5px">Heading and intro</div>
         <span class="inv-seg">
           <button type="button" class="${l.align==='left'?'active':''}" onclick="_wbLaySet('${key}','align','left')">Left</button>
@@ -34320,12 +34360,12 @@ function _wbLayoutHtml(key){
           <button type="button" class="${l.grid==='center'?'active':''}" onclick="_wbLaySet('gallery','grid','center')">Centre</button>
           <button type="button" class="${l.grid==='rows'?'active':''}" onclick="_wbLaySet('gallery','grid','rows')">Rows</button>
         </span>
-      </div>`:''}
-      <div>
+      </div>`:''}`}
+      ${t.globalWidth!==false?'':`<div>
         ${(()=>{const bv=(!l.bg||l.bg==='page')?0:(l.bg==='band'?100:Math.min(100,Math.max(0,Number(l.bg)||0)));const lbl=bv>=100?'Band':bv>0?'Wide page':'Page';return `<div id="wb-bg-lbl-${key}" class="wb-slot-lbl" style="margin-bottom:5px">Width · ${lbl}</div>
         <input type="range" min="0" max="100" step="10" value="${bv}" oninput="_wbBg('${key}',this.value)" style="width:100%;accent-color:var(--gold)"/>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Page</span><span>Band</span></div>`;})()}
-      </div>
+      </div>`}
     </div>
   </div>`;
 }
