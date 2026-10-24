@@ -4388,7 +4388,7 @@ function navigate(page){
   _updateBudgetNavBadge();
   _updateChecklistNavBadge();
   _updateSeatingNavBadge();
-  if(page==='rsvp-mgr') _markRsvpViewed(); else if(typeof _fetchRsvpBadgeCount==='function') _fetchRsvpBadgeCount();
+  if(page==='rsvp-mgr'){_markRsvpViewed();}else if(typeof _fetchRsvpBadgeCount==='function'){_fetchRsvpBadgeCount();}
   // Restore the pre-render scroll position on a same-page refresh so an in-place change
   // (budget toggle, amount edit, etc.) keeps the user where they were instead of jumping
   // to the top. Done after the new content is in the DOM so the scroll height exists.
@@ -12217,11 +12217,11 @@ function renderRsvpMgr(c, actions){
           <span>Online RSVPs</span>
           <button class="btn btn-sm btn-outline" style="font-size:11.5px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px" onclick="_loadOnlineRsvps()" id="load-rsvps-btn">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
-            Refresh
+            Load
           </button>
         </div>
         <div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:6px 0">
-          <span style="opacity:.6">Loading…</span>
+          Responses submitted via your public RSVP link will appear here. Hit <strong>Load</strong> to fetch the latest.
         </div>
       </div>`
     };
@@ -23840,37 +23840,35 @@ function _updateChecklistNavBadge(){
   }
 }
 
-// Side-menu RSVP badge: green dot + count of new online RSVP responses received
-// since the user last viewed the RSVP page. Checked on login and after each navigate.
-let _rsvpBadgeCount=0;
-async function _fetchRsvpBadgeCount(){
-  if(!_sbSession) return;
-  try{
-    const uid=_sbSession.user.id;
-    let lastViewed;
-    try{ lastViewed=localStorage.getItem('rsvp_last_viewed')||''; }catch(_){ lastViewed=''; }
-    let url=`${_SB_URL}/rest/v1/rsvp_responses?couple_id=eq.${encodeURIComponent(uid)}&select=id`;
-    if(lastViewed) url+=`&created_at=gt.${encodeURIComponent(lastViewed)}`;
-    const res=await fetch(url,{headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json','Prefer':'count=exact','Range-Unit':'items','Range':'0-0'}});
-    if(!res.ok) return;
-    const cr=res.headers.get('content-range')||'';
-    const match=cr.match(/\/(\d+)$/);
-    _rsvpBadgeCount=match?parseInt(match[1],10):0;
-    _updateRsvpNavBadge();
-  }catch(_){}
-}
+var _rsvpBadgeCount=0;
 function _updateRsvpNavBadge(){
-  const el=document.getElementById('nav-rsvp-badge');
+  var el=document.getElementById('nav-rsvp-badge');
   if(!el) return;
   if(!_rsvpBadgeCount){el.style.display='none';el.innerHTML='';el.removeAttribute('title');return;}
-  el.innerHTML=`<span style="background:var(--green);color:#fff;border-radius:9px;padding:1px 6px;font-size:10.5px;font-weight:700;line-height:1.5">${_rsvpBadgeCount}</span>`;
-  el.title=_rsvpBadgeCount+' new RSVP'+((_rsvpBadgeCount!==1)?'s':'');
+  el.innerHTML='<span style="background:var(--green);color:#fff;border-radius:9px;padding:1px 6px;font-size:10.5px;font-weight:700;line-height:1.5">'+_rsvpBadgeCount+'</span>';
+  el.title=_rsvpBadgeCount+' new RSVP'+(_rsvpBadgeCount!==1?'s':'');
   el.style.display='inline-flex';
 }
 function _markRsvpViewed(){
-  try{ localStorage.setItem('rsvp_last_viewed',new Date().toISOString()); }catch(_){}
+  try{localStorage.setItem('rsvp_last_viewed',new Date().toISOString());}catch(e){}
   _rsvpBadgeCount=0;
   _updateRsvpNavBadge();
+}
+async function _fetchRsvpBadgeCount(){
+  if(!_sbSession) return;
+  try{
+    var uid=_sbSession.user.id;
+    var lastViewed='';
+    try{lastViewed=localStorage.getItem('rsvp_last_viewed')||'';}catch(e){}
+    var url=_SB_URL+'/rest/v1/rsvp_responses?couple_id=eq.'+encodeURIComponent(uid)+'&select=id';
+    if(lastViewed) url+='&created_at=gt.'+encodeURIComponent(lastViewed);
+    var res=await fetch(url,{headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json','Prefer':'count=exact','Range-Unit':'items','Range':'0-0'}});
+    if(!res.ok) return;
+    var cr=res.headers.get('content-range')||'';
+    var match=cr.match(/\/(\d+)$/);
+    _rsvpBadgeCount=match?parseInt(match[1],10):0;
+    _updateRsvpNavBadge();
+  }catch(e){}
 }
 
 function _hasBudgetAlerts(){
@@ -47448,8 +47446,17 @@ async function _rfSubmit(coupleId){
 
     const allOk=results.every(r=>r.ok||r.status===201);
     if(allOk){
-      const anyYes=isGroup?Object.values(_rfMemberAttend).some(v=>v===’yes’):_rfAttending===’yes’;
-      const formBody=document.getElementById(‘rsvp-form-body’);
+      const anyYes=isGroup?Object.values(_rfMemberAttend).some(v=>v==='yes'):_rfAttending==='yes';
+      try{
+        const notifName=isGroup?payloads.map(function(p){return p.guest_name;}).join(', '):name;
+        const notifAttending=isGroup?(anyYes?'yes':'no'):_rfAttending;
+        fetch(_SB_URL+'/functions/v1/rsvp-notify',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','apikey':_SB_KEY},
+          body:JSON.stringify({couple_id:coupleId,guest_name:notifName,attending:notifAttending})
+        }).catch(function(){});
+      }catch(e2){}
+      const formBody=document.getElementById('rsvp-form-body');
       if(formBody){
         formBody.innerHTML=`<div class="rf-msg-box">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;margin:0 auto 12px"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
@@ -47457,16 +47464,6 @@ async function _rfSubmit(coupleId){
           <div style="font-size:13.5px;opacity:.85">${anyYes?"We can’t wait to celebrate with you 🥂":"Thank you for letting us know — you’ll be missed."}</div>
         </div>`;
       }
-      // Fire email notification to couple (fire-and-forget)
-      try{
-        const notifName=isGroup?(payloads.map(p=>p.guest_name).join(‘, ‘)):name;
-        const notifAttending=isGroup?(anyYes?’yes’:’no’):_rfAttending;
-        fetch(`${_SB_URL}/functions/v1/rsvp-notify`,{
-          method:’POST’,
-          headers:{‘Content-Type’:’application/json’,’apikey’:_SB_KEY},
-          body:JSON.stringify({couple_id:coupleId,guest_name:notifName,attending:notifAttending})
-        }).catch(()=>{});
-      }catch(_){}
     } else {
       submitEl.disabled=false;submitEl.textContent='Send my RSVP';
       alert('Something went wrong — please try again.');
