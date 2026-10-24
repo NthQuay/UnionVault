@@ -44556,25 +44556,19 @@ async function _submitSupportForm(btn){
     const files=Array.from((document.getElementById('_supp-files')||{}).files||[]).slice(0,4);
     files.forEach(function(f){if(f.size>5*1024*1024)throw new Error(f.name+' is over 5 MB');});
     const coupleName=(document.getElementById('sidebar-couple-names')||{}).textContent||'';
-    let fullMsg=msg.trim();
+    const screenshotUrls=[];
     if(files.length){
-      const urls=await Promise.all(files.map(async function(f){
+      for(const f of files){
         const ext=f.name.split('.').pop()||'jpg';
         const path='bug-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
         const r=await fetch(_SB_URL+'/storage/v1/object/support/'+path,{method:'POST',headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Content-Type':f.type,'x-upsert':'true'},body:f});
         if(!r.ok) throw new Error('Screenshot upload failed: '+r.status);
-        return _SB_URL+'/storage/v1/object/public/support/'+path;
-      }));
-      const screenshotHtml=urls.map(function(u,i){
-        return '<p style="margin:12px 0"><strong>Screenshot '+(i+1)+'</strong><br>'
-          +'<a href="'+u+'"><img src="'+u+'" style="max-width:560px;max-height:420px;display:block;border:1px solid #ddd;border-radius:4px;margin:6px 0" alt="Screenshot '+(i+1)+'"></a></p>';
-      }).join('');
-      fullMsg+='\n\n'+screenshotHtml;
+        screenshotUrls.push(_SB_URL+'/storage/v1/object/public/support/'+path);
+      }
     }
-    const body={access_key:_W3F_KEY,subject:'['+subject+'] from '+(coupleName||email),from_name:coupleName||'Union Vault user',name:coupleName||email,email:email.trim(),message:fullMsg,redirect:'false'};
-    const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
+    const res=await fetch(_SB_URL+'/functions/v1/send-support-email',{method:'POST',headers:{'Content-Type':'application/json','apikey':_SB_KEY,'Authorization':_sbAuthHdr()},body:JSON.stringify({email:email.trim(),coupleName:coupleName||'',subject,message:msg.trim(),screenshotUrls})});
     const data=await res.json();
-    if(!data.success) throw new Error(data.message||'Submission failed');
+    if(!res.ok||data.error) throw new Error(data.error||'Submission failed');
     _suppStatus('Message sent ✔ We’ll get back to you shortly.',true);
     btn.textContent='Sent ✔';
     setTimeout(function(){const o=document.getElementById('_supp-overlay');if(o)o.remove();},2200);
