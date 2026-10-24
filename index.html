@@ -46653,73 +46653,117 @@ async function _showRsvpForm(coupleId){
     ['nutallergy','Nut allergy'],['other','Other']
   ];
   const dietHtml = dietOptions.map(([k,lbl])=>`
-    <div class="pub-diet-chip" onclick="this.classList.toggle('on')" data-diet="${k}">
-      <span class="pub-diet-check"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg></span>${lbl}
+    <div class="rf-diet-chip" onclick="this.classList.toggle('on')" data-diet="${k}">
+      <span class="rf-chk"><svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg></span>${lbl}
     </div>`).join('');
 
+  const _hf=theme.headFont||"'Cormorant Garamond',serif";
+  const _bf=theme.bodyFont||"'Inter',sans-serif";
   _publicPageShell(`
     ${_publicCss(theme.accent,theme.page,theme.band,theme.heading,theme.text,theme.headFont,theme.bodyFont)}
     ${(()=>{const _p=rsvp.palette,_c=_p==='custom'?(rsvp.customColors||{}):(_RSVP_PALS[_p]||null);if(!_c)return '';const _dk=_isDarkHex(_c.bg||'#fff'),_bfg=_isDarkHex(_c.accent||'#888')?'#fff':'#1a1a1a';return `<style>:root,:root[data-theme="light"],:root[data-theme="dark"]{--pub-page:${_c.bg||'#e8ddd0'}!important;--pub-band:${_c.surf||_c.bg||'#ded6c8'}!important;--pub-surface:${_c.surf||_c.bg||'#ede6d8'}!important;--pub-accent:${_c.accent||'#a08050'}!important;--pub-ink:${_c.ink||'#3a3020'}!important;--pub-text:${_c.ink||'#3a3020'}!important;--pub-btn:${_c.accent||'#a08050'}!important;--pub-btn-fg:${_bfg}!important;color-scheme:${_dk?'dark':'light'}!important}body{background:${_c.bg||'#e8ddd0'}!important;color:${_c.ink||'#3a3020'}!important}</style>`})()}
-    <button class="pub-theme-btn" onclick="_pubToggleTheme()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      Theme
-    </button>
-    ${(()=>{const hs=rsvp.headerStyle||'classic';const dl=dateStr||eventVenue?`<div class="pub-dateline">${[dateStr,eventVenue].filter(Boolean).join(' · ')}</div>`:'';
-      if(hs==='minimal')return`<div class="pub-header" style="background:transparent;padding:28px 24px 20px;border-bottom:1px solid var(--pub-border)"><div class="pub-couple" style="font-size:26px;margin-bottom:4px">${eventName||'Wedding RSVP'}</div>${dl}</div>`;
-      if(hs==='banner')return`<div class="pub-header" style="background:var(--pub-accent);padding:40px 24px 32px;border-bottom:none"><div class="pub-eyebrow" style="color:var(--pub-btn-fg);opacity:.8">You're invited</div><div class="pub-couple" style="color:var(--pub-btn-fg)">${eventName||'Wedding RSVP'}</div>${dl?dl.replace('class="pub-dateline"','class="pub-dateline" style="color:var(--pub-btn-fg);opacity:.7"'):''}<div class="pub-divider" style="background:var(--pub-btn-fg);opacity:.5"></div></div>`;
-      return`<div class="pub-header"><div class="pub-ring"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div><div class="pub-eyebrow">You're invited</div><div class="pub-couple">${eventName||'Wedding RSVP'}</div>${dl}<div class="pub-divider"></div></div>`;
-    })()}
-    <div class="pub-body" id="rsvp-form-body">
-      <div>
-        <div class="pub-label">Your name</div>
-        <div class="pub-ac-wrap">
-          <input class="pub-input" id="rf-name" type="text" autocomplete="off"
-            placeholder="Start typing your first or last name…"
-            oninput="_rfNameSearch(this.value)"
-            onfocus="if(this.value.length>=2)_rfNameSearch(this.value)"
-            onblur="setTimeout(()=>{const l=document.getElementById('rf-ac-list');if(l)l.style.display='none'},200)"
-            onkeydown="_rfNameKey(event)"
-          />
-          <ul class="pub-ac-list" id="rf-ac-list" role="listbox"></ul>
-        </div>
-        <div class="pub-addr-hint">Can't find your name? <a href="mailto:" id="rf-contact-link" style="color:var(--pub-accent)">Contact the couple</a></div>
+    <style>
+      *,*::before,*::after{box-sizing:border-box}
+      body{margin:0;background:var(--pub-page);color:var(--pub-ink);font-family:${_bf};min-height:100vh}
+      .rf-page{max-width:460px;margin:0 auto;padding:52px 20px 80px;min-height:100vh;display:flex;flex-direction:column}
+      .rf-top{text-align:center;margin-bottom:40px}
+      .rf-couple{font-family:${_hf};font-size:clamp(26px,6vw,38px);font-weight:500;color:var(--pub-ink);margin:0 0 8px;line-height:1.15;text-wrap:balance}
+      .rf-meta{font-size:13px;color:var(--pub-text);letter-spacing:.02em;margin:0}
+      .rf-body{flex:1}
+      .rf-card{background:var(--pub-surface);border-radius:14px;padding:18px 18px 20px;box-shadow:0 2px 16px rgba(0,0,0,.06);margin-bottom:14px}
+      .rf-lbl{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--pub-text);margin-bottom:10px}
+      .rf-lbl .opt{text-transform:none;letter-spacing:0;font-weight:400;font-size:10px}
+      .rf-inp{width:100%;padding:12px 14px;font-size:14px;font-family:inherit;color:var(--pub-ink);background:var(--pub-page);border:1.5px solid var(--pub-border);border-radius:10px;outline:none;transition:border-color .15s,box-shadow .15s;display:block}
+      .rf-inp:focus{border-color:var(--pub-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--pub-accent) 18%,transparent 82%)}
+      .rf-inp::placeholder{color:var(--pub-text);opacity:.6}
+      .rf-inp+.rf-inp{margin-top:8px}
+      .rf-hint{font-size:11.5px;color:var(--pub-text);opacity:.8;margin-top:8px}
+      .rf-hint a{color:var(--pub-accent);text-decoration:none}
+      .pub-ac-wrap{position:relative}
+      .pub-ac-list{position:absolute;top:calc(100% + 4px);left:0;right:0;margin:0;padding:4px;list-style:none;background:var(--pub-surface);border:1.5px solid var(--pub-border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.14);z-index:50;display:none;max-height:200px;overflow-y:auto}
+      .pub-ac-item{padding:9px 12px;border-radius:7px;cursor:pointer;font-size:13.5px;color:var(--pub-ink)}
+      .pub-ac-item.focused,.pub-ac-item:hover{background:color-mix(in srgb,var(--pub-accent) 10%,transparent 90%)}
+      .pub-ac-none{padding:9px 12px;font-size:13px;color:var(--pub-text);opacity:.7;list-style:none}
+      .rf-pills{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .rf-pill{padding:13px 12px;border-radius:10px;border:1.5px solid var(--pub-border);background:var(--pub-page);text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--pub-ink);transition:all .15s;user-select:none;-webkit-user-select:none}
+      .rf-pill:hover{border-color:var(--pub-accent)}
+      .rf-pill.yes{background:color-mix(in srgb,#4a9e6b 14%,var(--pub-surface) 86%);border-color:#4a9e6b;color:#2d7a4d}
+      .rf-pill.no{background:color-mix(in srgb,#c0745a 12%,var(--pub-surface) 88%);border-color:#c0745a;color:#9a4a32}
+      .rf-diet-grid{display:flex;flex-wrap:wrap;gap:7px}
+      .rf-diet-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--pub-border);background:var(--pub-page);font-size:12.5px;color:var(--pub-ink);cursor:pointer;transition:all .15s;user-select:none;-webkit-user-select:none}
+      .rf-diet-chip:hover{border-color:var(--pub-accent)}
+      .rf-diet-chip.on{background:color-mix(in srgb,var(--pub-accent) 12%,var(--pub-surface) 88%);border-color:var(--pub-accent)}
+      .rf-chk{width:13px;height:13px;border-radius:3px;border:1.5px solid var(--pub-border);background:var(--pub-surface);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+      .rf-diet-chip.on .rf-chk{background:var(--pub-accent);border-color:var(--pub-accent);color:var(--pub-btn-fg,#fff)}
+      .rf-addr-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-top:8px}
+      .rf-submit{width:100%;padding:15px;font-size:15px;font-weight:600;font-family:inherit;color:var(--pub-btn-fg,#fff);background:var(--pub-btn);border:none;border-radius:12px;cursor:pointer;transition:opacity .15s;margin-top:6px}
+      .rf-submit:hover{opacity:.88}
+      .rf-submit:disabled{opacity:.5;cursor:not-allowed}
+      .rf-msg-box{text-align:center;padding:48px 24px;background:var(--pub-surface);border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,.06)}
+      .rf-footer{text-align:center;padding:40px 20px 24px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--pub-text);opacity:.65}
+      .rf-footer-mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:16px;border:1.5px solid currentColor;border-radius:3px;font-size:7.5px;font-weight:800;letter-spacing:.03em}
+    </style>
+
+    <div class="rf-page">
+      <div class="rf-top">
+        <h1 class="rf-couple">${eventName||'Wedding RSVP'}</h1>
+        ${dateStr||eventVenue?`<p class="rf-meta">${[dateStr,eventVenue].filter(Boolean).join(' · ')}</p>`:''}
       </div>
-      <div>
-        <div class="pub-label">Will you be attending?</div>
-        <div class="pub-attend-pills">
-          <div class="pub-attend-pill" id="rf-yes" onclick="_rfSetAttend('yes')">✓ ${rsvp.btnYes||'Joyfully accepts'}</div>
-          <div class="pub-attend-pill" id="rf-no"  onclick="_rfSetAttend('no')">${rsvp.btnNo||'Regretfully declines'}</div>
+      <div class="rf-body" id="rsvp-form-body">
+        <div class="rf-card">
+          <div class="rf-lbl">Search your name</div>
+          <div class="pub-ac-wrap">
+            <input class="rf-inp" id="rf-name" type="text" autocomplete="off"
+              placeholder="Type your name…"
+              oninput="_rfNameSearch(this.value)"
+              onfocus="if(this.value.length>=2)_rfNameSearch(this.value)"
+              onblur="setTimeout(()=>{const l=document.getElementById('rf-ac-list');if(l)l.style.display='none'},200)"
+              onkeydown="_rfNameKey(event)"
+            />
+            <ul class="pub-ac-list" id="rf-ac-list" role="listbox"></ul>
+          </div>
+          <div class="rf-hint">Can't find your name? <a href="mailto:" id="rf-contact-link">Contact the couple</a></div>
         </div>
+        <div class="rf-card">
+          <div class="rf-lbl">Will you be attending?</div>
+          <div class="rf-pills">
+            <div class="rf-pill" id="rf-yes" onclick="_rfSetAttend('yes')">✓ ${rsvp.btnYes||'Joyfully accepts'}</div>
+            <div class="rf-pill" id="rf-no"  onclick="_rfSetAttend('no')">${rsvp.btnNo||'Regretfully declines'}</div>
+          </div>
+        </div>
+        ${rfields.dietary===false?'':`<div class="rf-card">
+          <div class="rf-lbl">Dietary requirements <span class="opt">(optional)</span></div>
+          <div class="rf-diet-grid">${dietHtml}</div>
+        </div>`}
+        ${rfields.email===false?'':`<div class="rf-card">
+          <div class="rf-lbl">Email address <span class="opt">(optional)</span></div>
+          <input class="rf-inp" id="rf-email" type="email" placeholder="So we can reach you"/>
+        </div>`}
+        ${rfields.phone===false?'':`<div class="rf-card">
+          <div class="rf-lbl">Phone number <span class="opt">(optional)</span></div>
+          <input class="rf-inp" id="rf-phone" type="tel" placeholder="For day-of contact"/>
+        </div>`}
+        ${rfields.address===false?'':`<div class="rf-card">
+          <div class="rf-lbl">Postal address <span class="opt">(optional)</span></div>
+          <input class="rf-inp" id="rf-street" placeholder="Street address"/>
+          <div class="rf-addr-row">
+            <input class="rf-inp" id="rf-suburb" placeholder="Suburb"/>
+            <input class="rf-inp" id="rf-state"  placeholder="State"/>
+            <input class="rf-inp" id="rf-post"   placeholder="Postcode"/>
+          </div>
+        </div>`}
+        ${rfields.message===false?'':`<div class="rf-card">
+          <div class="rf-lbl">A message <span class="opt">(optional)</span></div>
+          <textarea class="rf-inp" id="rf-message" placeholder="Any well-wishes, song requests, or notes…" style="resize:vertical;min-height:88px"></textarea>
+        </div>`}
+        <button class="rf-submit" id="rf-submit" onclick="_rfSubmit('${coupleId}')">Send my RSVP</button>
       </div>
-      ${rfields.dietary===false?'':`<div>
-        <div class="pub-label">Dietary requirements <span class="opt">(optional)</span></div>
-        <div class="pub-diet-grid">${dietHtml}</div>
-      </div>`}
-      ${rfields.email===false?'':`<div>
-        <div class="pub-label">Email address <span class="opt">(optional)</span></div>
-        <input class="pub-input" id="rf-email" type="email" placeholder="So we can reach you"/>
-      </div>`}
-      ${rfields.phone===false?'':`<div>
-        <div class="pub-label">Phone number <span class="opt">(optional)</span></div>
-        <input class="pub-input" id="rf-phone" type="tel" placeholder="For day-of contact"/>
-      </div>`}
-      ${rfields.address===false?'':`<div>
-        <div class="pub-label">Postal address <span class="opt">(optional — for thank-you cards)</span></div>
-        <input class="pub-input" id="rf-street" placeholder="Street address"/>
-        <div class="pub-addr-row">
-          <input class="pub-input" id="rf-suburb" placeholder="Suburb"/>
-          <input class="pub-input" id="rf-state"  placeholder="State"/>
-          <input class="pub-input" id="rf-post"   placeholder="Postcode"/>
-        </div>
-      </div>`}
-      ${rfields.message===false?'':`<div>
-        <div class="pub-label">A message for the couple <span class="opt">(optional)</span></div>
-        <textarea class="pub-textarea" id="rf-message" placeholder="Any well-wishes, song requests, or notes…"></textarea>
-      </div>`}
-      <button class="pub-submit" id="rf-submit" onclick="_rfSubmit('${coupleId}')">Send my RSVP</button>
-      <div class="pub-footer">Your response goes straight to ${eventName||'the couple'}.</div>
+      <div class="rf-footer">
+        Powered by
+        <span class="rf-footer-mark">UV</span>
+        <span style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:10px">Union Vault</span>
+      </div>
     </div>
-    <div class="pub-footer" style="padding:16px 24px 24px;text-align:center;font-size:11px">Powered by <strong>Union Vault</strong></div>
     <div id="rf-guest-data" style="display:none" data-guests='${guestNamesJson.replace(/'/g,"&#39;")}'></div>
   `);
 }
@@ -46791,7 +46835,7 @@ async function _rfSubmit(coupleId){
   if(!name){ nameEl&&(nameEl.style.borderColor='#C0392B'); return; }
   if(!_rfAttending){ return; }
   // Collect dietary
-  const diet = Array.from(document.querySelectorAll('.pub-diet-chip.on')).map(el=>el.dataset.diet);
+  const diet = Array.from(document.querySelectorAll('.rf-diet-chip.on')).map(el=>el.dataset.diet);
   // Build address string
   const street= (document.getElementById('rf-street')||{}).value||'';
   const suburb= (document.getElementById('rf-suburb')||{}).value||'';
@@ -46820,7 +46864,7 @@ async function _rfSubmit(coupleId){
     if(res.ok || res.status===201){
       const formBody = document.getElementById('rsvp-form-body');
       if(formBody){
-        formBody.innerHTML=`<div class="pub-msg-box success">
+        formBody.innerHTML=`<div class="rf-msg-box">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:10px;display:block;margin:0 auto 12px"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
           <div style="font-size:17px;font-weight:600;margin-bottom:6px">RSVP received!</div>
           <div style="font-size:13.5px;opacity:.85">${_rfAttending==='yes'?"We can't wait to celebrate with you 🥂":"Thank you for letting us know — you'll be missed."}</div>
