@@ -7399,7 +7399,14 @@ function _guestFilterMenuHtml(){
   const colsIcon='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>';
   const chevron='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.5"><polyline points="9 18 15 12 9 6"/></svg>';
   const backIcon='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="15 18 9 12 15 6"/></svg>';
+  const liveN=_groupSuggestions.filter(s=>_grIsLive(s)).length;
+  const groupsIcon2='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2" style="flex-shrink:0"><circle cx="9" cy="12" r="5.2"/><circle cx="15" cy="12" r="5.2"/></svg>';
+  const groupsRow2=liveN?`<div onclick="event.stopPropagation();_guestFilterMenuClose();_showGroupBanner()" style="display:flex;align-items:center;gap:9px;padding:8px 9px;margin:0 0 6px;background:rgba(196,168,130,.14);border:.5px solid var(--gold);border-radius:8px;cursor:pointer">
+      ${groupsIcon2}<span style="font-size:13px;font-weight:600;color:var(--ink);flex:1">Show suggested groups</span>
+      <span style="font-size:10px;font-weight:700;color:var(--gold-deep);background:rgba(196,168,130,.25);border-radius:9px;padding:1px 6px">${liveN}</span>
+    </div>`:'';
   const mainView=`
+    ${groupsRow2}
     <div onclick="event.stopPropagation();_guestFilterMenuClose();openManageTags()" style="display:flex;align-items:center;gap:9px;padding:9px 8px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer" onmouseover="this.style.background='rgba(196,168,130,.1)'" onmouseout="this.style.background=''">${tagsIcon}Manage tags</div>
     <div onclick="event.stopPropagation();_guestFilterMenuClose();openGuestCountsPopup()" style="display:flex;align-items:center;justify-content:space-between;padding:9px 8px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer" onmouseover="this.style.background='rgba(196,168,130,.1)'" onmouseout="this.style.background=''">
       <span style="display:inline-flex;align-items:center;gap:8px">${eyeIcon}Hide / show filters</span>${chevron}
@@ -7578,7 +7585,15 @@ function _cardCogMenuHtml(){
   const fieldsIcon='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>';
   const eyeIcon='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
   const tagsIcon='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
-  return `<div id="card-cog-menu" style="display:${_cardCogOpen?'block':'none'};position:absolute;top:calc(100% + 6px);right:0;z-index:60;width:210px;background:var(--cream);border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 24px rgba(26,26,24,.12);padding:6px;text-align:left">
+  const liveN=_groupSuggestions.filter(s=>_grIsLive(s)).length;
+  const groupsIcon='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2" style="flex-shrink:0"><circle cx="9" cy="12" r="5.2"/><circle cx="15" cy="12" r="5.2"/></svg>';
+  const groupsRow=liveN?`<div onclick="event.stopPropagation();_cardCogClose();_showGroupBanner()" style="display:flex;align-items:center;gap:9px;padding:8px 9px;margin:3px 0 3px;background:rgba(196,168,130,.14);border:.5px solid var(--gold);border-radius:8px;cursor:pointer">
+      ${groupsIcon}<span style="font-size:13px;font-weight:600;color:var(--ink);flex:1">Show suggested groups</span>
+      <span style="font-size:10px;font-weight:700;color:var(--gold-deep);background:rgba(196,168,130,.25);border-radius:9px;padding:1px 6px">${liveN}</span>
+    </div>
+    <div style="height:1px;background:var(--border);margin:3px 0"></div>`:'';
+  return `<div id="card-cog-menu" style="display:${_cardCogOpen?'block':'none'};position:absolute;top:calc(100% + 6px);right:0;z-index:60;width:220px;background:var(--cream);border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 24px rgba(26,26,24,.12);padding:6px;text-align:left">
+    ${groupsRow}
     ${item('Manage tags',tagsIcon,'openManageTags()')}
     ${item('Hide / show filters…',eyeIcon,'openGuestCountsPopup()')}
     ${item('Card fields…',fieldsIcon,'openCardFieldsPopup()')}
