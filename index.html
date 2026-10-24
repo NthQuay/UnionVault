@@ -4431,7 +4431,16 @@ function buildDashVisionHtml(){
   // How many pinned cards the dashboard widget shows (Edit Layout > Show). Default 12.
   let _dashCount=STATE.settings.vbDashCount;
   if(_dashCount===undefined||_dashCount===null) _dashCount=12;
-  const vbItems = _dashCount==='all' ? allItems : allItems.slice(0, _dashCount);
+  // If user has hand-picked ideas, use that curated set; otherwise fall back to first N.
+  const _pinnedIds = STATE.settings.vbDashPinned;
+  let vbItems;
+  if(_pinnedIds && _pinnedIds.length){
+    const _idMap=Object.fromEntries(allItems.map(i=>[i.id,i]));
+    vbItems=_pinnedIds.map(id=>_idMap[id]).filter(Boolean);
+  } else {
+    vbItems = _dashCount==='all' ? allItems : allItems.slice(0, _dashCount);
+  }
+  const _hasPinned = !!(_pinnedIds && _pinnedIds.length);
   const layout=STATE.settings.vbLayout||'scrapbook';
   let vbSize=STATE.settings.vbSize;
   if(!vbSize){ vbSize = STATE.settings.vbDensity==='2' ? 'medium' : (STATE.settings.vbDensity==='3' ? 'small' : 'small'); }
@@ -4527,7 +4536,7 @@ function buildDashVisionHtml(){
       const active=(STATE.settings.vbBgTint||'original')===k;
       return `<button type="button" onclick="setVbBgTint('${k}')" title="${k==='palette'?'Tint the background with your palette colours':'Neutral background'}" style="${i>0?'border-left:.5px solid var(--border);':''}border:none;${active?'background:var(--gold-deep);color:#fff;font-weight:600;':'background:transparent;color:var(--muted);font-weight:500;'}padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;pointer-events:auto">${lbl}</button>`;
     }).join('')}
-  </div></div>` : `<button class="btn btn-outline btn-sm" onclick="navigate('visionboard')">View full board \u2192</button>`;
+  </div><button type="button" onclick="event.stopPropagation();openVbDashPicker()" style="pointer-events:auto;border:none;background:${_hasPinned?'var(--gold-deep)':'var(--surface)'};color:${_hasPinned?'#fff':'var(--muted)'};border-radius:8px;padding:5px 13px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;border:.5px solid ${_hasPinned?'var(--gold-deep)':'var(--border)'};display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>${_hasPinned?'Curated':'Pick ideas'}</button></div>` : `<button class="btn btn-outline btn-sm" onclick="navigate('visionboard')">View full board \u2192</button>`;
 
   // Palette tint colour picker — only in edit mode when Palette tint is active.
   const _tintMode = STATE.settings.vbBgTint || 'original';
@@ -28308,7 +28317,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v187';
+const APP_BUILD='v188';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32161,6 +32170,107 @@ function setVbImagesOnly(v){ if(!STATE.settings) STATE.settings={}; STATE.settin
 function setVbPageImagesOnly(v){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbPageImagesOnly=!!v; saveToStorage(); navigate('visionboard'); }
 function setVbGrouped(v){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbGrouped=!!v; saveToStorage(); navigate('visionboard'); }
 function setVbDashCount(n){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbDashCount = (n==='all'?'all':parseInt(n,10)); saveToStorage(); navigate(_currentPage||'dashboard'); }
+
+function setVbDashPinned(ids){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbDashPinned=(Array.isArray(ids)&&ids.length)?[...ids]:null; saveToStorage(); navigate(_currentPage||'dashboard'); }
+
+function openVbDashPicker(){
+  const allItems=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
+  let _dc=STATE.settings.vbDashCount; if(_dc===undefined||_dc===null) _dc=12;
+  const maxSel=_dc==='all'?allItems.length:_dc;
+  const isDark=document.body.classList.contains('dark');
+  const goldDeep=getComputedStyle(document.documentElement).getPropertyValue('--gold-deep').trim()||'#B89A6A';
+  const inkColor=isDark?'#C8BFB0':'#3A2E20';
+  const mutedInk=isDark?'#6A6070':'#8A7A65';
+  const cardBg=isDark?'#1E1B26':'#FFFDF8';
+  const borderC=isDark?'rgba(255,255,255,.1)':'rgba(60,40,20,.12)';
+  // Start with current pinned set (or default first-N)
+  const currentPinned=Array.isArray(STATE.settings.vbDashPinned)&&STATE.settings.vbDashPinned.length
+    ? [...STATE.settings.vbDashPinned]
+    : allItems.slice(0,_dc==='all'?allItems.length:_dc).map(i=>i.id);
+  // Render picker overlay
+  const ov=document.createElement('div');
+  ov.id='vb-dash-picker-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(20,16,12,.6);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px';
+  const maxLabel=_dc==='all'?'all':maxSel;
+  ov.innerHTML=`<div style="background:${isDark?'#18151F':'#FFFDF8'};border-radius:16px;width:min(580px,100%);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.4);overflow:hidden">
+    <div style="padding:18px 20px 14px;border-bottom:1px solid ${borderC};flex-shrink:0">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:${inkColor};margin-bottom:4px">Choose ideas for dashboard</div>
+      <div style="font-size:13px;color:${mutedInk}">Select up to <strong id="vbdp-max-lbl">${maxLabel}</strong> ideas · <span id="vbdp-count-lbl" style="color:${goldDeep};font-weight:600">0 selected</span> · <button type="button" onclick="document.querySelectorAll('.vbdp-card.vbdp-on').forEach(c=>c.click())" style="border:none;background:transparent;color:${mutedInk};font-size:13px;cursor:pointer;padding:0;text-decoration:underline">Clear all</button></div>
+    </div>
+    <div id="vbdp-grid" style="padding:16px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+      ${allItems.map(item=>{
+        const imgUrl=_mediaUrl(item.image);
+        const sel=currentPinned.includes(item.id);
+        return`<div class="vbdp-card${sel?' vbdp-on':''}" data-id="${item.id}" onclick="_vbdpToggle(this)" style="position:relative;border-radius:10px;overflow:hidden;background:${cardBg};border:2px solid ${sel?goldDeep:borderC};cursor:pointer;transition:border-color .15s,box-shadow .15s;box-shadow:${sel?`0 0 0 2px ${goldDeep}40`:'none'}">
+          ${imgUrl?`<img src="${imgUrl}" style="width:100%;height:90px;object-fit:cover;display:block" onerror="this.style.display='none'"/>`:
+            `<div style="width:100%;height:90px;display:flex;align-items:center;justify-content:center;background:${isDark?'#2A2535':'#F3EDE3'}"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="${mutedInk}" stroke-width="1.4"><rect x="3" y="3" width="16" height="16" rx="3"/><path d="M3 15l4-4 4 4 3-5 5 5"/></svg></div>`}
+          <div style="padding:5px 7px 7px"><div style="font-size:11.5px;color:${inkColor};line-height:1.3;font-family:'Cormorant Garamond',serif">${_escHtml(item.title)}</div>${item.category?`<div style="font-size:9.5px;color:${mutedInk};font-style:italic;margin-top:1px">${_escHtml(item.category)}</div>`:''}</div>
+          ${sel?`<div style="position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:${goldDeep};display:flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></div>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid ${borderC};display:flex;gap:10px;flex-shrink:0">
+      <button type="button" onclick="document.getElementById('vb-dash-picker-overlay').remove()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${borderC};background:transparent;color:${mutedInk};font-size:14px;cursor:pointer;font-family:inherit">Cancel</button>
+      <button type="button" id="vbdp-done-btn" onclick="_vbdpConfirm()" style="flex:2;padding:10px;border-radius:10px;border:none;background:${goldDeep};color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Done</button>
+    </div>
+  </div>`;
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+  _vbdpUpdateCount();
+}
+
+function _vbdpToggle(card){
+  const ov=document.getElementById('vb-dash-picker-overlay');
+  if(!ov) return;
+  const isDark=document.body.classList.contains('dark');
+  const goldDeep=getComputedStyle(document.documentElement).getPropertyValue('--gold-deep').trim()||'#B89A6A';
+  const borderC=isDark?'rgba(255,255,255,.1)':'rgba(60,40,20,.12)';
+  let _dc=STATE.settings.vbDashCount; if(_dc===undefined||_dc===null) _dc=12;
+  const allItems=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
+  const maxSel=_dc==='all'?allItems.length:_dc;
+  const selected=ov.querySelectorAll('.vbdp-card.vbdp-on');
+  if(card.classList.contains('vbdp-on')){
+    card.classList.remove('vbdp-on');
+    card.style.borderColor=borderC;
+    card.style.boxShadow='none';
+    const chk=card.querySelector('div[style*="position:absolute"]');
+    if(chk) chk.remove();
+  } else {
+    if(selected.length>=maxSel){ return; }
+    card.classList.add('vbdp-on');
+    card.style.borderColor=goldDeep;
+    card.style.boxShadow=`0 0 0 2px ${goldDeep}40`;
+    const chk=document.createElement('div');
+    chk.style.cssText=`position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:${goldDeep};display:flex;align-items:center;justify-content:center`;
+    chk.innerHTML=`<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>`;
+    card.appendChild(chk);
+  }
+  _vbdpUpdateCount();
+}
+
+function _vbdpUpdateCount(){
+  const ov=document.getElementById('vb-dash-picker-overlay');
+  if(!ov) return;
+  const n=ov.querySelectorAll('.vbdp-card.vbdp-on').length;
+  let _dc=STATE.settings.vbDashCount; if(_dc===undefined||_dc===null) _dc=12;
+  const allItems=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
+  const maxSel=_dc==='all'?allItems.length:_dc;
+  const lbl=ov.querySelector('#vbdp-count-lbl');
+  if(lbl) lbl.textContent=`${n} selected`;
+  const done=ov.querySelector('#vbdp-done-btn');
+  if(done){ done.disabled=n===0; done.style.opacity=n===0?'.5':'1'; }
+  // Dim unchosen cards when at max
+  ov.querySelectorAll('.vbdp-card:not(.vbdp-on)').forEach(c=>{ c.style.opacity=(n>=maxSel&&maxSel>0&&_dc!=='all')?'.45':'1'; c.style.pointerEvents=(n>=maxSel&&maxSel>0&&_dc!=='all')?'none':''; });
+  ov.querySelectorAll('.vbdp-card.vbdp-on').forEach(c=>{ c.style.opacity='1'; c.style.pointerEvents=''; });
+}
+
+function _vbdpConfirm(){
+  const ov=document.getElementById('vb-dash-picker-overlay');
+  if(!ov) return;
+  const ids=[...ov.querySelectorAll('.vbdp-card.vbdp-on')].map(c=>c.dataset.id);
+  ov.remove();
+  setVbDashPinned(ids);
+}
 // ── Vision board background tint ─────────────────────────────
 // 'original' = neutral cream/dark veil; 'palette' = tint built from chosen palette colours.
 function setVbBgTint(mode){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbBgTint = (mode==='palette'?'palette':'original'); saveToStorage(); navigate(_currentPage||'dashboard'); }
