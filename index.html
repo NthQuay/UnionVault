@@ -41123,7 +41123,14 @@ function _grRender(){
   const footer=`<span style="margin-right:auto;font-size:11.5px;color:var(--muted)">${selCount} of ${groups.length} selected</span>
     <button class="btn btn-outline btn-sm" onclick="_grNotNow()">Not now</button>
     <button class="btn btn-primary btn-sm" style="${canApply?'':'opacity:.45;cursor:not-allowed'}" ${canApply?'':'disabled'} onclick="_grApply()">Apply${selCount?' '+selCount+' group'+(selCount!==1?'s':''):''}</button>`;
-  openModal('Review suggested groups', body, footer);
+  const ov=document.getElementById('modal-overlay');
+  const mt=document.getElementById('modal-title');
+  if(ov && !ov.classList.contains('hidden') && mt && mt.textContent==='Review suggested groups'){
+    document.getElementById('modal-body').innerHTML=body;
+    document.getElementById('modal-footer').innerHTML=footer;
+  } else {
+    openModal('Review suggested groups', body, footer);
+  }
 }
 
 // A draggable guest row. `where` = {sid, inCouple:boolean} so the drop logic knows
