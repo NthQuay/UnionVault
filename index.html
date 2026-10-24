@@ -4678,9 +4678,10 @@ function renderDashboard(c, actions){
     _seen.add(g.id);
     if(_inviteKeys.has('solo:'+g.id)) _invitedGuestIds.add(g.id);
   });
-  const total=_invitedGuestIds.size;
-  const attending=STATE.guests.filter(g=>_invitedGuestIds.has(g.id)&&g.rsvp==='attending').length;
-  const declined=STATE.guests.filter(g=>_invitedGuestIds.has(g.id)&&g.rsvp==='declined').length;
+  const _allAList=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B');
+  const total=_allAList.length;
+  const attending=_allAList.filter(g=>g.rsvp==='attending').length;
+  const declined=_allAList.filter(g=>g.rsvp==='declined').length;
   const awaiting=total-attending-declined;
   const _activeCl=STATE.checklist.filter(i=>!i.archived);
   const checkDone=_activeCl.filter(i=>i.done).length;
@@ -28339,7 +28340,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v207';
+const APP_BUILD='v208';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -39204,7 +39205,7 @@ function buildDashVendorLookupHtml(){
   const covered = {};
   vendors.forEach(v=>{
     if(!v.category) return;
-    if(v.status==='declined' || v.status==='passed') return;
+    if(v.status==='declined' || v.status==='passed' || v.status==='not_suitable') return;
     if(!covered[v.category]) covered[v.category] = v;
     /* a booked vendor outranks a possible one for the label */
     else if(v.status==='booked' && covered[v.category].status!=='booked') covered[v.category] = v;
