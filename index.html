@@ -32450,8 +32450,8 @@ function _wbSite(){
   if(!['none','sm','md','lg'].includes(t.btnSize)) t.btnSize='md';
   if(!['none','soft','strong'].includes(t.btnShadow)) t.btnShadow='none';
   if(typeof t.btnBevel!=='boolean') t.btnBevel=false;
-  if(!['none','soft','lifted'].includes(t.shadow)) t.shadow='none';
-  if(!['flat','bordered','bevel'].includes(t.cardStyle)) t.cardStyle='flat';
+  if(t.shadow==='soft') t.shadow=33; else if(t.shadow==='lifted') t.shadow=66; else if(typeof t.shadow!=='number') t.shadow=0; else t.shadow=Math.max(0,Math.min(100,t.shadow));
+  if(t.cardStyle==='bordered') t.cardStyle=33; else if(t.cardStyle==='bevel') t.cardStyle=66; else if(typeof t.cardStyle!=='number') t.cardStyle=0; else t.cardStyle=Math.max(0,Math.min(100,t.cardStyle));
   if(!['thin','medium','bold'].includes(t.btnBorder)) t.btnBorder='medium';
   if(!['center','left'].includes(t.align)) t.align='center';
   if(!['left','center','justify'].includes(t.bodyAlign)) t.bodyAlign='left';
@@ -33222,20 +33222,14 @@ function _wbThemeBody(){
       <div style="margin-bottom:14px;padding-top:4px;border-top:1px solid var(--border)">
         <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">SECTIONS</div>
         <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.shadow==='none'?'active':''}" onclick="_wbSet('shadow','none')">None</button>
-            <button type="button" class="${t.shadow==='soft'?'active':''}" onclick="_wbSet('shadow','soft')">Soft</button>
-            <button type="button" class="${t.shadow==='lifted'?'active':''}" onclick="_wbSet('shadow','lifted')">Lifted</button>
-          </span>
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow · ${t.shadow||0}</div>
+          <input type="range" min="0" max="100" step="1" value="${t.shadow||0}" oninput="_wbNum('shadow',this.value)" style="width:100%;accent-color:var(--gold)"/>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>None</span><span>Soft</span><span>Lifted</span><span>Deep</span></div>
         </div>
         <div>
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.cardStyle==='flat'?'active':''}" onclick="_wbSet('cardStyle','flat')">Flat</button>
-            <button type="button" class="${t.cardStyle==='bordered'?'active':''}" onclick="_wbSet('cardStyle','bordered')">Bordered</button>
-            <button type="button" class="${t.cardStyle==='bevel'?'active':''}" onclick="_wbSet('cardStyle','bevel')">Bevel</button>
-          </span>
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge · ${t.cardStyle||0}</div>
+          <input type="range" min="0" max="100" step="1" value="${t.cardStyle||0}" oninput="_wbNum('cardStyle',this.value)" style="width:100%;accent-color:var(--gold)"/>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Flat</span><span>Soft</span><span>Round</span><span>Curved</span></div>
         </div>
       </div>`;
   }
@@ -33348,6 +33342,8 @@ function _wbNum(field, v){
     if(l.textContent.indexOf('Section gap')===0)  l.textContent='Section gap · '+t.gap+' px';
     if(l.textContent.indexOf('Section padding')===0) l.textContent='Section padding · '+(t.secpad||52)+' px';
     if(l.textContent.indexOf('Section width')===0) l.textContent='Section width · '+(t.maxWidth||720)+' px';
+    if(l.textContent.indexOf('Section shadow')===0) l.textContent='Section shadow · '+(t.shadow||0);
+    if(l.textContent.indexOf('Card edge')===0) l.textContent='Card edge · '+(t.cardStyle||0);
   });
   // The font specimen is a HEADING sample, so it follows the heading scale.
   const sp=document.getElementById('wb-spec-name');
@@ -33565,20 +33561,14 @@ function _wbRepaintTheme(){
       <div style="margin-bottom:14px;padding-top:4px;border-top:1px solid var(--border)">
         <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">SECTIONS</div>
         <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.shadow==='none'?'active':''}" onclick="_wbSet('shadow','none')">None</button>
-            <button type="button" class="${t.shadow==='soft'?'active':''}" onclick="_wbSet('shadow','soft')">Soft</button>
-            <button type="button" class="${t.shadow==='lifted'?'active':''}" onclick="_wbSet('shadow','lifted')">Lifted</button>
-          </span>
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow · ${t.shadow||0}</div>
+          <input type="range" min="0" max="100" step="1" value="${t.shadow||0}" oninput="_wbNum('shadow',this.value)" style="width:100%;accent-color:var(--gold)"/>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>None</span><span>Soft</span><span>Lifted</span><span>Deep</span></div>
         </div>
         <div>
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.cardStyle==='flat'?'active':''}" onclick="_wbSet('cardStyle','flat')">Flat</button>
-            <button type="button" class="${t.cardStyle==='bordered'?'active':''}" onclick="_wbSet('cardStyle','bordered')">Bordered</button>
-            <button type="button" class="${t.cardStyle==='bevel'?'active':''}" onclick="_wbSet('cardStyle','bevel')">Bevel</button>
-          </span>
+          <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge · ${t.cardStyle||0}</div>
+          <input type="range" min="0" max="100" step="1" value="${t.cardStyle||0}" oninput="_wbNum('cardStyle',this.value)" style="width:100%;accent-color:var(--gold)"/>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Flat</span><span>Soft</span><span>Round</span><span>Curved</span></div>
         </div>
       </div>`;
     }
@@ -36471,8 +36461,14 @@ function _wbBuildSite(forDownload){
     if(t2.btnStyle==='soft')   return `background:${c}1A;border:${btnBW} solid ${c};color:${c}`;
     return `background:transparent;border:${btnBW} solid ${c};color:${c}`;   // outline
   })();
-  const secShadow = t2.shadow==='soft'?'box-shadow:0 2px 16px rgba(0,0,0,.07)':t2.shadow==='lifted'?'box-shadow:0 6px 28px rgba(0,0,0,.13)':'';
-  const secBorder = t2.cardStyle==='bordered'?`;border:1px solid ${t2.heading}1E;border-radius:${imgRad};padding-left:28px;padding-right:28px`:t2.cardStyle==='bevel'?`;border:1px solid ${t2.heading}18;border-radius:${imgRad};box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.06);padding-left:28px;padding-right:28px`:'';
+  const _sv=typeof t2.shadow==='number'?Math.max(0,Math.min(100,t2.shadow)):0;
+  const _cv=typeof t2.cardStyle==='number'?Math.max(0,Math.min(100,t2.cardStyle)):0;
+  const _shPart=_sv>0?`0 ${Math.round(_sv/100*18)}px ${Math.round(_sv/100*64)}px rgba(0,0,0,${(_sv/100*0.40).toFixed(3)})`:'';
+  const _bvInner=_cv>12?`inset 0 1.5px 0 rgba(255,255,255,${(_cv/100*0.14).toFixed(3)}),inset 0 -1px 0 rgba(0,0,0,${(_cv/100*0.035).toFixed(3)})`:'';
+  const _bvOuter=_cv>12?`0 2px 8px rgba(0,0,0,${(_cv/100*0.07).toFixed(3)})`:'';
+  const _allSh=[_shPart,_bvInner,_bvOuter].filter(Boolean).join(',');
+  const secShadow=_allSh?`box-shadow:${_allSh}`:'';
+  const secBorder=_cv>0?`;border:1px solid rgba(0,0,0,${(_cv/100*0.12).toFixed(3)});border-radius:${Math.round(_cv/100*14)}px;padding-left:28px;padding-right:28px`:'';
   const secAlign = t2.align==='left'?'left':'center';
   // The mark's colourway, resolved once from the PAGE colour — that is what the footer sits
   // on. Not the accent, and not the app's own theme (which is Mandy's, not her guests').
