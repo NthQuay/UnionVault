@@ -21730,7 +21730,6 @@ function _apptOpenForm(ctx, existing){
         <button type="button" id="af-loc-inperson" class="appt-loc-chip ${_apptFormLoc==='inperson'?'on':'off'}" onclick="_apptFormSetLoc('inperson')">In person</button>
         <button type="button" id="af-loc-virtual" class="appt-loc-chip ${_apptFormLoc==='virtual'?'on':'off'}" onclick="_apptFormSetLoc('virtual')">Virtual</button>
       </div>
-      <div id="af-inperson" style="display:${_apptFormLoc==='inperson'?'block':'none'}"><input class="form-input" id="af-address" placeholder="Address" value="${_escHtml(a.address||'')}"/></div>
       <div id="af-virtual" style="display:${_apptFormLoc==='virtual'?'flex':'none'};flex-direction:column;gap:8px">
         <input class="form-input" id="af-link" type="url" inputmode="url" placeholder="Meeting link (https://…)" value="${_escHtml(a.link||'')}"/>
         <input class="form-input" id="af-pass" placeholder="Password / passcode (optional)" value="${_escHtml(a.pass||'')}"/>
@@ -21750,6 +21749,7 @@ function _apptOpenForm(ctx, existing){
           <div class="form-group" style="margin:0;flex:1"><label class="form-label">Phone</label><input class="form-input" id="af-phone" type="tel" inputmode="tel" placeholder="Number" value="${_escHtml(a.phone||'')}"/></div>
         </div>
         <div class="form-group" style="margin:0"><label class="form-label">Contact email <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-email" type="email" inputmode="email" placeholder="e.g. hello@boutique.com" value="${_escHtml(a.email||'')}"/></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Address <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-address" placeholder="e.g. 12 Main St, Melbourne" value="${_escHtml(a.address||'')}"/></div>
         <div class="form-group" style="margin:0"><label class="form-label">Website <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-website" placeholder="e.g. boutique.com" value="${_escHtml(a.website||'')}"/></div>
         <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer;padding-top:2px"><input type="checkbox" id="af-vendor-save" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold);flex-shrink:0"/> Save to my vendor list</label>
       </div>
@@ -21849,8 +21849,7 @@ function _apptFormCopyDate(){ const d=_apptFormTaskDate(); const el=document.get
 function _apptFormSetType(t){ _apptFormType=t; document.querySelectorAll('.appt-type-chip').forEach(el=>{const on=el.textContent===t;el.classList.toggle('on',on);el.classList.toggle('off',!on);}); }
 function _apptFormSetLoc(mode){
   _apptFormLoc=mode;
-  const ip=document.getElementById('af-inperson'),vt=document.getElementById('af-virtual');
-  if(ip) ip.style.display=mode==='inperson'?'block':'none';
+  const vt=document.getElementById('af-virtual');
   if(vt) vt.style.display=mode==='virtual'?'flex':'none';
   const bi=document.getElementById('af-loc-inperson'),bv=document.getElementById('af-loc-virtual');
   if(bi){bi.classList.toggle('on',mode==='inperson');bi.classList.toggle('off',mode!=='inperson');}
@@ -21935,8 +21934,7 @@ function _apptUseVendorPick(vendorId){
   set('af-phone', v.phone);
   set('af-email', v.email);
   set('af-website', v.website);
-  // Address only applies to in-person appointments.
-  if(_apptFormLoc!=='virtual') set('af-address', v.address);
+  set('af-address', v.address);
   // Append vendor notes to any existing appointment notes (don't clobber).
   if(v.notes){ const n=document.getElementById('af-notes'); if(n){ n.value = n.value.trim() ? (n.value.trim()+'\n'+v.notes) : v.notes; } }
   // Switch to 'new' mode so vendor fields are visible/editable after picking.
@@ -28234,7 +28232,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v195';
+const APP_BUILD='v196';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
