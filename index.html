@@ -32436,6 +32436,9 @@ function _wbSite(){
   }
   if(t.gap<0||t.gap>100) t.gap=0;
   if(typeof t.secpad!=='number') t.secpad=52;
+  if(!t.background||String(t.background).indexOf('#')!==0) t.background=t.page;
+  if(typeof t.maxWidth!=='number') t.maxWidth=720;
+  t.maxWidth=Math.max(600,Math.min(1400,t.maxWidth));
   if(!['top','side'].includes(t.navPos)) t.navPos='top';
   if(typeof w.published!=='boolean') w.published=false;
   // Migrate old corner keys (soft→round) and validate
@@ -33077,16 +33080,16 @@ function _wbThemeBody(){
           </button>`; }).join('')}
       </div>`;
 
-    const ROLES=[['page','Page'],['band','Band'],['accent','Accent'],['heading','Heading'],['item','Item titles'],['text','Body text'],['button','Button']];
-    const roleRow=(role,label)=>`<div class="wb-role">
+    const ROLES=[['background','Background'],['section','Section'],['accent','Accent'],['heading','Heading'],['item','Item titles'],['text','Body text'],['button','Button']];
+    const roleRow=(role,label)=>{const cur=role==='section'?t.page:t[role];return`<div class="wb-role">
         <span class="wb-role-name">${label}</span>
         <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;align-items:center">
-          ${pal.map(hex=>`<button type="button" class="wb-pal-sw ${t[role]===hex?'on':''}" style="background:${_escHtml(hex)}" onclick="_wbRole('${role}','${_escHtml(hex)}')" title="${_escHtml(hex)}"></button>`).join('')}
-          <label class="wb-pal-sw" style="background:${_escHtml(t[role])};border:2px dashed var(--border);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
-            <input type="color" value="${_escHtml(t[role])}" onchange="_wbRole('${role}',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer"/>
+          ${pal.map(hex=>`<button type="button" class="wb-pal-sw ${cur===hex?'on':''}" style="background:${_escHtml(hex)}" onclick="_wbRole('${role}','${_escHtml(hex)}')" title="${_escHtml(hex)}"></button>`).join('')}
+          <label class="wb-pal-sw" style="background:${_escHtml(cur)};border:2px dashed var(--border);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+            <input type="color" value="${_escHtml(cur)}" onchange="_wbRole('${role}',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer"/>
           </label>
         </div>
-      </div>`;
+      </div>`;};
 
     body = presets + `<div class="wb-slot-lbl" style="margin-bottom:2px;display:flex;justify-content:space-between;align-items:center">
         <span>Colours</span>${pal.length?'<span class="wb-src">From Inspiration</span>':''}
@@ -33129,6 +33132,11 @@ function _wbThemeBody(){
         <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad||52} px</div>
         <input type="range" min="0" max="200" step="4" value="${t.secpad||52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section width · ${t.maxWidth||720} px</div>
+        <input type="range" min="600" max="1400" step="50" value="${t.maxWidth||720}" oninput="_wbNum('maxWidth',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Narrow · 600</span><span>1400 · Wide</span></div>
       </div>
       <div class="dark-toggle-row" style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
@@ -33336,6 +33344,7 @@ function _wbNum(field, v){
     if(l.textContent.indexOf('Spacing')===0)      l.textContent='Spacing · '+(t.space<95?'Snug':(t.space>105?'Airy':'Normal'));
     if(l.textContent.indexOf('Section gap')===0)  l.textContent='Section gap · '+t.gap+' px';
     if(l.textContent.indexOf('Section padding')===0) l.textContent='Section padding · '+(t.secpad||52)+' px';
+    if(l.textContent.indexOf('Section width')===0) l.textContent='Section width · '+(t.maxWidth||720)+' px';
   });
   // The font specimen is a HEADING sample, so it follows the heading scale.
   const sp=document.getElementById('wb-spec-name');
@@ -33383,8 +33392,13 @@ function _wbCssClear(){
 }
 function _wbRole(role, hex){
   const t=_wbSite().theme;
-  if(t[role]===hex) return;
-  t[role]=hex;
+  if(role==='section'){
+    if(t.page===hex && t.band===hex) return;
+    t.page=hex; t.band=hex;
+  } else {
+    if(t[role]===hex) return;
+    t[role]=hex;
+  }
   t.preset='custom';   // any manual change means it is no longer a named preset
   saveToStorage();
   _wbRepaintTheme();
@@ -33411,16 +33425,16 @@ function _wbRepaintTheme(){
             <span style="display:block;font-family:'Inter',sans-serif;font-size:10px;color:${sel?'var(--gold-deep)':'var(--muted)'};padding:3px 0">${p.label}</span>
           </button>`; }).join('')}
       </div>`;
-      const ROLES=[['page','Page'],['band','Band'],['accent','Accent'],['heading','Heading'],['item','Item titles'],['text','Body text'],['button','Button']];
-      const roleRow=(role,label)=>`<div class="wb-role">
+      const ROLES=[['background','Background'],['section','Section'],['accent','Accent'],['heading','Heading'],['item','Item titles'],['text','Body text'],['button','Button']];
+      const roleRow=(role,label)=>{const cur=role==='section'?t.page:t[role];return`<div class="wb-role">
         <span class="wb-role-name">${label}</span>
         <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;align-items:center">
-          ${pal.map(hex=>`<button type="button" class="wb-pal-sw ${t[role]===hex?'on':''}" style="background:${_escHtml(hex)}" onclick="_wbRole('${role}','${_escHtml(hex)}')" title="${_escHtml(hex)}"></button>`).join('')}
-          <label class="wb-pal-sw" style="background:${_escHtml(t[role])};border:2px dashed var(--border);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
-            <input type="color" value="${_escHtml(t[role])}" onchange="_wbRole('${role}',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer"/>
+          ${pal.map(hex=>`<button type="button" class="wb-pal-sw ${cur===hex?'on':''}" style="background:${_escHtml(hex)}" onclick="_wbRole('${role}','${_escHtml(hex)}')" title="${_escHtml(hex)}"></button>`).join('')}
+          <label class="wb-pal-sw" style="background:${_escHtml(cur)};border:2px dashed var(--border);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+            <input type="color" value="${_escHtml(cur)}" onchange="_wbRole('${role}',this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer"/>
           </label>
         </div>
-      </div>`;
+      </div>`;};
       body=presets+`<div class="wb-slot-lbl" style="margin-bottom:2px;display:flex;justify-content:space-between;align-items:center">
         <span>Colours</span>${pal.length?'<span class="wb-src">From Inspiration</span>':''}
       </div>
@@ -33461,6 +33475,11 @@ function _wbRepaintTheme(){
         <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad||52} px</div>
         <input type="range" min="0" max="200" step="4" value="${t.secpad||52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section width · ${t.maxWidth||720} px</div>
+        <input type="range" min="600" max="1400" step="50" value="${t.maxWidth||720}" oninput="_wbNum('maxWidth',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Narrow · 600</span><span>1400 · Wide</span></div>
       </div>
       <div class="dark-toggle-row" style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
@@ -35910,7 +35929,7 @@ function _wbBuildSite(forDownload){
     const band = bgV >= 100;
     // Wide page (1 ≤ bgV < 100): section keeps page bg but gets a wider max-width.
     // max-width grows from 720px (bgV=0) toward no cap at bgV=100.
-    const secWideMaxW = (!band && bgV > 0) ? Math.round(720 + bgV / 100 * 680) : null;
+    const _mw=t.maxWidth||720; const secWideMaxW = (!band && bgV > 0) ? Math.round(_mw + bgV / 100 * Math.max(0,1400-_mw)) : null;
     const left = l.align==='left';
     // Two independent aligns. `lft` = the heading and intro; `b-*` = the section's own
     // content. v121 and earlier had only `lft`, and the body was hardcoded left in the
@@ -36309,8 +36328,8 @@ function _wbBuildSite(forDownload){
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:${t2.page};color:${t2.text};font-family:${t2.bodyFont};font-size:${scb(16)}px;line-height:1.7}
-nav{position:sticky;top:0;z-index:100;background:${t2.page};padding:${sp(16)}px;border-bottom:1px solid ${t2.heading}1A}
+body{background:${t2.background||t2.page};color:${t2.text};font-family:${t2.bodyFont};font-size:${scb(16)}px;line-height:1.7}
+nav{position:sticky;top:0;z-index:100;background:${t2.background||t2.page};padding:${sp(16)}px;border-bottom:1px solid ${t2.heading}1A}
 .navlinks{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 22px}
 nav a{color:${t2.heading};text-decoration:none;font-size:${scb(12)}px;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
 nav a:hover{opacity:1;color:${t2.accent}}
@@ -36358,11 +36377,11 @@ h1{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,$
 .eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading}}
 .sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scb(15)}px}
-section{max-width:720px;margin:0 auto;padding:${secPad}px 24px;border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
+section{max-width:${t2.maxWidth||720}px;margin:0 auto;padding:${secPad}px 24px;border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
 section+section{margin-top:${secGap}px}
 section.lft{text-align:left}
 section.band{max-width:none;background:${t2.band};border-top:none}
-section.band>*{max-width:720px;margin-left:auto;margin-right:auto}
+section.band>*{max-width:${t2.maxWidth||720}px;margin-left:auto;margin-right:auto}
 h2{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(24)}px,4vw,${sch(32)}px);margin-bottom:${sp(12)}px;color:${t2.heading}}
 .intro{max-width:52ch;margin:0 auto ${sp(24)}px;color:${t2.text};font-size:${scb(15)}px}
 section.lft .intro{margin-left:0}
