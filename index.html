@@ -32452,6 +32452,8 @@ function _wbSite(){
   if(typeof t.btnBevel!=='boolean') t.btnBevel=false;
   if(t.shadow==='soft') t.shadow=33; else if(t.shadow==='lifted') t.shadow=66; else if(typeof t.shadow!=='number') t.shadow=0; else t.shadow=Math.max(0,Math.min(100,t.shadow));
   if(t.cardStyle==='bordered') t.cardStyle=33; else if(t.cardStyle==='bevel') t.cardStyle=66; else if(typeof t.cardStyle!=='number') t.cardStyle=0; else t.cardStyle=Math.max(0,Math.min(100,t.cardStyle));
+  if(!['modern','editorial'].includes(t.format)) t.format='modern';
+  if(!['modal','page'].includes(t.rsvpMode)) t.rsvpMode='modal';
   if(!['thin','medium','bold'].includes(t.btnBorder)) t.btnBorder='medium';
   if(!['center','left'].includes(t.align)) t.align='center';
   if(!['left','center','justify'].includes(t.bodyAlign)) t.bodyAlign='left';
@@ -33102,7 +33104,27 @@ function _wbThemeBody(){
   }
 
   if(_wbThemeTab==='type'){
-    body = `<div class="form-group" style="margin-bottom:11px">
+    body = `<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:4px">FORMAT STYLE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div onclick="_wbSet('format','modern')" style="cursor:pointer;border:1.5px solid ${t.format==='modern'?'var(--gold)':'var(--border)'};background:${t.format==='modern'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+          <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;padding:2px">
+            <span style="font-size:5.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
+            <span style="font-size:12px;font-weight:700;color:#3A302A;font-family:Inter,sans-serif;letter-spacing:-.01em">Event Details</span>
+          </div>
+          <div style="font-size:11px;font-weight:500;color:${t.format==='modern'?'var(--gold)':'var(--sub)'}">Modern${t.format==='modern'?' ✓':''}</div>
+        </div>
+        <div onclick="_wbSet('format','editorial')" style="cursor:pointer;border:1.5px solid ${t.format==='editorial'?'var(--gold)':'var(--border)'};background:${t.format==='editorial'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+          <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;padding:2px">
+            <span style="font-size:4.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
+            <div style="width:16px;height:0.5px;background:#C4A882;margin:1px 0"></div>
+            <span style="font-size:11px;font-weight:400;font-style:italic;color:#3A302A;font-family:'Cormorant Garamond',Georgia,serif">Event Details</span>
+          </div>
+          <div style="font-size:11px;font-weight:500;color:${t.format==='editorial'?'var(--gold)':'var(--sub)'}">Editorial${t.format==='editorial'?' ✓':''}</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:11px">
         <label class="form-label">Heading font</label>
         <select class="form-input" onchange="_wbFont('headFont',this.value)" style="font-family:${t.headFont}">
           ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.headFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
@@ -33230,6 +33252,25 @@ function _wbThemeBody(){
           <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge · ${t.cardStyle||0}</div>
           <input type="range" min="0" max="100" step="1" value="${t.cardStyle||0}" oninput="_wbNum('cardStyle',this.value)" style="width:100%;accent-color:var(--gold)"/>
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Flat</span><span>Soft</span><span>Round</span><span>Curved</span></div>
+        </div>
+      </div>
+      <div style="margin-bottom:0;padding-top:4px;border-top:1px solid var(--border)">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:10px">RSVP DISPLAY</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div onclick="_wbSet('rsvpMode','modal')" style="cursor:pointer;border:1.5px solid ${t.rsvpMode==='modal'?'var(--gold)':'var(--border)'};background:${t.rsvpMode==='modal'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+            <div style="height:36px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+              <svg width="38" height="32" viewBox="0 0 38 32" fill="none"><rect x="1" y="2" width="36" height="24" rx="3" stroke="${t.rsvpMode==='modal'?'#C4A882':'#7A7470'}" stroke-width="1.2" fill="none" opacity=".4"/><rect x="1" y="14" width="36" height="14" rx="3" fill="${t.rsvpMode==='modal'?'#C4A882':'#5A5048'}" opacity="${t.rsvpMode==='modal'?'.2':'.12'}"/><rect x="1" y="14" width="36" height="14" rx="3" stroke="${t.rsvpMode==='modal'?'#C4A882':'#7A7470'}" stroke-width="1.2" fill="none"/><rect x="10" y="18" width="18" height="2" rx="1" fill="${t.rsvpMode==='modal'?'#C4A882':'#7A7470'}" opacity=".7"/><rect x="13" y="22" width="12" height="4" rx="2" fill="${t.rsvpMode==='modal'?'#C4A882':'#7A7470'}" opacity=".4"/></svg>
+            </div>
+            <div style="font-size:11px;font-weight:500;color:${t.rsvpMode==='modal'?'var(--gold)':'var(--sub)'}">Pop-up${t.rsvpMode==='modal'?' ✓':''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">Stays on site</div>
+          </div>
+          <div onclick="_wbSet('rsvpMode','page')" style="cursor:pointer;border:1.5px solid ${t.rsvpMode==='page'?'var(--gold)':'var(--border)'};background:${t.rsvpMode==='page'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+            <div style="height:36px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+              <svg width="38" height="32" viewBox="0 0 38 32" fill="none"><rect x="1" y="2" width="36" height="24" rx="3" stroke="${t.rsvpMode==='page'?'#C4A882':'#7A7470'}" stroke-width="1.2" fill="none"/><rect x="5" y="7" width="20" height="3" rx="1.5" fill="${t.rsvpMode==='page'?'#C4A882':'#7A7470'}" opacity=".4"/><rect x="5" y="13" width="14" height="2" rx="1" fill="${t.rsvpMode==='page'?'#C4A882':'#7A7470'}" opacity=".3"/><rect x="5" y="17" width="10" height="2" rx="1" fill="${t.rsvpMode==='page'?'#C4A882':'#7A7470'}" opacity=".2"/><path d="M30 1 L36 7" stroke="#C4A882" stroke-width="1.5" stroke-linecap="round"/><path d="M36 1 L30 7" stroke="#C4A882" stroke-width="1.5" stroke-linecap="round" opacity=".5"/></svg>
+            </div>
+            <div style="font-size:11px;font-weight:500;color:${t.rsvpMode==='page'?'var(--gold)':'var(--sub)'}">New Page${t.rsvpMode==='page'?' ✓':''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">Opens separately</div>
+          </div>
         </div>
       </div>`;
   }
@@ -36136,6 +36177,7 @@ function _wbBuildSite(forDownload){
         const btnsJustify=b.align==='left'?'flex-start':b.align==='right'?'flex-end':'center';
         return `<div class="btns" style="justify-content:${btnsJustify}">${rows.map(x=>{
           const um=x.urlMode||'custom';
+          if(um==='rsvp'&&t2.rsvpMode==='modal') return `<button type="button" class="ics" onclick="_uvOpenRsvp()">${_escHtml(x.label)}</button>`;
           const href=um==='ics'?(_wbIcs()||''):um==='rsvp'?_rsvpLink():_normalizeUrl(x.url);
           const attrs=um==='ics'?'download="save-the-date.ics"':'target="_blank" rel="noopener noreferrer"';
           return `<a class="ics" href="${_escHtml(href)}" ${attrs}>${_escHtml(x.label)}</a>`;
@@ -36473,6 +36515,148 @@ function _wbBuildSite(forDownload){
   // The mark's colourway, resolved once from the PAGE colour — that is what the footer sits
   // on. Not the accent, and not the app's own theme (which is Mandy's, not her guests').
   const brand = _wbBrand(t2.page);
+  const _uvRsvp=w.rsvp||{},_uvRfields=_uvRsvp.fields||{};
+  const _uvCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
+  const _uvGuestJson=JSON.stringify((STATE.guests||[]).filter(g=>(g.listType||'A')!=='B'&&g.name).map(g=>String(g.name).trim()).filter(Boolean).sort((a,b)=>a.localeCompare(b))).replace(/'/g,'&#39;');
+  const _uvBtnYes=_escHtml(_uvRsvp.btnYes||'Joyfully accepts');
+  const _uvBtnNo=_escHtml(_uvRsvp.btnNo||'Regretfully declines');
+  const _uvDietHtml=[['vegetarian','Vegetarian'],['vegan','Vegan'],['glutenfree','Gluten free'],['dairyfree','Dairy free'],['nutfree','Nut free'],['halal','Halal'],['kosher','Kosher'],['other','Other']].map(([v,l])=>`<div class="rf-diet-chip" data-diet="${v}" onclick="this.classList.toggle('on')">${l}</div>`).join('');
+  const _uvModal=t2.rsvpMode==='modal'&&_uvCoupleId?`<style>
+#uv-rsvp-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);flex-direction:column;justify-content:flex-end;overscroll-behavior:none}
+#uv-rsvp-overlay.open{display:flex}
+#uv-rsvp-sheet{background:${t2.background||t2.page};color:${t2.text};border-radius:22px 22px 0 0;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:500px;margin:0 auto;box-shadow:0 -8px 40px rgba(0,0,0,.28)}
+.rfm-drag{width:36px;height:4px;background:${t2.heading}30;border-radius:2px;margin:12px auto 0;cursor:pointer}
+.rfm-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 4px;position:sticky;top:0;background:${t2.background||t2.page};z-index:1}
+.rfm-title{font-family:${t2.headFont};font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:${t2.heading};font-weight:600}
+.rfm-close{background:none;border:none;cursor:pointer;color:${t2.text};opacity:.55;font-size:24px;line-height:1;padding:2px 8px;border-radius:4px;transition:opacity .15s}
+.rfm-close:hover{opacity:1}
+#uv-rsvp-sheet .rf-body{padding:12px 20px 36px}
+#uv-rsvp-sheet .rf-card{border:1px solid ${t2.heading}18;border-radius:12px;padding:16px;margin-bottom:12px;position:relative}
+#uv-rsvp-sheet .rf-lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:${t2.heading};opacity:.65;margin-bottom:8px;font-weight:600}
+#uv-rsvp-sheet .rf-inp{width:100%;border:1.5px solid ${t2.heading}28;border-radius:8px;padding:10px 13px;font-size:15px;background:${t2.background||t2.page};color:${t2.text};outline:none;box-sizing:border-box;font-family:inherit}
+#uv-rsvp-sheet .rf-inp:focus{border-color:${t2.accent};box-shadow:0 0 0 3px ${t2.accent}33}
+#uv-rsvp-sheet .pub-ac-list{list-style:none;margin:4px 0 0;padding:0;background:${t2.background||t2.page};border:1px solid ${t2.heading}22;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.14);overflow:hidden;position:absolute;left:16px;right:16px;z-index:10;display:none}
+#uv-rsvp-sheet .pub-ac-item{padding:11px 14px;cursor:pointer;font-size:15px;color:${t2.text}}
+#uv-rsvp-sheet .pub-ac-item.focused{background:${t2.accent}16}
+#uv-rsvp-sheet .pub-ac-none{padding:11px 14px;font-size:13px;color:${t2.text};opacity:.55;pointer-events:none;font-style:italic}
+#uv-rsvp-sheet .rf-pills{display:flex;gap:10px}
+#uv-rsvp-sheet .rf-pill{flex:1;border:1.5px solid ${t2.accent};border-radius:9px;padding:11px 0;text-align:center;cursor:pointer;font-size:13.5px;color:${t2.accent};transition:background .2s,color .2s;user-select:none}
+#uv-rsvp-sheet .rf-pill.yes{background:${t2.accent};color:${_wbInk(t2.accent)}}
+#uv-rsvp-sheet .rf-pill.no{background:${t2.heading}14;color:${t2.heading};border-color:${t2.heading}30}
+#uv-rsvp-sheet .rf-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+#uv-rsvp-sheet .rf-diet-chip{padding:6px 12px;border-radius:20px;border:1px solid ${t2.heading}28;font-size:12.5px;cursor:pointer;color:${t2.text};transition:background .15s,color .15s;user-select:none}
+#uv-rsvp-sheet .rf-diet-chip.on{background:${t2.accent};color:${_wbInk(t2.accent)};border-color:${t2.accent}}
+#uv-rsvp-sheet .rf-submit{width:100%;padding:13px;background:${t2.button};color:${btnInk};border:none;border-radius:10px;font-size:15px;letter-spacing:.05em;cursor:pointer;font-family:inherit;margin-top:4px}
+#uv-rsvp-sheet .rf-submit:disabled{opacity:.45;cursor:not-allowed}
+#uv-rsvp-sheet .rf-msg-box{text-align:center;padding:40px 16px}
+</style>
+<div id="uv-rsvp-overlay" onclick="if(event.target===this)_uvCloseRsvp()">
+  <div id="uv-rsvp-sheet">
+    <div class="rfm-drag" onclick="_uvCloseRsvp()"></div>
+    <div class="rfm-hdr">
+      <span class="rfm-title">RSVP</span>
+      <button class="rfm-close" onclick="_uvCloseRsvp()" aria-label="Close">&#215;</button>
+    </div>
+    <div class="rf-body" id="rsvp-form-body">
+      <div class="rf-card">
+        <div class="rf-lbl">Your name</div>
+        <input class="rf-inp" id="rf-name" type="text" placeholder="Search your name…" autocomplete="off" oninput="_rfNameSearch(this.value)" onkeydown="_rfNameKey(event)" onblur="setTimeout(function(){var l=document.getElementById('rf-ac-list');if(l)l.style.display='none'},200)">
+        <ul class="pub-ac-list" id="rf-ac-list" role="listbox"></ul>
+      </div>
+      <div class="rf-card" id="rf-attend-card" hidden>
+        <div class="rf-lbl">Will you be attending?</div>
+        <div class="rf-pills">
+          <div class="rf-pill" id="rf-yes" onclick="_rfSetAttend('yes')">&#10003; ${_uvBtnYes}</div>
+          <div class="rf-pill" id="rf-no" onclick="_rfSetAttend('no')">${_uvBtnNo}</div>
+        </div>
+      </div>
+      <div id="rf-contact-group" hidden>
+        ${_uvRfields.dietary===false?'':`<div class="rf-card"><div class="rf-lbl">Dietary requirements</div><div class="rf-chips">${_uvDietHtml}</div></div>`}
+        ${_uvRfields.email===false?'':`<div class="rf-card"><div class="rf-lbl">Email</div><input class="rf-inp" id="rf-email" type="email" placeholder="email@example.com" autocomplete="email"></div>`}
+        ${_uvRfields.phone===false?'':`<div class="rf-card"><div class="rf-lbl">Phone</div><input class="rf-inp" id="rf-phone" type="tel" placeholder="+61 400 000 000" autocomplete="tel"></div>`}
+        ${_uvRfields.address===false?'':`<div class="rf-card"><div class="rf-lbl">Mailing address</div><input class="rf-inp" id="rf-street" type="text" placeholder="Street address" style="margin-bottom:8px"><input class="rf-inp" id="rf-suburb" type="text" placeholder="Suburb / City" style="margin-bottom:8px"><div style="display:flex;gap:8px"><input class="rf-inp" id="rf-state" type="text" placeholder="State" style="flex:1"><input class="rf-inp" id="rf-post" type="text" placeholder="Postcode" style="flex:1"></div></div>`}
+        ${_uvRfields.message===false?'':`<div class="rf-card"><div class="rf-lbl">Message for the couple</div><textarea class="rf-inp" id="rf-message" rows="3" placeholder="A note, a wish…" style="resize:vertical"></textarea></div>`}
+      </div>
+      <button class="rf-submit" id="rf-submit" onclick="_uvRsvpSubmit()" hidden>Send my RSVP</button>
+    </div>
+    <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-couple="${_uvCoupleId}"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var _su='${_SB_URL}',_sk='${_SB_KEY}',_sa=null;
+  window._uvOpenRsvp=function(){var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.add('open');document.body.style.overflow='hidden';}};
+  window._uvCloseRsvp=function(){
+    var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.remove('open');document.body.style.overflow='';}
+    _sa=null;
+    var ni=document.getElementById('rf-name'),ll=document.getElementById('rf-ac-list'),
+        ac=document.getElementById('rf-attend-card'),cg=document.getElementById('rf-contact-group'),
+        sb=document.getElementById('rf-submit'),yp=document.getElementById('rf-yes'),np=document.getElementById('rf-no');
+    if(ni){ni.value='';ni.style.borderColor='';ni.style.boxShadow='';}
+    if(ll){ll.style.display='none';ll.innerHTML='';}
+    if(ac)ac.hidden=true;
+    if(cg){cg.hidden=true;cg.querySelectorAll('input,textarea').forEach(function(el){el.value='';});}
+    if(sb)sb.hidden=true;
+    if(yp){yp.classList.remove('yes','no');}
+    if(np){np.classList.remove('yes','no');}
+    document.querySelectorAll('.rf-diet-chip.on').forEach(function(el){el.classList.remove('on');});
+  };
+  window._rfNameSearch=function(q){
+    var ll=document.getElementById('rf-ac-list');if(!ll)return;
+    if(q.length<2){ll.style.display='none';return;}
+    var lq=q.toLowerCase(),gd=document.getElementById('uv-rf-data');
+    var gs=gd?JSON.parse(gd.dataset.guests||'[]'):[];
+    var hits=gs.filter(function(n){var p=n.toLowerCase().split(/[\s&,]+/);return p.some(function(x){return x.startsWith(lq);})||n.toLowerCase().indexOf(lq)>-1;}).slice(0,8);
+    ll.innerHTML=hits.length?hits.map(function(n,i){return '<li class="pub-ac-item" role="option" data-idx="'+i+'" onmouseenter="this.classList.add(\'focused\')" onmouseleave="this.classList.remove(\'focused\')" onmousedown="_rfPickName('+JSON.stringify(n)+')">'+n+'</li>';}).join(''):'<li class="pub-ac-none">No match — try another spelling</li>';
+    ll.style.display='block';
+  };
+  window._rfPickName=function(name){
+    var ni=document.getElementById('rf-name'),ll=document.getElementById('rf-ac-list');
+    if(ni){ni.value=name;ni.style.borderColor='${t2.accent}';ni.style.boxShadow='0 0 0 3px ${t2.accent}33';}
+    if(ll)ll.style.display='none';
+    var ac=document.getElementById('rf-attend-card');
+    if(ac){ac.hidden=false;ac.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  };
+  window._rfNameKey=function(e){
+    var ll=document.getElementById('rf-ac-list');if(!ll||ll.style.display==='none')return;
+    var items=ll.querySelectorAll('.pub-ac-item'),cur=ll.querySelector('.pub-ac-item.focused');
+    var idx=cur?parseInt(cur.dataset.idx,10):-1;
+    if(e.key==='ArrowDown'){e.preventDefault();items.forEach(function(el){el.classList.remove('focused');});idx=Math.min(idx+1,items.length-1);if(items[idx])items[idx].classList.add('focused');}
+    else if(e.key==='ArrowUp'){e.preventDefault();items.forEach(function(el){el.classList.remove('focused');});idx=Math.max(idx-1,0);if(items[idx])items[idx].classList.add('focused');}
+    else if(e.key==='Enter'&&cur){e.preventDefault();_rfPickName(cur.textContent);}
+    else if(e.key==='Escape')ll.style.display='none';
+  };
+  window._rfSetAttend=function(val){
+    _sa=val;
+    var yp=document.getElementById('rf-yes'),np=document.getElementById('rf-no');
+    if(yp){yp.classList.toggle('yes',val==='yes');yp.classList.toggle('no',false);}
+    if(np){np.classList.toggle('no',val==='no');np.classList.toggle('yes',false);}
+    var cg=document.getElementById('rf-contact-group'),sb=document.getElementById('rf-submit');
+    if(cg)cg.hidden=val!=='yes';
+    if(sb){sb.hidden=false;setTimeout(function(){sb.scrollIntoView({behavior:'smooth',block:'nearest'});},50);}
+  };
+  window._uvRsvpSubmit=async function(){
+    var ni=document.getElementById('rf-name'),sb=document.getElementById('rf-submit');
+    var name=ni?ni.value.trim():'';
+    if(!name){if(ni)ni.style.borderColor='#c0392b';return;}
+    if(!_sa)return;
+    var diet=Array.from(document.querySelectorAll('.rf-diet-chip.on')).map(function(el){return el.dataset.diet;});
+    var st=(document.getElementById('rf-street')||{}).value||'';
+    var su=(document.getElementById('rf-suburb')||{}).value||'';
+    var ss=(document.getElementById('rf-state')||{}).value||'';
+    var sp=(document.getElementById('rf-post')||{}).value||'';
+    var addr=[st,su,ss,sp].map(function(x){return x.trim();}).filter(Boolean).join(', ')||null;
+    var gd=document.getElementById('uv-rf-data'),cid=gd?gd.dataset.couple:'';
+    sb.disabled=true;sb.textContent='Sending…';
+    try{
+      var r=await fetch(_su+'/rest/v1/rsvp_responses',{method:'POST',headers:{'apikey':_sk,'Authorization':'Bearer '+_sk,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({couple_id:cid,guest_name:name,email:(document.getElementById('rf-email')||{}).value||null,phone:(document.getElementById('rf-phone')||{}).value||null,address:addr,attending:_sa,dietary:diet.length?diet:null,message:(document.getElementById('rf-message')||{}).value||null})});
+      if(r.ok||r.status===201){var fb=document.getElementById('rsvp-form-body');if(fb)fb.innerHTML='<div class="rf-msg-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${t2.accent}" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><div style="font-size:17px;font-weight:600;margin-bottom:6px;color:${t2.heading}">RSVP received!</div><div style="font-size:13.5px;opacity:.8">'+(_sa==='yes'?"We can\'t wait to celebrate with you":"Thank you for letting us know")+'</div></div>';}
+      else{sb.disabled=false;sb.textContent='Send my RSVP';}
+    }catch(e2){sb.disabled=false;sb.textContent='Send my RSVP';}
+  };
+})();
+<\/script>
+`:'';
 
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -36703,6 +36887,7 @@ footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-
   nav.js.open .navlinks{display:flex}
   nav.js .navlinks a{padding:11px 0;font-size:${scb(12)}px}
 }
+${t2.format==='editorial'?`h2{font-style:italic!important;font-weight:300!important;letter-spacing:.02em}h2::after{content:'';display:block;width:36px;height:1px;background:${t2.accent};opacity:.65;margin:${sp(10)}px auto 0}section.lft h2::after,section.b-left h2::after{margin-left:0;margin-right:auto}.intro{font-weight:300;letter-spacing:.03em}`:''}
 ${_wbCssSafe(t2.css)}
 </style></head>
 <body${t2.navPos==='side'?' class="sidenav"':''}>
@@ -36718,6 +36903,7 @@ ${t2.navPos==='side'?`<div class="site-content"><main>${blocks}</main></div>`:`<
     </span>
   </div>`}
 </footer>
+${_uvModal}
 <script>
 (function(){
   var n=document.querySelector('nav'), b=n&&n.querySelector('.navtoggle');
