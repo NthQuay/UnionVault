@@ -44556,22 +44556,19 @@ async function _submitSupportForm(btn){
     const files=Array.from((document.getElementById('_supp-files')||{}).files||[]).slice(0,4);
     files.forEach(function(f){if(f.size>5*1024*1024)throw new Error(f.name+' is over 5 MB');});
     const coupleName=(document.getElementById('sidebar-couple-names')||{}).textContent||'';
-    let res;
+    let fullMsg=msg.trim();
     if(files.length){
-      const fd=new FormData();
-      fd.append('access_key',_W3F_KEY);
-      fd.append('subject','['+subject+'] from '+(coupleName||email));
-      fd.append('from_name',coupleName||'Union Vault user');
-      fd.append('name',coupleName||email);
-      fd.append('email',email.trim());
-      fd.append('message',msg.trim());
-      fd.append('redirect','false');
-      files.forEach(function(f){fd.append('attachment[]',f,f.name);});
-      res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Accept':'application/json'},body:fd});
-    }else{
-      const body={access_key:_W3F_KEY,subject:'['+subject+'] from '+(coupleName||email),from_name:coupleName||'Union Vault user',name:coupleName||email,email:email.trim(),message:msg.trim(),redirect:'false'};
-      res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
+      const urls=await Promise.all(files.map(async function(f){
+        const ext=f.name.split('.').pop()||'jpg';
+        const path='bug-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
+        const r=await fetch(_SB_URL+'/storage/v1/object/support/'+path,{method:'POST',headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Content-Type':f.type,'x-upsert':'true'},body:f});
+        if(!r.ok) throw new Error('Screenshot upload failed: '+r.status);
+        return _SB_URL+'/storage/v1/object/public/support/'+path;
+      }));
+      fullMsg+=urls.map(function(u,i){return '\n\nScreenshot '+(i+1)+': '+u;}).join('');
     }
+    const body={access_key:_W3F_KEY,subject:'['+subject+'] from '+(coupleName||email),from_name:coupleName||'Union Vault user',name:coupleName||email,email:email.trim(),message:fullMsg,redirect:'false'};
+    const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
     const data=await res.json();
     if(!data.success) throw new Error(data.message||'Submission failed');
     _suppStatus('Message sent ✔ We’ll get back to you shortly.',true);
