@@ -41109,7 +41109,7 @@ function _grMemberRow(g, sid, opts){
   }
   return `<div draggable="true" ondragstart="_grDragStart(event,'${sid}','${g.id}')" ondragend="_grDragEnd(event)"
     data-gr-guest="${g.id}" style="display:flex;align-items:center;gap:8px;background:var(--cream);border:.5px solid var(--border);border-radius:7px;padding:6px 9px">
-    ${handle}<span style="font-size:12.5px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(g.name)}</span>${right}
+    ${handle}<span style="font-size:12.5px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(g.name)}</span>${(()=>{const band=_guestAgeBand(g);if(band==='adult')return'';const m=_AGE_BAND_META[band]||{};return`<span style="flex-shrink:0;font-size:10px;font-weight:600;padding:1px 7px;border-radius:9px;background:${m.tint||'rgba(90,123,160,.14)'};color:${m.ink||'var(--muted)'}">${m.label||band}</span>`;})()}${right}
   </div>`;
 }
 
