@@ -3737,14 +3737,15 @@ const STATE = {
   quotes: [],
   guests: [],
   checklist: [
+    {id:'cl0',text:'Research venues',done:false,dueDate:'',category:'Venue',notes:'',pinned:false,budgetId:''},
     {id:'cl1',text:'Book venue',done:false,dueDate:'',category:'Venue',notes:'',pinned:false,budgetId:'b-venue'},
+    {id:'cl8',text:'Send save the dates',done:false,dueDate:'',category:'Stationery',notes:'',pinned:false,budgetId:''},
     {id:'cl2',text:'Hire celebrant / officiant',done:false,dueDate:'',category:'Ceremony',notes:'',pinned:false,budgetId:'b-celebrant'},
     {id:'cl3',text:'Order wedding attire',done:false,dueDate:'',category:'Attire',notes:'',pinned:false,budgetId:'b-gown'},
     {id:'cl4',text:'Book photographer',done:false,dueDate:'',category:'Media',notes:'',pinned:false,budgetId:'b-photo'},
     {id:'cl5',text:'Book videographer',done:false,dueDate:'',category:'Media',notes:'',pinned:false,budgetId:''},
     {id:'cl6',text:'Arrange florals',done:false,dueDate:'',category:'Decor',notes:'',pinned:false,budgetId:'b-florals'},
     {id:'cl7',text:'Book caterer',done:false,dueDate:'',category:'Catering',notes:'',pinned:false,budgetId:'b-catering'},
-    {id:'cl8',text:'Send save the dates',done:false,dueDate:'',category:'Stationery',notes:'',pinned:false,budgetId:''},
     {id:'cl9',text:'Book hair & makeup',done:false,dueDate:'',category:'Beauty',notes:'',pinned:false,budgetId:'b-beauty'},
     {id:'cl10',text:'Arrange guest accommodation',done:false,dueDate:'',category:'Logistics',notes:'',pinned:false,budgetId:''},
     {id:'cl11',text:'Book honeymoon travel',done:false,dueDate:'',category:'Honeymoon',notes:'',pinned:false,budgetId:'b-honeymoon'},
@@ -3945,13 +3946,14 @@ function _todayISO(){ const d=new Date(); const o=d.getTimezoneOffset(); const l
 // Recommended lead time (in days) before the wedding for each DEFAULT checklist task.
 // Used to suggest a due date once a wedding date is set. Keyed by seed task id.
 const SEED_CHECKLIST_LEAD_DAYS = {
-  cl1:365,  // Book venue — ~12 months
+  cl0:420,  // Research venues — ~14 months
+  cl1:390,  // Book venue — ~13 months
+  cl8:365,  // Send save the dates — ~12 months
   cl2:300,  // Hire celebrant / officiant — ~10 months
   cl4:300,  // Book photographer — ~10 months
   cl5:300,  // Book videographer — ~10 months
   cl7:270,  // Book caterer — ~9 months
   cl3:240,  // Order wedding attire — ~8 months
-  cl8:365,  // Send save the dates — ~12 months
   cl15:240, // Book DJ or band — ~8 months
   cl11:180, // Book honeymoon travel — ~6 months
   cl10:180, // Arrange guest accommodation — ~6 months
@@ -38064,6 +38066,7 @@ let _vluProfileId = null;
 
 function _vendorLookupOpen(){  _vendorLookupOn = true;  _vluView='browse'; _vluMsgVendorId=null; _vluMsgSrc=null; _vluMsgPick=null; navigate('vendors'); }
 function _vendorLookupClose(){ _vendorLookupOn = false; _vluView='browse'; _vluMsgVendorId=null; _vluMsgSrc=null; _vluMsgPick=null; navigate('vendors'); }
+function _vluGoMyVendors(){ _vendorLookupClose(); }
 
 /* Messages — opened with a vendor in context, or without.
    The id may be a DIRECTORY vendor (VLU_VENDORS, from a Look Up profile) or a
@@ -38364,48 +38367,14 @@ function _vluResultsHtml(){
   return `<div class="vlu-rows">${list.map(_vluRowHtml).join('')}</div>`;
 }
 function _vluBrowseHtml(){
-  const chips=['All','Photographers','Celebrants','Hair & Makeup','Florists','Caterers','Venues','Musicians/DJs','Stationery'];
-  const noDate = _vluEventDay()===null;
-  return `
-    <div class="vlu-searchbar">
-      <input id="vlu-q" class="vlu-input" placeholder="Search by name, style or keyword…" value="${_escHtml(_vluQ)}" oninput="_vluSearch(this.value)"/>
+  return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;text-align:center;gap:16px">
+    <div style="width:52px;height:52px;border-radius:14px;background:var(--panel);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:4px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
     </div>
-    ${noDate?`<div class="vlu-datehint">Set your wedding date in <strong>Event Details</strong> to see which vendors are free on the day.</div>`:''}
-    <div class="vlu-chips">
-      ${chips.map(c=>`<button class="vlu-chip${_vluCat===c?' on':''}" onclick="_vluSetCat('${c.replace(/'/g,"\\'")}')">${_escHtml(c)}</button>`).join('')}
-    </div>
-    <div class="vlu-mfilters">
-      <select class="vlu-sel vlu-mcat" onchange="_vluSetCat(this.value)" aria-label="Category">
-        ${chips.map(c=>`<option value="${_escHtml(c)}"${_vluCat===c?' selected':''}>${c==='All'?'All categories':_escHtml(c)}</option>`).join('')}
-      </select>
-      <select class="vlu-sel vlu-msort" onchange="_vluSetSort(this.value)" aria-label="Sort">
-        <option value="rating"${_vluSort==='rating'?' selected':''}>Rating</option>
-        <option value="priceLow"${_vluSort==='priceLow'?' selected':''}>Price ↑</option>
-        <option value="priceHigh"${_vluSort==='priceHigh'?' selected':''}>Price ↓</option>
-        <option value="dist"${_vluSort==='dist'?' selected':''}>Distance</option>
-      </select>
-      <div class="vlu-viewtog">
-        <button class="vlu-vtbtn${_vluLayout==='grid'?' on':''}" onclick="_vluSetLayout('grid')" title="Card grid" aria-label="Card grid view"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
-        <button class="vlu-vtbtn${_vluLayout==='list'?' on':''}" onclick="_vluSetLayout('list')" title="List" aria-label="List view"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
-      </div>
-    </div>
-    <div class="vlu-mcount"><span id="vlu-mcount">${_vluCountHtml()}</span></div>
-    <div class="vlu-toolbar">
-      <span class="vlu-count" id="vlu-count">${_vluCountHtml()}</span>
-      <div class="vlu-tbright">
-        <select class="vlu-sel" onchange="_vluSetSort(this.value)">
-          <option value="rating"${_vluSort==='rating'?' selected':''}>Sort: Rating</option>
-          <option value="priceLow"${_vluSort==='priceLow'?' selected':''}>Price: low → high</option>
-          <option value="priceHigh"${_vluSort==='priceHigh'?' selected':''}>Price: high → low</option>
-          <option value="dist"${_vluSort==='dist'?' selected':''}>Distance</option>
-        </select>
-        <div class="vlu-viewtog">
-          <button class="vlu-vtbtn${_vluLayout==='grid'?' on':''}" onclick="_vluSetLayout('grid')" title="Card grid" aria-label="Card grid view"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
-          <button class="vlu-vtbtn${_vluLayout==='list'?' on':''}" onclick="_vluSetLayout('list')" title="List" aria-label="List view"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
-        </div>
-      </div>
-    </div>
-    <div id="vlu-results">${_vluResultsHtml()}</div>`;
+    <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--ink);letter-spacing:.01em">Vendor Lookup coming soon</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;max-width:320px">We're building a curated directory of wedding suppliers. In the meantime, use <strong style="color:var(--ink)">My Vendors</strong> to add and manage the suppliers you're already working with.</div>
+    <button class="btn btn-outline" onclick="_vluGoMyVendors()" style="margin-top:4px">Go to My Vendors →</button>
+  </div>`;
 }
 
 /* ── profile ─────────────────────────────────────────────── */
