@@ -261,7 +261,7 @@ body.dark .bphd-seg.on{background:var(--gold);color:#1C1D22}
 body.dark .bphd-seg+.bphd-seg{border-color:#3A3B42}
 .si-seg{font-family:'Inter',sans-serif;font-size:11.5px;padding:6px 14px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
 .si-seg-wrap{align-self:flex-start;max-width:max-content}
-.appt-type-chip,.appt-loc-chip{font-family:'Inter',sans-serif;font-size:11.5px;padding:5px 12px;border-radius:16px;cursor:pointer;transition:all .15s;border:1px solid var(--border)}
+.appt-type-chip,.appt-loc-chip{font-family:'Inter',sans-serif;font-size:11.5px;padding:5px 12px;border-radius:16px;cursor:pointer;transition:all .15s;border:1px solid var(--border);display:inline-flex;align-items:center;gap:4px}
 .appt-type-chip.on,.appt-loc-chip.on{background:var(--gold-deep);color:#fff;border-color:var(--gold-deep)}
 .appt-type-chip.off,.appt-loc-chip.off{background:transparent;color:var(--muted)}
 body.dark .appt-type-chip.on,body.dark .appt-loc-chip.on{background:var(--gold);color:#1C1D22;border-color:var(--gold)}
@@ -21653,7 +21653,7 @@ function _ciApptSectionHtml(){
 // ── Form popup (add or edit). `ctx` = {taskId|null, apptId|null} ──
 // When taskId is set, save writes straight to the task. When null (new task being
 // composed), save writes to the staged list (window._ciApptStage).
-let _apptFormCtx=null, _apptFormType='Appointment', _apptFormLoc='inperson', _apptFormRecips=[];
+let _apptFormCtx=null, _apptFormType='Appointment', _apptFormLoc='inperson', _apptFormRecips=[], _apptVendorMode=null;
 let _apptEndMode='duration', _apptDurMin=null; // 'duration' | 'finish'; _apptDurMin = chosen length in minutes
 const _apptDurChips=[15,30,45,60];
 function _apptDurLabel(min){
@@ -21691,6 +21691,7 @@ function _apptOpenForm(ctx, existing){
   const existDur=_apptDiffMin(a.time, a.endTime);
   _apptEndMode='duration';
   _apptDurMin=existDur!=null?existDur:null;
+  _apptVendorMode=(a.business||a.contact||a.phone||a.email)?'new':null;
   const seedEmail=(STATE.settings && STATE.settings.userEmail||'').trim();
   _apptFormRecips=(a.recipients&&a.recipients.length)?a.recipients.slice():(a.emailMe&&seedEmail?[seedEmail]:(seedEmail?[]:[]));
   const typeChips=APPT_TYPES.map(t=>`<button type="button" class="appt-type-chip ${_apptFormType===t?'on':'off'}" onclick="_apptFormSetType('${t}')">${t}</button>`).join('');
@@ -21735,15 +21736,24 @@ function _apptOpenForm(ctx, existing){
         <input class="form-input" id="af-pass" placeholder="Password / passcode (optional)" value="${_escHtml(a.pass||'')}"/>
       </div>
     </div>
-    <button type="button" class="btn btn-sm" onclick="_apptUseVendorToggle()" style="width:100%;justify-content:center;gap:6px;margin:0 0 8px;border:.5px solid var(--gold-deep);color:var(--gold-deep);background:rgba(156,122,60,.08);font-size:12.5px;font-weight:500"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6"/><circle cx="18" cy="16" r="3"/><line x1="22" y1="20" x2="20.1" y2="18.1"/></svg>Use existing vendor</button>
-    <div id="af-vendor-panel" style="display:none;border:.5px solid var(--border);border-radius:10px;padding:10px;margin-bottom:11px;background:var(--surface)"></div>
-    <div class="form-group" style="margin:0 0 10px"><label class="form-label">Business name <span style="color:var(--muted);font-weight:400">(for your vendor list)</span></label><input class="form-input" id="af-business" placeholder="e.g. Rosewood Florals" value="${_escHtml(a.business||'')}"/></div>
-    <div class="form-row" style="gap:10px">
-      <div class="form-group" style="margin:0;flex:1"><label class="form-label">Contact name</label><input class="form-input" id="af-contact" placeholder="e.g. Sarah at boutique" value="${_escHtml(a.contact||'')}"/></div>
-      <div class="form-group" style="margin:0;flex:1"><label class="form-label">Phone</label><input class="form-input" id="af-phone" type="tel" inputmode="tel" placeholder="Number" value="${_escHtml(a.phone||'')}"/></div>
+    <div>
+      <label class="form-label" style="margin-bottom:5px">Vendor</label>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button type="button" id="af-vchip-exist" class="appt-loc-chip ${_apptVendorMode==='existing'?'on':'off'}" onclick="_apptSetVendorMode('existing')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="10" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6"/><circle cx="18" cy="16" r="3"/><line x1="22" y1="20" x2="20.1" y2="18.1"/></svg>Use existing vendor</button>
+        <button type="button" id="af-vchip-new" class="appt-loc-chip ${_apptVendorMode==='new'?'on':'off'}" onclick="_apptSetVendorMode('new')">+ New vendor</button>
+      </div>
+      <div id="af-vendor-panel" style="display:${_apptVendorMode==='existing'?'block':'none'};border:.5px solid var(--border);border-radius:10px;padding:10px;background:var(--surface)"></div>
+      <div id="af-new-vendor-fields" style="display:${_apptVendorMode==='new'?'flex':'none'};flex-direction:column;gap:11px;padding:12px;border:.5px solid var(--border);border-radius:10px;background:var(--surface)">
+        <div class="form-group" style="margin:0"><label class="form-label">Business name <span style="color:var(--muted);font-weight:400">(for your vendor list)</span></label><input class="form-input" id="af-business" placeholder="e.g. Rosewood Florals" value="${_escHtml(a.business||'')}"/></div>
+        <div class="form-row" style="gap:10px">
+          <div class="form-group" style="margin:0;flex:1"><label class="form-label">Contact name</label><input class="form-input" id="af-contact" placeholder="e.g. Sarah at boutique" value="${_escHtml(a.contact||'')}"/></div>
+          <div class="form-group" style="margin:0;flex:1"><label class="form-label">Phone</label><input class="form-input" id="af-phone" type="tel" inputmode="tel" placeholder="Number" value="${_escHtml(a.phone||'')}"/></div>
+        </div>
+        <div class="form-group" style="margin:0"><label class="form-label">Contact email <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-email" type="email" inputmode="email" placeholder="e.g. hello@boutique.com" value="${_escHtml(a.email||'')}"/></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Website <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-website" placeholder="e.g. boutique.com" value="${_escHtml(a.website||'')}"/></div>
+        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer;padding-top:2px"><input type="checkbox" id="af-vendor-save" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold);flex-shrink:0"/> Save to my vendor list</label>
+      </div>
     </div>
-    <div class="form-group" style="margin:0"><label class="form-label">Contact email <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-email" type="email" inputmode="email" placeholder="e.g. hello@boutique.com" value="${_escHtml(a.email||'')}"/></div>
-    <div class="form-group" style="margin:0"><label class="form-label">Website <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-website" placeholder="e.g. boutique.com" value="${_escHtml(a.website||'')}"/></div>
     <div class="form-group" style="margin:0"><label class="form-label">Fee <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-fee" type="number" min="0" step="0.01" placeholder="0" value="${a.fee!=null&&a.fee!==''?a.fee:''}"/><div style="font-size:10.5px;color:var(--gold-deep);margin-top:4px">If a fee is entered, we'll offer to add it to your budget on save.</div></div>
     <div class="form-group" style="margin:0"><label class="form-label">Appointment notes</label><textarea class="form-input" id="af-notes" rows="2" placeholder="e.g. bring swatches, park at rear" style="resize:vertical">${_escHtml(a.notes||'')}</textarea></div>
     <div style="border-top:.5px solid var(--border);margin-top:2px;padding-top:11px">
@@ -21871,6 +21881,21 @@ function _apptFormCommitRecip(){
   _apptFormRenderRecips();
 }
 // Read the form into an appointment object (keeps the editing id when present).
+// ── Vendor mode toggle inside the appointment form ────────────────────────────
+function _apptSetVendorMode(mode){
+  _apptVendorMode=mode;
+  const panel=document.getElementById('af-vendor-panel');
+  const newFields=document.getElementById('af-new-vendor-fields');
+  const chipExist=document.getElementById('af-vchip-exist');
+  const chipNew=document.getElementById('af-vchip-new');
+  const setChip=(el,on)=>{ if(!el) return; el.className=el.className.replace(/\bon\b/g,'').replace(/\boff\b/g,'').trim()+(on?' on':' off'); };
+  setChip(chipExist, mode==='existing');
+  setChip(chipNew,   mode==='new');
+  if(panel)   panel.style.display   = mode==='existing'?'block':'none';
+  if(newFields) newFields.style.display = mode==='new'?'flex':'none';
+  if(mode==='existing'){ if(panel&&!panel.innerHTML.trim()) _apptRenderVendorPicker(''); const s=document.getElementById('af-vendor-search'); if(s) s.focus(); }
+  if(mode==='new'){ const b=document.getElementById('af-business'); if(b&&!b.value) b.focus(); }
+}
 // ── "Use existing vendor" inline picker inside the appointment form ──────────
 function _apptUseVendorToggle(){
   const panel=document.getElementById('af-vendor-panel'); if(!panel) return;
@@ -21914,7 +21939,8 @@ function _apptUseVendorPick(vendorId){
   if(_apptFormLoc!=='virtual') set('af-address', v.address);
   // Append vendor notes to any existing appointment notes (don't clobber).
   if(v.notes){ const n=document.getElementById('af-notes'); if(n){ n.value = n.value.trim() ? (n.value.trim()+'\n'+v.notes) : v.notes; } }
-  const panel=document.getElementById('af-vendor-panel'); if(panel){ panel.style.display='none'; panel.innerHTML=''; }
+  // Switch to 'new' mode so vendor fields are visible/editable after picking.
+  _apptSetVendorMode('new');
 }
 function _apptFormRead(){
   const c=_apptFormCtx||{};
@@ -21975,6 +22001,10 @@ function _cleanupAutoApptHost(taskId){
 }
 function _apptFormSave(){
   const appt=_apptFormRead();
+  if(document.getElementById('af-vendor-save')?.checked && appt.business){
+    if(!Array.isArray(STATE.vendors)) STATE.vendors=[];
+    STATE.vendors.push({id:'v'+Date.now()+Math.random().toString(36).slice(2,5),business:appt.business,contact:appt.contact||'',phone:appt.phone||'',email:appt.email||'',website:appt.website||'',address:appt.address||'',status:'enquiry',notes:'',category:'',created:Date.now()});
+  }
   const c=_apptFormCtx||{};
   // Is the task add/edit modal open behind this form? Then refresh its list instead of navigating.
   const inTaskModal = !!document.getElementById('ci-appt-list');
@@ -28204,7 +28234,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v194';
+const APP_BUILD='v195';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
