@@ -12067,6 +12067,30 @@ async function _loadOnlineRsvps(){
           <tbody>${rowsHtml}</tbody>
         </table>
       </div>`;
+    // ── Sync online RSVPs into guest list ──
+    if(Array.isArray(STATE.guests) && STATE.guests.length){
+      const guestsByName={};
+      STATE.guests.forEach(function(g){
+        if(g&&g.name) guestsByName[g.name.trim().toLowerCase()]=g;
+      });
+      let changed=0;
+      rows.forEach(function(r){
+        if(!r.guest_name) return;
+        const g=guestsByName[r.guest_name.trim().toLowerCase()];
+        if(!g) return;
+        const newRsvp=r.attending==='yes'?'attending':r.attending==='no'?'declined':null;
+        if(newRsvp && g.rsvp!==newRsvp){
+          g.rsvp=newRsvp;
+          _stampRsvpDate(g,newRsvp);
+          // Carry dietary across if the guest has none set
+          if(Array.isArray(r.dietary)&&r.dietary.length&&(!g.dietary||!g.dietary.length)){
+            g.dietary=r.dietary.slice();
+          }
+          changed++;
+        }
+      });
+      if(changed){ saveToStorage(); }
+    }
   }catch(err){
     console.warn('_loadOnlineRsvps error',err);
     body.innerHTML=`<span style="color:var(--red)">Could not load responses — ${err.message||'network error'}. Try again.</span>`;
@@ -28308,7 +28332,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v204';
+const APP_BUILD='v205';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32642,18 +32666,44 @@ function _wbQrBuild(){
   const linkEl=document.getElementById('wb-qr-link');
   if(linkEl) linkEl.textContent=url;
 }
-function _wbSaveSlug(val){
+async function _wbSaveSlug(val){
   const slug = (val||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'our-wedding';
+  const msg = document.getElementById('wb-slug-msg');
+  const inp = document.getElementById('wb-slug-inp');
+  function _setMsg(text, color){
+    if(msg){ msg.textContent=text; msg.style.color=color||'var(--muted)'; }
+  }
+  // Uniqueness check — only when signed in and slug changed
+  const currentSlug = _wbSite().slug;
+  if(_sbSession && slug !== currentSlug){
+    _setMsg('Checking availability…','var(--muted)');
+    try{
+      const uid = _sbSession.user.id;
+      const chkUrl = `${_SB_URL}/rest/v1/planner_data?select=user_id&section=eq.website&data->>slug=eq.${encodeURIComponent(slug)}&user_id=neq.${encodeURIComponent(uid)}&limit=1`;
+      const chk = await fetch(chkUrl,{headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json'}});
+      if(chk.ok){
+        const taken = await chk.json();
+        if(taken && taken.length){
+          _setMsg('That link name is already taken — try a different one.','var(--red)');
+          if(inp) inp.value = currentSlug;
+          return;
+        }
+      }
+    }catch(e){ /* network error — proceed anyway */ }
+  }
   _wbSite().slug = slug;
   _save();
+  _setMsg('Saved!','var(--green)');
+  setTimeout(()=>_setMsg('Auto-generated from your names. Edit to customise — letters, numbers and hyphens only.','var(--muted)'),2000);
   // Rebuild QR with new URL
   _wbQrBuilt=false;
-  const linkEl=document.getElementById('wb-qr-link');
-  const inp=document.getElementById('wb-slug-inp');
   if(inp) inp.value=slug;
   const wrap=document.getElementById('wb-qr-canvas');
   if(wrap) wrap.innerHTML='';
   _wbQrBuild();
+  // Update the RSVP page QR link text if visible
+  const linkEl=document.getElementById('wb-qr-link');
+  if(linkEl) linkEl.textContent=_wbSiteUrl();
 }
 // ── The section lookup. THE key abstraction of v120.
 // WB_SECTIONS is a constant; custom sections are data. Every read of "what is section X"
@@ -32832,7 +32882,7 @@ function renderWebsite(c, actions){
           <div style="display:flex;gap:6px;align-items:center">
             <input id="wb-slug-inp" class="form-input" value="${_escHtml(wSlug)}" style="flex:1;font-size:11.5px;padding:5px 8px" placeholder="your-names" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')" onblur="_wbSaveSlug(this.value)" onkeydown="if(event.key==='Enter'){_wbSaveSlug(this.value);this.blur();}"/>
           </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:5px;line-height:1.4">Auto-generated from your names. Edit to customise — letters, numbers and hyphens only.</div>
+          <div id="wb-slug-msg" style="font-size:10px;margin-top:5px;line-height:1.4;color:var(--muted)">Auto-generated from your names. Edit to customise — letters, numbers and hyphens only.</div>
         </div>
       </div>
     </div>
