@@ -14083,9 +14083,9 @@ function setGuestRsvp(id,val){
 }
 
 function openRsvpPage(){
-  const url=_rsvpLink();
-  const w=window.open(url,'_blank');
-  if(!w) alert('Please allow pop-ups for this site to preview the RSVP page.');
+  const uid=_sbSession&&_sbSession.user&&_sbSession.user.id;
+  if(!uid){alert('Please sign in to preview the RSVP page.');return;}
+  _showRsvpForm(uid,'modal');
 }
 
 // ══════════════════════════════════════════════
@@ -28204,7 +28204,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v192';
+const APP_BUILD='v193';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -46907,64 +46907,77 @@ function _isDarkHex(hex){
   const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
   return (r*0.299+g*0.587+b*0.114)<128;
 }
-async function _showRsvpForm(coupleId){
-  // 1. Fetch couple's planner data (event details + guest list + website theme)
-  let eventName='', eventDate='', eventVenue='', theme={}, guestNames=[], rsvp={}, rfields={};
+async function _showRsvpForm(coupleId,mode){
+  // mode: 'page' (default — for ?rsvp= URL) | 'modal' (preview from within app)
+  let eventName='',eventDate='',eventVenue='',theme={},guestObjs=[],rsvp={},rfields={};
   try{
-    const res = await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website)`,{
+    const res=await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website)`,{
       headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
     });
     if(res.ok){
-      const rows = await res.json();
-      const sec = {};
-      (rows||[]).forEach(r=>{ sec[r.section]=r.data; });
-      const ev = sec.event||{};
-      const p1 = ev.partner1||'', p2 = ev.partner2||'';
-      eventName = (p1&&p2)?`${p1} & ${p2}`:(p1||p2||'');
-      eventDate = ev.date||'';
-      eventVenue= ev.venue||'';
-      theme = (sec.website&&sec.website.theme)||{};
-      rsvp = (sec.website&&sec.website.rsvp)||{};
-      rfields = rsvp.fields||{};
-      // Build guest name list (A-list only, names only, sorted)
-      guestNames = (sec.guests||[])
-        .filter(g=>(g.listType||'A')!=='B' && g.name)
-        .map(g=>g.name.trim())
-        .sort((a,b)=>a.localeCompare(b));
+      const rows=await res.json();
+      const sec={};
+      (rows||[]).forEach(r=>{sec[r.section]=r.data;});
+      const ev=sec.event||{};
+      const p1=ev.partner1||'',p2=ev.partner2||'';
+      eventName=(p1&&p2)?`${p1} & ${p2}`:(p1||p2||'');
+      eventDate=ev.date||'';
+      eventVenue=ev.venue||'';
+      theme=(sec.website&&sec.website.theme)||{};
+      rsvp=(sec.website&&sec.website.rsvp)||{};
+      rfields=rsvp.fields||{};
+      // Build guest objects with relationship data for group RSVP
+      guestObjs=(sec.guests||[])
+        .filter(g=>(g.listType||'A')!=='B'&&g.name)
+        .map(g=>({id:g.id,name:g.name.trim(),coupleId:g.coupleId||null,plusOneId:g.plusOneId||null}));
     }
-  }catch(e){ console.warn('RSVP data fetch failed',e); }
+  }catch(e){console.warn('RSVP data fetch failed',e);}
 
-  const dateStr = eventDate ? (()=>{
-    const d=new Date(eventDate+'T00:00:00'); if(isNaN(d)) return '';
+  const dateStr=eventDate?(()=>{
+    const d=new Date(eventDate+'T00:00:00');if(isNaN(d))return'';
     return d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  })() : '';
+  })():'';
 
-  // Embed guest names as JSON for client-side autocomplete
-  const guestNamesJson = JSON.stringify(guestNames);
+  const guestNames=[...guestObjs].map(g=>g.name).sort((a,b)=>a.localeCompare(b));
+  const guestNamesJson=JSON.stringify(guestNames);
+  const guestObjsJson=JSON.stringify(guestObjs);
 
-  const dietOptions = [
+  const dietOptions=[
     ['vegetarian','Vegetarian'],['vegan','Vegan'],
     ['glutenfree','Gluten free'],['dairyfree','Dairy free'],
     ['nutallergy','Nut allergy'],['other','Other']
   ];
-  const dietHtml = dietOptions.map(([k,lbl])=>`
+  const dietHtml=dietOptions.map(([k,lbl])=>`
     <div class="rf-diet-chip" onclick="this.classList.toggle('on')" data-diet="${k}">
       <span class="rf-chk"><svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg></span>${lbl}
     </div>`).join('');
 
   const _hf=theme.headFont||"'Cormorant Garamond',serif";
   const _bf=theme.bodyFont||"'Inter',sans-serif";
-  _publicPageShell(`
+  const btnYes=rsvp.btnYes||'Joyfully accepts';
+  const btnNo=rsvp.btnNo||'Regretfully declines';
+
+  const paletteStyle=(()=>{
+    const _p=rsvp.palette,_c=_p==='custom'?(rsvp.customColors||{}):(_RSVP_PALS[_p]||null);
+    if(!_c)return'';
+    const _dk=_isDarkHex(_c.bg||'#fff'),_bfg=_isDarkHex(_c.accent||'#888')?'#fff':'#1a1a1a';
+    return`<style>:root,:root[data-theme="light"],:root[data-theme="dark"]{--pub-page:${_c.bg||'#e8ddd0'}!important;--pub-band:${_c.surf||_c.bg||'#ded6c8'}!important;--pub-surface:${_c.surf||_c.bg||'#ede6d8'}!important;--pub-accent:${_c.accent||'#a08050'}!important;--pub-ink:${_c.ink||'#3a3020'}!important;--pub-text:${_c.ink||'#3a3020'}!important;--pub-btn:${_c.accent||'#a08050'}!important;--pub-btn-fg:${_bfg}!important;color-scheme:${_dk?'dark':'light'}!important}body{background:${_c.bg||'#e8ddd0'}!important;color:${_c.ink||'#3a3020'}!important}</style>`;
+  })();
+
+  const _uvMark=`<svg width="20" height="16" viewBox="0 0 44 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block"><path d="M6 4 C6 4 6 22 6 24 C6 30 11 34 22 34 C33 34 38 30 38 24 C38 22 38 4 38 4" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/><path d="M22 4 L30 26" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/><path d="M22 4 L14 26" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/></svg>`;
+
+  const isModal=mode==='modal';
+  const htmlContent=`
     ${_publicCss(theme.accent,theme.page,theme.band,theme.heading,theme.text,theme.headFont,theme.bodyFont)}
-    ${(()=>{const _p=rsvp.palette,_c=_p==='custom'?(rsvp.customColors||{}):(_RSVP_PALS[_p]||null);if(!_c)return '';const _dk=_isDarkHex(_c.bg||'#fff'),_bfg=_isDarkHex(_c.accent||'#888')?'#fff':'#1a1a1a';return `<style>:root,:root[data-theme="light"],:root[data-theme="dark"]{--pub-page:${_c.bg||'#e8ddd0'}!important;--pub-band:${_c.surf||_c.bg||'#ded6c8'}!important;--pub-surface:${_c.surf||_c.bg||'#ede6d8'}!important;--pub-accent:${_c.accent||'#a08050'}!important;--pub-ink:${_c.ink||'#3a3020'}!important;--pub-text:${_c.ink||'#3a3020'}!important;--pub-btn:${_c.accent||'#a08050'}!important;--pub-btn-fg:${_bfg}!important;color-scheme:${_dk?'dark':'light'}!important}body{background:${_c.bg||'#e8ddd0'}!important;color:${_c.ink||'#3a3020'}!important}</style>`})()}
+    ${paletteStyle}
     <style>
       *,*::before,*::after{box-sizing:border-box}
-      body{margin:0;background:var(--pub-page);color:var(--pub-ink);font-family:${_bf};min-height:100vh}
-      .rf-page{max-width:460px;margin:0 auto;padding:52px 20px 80px;min-height:100vh;display:flex;flex-direction:column}
-      .rf-top{text-align:center;margin-bottom:40px}
+      body{margin:0;background:var(--pub-page);color:var(--pub-ink);font-family:${_bf};${isModal?'':'min-height:100vh'}}
+      .rf-wrap{max-width:460px;margin:0 auto;padding:${isModal?'36px 28px 28px':'52px 20px 80px'}}
+      .rf-top{text-align:center;margin-bottom:36px}
+      .rf-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--pub-text);opacity:.7;margin:0 0 10px;font-family:${_bf};font-weight:400}
       .rf-couple{font-family:${_hf};font-size:clamp(26px,6vw,38px);font-weight:500;color:var(--pub-ink);margin:0 0 8px;line-height:1.15;text-wrap:balance}
       .rf-meta{font-size:13px;color:var(--pub-text);letter-spacing:.02em;margin:0}
-      .rf-body{flex:1}
       .rf-card{background:var(--pub-surface);border-radius:14px;padding:18px 18px 20px;box-shadow:0 2px 16px rgba(0,0,0,.06);margin-bottom:14px}
       .rf-lbl{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--pub-text);margin-bottom:10px}
       .rf-lbl .opt{text-transform:none;letter-spacing:0;font-weight:400;font-size:10px}
@@ -46979,11 +46992,14 @@ async function _showRsvpForm(coupleId){
       .pub-ac-item{padding:9px 12px;border-radius:7px;cursor:pointer;font-size:13.5px;color:var(--pub-ink)}
       .pub-ac-item.focused,.pub-ac-item:hover{background:color-mix(in srgb,var(--pub-accent) 10%,transparent 90%)}
       .pub-ac-none{padding:9px 12px;font-size:13px;color:var(--pub-text);opacity:.7;list-style:none}
-      .rf-pills{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .rf-pill{padding:13px 12px;border-radius:10px;border:1.5px solid var(--pub-border);background:var(--pub-page);text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--pub-ink);transition:all .15s;user-select:none;-webkit-user-select:none}
+      .rf-pills{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+      .rf-pill{padding:11px 10px;border-radius:10px;border:1.5px solid var(--pub-border);background:var(--pub-page);text-align:center;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--pub-ink);transition:all .15s;user-select:none;-webkit-user-select:none}
       .rf-pill:hover{border-color:var(--pub-accent)}
       .rf-pill.yes{background:color-mix(in srgb,#4a9e6b 14%,var(--pub-surface) 86%);border-color:#4a9e6b;color:#2d7a4d}
       .rf-pill.no{background:color-mix(in srgb,#c0745a 12%,var(--pub-surface) 88%);border-color:#c0745a;color:#9a4a32}
+      .rf-member-row{padding:10px 0}
+      .rf-member-row+.rf-member-row{border-top:1px solid var(--pub-border)}
+      .rf-member-name{font-size:14px;font-weight:500;color:var(--pub-ink);margin-bottom:2px;font-family:${_hf}}
       .rf-diet-grid{display:flex;flex-wrap:wrap;gap:7px}
       .rf-diet-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--pub-border);background:var(--pub-page);font-size:12.5px;color:var(--pub-ink);cursor:pointer;transition:all .15s;user-select:none;-webkit-user-select:none}
       .rf-diet-chip:hover{border-color:var(--pub-accent)}
@@ -46991,20 +47007,19 @@ async function _showRsvpForm(coupleId){
       .rf-chk{width:13px;height:13px;border-radius:3px;border:1.5px solid var(--pub-border);background:var(--pub-surface);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
       .rf-diet-chip.on .rf-chk{background:var(--pub-accent);border-color:var(--pub-accent);color:var(--pub-btn-fg,#fff)}
       .rf-addr-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-top:8px}
-      .rf-submit{width:100%;padding:15px;font-size:15px;font-weight:600;font-family:inherit;color:var(--pub-btn-fg,#fff);background:var(--pub-btn);border:none;border-radius:12px;cursor:pointer;transition:opacity .15s;margin-top:6px}
+      .rf-submit{width:100%;padding:14px;font-size:15px;font-weight:600;font-family:inherit;color:var(--pub-btn-fg,#fff);background:var(--pub-btn);border:none;border-radius:12px;cursor:pointer;transition:opacity .15s;margin-top:6px}
       .rf-submit:hover{opacity:.88}
       .rf-submit:disabled{opacity:.5;cursor:not-allowed}
       .rf-msg-box{text-align:center;padding:48px 24px;background:var(--pub-surface);border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,.06)}
-      .rf-footer{text-align:center;padding:40px 20px 24px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;color:var(--pub-text);opacity:.65}
-      .rf-footer-uv{display:inline-flex;align-items:center;justify-content:center;opacity:.8}
+      .rf-footer{text-align:center;padding:${isModal?'16px 0 4px':'36px 20px 24px'};display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--pub-text);opacity:.6}
     </style>
-
-    <div class="rf-page">
+    <div class="rf-wrap">
       <div class="rf-top">
+        <p class="rf-eyebrow">You&#8217;re invited to the wedding of</p>
         <h1 class="rf-couple">${eventName||'Wedding RSVP'}</h1>
         ${dateStr||eventVenue?`<p class="rf-meta">${[dateStr,eventVenue].filter(Boolean).join(' · ')}</p>`:''}
       </div>
-      <div class="rf-body" id="rsvp-form-body">
+      <div id="rsvp-form-body">
         <div class="rf-card">
           <div class="rf-lbl">Search your name</div>
           <div class="pub-ac-wrap">
@@ -47017,14 +47032,10 @@ async function _showRsvpForm(coupleId){
             />
             <ul class="pub-ac-list" id="rf-ac-list" role="listbox"></ul>
           </div>
-          <div class="rf-hint">Can't find your name? <a href="mailto:" id="rf-contact-link">Contact the couple</a></div>
+          <div class="rf-hint">Can&#8217;t find your name? <a href="mailto:" id="rf-contact-link">Contact the couple</a></div>
         </div>
         <div class="rf-card" id="rf-attend-card" hidden>
-          <div class="rf-lbl">Will you be attending?</div>
-          <div class="rf-pills">
-            <div class="rf-pill" id="rf-yes" onclick="_rfSetAttend('yes')">✓ ${rsvp.btnYes||'Joyfully accepts'}</div>
-            <div class="rf-pill" id="rf-no"  onclick="_rfSetAttend('no')">${rsvp.btnNo||'Regretfully declines'}</div>
-          </div>
+          <div id="rf-group-rows"></div>
         </div>
         <div id="rf-contact-group" hidden>
           ${rfields.dietary===false?'':`<div class="rf-card">
@@ -47056,19 +47067,33 @@ async function _showRsvpForm(coupleId){
         <button class="rf-submit" id="rf-submit" onclick="_rfSubmit('${coupleId}')" hidden>Send my RSVP</button>
       </div>
       <div class="rf-footer">
-        <span style="opacity:.7;font-size:10px;letter-spacing:.04em">Powered by</span>
-        <span class="rf-footer-uv" aria-label="Union Vault">
-          <svg width="22" height="18" viewBox="0 0 44 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">
-            <path d="M6 4 C6 4 6 22 6 24 C6 30 11 34 22 34 C33 34 38 30 38 24 C38 22 38 4 38 4" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-            <path d="M22 4 L30 26" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-            <path d="M22 4 L14 26" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-          </svg>
-        </span>
+        <span style="font-size:10px;letter-spacing:.04em">Powered by</span>
+        <span aria-label="Union Vault" style="display:inline-flex;align-items:center">${_uvMark}</span>
         <span style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:9.5px">Union Vault</span>
       </div>
     </div>
-    <div id="rf-guest-data" style="display:none" data-guests='${guestNamesJson.replace(/'/g,"&#39;")}'></div>
-  `);
+    <div id="rf-guest-data" style="display:none"
+      data-guests='${guestNamesJson.replace(/'/g,"&#39;")}'
+      data-guest-objs='${guestObjsJson.replace(/'/g,"&#39;")}'
+      data-btn-yes='${btnYes.replace(/'/g,"&#39;")}'
+      data-btn-no='${btnNo.replace(/'/g,"&#39;")}'>
+    </div>
+  `;
+
+  if(isModal){
+    document.getElementById('rsvp-form-overlay')?.remove();
+    const overlay=document.createElement('div');
+    overlay.id='rsvp-form-overlay';
+    overlay.style.cssText='position:fixed;inset:0;z-index:9000;overflow-y:auto;padding:24px 16px 40px;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center';
+    overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+    const card=document.createElement('div');
+    card.style.cssText='position:relative;width:100%;max-width:480px;border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.35)';
+    card.innerHTML=`<button onclick="document.getElementById('rsvp-form-overlay').remove()" style="position:absolute;top:10px;right:12px;z-index:10;background:rgba(128,128,128,.18);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;color:var(--pub-ink,#1a1a18);font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;opacity:.7">✕</button>${htmlContent}`;
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+  } else {
+    _publicPageShell(htmlContent);
+  }
 }
 
 // ── RSVP autocomplete helpers ──────────────────────────────────
@@ -47093,10 +47118,69 @@ function _rfNameSearch(q){
   list.style.display='block';
 }
 function _rfPickName(name){
+  name=(name||'').trim();
   const inp=document.getElementById('rf-name');
   const list=document.getElementById('rf-ac-list');
   if(inp){inp.value=name;inp.style.borderColor='var(--pub-accent)';inp.style.boxShadow='0 0 0 3px color-mix(in srgb,var(--pub-accent) 20%,transparent 80%)';}
   if(list)list.style.display='none';
+
+  // Find group members using stored guest objects
+  const gd=document.getElementById('rf-guest-data');
+  const objs=gd?JSON.parse(gd.dataset.guestObjs||'[]'):[];
+  const btnYes=(gd&&gd.dataset.btnYes)||'✓ Joyfully accepts';
+  const btnNo=(gd&&gd.dataset.btnNo)||'Regretfully declines';
+
+  const guest=objs.find(g=>g.name===name);
+  let members=[];
+  if(guest){
+    const byId=Object.fromEntries(objs.map(g=>[g.id,g]));
+    const seen=new Set();
+    const add=g=>{if(g&&!seen.has(g.id)){seen.add(g.id);members.push(g);}};
+    // If this guest is a plus-one, start with the host
+    const host=objs.find(g=>g.plusOneId===guest.id);
+    if(host){
+      add(host);
+      if(host.coupleId)add(byId[host.coupleId]);
+    }
+    add(guest);
+    if(guest.coupleId)add(byId[guest.coupleId]);
+    if(guest.plusOneId)add(byId[guest.plusOneId]);
+  }
+
+  // Reset attendance state
+  _rfAttending=null;
+  _rfMemberAttend={};
+
+  // Render the attend card dynamically
+  const gr=document.getElementById('rf-group-rows');
+  if(gr){
+    if(members.length>1){
+      gr.innerHTML=`<div class="rf-lbl" style="margin-bottom:4px">Will you be attending?</div>`+
+        members.map(m=>{
+          const eid=m.id.replace(/[^a-z0-9]/gi,'');
+          return `<div class="rf-member-row" data-mid="${m.id}">
+            <div class="rf-member-name">${m.name}</div>
+            <div class="rf-pills">
+              <div class="rf-pill" id="rfmy-${eid}" onclick="_rfSetMemberAttend('${m.id}','yes')">✓ ${btnYes}</div>
+              <div class="rf-pill" id="rfmn-${eid}" onclick="_rfSetMemberAttend('${m.id}','no')">${btnNo}</div>
+            </div>
+          </div>`;
+        }).join('');
+    } else {
+      gr.innerHTML=`<div class="rf-lbl">Will you be attending?</div>
+        <div class="rf-pills">
+          <div class="rf-pill" id="rf-yes" onclick="_rfSetAttend('yes')">✓ ${btnYes}</div>
+          <div class="rf-pill" id="rf-no" onclick="_rfSetAttend('no')">${btnNo}</div>
+        </div>`;
+    }
+  }
+
+  // Reset contact group and submit button
+  const cg=document.getElementById('rf-contact-group');
+  const sb=document.getElementById('rf-submit');
+  if(cg)cg.hidden=true;
+  if(sb)sb.hidden=true;
+
   const ac=document.getElementById('rf-attend-card');
   if(ac){ac.hidden=false;ac.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
@@ -47124,68 +47208,105 @@ function _rfNameKey(e){
   }
 }
 
-let _rfAttending = null;
+let _rfAttending=null;
+let _rfMemberAttend={};
+
 function _rfSetAttend(val){
-  _rfAttending = val;
-  document.getElementById('rf-yes').classList.toggle('yes', val==='yes');
-  document.getElementById('rf-yes').classList.toggle('no',  false);
-  document.getElementById('rf-no').classList.toggle('no',   val==='no');
-  document.getElementById('rf-no').classList.toggle('yes',  false);
+  _rfAttending=val;
+  const yes=document.getElementById('rf-yes');
+  const no=document.getElementById('rf-no');
+  if(yes){yes.classList.toggle('yes',val==='yes');yes.classList.remove('no');}
+  if(no){no.classList.toggle('no',val==='no');no.classList.remove('yes');}
   const cg=document.getElementById('rf-contact-group');
   const sb=document.getElementById('rf-submit');
-  if(cg) cg.hidden=(val!=='yes');
+  if(cg)cg.hidden=(val!=='yes');
   if(sb){sb.hidden=false;setTimeout(()=>sb.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
+}
+function _rfSetMemberAttend(memberId,val){
+  _rfMemberAttend[memberId]=val;
+  const eid=memberId.replace(/[^a-z0-9]/gi,'');
+  const yes=document.getElementById('rfmy-'+eid);
+  const no=document.getElementById('rfmn-'+eid);
+  if(yes){yes.classList.toggle('yes',val==='yes');yes.classList.remove('no');}
+  if(no){no.classList.toggle('no',val==='no');no.classList.remove('yes');}
+  const rows=document.querySelectorAll('#rf-group-rows .rf-member-row');
+  const memberIds=[...rows].map(r=>r.dataset.mid);
+  const allSet=memberIds.length>0&&memberIds.every(id=>_rfMemberAttend[id]);
+  const anyYes=memberIds.some(id=>_rfMemberAttend[id]==='yes');
+  const cg=document.getElementById('rf-contact-group');
+  const sb=document.getElementById('rf-submit');
+  if(cg)cg.hidden=!anyYes;
+  if(sb){sb.hidden=!allSet;if(allSet)setTimeout(()=>sb.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
 }
 
 async function _rfSubmit(coupleId){
-  const nameEl  = document.getElementById('rf-name');
-  const submitEl= document.getElementById('rf-submit');
-  const name = nameEl ? nameEl.value : '';
-  if(!name){ nameEl&&(nameEl.style.borderColor='#C0392B'); return; }
-  if(!_rfAttending){ return; }
-  // Collect dietary
-  const diet = Array.from(document.querySelectorAll('.rf-diet-chip.on')).map(el=>el.dataset.diet);
-  // Build address string
-  const street= (document.getElementById('rf-street')||{}).value||'';
-  const suburb= (document.getElementById('rf-suburb')||{}).value||'';
-  const state = (document.getElementById('rf-state') ||{}).value||'';
-  const post  = (document.getElementById('rf-post')  ||{}).value||'';
-  const addressParts=[street,suburb,state,post].map(s=>s.trim()).filter(Boolean);
-  const address = addressParts.length ? addressParts.join(', ') : null;
+  const nameEl=document.getElementById('rf-name');
+  const submitEl=document.getElementById('rf-submit');
+  const name=nameEl?nameEl.value.trim():'';
+  if(!name){nameEl&&(nameEl.style.borderColor='#C0392B');return;}
 
-  submitEl.disabled=true; submitEl.textContent='Sending…';
+  const rows=document.querySelectorAll('#rf-group-rows .rf-member-row');
+  const isGroup=rows.length>1;
+  if(isGroup){
+    const memberIds=[...rows].map(r=>r.dataset.mid);
+    if(!memberIds.every(id=>_rfMemberAttend[id]))return;
+  } else {
+    if(!_rfAttending)return;
+  }
+
+  const diet=Array.from(document.querySelectorAll('.rf-diet-chip.on')).map(el=>el.dataset.diet);
+  const street=(document.getElementById('rf-street')||{}).value||'';
+  const suburb=(document.getElementById('rf-suburb')||{}).value||'';
+  const state=(document.getElementById('rf-state')||{}).value||'';
+  const post=(document.getElementById('rf-post')||{}).value||'';
+  const addressParts=[street,suburb,state,post].map(s=>s.trim()).filter(Boolean);
+  const address=addressParts.length?addressParts.join(', '):null;
+  const email=(document.getElementById('rf-email')||{}).value||null;
+  const phone=(document.getElementById('rf-phone')||{}).value||null;
+  const message=(document.getElementById('rf-message')||{}).value||null;
+
+  submitEl.disabled=true;submitEl.textContent='Sending…';
+
   try{
-    const body={
-      couple_id: coupleId,
-      guest_name: name,
-      email: (document.getElementById('rf-email')||{}).value||null,
-      phone: (document.getElementById('rf-phone')||{}).value||null,
-      address: address,
-      attending: _rfAttending,
-      dietary: diet.length ? diet : null,
-      message: (document.getElementById('rf-message')||{}).value||null
-    };
-    const res = await fetch(`${_SB_URL}/rest/v1/rsvp_responses`,{
-      method:'POST',
-      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-      body: JSON.stringify(body)
-    });
-    if(res.ok || res.status===201){
-      const formBody = document.getElementById('rsvp-form-body');
+    let payloads;
+    if(isGroup){
+      const gd=document.getElementById('rf-guest-data');
+      const objs=gd?JSON.parse(gd.dataset.guestObjs||'[]'):[];
+      const memberIds=[...rows].map(r=>r.dataset.mid);
+      payloads=memberIds.map(id=>{
+        const g=objs.find(o=>o.id===id)||{name};
+        return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:diet.length?diet:null};
+      });
+    } else {
+      payloads=[{couple_id:coupleId,guest_name:name,email,phone,address,message,attending:_rfAttending,dietary:diet.length?diet:null}];
+    }
+
+    const results=await Promise.all(payloads.map(body=>
+      fetch(`${_SB_URL}/rest/v1/rsvp_responses`,{
+        method:'POST',
+        headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify(body)
+      })
+    ));
+
+    const allOk=results.every(r=>r.ok||r.status===201);
+    if(allOk){
+      const anyYes=isGroup?Object.values(_rfMemberAttend).some(v=>v==='yes'):_rfAttending==='yes';
+      const formBody=document.getElementById('rsvp-form-body');
       if(formBody){
         formBody.innerHTML=`<div class="rf-msg-box">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:10px;display:block;margin:0 auto 12px"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;margin:0 auto 12px"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
           <div style="font-size:17px;font-weight:600;margin-bottom:6px">RSVP received!</div>
-          <div style="font-size:13.5px;opacity:.85">${_rfAttending==='yes'?"We can't wait to celebrate with you 🥂":"Thank you for letting us know — you'll be missed."}</div>
+          <div style="font-size:13.5px;opacity:.85">${anyYes?"We can’t wait to celebrate with you 🥂":"Thank you for letting us know — you’ll be missed."}</div>
         </div>`;
       }
     } else {
-      submitEl.disabled=false; submitEl.textContent='Send my RSVP';
+      submitEl.disabled=false;submitEl.textContent='Send my RSVP';
       alert('Something went wrong — please try again.');
     }
   }catch(e){
     console.warn('RSVP submit error',e);
-    submitEl.disabled=false; submitEl.textContent='Send my RSVP';
+    submitEl.disabled=false;submitEl.textContent='Send my RSVP';
     alert('Network error — please check your connection and try again.');
   }
 }
