@@ -28274,7 +28274,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v199';
+const APP_BUILD='v200';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -36514,6 +36514,21 @@ function _wbBuildSite(forDownload){
       // whenever Mandy happened to build on a Mac. The site's own script swaps it at load.
       const mapA = (addr)=>`<a class="maplink" data-addr="${_escHtml(addr)}" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer">Map</a>`;
       const dh=(w.details||{}).hide||{};
+      if(t.format==='editorial'){
+        // Editorial details: centered typographic stack, no label columns
+        const parts=[];
+        if(!dh.date && e.date){
+          const _d=new Date(e.date+'T00:00:00');
+          const _days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+          const _mos=['January','February','March','April','May','June','July','August','September','October','November','December'];
+          parts.push(`<p class="ed-date">${_escHtml(_days[_d.getDay()]+', '+_d.getDate()+' '+_mos[_d.getMonth()]+' '+_d.getFullYear())}</p>`);
+        }
+        if(!dh.time && e.time) parts.push(`<p class="ed-sub">Ceremony begins at ${_escHtml(e.time)}</p>`);
+        if(!dh.venue && e.venue) parts.push(`<p class="ed-venue">${_escHtml(e.venue)}</p>`);
+        if(!dh.ceremony && e.ceremonyVenue) parts.push(`<p class="ed-sub">${_escHtml(e.ceremonyVenue)}</p>`);
+        if(!dh.address && e.venueAddress) parts.push(`<p class="ed-sub">${_escHtml(e.venueAddress)} ${mapA(e.venueAddress)}</p>`);
+        return wrap(k, parts.length?`<div class="ed-details">${parts.join('')}</div>`:'');
+      }
       const rows=[
         (!dh.venue && e.venue)?['Venue', _escHtml(e.venue)]:null,
         (!dh.address && e.venueAddress)?['Address', _escHtml(e.venueAddress)+' '+mapA(e.venueAddress)]:null,
@@ -36868,6 +36883,10 @@ dd{flex:1}
    nothing is actually centred. The row has to become a column first. */
 section.b-center dl div{flex-direction:column;gap:2px;text-align:center}
 section.b-center dt{width:auto;padding-top:0}
+.ed-details{text-align:center;padding:${sp(8)}px 0}
+.ed-date{font-family:${t2.headFont};font-size:${sch(22)}px;font-weight:600;color:${t2.item};margin:0 0 ${sp(4)}px}
+.ed-venue{font-family:${t2.headFont};font-size:${sch(19)}px;font-weight:600;color:${t2.item};margin:${sp(16)}px 0 ${sp(4)}px}
+.ed-sub{font-size:${scb(14)}px;color:${t2.text};opacity:.7;margin:0 0 ${sp(2)}px}
 .sched{list-style:none}
 section.lft .sched{text-align:left}
 /* When section heading is centred (no .lft), constrain the timeline list width and
