@@ -44526,10 +44526,22 @@ function _showSupportModal(){
   document.body.appendChild(overlay);
 }
 function _suppFilesChanged(input){
+  const inp=document.getElementById('_supp-files');
+  if(!inp) return;
+  const incoming=Array.from(input.files||[]);
+  const existing=inp._allFiles||[];
+  inp._allFiles=existing.concat(incoming).slice(0,4);
+  const dt=new DataTransfer();
+  inp._allFiles.forEach(function(f){dt.items.add(f);});
+  inp.files=dt.files;
+  _suppRenderPreviews();
+}
+function _suppRenderPreviews(){
+  const inp=document.getElementById('_supp-files');
   const prev=document.getElementById('_supp-previews');
-  if(!prev) return;
+  if(!prev||!inp) return;
   prev.innerHTML='';
-  Array.from(input.files||[]).slice(0,4).forEach(function(file,i){
+  (inp._allFiles||[]).forEach(function(file,i){
     const url=URL.createObjectURL(file);
     const w=document.createElement('div');
     w.style.cssText='position:relative;width:72px;height:72px';
@@ -44541,10 +44553,11 @@ function _suppFilesChanged(input){
 function _suppRemoveFile(idx){
   const inp=document.getElementById('_supp-files');
   if(!inp) return;
+  inp._allFiles=(inp._allFiles||[]).filter(function(_,i){return i!==idx;});
   const dt=new DataTransfer();
-  Array.from(inp.files).forEach(function(f,i){if(i!==idx)dt.items.add(f);});
+  inp._allFiles.forEach(function(f){dt.items.add(f);});
   inp.files=dt.files;
-  _suppFilesChanged(inp);
+  _suppRenderPreviews();
 }
 async function _submitSupportForm(btn){
   const email=(document.getElementById('_supp-email')||{}).value||'';
@@ -44553,7 +44566,8 @@ async function _submitSupportForm(btn){
   if(!email.trim()||!msg.trim()){_suppStatus('Please fill in your email and message.',false);return;}
   btn.disabled=true; btn.textContent='Sending…';
   try{
-    const files=Array.from((document.getElementById('_supp-files')||{}).files||[]).slice(0,4);
+    const _suppInp=document.getElementById('_supp-files')||{};
+    const files=(_suppInp._allFiles||Array.from(_suppInp.files||[])).slice(0,4);
     files.forEach(function(f){if(f.size>5*1024*1024)throw new Error(f.name+' is over 5 MB');});
     const coupleName=(document.getElementById('sidebar-couple-names')||{}).textContent||'';
     const screenshotUrls=[];
