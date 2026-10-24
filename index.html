@@ -7329,20 +7329,12 @@ function _guestHideMenuHtml(){
   // Re-entry to the import suggestions (couples/families/plus-ones), shown only
   // while a suggestion set still exists this session.
   const liveN=_groupSuggestions.filter(s=>_grIsLive(s)).length;
-  // If the banner is dismissed, offer to re-show it; if it's already visible, offer to open the modal directly.
-  const reviewRow=liveN?(
-    _groupBannerDismissed
-      ?`<div onclick="event.stopPropagation();_showGroupBanner()" style="display:flex;align-items:center;gap:8px;padding:8px 9px;margin:-3px -5px 9px;background:rgba(196,168,130,.14);border:.5px solid var(--gold);border-radius:8px;cursor:pointer">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2" style="flex-shrink:0"><circle cx="9" cy="12" r="5.2"/><circle cx="15" cy="12" r="5.2"/></svg>
-        <span style="font-size:12px;font-weight:600;color:var(--ink);flex:1">Show suggested groups</span>
-        <span style="font-size:10px;font-weight:700;color:var(--gold-deep);background:rgba(196,168,130,.25);border-radius:9px;padding:1px 6px">${liveN}</span>
-      </div>`
-      :`<div onclick="event.stopPropagation();_reopenSuggestions()" style="display:flex;align-items:center;gap:8px;padding:8px 9px;margin:-3px -5px 9px;background:rgba(196,168,130,.14);border:.5px solid var(--gold);border-radius:8px;cursor:pointer">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2" style="flex-shrink:0"><circle cx="9" cy="12" r="5.2"/><circle cx="15" cy="12" r="5.2"/></svg>
-        <span style="font-size:12px;font-weight:600;color:var(--ink);flex:1">Review import suggestions</span>
-        <span style="font-size:10px;font-weight:700;color:var(--gold-deep);background:rgba(196,168,130,.25);border-radius:9px;padding:1px 6px">${liveN}</span>
-      </div>`
-  ):'';
+  // Always shown when suggestions exist: restores the banner if dismissed, otherwise banner is already visible.
+  const reviewRow=liveN?`<div onclick="event.stopPropagation();_showGroupBanner()" style="display:flex;align-items:center;gap:8px;padding:8px 9px;margin:-3px -5px 9px;background:rgba(196,168,130,.14);border:.5px solid var(--gold);border-radius:8px;cursor:pointer">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2" style="flex-shrink:0"><circle cx="9" cy="12" r="5.2"/><circle cx="15" cy="12" r="5.2"/></svg>
+      <span style="font-size:12px;font-weight:600;color:var(--ink);flex:1">Show suggested groups</span>
+      <span style="font-size:10px;font-weight:700;color:var(--gold-deep);background:rgba(196,168,130,.25);border-radius:9px;padding:1px 6px">${liveN}</span>
+    </div>`:'';
   return `<div id="guest-hide-menu" style="display:${_guestHideMenuOpen?'block':'none'};position:absolute;top:calc(100% + 6px);right:0;z-index:60;width:236px;max-height:70vh;overflow-y:auto;background:var(--cream);border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 24px rgba(26,26,24,.12);padding:13px 15px;text-align:left">
     ${reviewRow}
     ${_guestTblColMenuSection()}
