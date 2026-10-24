@@ -2112,7 +2112,7 @@ body.dark .gt-mp-av{background:rgba(196,168,130,.16);color:var(--gold)}
 
 /* RESPONSIVE */
 @media(max-width:900px){
-  .sidebar{position:fixed;height:100vh;height:100dvh;box-shadow:4px 0 20px rgba(0,0,0,.12);width:260px}
+  .sidebar{position:fixed;height:100vh;height:100dvh;box-shadow:4px 0 20px rgba(0,0,0,.12);width:220px}
   .sidebar.collapsed{width:0!important;border-right:none}
   .content{padding:10px 16px 20px;overflow-x:hidden}
   /* Bulk guest table: visible horizontal scrollbar + grab-to-pan, desktop (fine pointer) only. */
@@ -2781,7 +2781,7 @@ body.dark .vlu-msgcomp .snd{color:var(--ink)}
       <li class="nav-item"><button onclick="navigate('vendors')" id="nav-vendors">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h20v3a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M4 11v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9"/><path d="M9 21v-6h6v6"/></svg></span>
         <span class="nav-label">Vendors</span></button></li>
-      <li class="nav-item"><button onclick="navigate('inspo')" id="nav-inspo">
+      <li class="nav-item" id="nav-inspo-li" style="display:none"><button onclick="navigate('inspo')" id="nav-inspo">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
         <span class="nav-label">Inspiration</span></button></li>
       <li class="nav-item"><button onclick="navigate('visionboard')" id="nav-visionboard">
@@ -28274,7 +28274,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v201';
+const APP_BUILD='v202';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -31459,7 +31459,7 @@ function brushSwatchHtml(hex, name, idx){
 }
 
 function renderInspo(c,actions){
-  actions.innerHTML=`<button class="btn btn-primary btn-sm" onclick="openAddInspo()" style="display:inline-flex;align-items:center;gap:5px">${_plusIcon()}Add Idea</button>`;
+  actions.innerHTML=`<button class="btn btn-outline btn-sm" onclick="navigate('visionboard')" style="display:inline-flex;align-items:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Vision Board</button><button class="btn btn-primary btn-sm" onclick="openAddInspo()" style="display:inline-flex;align-items:center;gap:5px">${_plusIcon()}Add Idea</button>`;
 
   const _inspoCollapsed=(()=>{try{return new Set(JSON.parse(localStorage.getItem('uv_inspo_collapsed')||'[]'));}catch(_){return new Set();}})();
 
@@ -38499,6 +38499,10 @@ function renderVisionboard(c,actions){
   </div>
   <div class="vb-page-board" style="background:${paperBg};border:1px solid ${paperBorder};border-radius:20px;padding:36px 32px 48px;position:relative;min-height:480px">
     <div style="position:absolute;inset:0;border-radius:20px;opacity:.03;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22200%22 height=%22200%22 filter=%22url(%23n)%22/></svg>');pointer-events:none"></div>
+    <button onclick="navigate('inspo')" style="position:absolute;top:16px;right:16px;display:inline-flex;align-items:center;gap:6px;border:.5px solid ${isDark?'rgba(200,190,176,.3)':'rgba(120,100,70,.22)'};border-radius:8px;background:${isDark?'rgba(255,255,255,.07)':'rgba(255,251,246,.85)'};color:${mutedInk};padding:6px 12px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:500;white-space:nowrap;z-index:2;backdrop-filter:blur(2px)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Inspiration
+    </button>
     ${colPaletteHtml}
     ${items.length ? boardHtml : emptyState}
   </div>`;
