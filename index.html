@@ -12088,15 +12088,22 @@ async function _loadOnlineRsvps(){
         const g=guestsByName[r.guest_name.trim().toLowerCase()];
         if(!g) return;
         const newRsvp=r.attending==='yes'?'attending':r.attending==='no'?'declined':null;
+        let rowChanged=false;
         if(newRsvp && g.rsvp!==newRsvp){
           g.rsvp=newRsvp;
           _stampRsvpDate(g,newRsvp);
-          // Carry dietary across if the guest has none set
-          if(Array.isArray(r.dietary)&&r.dietary.length&&(!g.dietary||!g.dietary.length)){
-            g.dietary=r.dietary.slice();
-          }
-          changed++;
+          rowChanged=true;
         }
+        // Carry dietary across if the guest has none set
+        if(Array.isArray(r.dietary)&&r.dietary.length&&(!g.dietary||!g.dietary.length)){
+          g.dietary=r.dietary.slice();
+          rowChanged=true;
+        }
+        // Carry phone, email, address across if not already on guest record
+        if(r.phone&&!(g.phone||'').trim()){g.phone=r.phone.trim();rowChanged=true;}
+        if(r.email&&!(g.email||'').trim()){g.email=r.email.trim();rowChanged=true;}
+        if(r.address&&!(g.address||'').trim()){g.address=r.address.trim();rowChanged=true;}
+        if(rowChanged) changed++;
       });
       if(changed){
         saveToStorage();
@@ -28365,7 +28372,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v212';
+const APP_BUILD='v213';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
