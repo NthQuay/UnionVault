@@ -4215,8 +4215,8 @@ function coupleDisplayName(name1, name2){
    Australia's common allergens, so the RSVP summary can count them for the caterer) and
    `g.allergyNote` (anything else, kept exactly as typed). Unticking Allergy keeps both, so an
    accidental untick loses nothing; every reader shows them only while 'allergy' is ticked. */
-const DIET_KEYS=['vegetarian','vegan','lactose','gluten','allergy','other'];
-const DIET_LABELS={vegetarian:'Vegetarian',vegan:'Vegan',lactose:'Lactose',gluten:'Gluten',allergy:'Allergy',other:'Other'};
+const DIET_KEYS=['vegetarian','pescatarian','vegan','lactose','gluten','allergy','other'];
+const DIET_LABELS={vegetarian:'Vegetarian',pescatarian:'Pescatarian',vegan:'Vegan',lactose:'Lactose',gluten:'Gluten',allergy:'Allergy',other:'Other'};
 const ALLERGENS=[['peanuts','Peanuts'],['treenuts','Tree nuts'],['shellfish','Shellfish'],['fish','Fish'],['eggs','Eggs'],['milk','Milk'],['sesame','Sesame'],['soy','Soy'],['wheat','Wheat']];
 /* The muted one-line summary on guest cards keeps its existing lower-case keys; only the
    allergy segment changes — it carries its detail and is red so it doesn't hide in the line. */
@@ -4251,6 +4251,7 @@ function _dietWord(g,d,sep){
    Conservative on purpose: "dairy free" could be lactose or a milk allergy, so it stays
    as Other's words rather than being guessed into either. */
 const _DIET_SYNONYMS={vegetarian:'vegetarian',veg:'vegetarian',veggie:'vegetarian',vego:'vegetarian',
+  pescatarian:'pescatarian',pescetarian:'pescatarian',pesc:'pescatarian',peskatarian:'pescatarian',
   vegan:'vegan',lactose:'lactose','lactose free':'lactose','lactose intolerant':'lactose','lactose intolerance':'lactose',
   gluten:'gluten','gluten free':'gluten','gluten intolerant':'gluten','gluten intolerance':'gluten',coeliac:'gluten',celiac:'gluten',
   allergy:'allergy',other:'other'};
@@ -4287,6 +4288,7 @@ function _parseAllergyText(str){
 function dietIcons(diets){
   const svgMap={
     vegetarian:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Vegetarian"><path d="M12 2C6 2 3 7 3 12c0 4 2.5 7 6 8"/><path d="M12 2c4 3 7 7 7 10 0 4-2.5 7-6 8"/><line x1="12" y1="22" x2="12" y2="10"/></svg>`,
+    pescatarian:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Pescatarian"><path d="M6 12C6 8.5 10 6 16 6.5C21 7 23 9.5 23 12C23 14.5 21 17 16 17.5C10 18 6 15.5 6 12Z"/><path d="M6 12L2 8M6 12L2 16"/><circle cx="18" cy="10.5" r="1.2" fill="currentColor" stroke="none"/></svg>`,
     vegan:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Vegan"><path d="M3 3c0 10 7 17 17 17-1-9-7-15-17-17z"/><path d="M3 3l8 8"/></svg>`,
     lactose:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Lactose free"><path d="M2 15 L12 5 L22 15 L2 15 Z"/><path d="M2 15 L22 15 L22 20 L2 20 Z"/><circle cx="16" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="17" r="1.5" fill="currentColor" stroke="none"/><line x1="4" y1="4" x2="20" y2="20"/></svg>`,
     gluten:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" title="Gluten free"><path d="M7 21 Q10 14 12 3 M10.5 18 Q8.5 16.5 9.5 14.5 Q11.5 13.5 12.5 15 Q13 17 10.5 18 M10 14.5 Q8 13 9 11 Q11 10 12 11.5 Q12.5 13.5 10 14.5 M10.5 11 Q8.5 9.5 9.5 7.5 Q11.5 6.5 12.5 8 Q13 10 10.5 11 M11 7.5 Q9.5 6 10 4.5 Q11.5 3.5 12.5 5 Q12.5 6.5 11 7.5 M12.5 15 L16 13 M12 11.5 L16 9.5 M12.5 8 L16 6 M12.5 5 L15.5 3.5 M9.5 14.5 L6 12.5 M9 11 L5.5 9 M9.5 7.5 L6 5.5 M10 4.5 L7.5 3 M4 4 L20 2 M12 6 C10 4 7 5 8 8 C9 10 12 9 12 8 M12 6 C14 4 17 5 16 8 C15 10 12 9 12 8 M12 12 C10 10 7 11 8 14 C9 16 12 15 12 14 M12 12 C14 10 17 11 16 14 C15 16 12 15 12 14 M12 17 C10 15 8 16 9 19 C10 20 12 19 12 18 M12 17 C14 15 16 16 15 19 C14 20 12 19 12 18 M4 4 L20 20"/></svg>`,
