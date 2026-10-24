@@ -28308,7 +28308,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v185';
+const APP_BUILD='v186';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32159,6 +32159,7 @@ function setVbDensity(d){ if(!STATE.settings) STATE.settings={}; STATE.settings.
 function setVbSize(sz){ if(!STATE.settings) STATE.settings={}; if(!['xsmall','small','medium','large'].includes(sz)) sz='small'; STATE.settings.vbSize=sz; delete STATE.settings.vbDensity; saveToStorage(); navigate(_currentPage||'visionboard'); }
 function setVbImagesOnly(v){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbDashImagesOnly=!!v; saveToStorage(); navigate(_currentPage||'dashboard'); }
 function setVbPageImagesOnly(v){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbPageImagesOnly=!!v; saveToStorage(); navigate('visionboard'); }
+function setVbGrouped(v){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbGrouped=!!v; saveToStorage(); navigate('visionboard'); }
 function setVbDashCount(n){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbDashCount = (n==='all'?'all':parseInt(n,10)); saveToStorage(); navigate(_currentPage||'dashboard'); }
 // ── Vision board background tint ─────────────────────────────
 // 'original' = neutral cream/dark veil; 'palette' = tint built from chosen palette colours.
@@ -38068,6 +38069,7 @@ function renderVisionboard(c,actions){
   const colors=STATE.inspo.colors;
   const allCols=[...WEDDING_COLORS,...(STATE.inspo.customColors||[])];
   const showOnDash=STATE.settings.showVisionOnDash||false;
+  const vbGrouped=!!STATE.settings.vbGrouped;
   vbLayout = STATE.settings.vbLayout || 'scrapbook';
   // Page-level Captions/Images toggle (independent of the dashboard widget's toggle).
   const vbPageImagesOnly = !!STATE.settings.vbPageImagesOnly;
@@ -38190,6 +38192,20 @@ function renderVisionboard(c,actions){
     </div>`;
   }
 
+  function groupItems(arr){
+    const order=[], map={};
+    arr.forEach(item=>{ const cat=item.category||'Other'; if(!map[cat]){map[cat]=[];order.push(cat);} map[cat].push(item); });
+    return order.map(cat=>({cat,items:map[cat]}));
+  }
+  const ruleColor=isDark?'rgba(196,168,130,.22)':'rgba(196,168,130,.42)';
+  function groupHeader(cat,count,extra=''){
+    return`<div style="display:flex;align-items:center;gap:12px;margin:4px 0 14px;${extra}">
+      <div style="flex:1;height:1px;background:${ruleColor}"></div>
+      <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:${mutedInk};display:flex;align-items:center;gap:8px">${_escHtml(cat)}<span style="font-family:'Inter',sans-serif;font-style:normal;font-size:10px;background:${isDark?'rgba(196,168,130,.15)':'rgba(196,168,130,.2)'};color:${mutedInk};padding:1px 7px;border-radius:10px">${count}</span></div>
+      <div style="flex:1;height:1px;background:${ruleColor}"></div>
+    </div>`;
+  }
+
   let boardHtml = '';
 
   if(vbLayout==='scrapbook'){
@@ -38202,63 +38218,80 @@ function renderVisionboard(c,actions){
     const vbWall = _vbWallUrl(isDark);
     const vbTint = _vbTintLayers(isDark);
     const _vbMobile = window.innerWidth <= 900;
+    function scrapCards(arr, idxOffset=0){ return arr.map((item,i)=>{
+      const idx=i+idxOffset;
+      const tilt=tilts[idx%tilts.length];
+      const tape=tapeColors[idx%tapeColors.length];
+      const nudge=_vbMobile ? 0 : (jit(idx,2.2)*22-11).toFixed(1);
+      const tiltX=(tilt + (jit(idx,6.6)*2.4-1.2)).toFixed(2);
+      const topGap=_vbMobile ? (4+jit(idx,8.8)*12).toFixed(0) : (8 + jit(idx,8.8)*30).toFixed(0);
+      return`<div ${dragAttrs(item.id)} style="break-inside:avoid;margin:${topGap}px 0 ${_vbMobile?'12px':'22px'};display:inline-block;width:100%;cursor:grab;transform:translateX(${nudge}px)">
+        <div style="position:relative;background:${vbPageImagesOnly?'transparent':cardBg};border-radius:3px;padding:${vbPageImagesOnly?'0':'4px 4px 0'};box-shadow:${vbPageImagesOnly?'none':`3px 4px 14px ${cardShadow}`};transform:rotate(${tiltX}deg);transform-origin:center top;transition:transform .2s" onmouseover="this.style.transform='rotate(0deg) scale(1.02)'" onmouseout="this.style.transform='rotate(${tiltX}deg)'">
+          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(${(tilt*0.4).toFixed(2)}deg);width:48px;height:18px;background:${tape};border-radius:2px;opacity:.85;z-index:2"></div>
+          ${cardContent(item)}
+        </div>
+      </div>`;
+    }).join('');}
+    const scrapInner = vbGrouped
+      ? groupItems(items).map(({cat,items:gi},gi_)=>`<div style="column-span:all">${groupHeader(cat,gi.length,gi_===0?'margin-top:0':'margin-top:22px')}</div>${scrapCards(gi,gi_*50)}`).join('')
+      : scrapCards(items);
     boardHtml = items.length ? `<div class="vb-scrapbook-wrap" style="position:relative;border-radius:16px;overflow:hidden;border:1px solid ${isDark?'#2A2533':'#E6CFC9'};padding:30px 26px 34px;background-image:${vbTint.grad},url('${vbWall}');background-size:auto,480px;background-repeat:repeat,repeat;background-blend-mode:${vbTint.blend},normal">
       <div class="vb-board vb-scrapbook vb-size-${vbSize}" style="position:relative;z-index:1;columns:${vbColMin};column-gap:26px;orphans:1;widows:1">
-      ${items.map((item,idx)=>{
-        const tilt=tilts[idx%tilts.length];
-        const tape=tapeColors[idx%tapeColors.length];
-        // Per-card scatter: horizontal nudge, extra tilt jitter and a randomised top margin to break baselines.
-        const nudge=_vbMobile ? 0 : (jit(idx,2.2)*22-11).toFixed(1); // -11..+11 px (disabled on mobile)
-        const tiltX=(tilt + (jit(idx,6.6)*2.4-1.2)).toFixed(2);      // add ±1.2°
-        const topGap=_vbMobile ? (4+jit(idx,8.8)*12).toFixed(0) : (8 + jit(idx,8.8)*30).toFixed(0); // 4..16px mobile, 8..38px desktop
-        return`<div ${dragAttrs(item.id)} style="break-inside:avoid;margin:${topGap}px 0 ${_vbMobile?'12px':'22px'};display:inline-block;width:100%;cursor:grab;transform:translateX(${nudge}px)">
-          <div style="position:relative;background:${vbPageImagesOnly?'transparent':cardBg};border-radius:3px;padding:${vbPageImagesOnly?'0':'4px 4px 0'};box-shadow:${vbPageImagesOnly?'none':`3px 4px 14px ${cardShadow}`};transform:rotate(${tiltX}deg);transform-origin:center top;transition:transform .2s" onmouseover="this.style.transform='rotate(0deg) scale(1.02)'" onmouseout="this.style.transform='rotate(${tiltX}deg)'">
-            <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(${(tilt*0.4).toFixed(2)}deg);width:48px;height:18px;background:${tape};border-radius:2px;opacity:.85;z-index:2"></div>
-            ${cardContent(item)}
-          </div>
-        </div>`;
-      }).join('')}
+      ${scrapInner}
       </div>
     </div>` : '';
 
   } else if(vbLayout==='grid'){
+    function gridCard(item){ return`<div ${dragAttrs(item.id)} style="background:${vbPageImagesOnly?'transparent':cardBg};border-radius:10px;overflow:hidden;box-shadow:${vbPageImagesOnly?'none':`0 2px 10px ${cardShadow}`};cursor:grab;transition:transform .15s,box-shadow .15s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='${vbPageImagesOnly?'none':`0 6px 20px ${cardShadow}`}'" onmouseout="this.style.transform='';this.style.boxShadow='${vbPageImagesOnly?'none':`0 2px 10px ${cardShadow}`}'">
+      ${cardContent(item)}
+    </div>`;}
+    const gridInner = vbGrouped
+      ? groupItems(items).map(({cat,items:gi},gi_)=>`<div style="grid-column:1/-1">${groupHeader(cat,gi.length,gi_===0?'margin-top:0':'margin-top:8px')}</div>${gi.map(gridCard).join('')}`).join('')
+      : items.map(gridCard).join('');
     boardHtml = items.length ? `<div class="vb-board vb-grid vb-size-${vbSize}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(${vbColMin},1fr));gap:16px">
-      ${items.map(item=>`<div ${dragAttrs(item.id)} style="background:${vbPageImagesOnly?'transparent':cardBg};border-radius:10px;overflow:hidden;box-shadow:${vbPageImagesOnly?'none':`0 2px 10px ${cardShadow}`};cursor:grab;transition:transform .15s,box-shadow .15s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='${vbPageImagesOnly?'none':`0 6px 20px ${cardShadow}`}'" onmouseout="this.style.transform='';this.style.boxShadow='${vbPageImagesOnly?'none':`0 2px 10px ${cardShadow}`}'">
-        ${cardContent(item)}
-      </div>`).join('')}
+      ${gridInner}
     </div>` : '';
 
   } else if(vbLayout==='editorial'){
     // Large first item, smaller grid below
     const [first,...rest]=items;
+    function editCard(item){ return`<div ${dragAttrs(item.id)} style="background:${vbPageImagesOnly?'transparent':cardBg};border-radius:8px;overflow:hidden;box-shadow:${vbPageImagesOnly?'none':`0 2px 8px ${cardShadow}`};cursor:grab" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      ${cardContent(item)}
+    </div>`;}
+    const editHero = first?`<div ${dragAttrs(first.id)} style="background:${vbPageImagesOnly?'transparent':cardBg};border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:${vbPageImagesOnly?'none':`0 3px 16px ${cardShadow}`};cursor:grab;display:flex;gap:0;flex-wrap:wrap" onmouseover="this.style.transform='scale(1.005)'" onmouseout="this.style.transform=''">
+      ${_mediaUrl(first.image)?`<img src="${_mediaUrl(first.image)}" alt="${first.title}" style="width:100%;max-height:340px;object-fit:cover;display:block;border-radius:12px${vbPageImagesOnly?'':' 12px 0 0'}" onerror="this.style.display='none'"/>`:''}
+      ${vbPageImagesOnly?'':`<div style="padding:18px 20px 22px">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:${mutedInk};margin-bottom:6px">${first.category}</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:${inkColor};line-height:1.2;margin-bottom:6px">${first.title}</div>
+        ${first.notes?`<div style="font-size:12.5px;color:${mutedInk};line-height:1.6">${first.notes}</div>`:''}
+        ${first.link?`<a href="${first.link}" target="_blank" rel="noopener" style="font-size:11px;color:${mutedInk};text-decoration:underline;margin-top:8px;display:inline-flex;align-items:center;gap:4px;font-style:italic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>${_escHtml(_urlDomain(first.link))}</a>`:''}
+      </div>`}
+    </div>`:'';
+    const editGrid = vbGrouped
+      ? groupItems(items).map(({cat,items:gi},gi_)=>`<div style="grid-column:1/-1">${groupHeader(cat,gi.length,gi_===0?'margin-top:0':'margin-top:8px')}</div>${gi.map(editCard).join('')}`).join('')
+      : rest.map(editCard).join('');
     boardHtml = items.length ? `
-      ${first?`<div ${dragAttrs(first.id)} style="background:${vbPageImagesOnly?'transparent':cardBg};border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:${vbPageImagesOnly?'none':`0 3px 16px ${cardShadow}`};cursor:grab;display:flex;gap:0;flex-wrap:wrap" onmouseover="this.style.transform='scale(1.005)'" onmouseout="this.style.transform=''">
-        ${_mediaUrl(first.image)?`<img src="${_mediaUrl(first.image)}" alt="${first.title}" style="width:100%;max-height:340px;object-fit:cover;display:block;border-radius:12px${vbPageImagesOnly?'':' 12px 0 0'}" onerror="this.style.display='none'"/>`:''}
-        ${vbPageImagesOnly?'':`<div style="padding:18px 20px 22px">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:${mutedInk};margin-bottom:6px">${first.category}</div>
-          <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:${inkColor};line-height:1.2;margin-bottom:6px">${first.title}</div>
-          ${first.notes?`<div style="font-size:12.5px;color:${mutedInk};line-height:1.6">${first.notes}</div>`:''}
-          ${first.link?`<a href="${first.link}" target="_blank" rel="noopener" style="font-size:11px;color:${mutedInk};text-decoration:underline;margin-top:8px;display:inline-flex;align-items:center;gap:4px;font-style:italic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>${_escHtml(_urlDomain(first.link))}</a>`:''}
-        </div>`}
-      </div>`:''}
+      ${vbGrouped?'':editHero}
       <div class="vb-board vb-editorial-grid vb-size-${vbSize}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(${vbColMin},1fr));gap:14px">
-        ${rest.map(item=>`<div ${dragAttrs(item.id)} style="background:${vbPageImagesOnly?'transparent':cardBg};border-radius:8px;overflow:hidden;box-shadow:${vbPageImagesOnly?'none':`0 2px 8px ${cardShadow}`};cursor:grab" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-          ${cardContent(item)}
-        </div>`).join('')}
+        ${editGrid}
       </div>` : '';
 
   } else if(vbLayout==='mood'){
     // Pinterest-style tight masonry
+    function moodCards(arr,idxOffset=0){ return arr.map((item,i)=>{const idx=i+idxOffset;return`<div ${dragAttrs(item.id)} style="break-inside:avoid;margin-bottom:12px;cursor:grab">
+      <div style="background:${vbPageImagesOnly?'transparent':cardBg};border-radius:8px;overflow:hidden;box-shadow:${vbPageImagesOnly?'none':`0 2px 8px ${cardShadow}`};transition:transform .15s" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''">
+        ${_mediaUrl(item.image)?`<img src="${_mediaUrl(item.image)}" alt="${item.title}" style="width:100%;display:block;object-fit:cover;max-height:${160+((idx%3)*60)}px${vbPageImagesOnly?';border-radius:8px':''}" onerror="this.style.display='none'"/>`:''}
+        ${vbPageImagesOnly?'':`<div style="padding:8px 10px 10px">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:${inkColor}">${item.title}</div>
+          ${item.notes?`<div style="font-size:10px;color:${mutedInk};margin-top:3px;line-height:1.4">${item.notes}</div>`:''}
+        </div>`}
+      </div>
+    </div>`;}).join('');}
+    const moodInner = vbGrouped
+      ? groupItems(items).map(({cat,items:gi},gi_)=>`<div style="column-span:all">${groupHeader(cat,gi.length,gi_===0?'margin-top:0':'margin-top:16px')}</div>${moodCards(gi,gi_*50)}`).join('')
+      : moodCards(items);
     boardHtml = items.length ? `<div class="vb-board vb-mood vb-size-${vbSize}" style="columns:${vbColMin};column-gap:12px;orphans:1;widows:1">
-      ${items.map((item,idx)=>`<div ${dragAttrs(item.id)} style="break-inside:avoid;margin-bottom:12px;cursor:grab">
-        <div style="background:${vbPageImagesOnly?'transparent':cardBg};border-radius:8px;overflow:hidden;box-shadow:${vbPageImagesOnly?'none':`0 2px 8px ${cardShadow}`};transition:transform .15s" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''">
-          ${_mediaUrl(item.image)?`<img src="${_mediaUrl(item.image)}" alt="${item.title}" style="width:100%;display:block;object-fit:cover;max-height:${160+((idx%3)*60)}px${vbPageImagesOnly?';border-radius:8px':''}" onerror="this.style.display='none'"/>`:''}
-          ${vbPageImagesOnly?'':`<div style="padding:8px 10px 10px">
-            <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:${inkColor}">${item.title}</div>
-            ${item.notes?`<div style="font-size:10px;color:${mutedInk};margin-top:3px;line-height:1.4">${item.notes}</div>`:''}
-          </div>`}
-        </div>
-      </div>`).join('')}
+      ${moodInner}
     </div>` : '';
   }
 
@@ -38309,6 +38342,10 @@ function renderVisionboard(c,actions){
           </div>`).join('')}
         </div>
       </div>
+      <button type="button" onclick="setVbGrouped(${!vbGrouped})" title="${vbGrouped?'Show as one board':'Group by category'}" style="display:inline-flex;align-items:center;gap:5px;border:.5px solid ${vbGrouped?'var(--gold-deep)':'var(--border)'};border-radius:8px;background:${vbGrouped?'rgba(196,168,130,.12)':'var(--surface)'};color:${vbGrouped?'var(--gold-deep)':'var(--muted)'};padding:6px 10px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:${vbGrouped?'600':'500'};white-space:nowrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg>
+        Group
+      </button>
       ${bgPickerHtml}
       ${layoutDropdownHtml}
     </div>
@@ -38342,6 +38379,11 @@ function vbDrop(e,targetId){
   _dragStopAutoScroll();
   document.querySelectorAll('[data-vbid]').forEach(el=>el.style.outline='');
   if(!vbDragId||vbDragId===targetId)return;
+  if(STATE.settings&&STATE.settings.vbGrouped){
+    const di=STATE.inspo.items.find(i=>i.id===vbDragId);
+    const ti2=STATE.inspo.items.find(i=>i.id===targetId);
+    if(!di||!ti2||(di.category||'Other')!==(ti2.category||'Other')){vbDragId=null;return;}
+  }
   const fi=STATE.visionboard.indexOf(vbDragId);
   const ti=STATE.visionboard.indexOf(targetId);
   if(fi<0||ti<0)return;
