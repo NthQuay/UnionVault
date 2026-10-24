@@ -46447,25 +46447,24 @@ async function _showRsvpForm(coupleId){
   // 1. Fetch couple's planner data (event details + guest list + website theme)
   let eventName='', eventDate='', eventVenue='', theme={}, guestNames=[];
   try{
-    const res = await fetch(`${_SB_URL}/rest/v1/planner_data?select=data&user_id=eq.${coupleId}&limit=1`,{
+    const res = await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website)`,{
       headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
     });
     if(res.ok){
       const rows = await res.json();
-      if(rows && rows[0] && rows[0].data){
-        const d = rows[0].data;
-        const ev = d.event||{};
-        const p1 = ev.partner1||'', p2 = ev.partner2||'';
-        eventName = (p1&&p2)?`${p1} & ${p2}`:(p1||p2||'');
-        eventDate = ev.date||'';
-        eventVenue= ev.venue||'';
-        theme = (d.website&&d.website.theme)||{};
-        // Build guest name list (A-list only, names only, sorted)
-        guestNames = (d.guests||[])
-          .filter(g=>(g.listType||'A')!=='B' && g.name)
-          .map(g=>g.name.trim())
-          .sort((a,b)=>a.localeCompare(b));
-      }
+      const sec = {};
+      (rows||[]).forEach(r=>{ sec[r.section]=r.data; });
+      const ev = sec.event||{};
+      const p1 = ev.partner1||'', p2 = ev.partner2||'';
+      eventName = (p1&&p2)?`${p1} & ${p2}`:(p1||p2||'');
+      eventDate = ev.date||'';
+      eventVenue= ev.venue||'';
+      theme = (sec.website&&sec.website.theme)||{};
+      // Build guest name list (A-list only, names only, sorted)
+      guestNames = (sec.guests||[])
+        .filter(g=>(g.listType||'A')!=='B' && g.name)
+        .map(g=>g.name.trim())
+        .sort((a,b)=>a.localeCompare(b));
     }
   }catch(e){ console.warn('RSVP data fetch failed',e); }
 
