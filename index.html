@@ -40864,6 +40864,7 @@ function _grIsLive(s){ return s && (s.memberIds.length>=2 || s.reason==='amp' ||
 
 // Module-level suggestion state. Visual/session only — never saved to STATE.
 let _groupSuggestions=[];        // array of suggestion groups (see shape below)
+let _groupSuggestionsSeeded=false; // true once suggestions have been built for this data set
 let _groupBannerDismissed=false; // user ✕'d the banner this session
 let _groupBannerExpiry=0;        // epoch ms when the banner auto-clears (5 min window)
 let _groupBannerTimer=null;      // setTimeout handle for the auto-clear
@@ -41006,6 +41007,7 @@ function _buildGroupSuggestions(addedIds){
 // window, then (silently) show the sticky banner. No modal auto-opens.
 function _promptSurnameGrouping(addedIds){
   _groupSuggestions=_buildGroupSuggestions(addedIds);
+  _groupSuggestionsSeeded=true;
   _groupBannerDismissed=false;
   _grLoose=[]; _grDragActive=false; _grDrag=null;
   saveToStorage();
@@ -45017,7 +45019,8 @@ function saveToStorage(){
     dashLayout: STATE.dashLayout,
     dashHiddenWidgets: STATE.dashHiddenWidgets,
     pendingGroups: _groupSuggestions.length ? _groupSuggestions : undefined,
-    pendingGroupsBannerDismissed: _groupBannerDismissed || undefined
+    pendingGroupsBannerDismissed: _groupBannerDismissed || undefined,
+    pendingGroupsSeeded: _groupSuggestionsSeeded || undefined
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -45863,6 +45866,12 @@ function loadFromStorage(){
     if(Array.isArray(saved.pendingGroups) && saved.pendingGroups.length){
       _groupSuggestions = saved.pendingGroups;
       _groupBannerDismissed = !!saved.pendingGroupsBannerDismissed;
+    }
+    _groupSuggestionsSeeded = !!saved.pendingGroupsSeeded;
+    if(!_groupSuggestionsSeeded && STATE.guests && STATE.guests.length >= 2){
+      const allIds=STATE.guests.map(g=>g.id);
+      _groupSuggestions=_buildGroupSuggestions(allIds);
+      _groupSuggestionsSeeded=true;
     }
     document.body.classList.toggle('dark', !!saved.darkMode);
     // Sync data-theme on <html> so OS dark-mode media queries don't override
