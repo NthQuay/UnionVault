@@ -4468,11 +4468,14 @@ function buildDashVisionHtml(){
   let gridHtml='';
   if(!vbItems.length){ gridHtml=emptyHtml; }
   else if(layout==='scrapbook'){
-    // Match the full board: seamless willow wallpaper behind the cards, theme-aware, with a soft veil or palette tint.
     const _dashWall = _vbWallUrl(isDark);
     const _dashTint = _vbTintLayers(isDark);
-    gridHtml=`<div class="vb-board vb-scrapbook vb-dash vb-size-${vbSize}" style="display:grid;grid-template-columns:${gridCols};gap:20px;padding:28px 24px 32px;background-image:${_dashTint.grad},url('${_dashWall}');background-size:auto,360px;background-repeat:repeat,repeat;background-blend-mode:${_dashTint.blend},normal;border:1px solid var(--border);border-radius:16px;overflow:hidden">
-      ${vbItems.map((item,idx)=>{const tilt=tilts[idx%tilts.length];const tape=tapeColors[idx%tapeColors.length];return`<div${cardClick(item)} style="position:relative;${cardCursor}background:${_scrapBg};border-radius:3px;padding:${_scrapPad};box-shadow:${_scrapShadow};transform:rotate(${tilt}deg);transform-origin:center top">${_mediaUrl(item.image)?`<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:42px;height:16px;background:${tape};border-radius:2px;opacity:.85"></div>`:''}${miniCard(item)}</div>`;}).join('')}
+    const jit=(n,seed)=>{ const x=Math.sin((n+1)*9.73+seed*4.19)*43758.5453; return x-Math.floor(x); };
+    const _dashColMin = vbSize==='large' ? '210px' : (vbSize==='medium' ? '150px' : (vbSize==='xsmall' ? '78px' : '104px'));
+    gridHtml=`<div style="position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--border);padding:24px 20px 28px;background-image:${_dashTint.grad},url('${_dashWall}');background-size:auto,360px;background-repeat:repeat,repeat;background-blend-mode:${_dashTint.blend},normal">
+      <div class="vb-board vb-scrapbook vb-dash vb-size-${vbSize}" style="position:relative;z-index:1;columns:${_dashColMin};column-gap:20px;orphans:1;widows:1">
+        ${vbItems.map((item,idx)=>{const tilt=tilts[idx%tilts.length];const tape=tapeColors[idx%tapeColors.length];const nudge=(jit(idx,2.2)*18-9).toFixed(1);const tiltX=(tilt+(jit(idx,6.6)*2.4-1.2)).toFixed(2);const topGap=(6+jit(idx,8.8)*22).toFixed(0);return`<div${cardClick(item)} style="break-inside:avoid;margin:${topGap}px 0 18px;display:inline-block;width:100%;${cardCursor}transform:translateX(${nudge}px)"><div style="position:relative;background:${_scrapBg};border-radius:3px;padding:${_scrapPad};box-shadow:${_scrapShadow};transform:rotate(${tiltX}deg);transform-origin:center top;transition:transform .2s" onmouseover="this.style.transform='rotate(0deg) scale(1.02)'" onmouseout="this.style.transform='rotate(${tiltX}deg)'">${_mediaUrl(item.image)?`<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(${(tilt*0.4).toFixed(2)}deg);width:42px;height:16px;background:${tape};border-radius:2px;opacity:.85;z-index:2"></div>`:''}${miniCard(item)}</div></div>`;}).join('')}
+      </div>
     </div>`;
   } else if(layout==='grid'){
     gridHtml=`<div class="vb-board vb-grid vb-dash vb-size-${vbSize}" style="display:grid;grid-template-columns:${gridCols};gap:12px">
