@@ -32358,6 +32358,9 @@ function _wbSite(){
   if(!Array.isArray(w.faq)) w.faq = [];
   if(!Array.isArray(w.stays)) w.stays = [];
   if(!w.custom || typeof w.custom!=='object') w.custom={};
+  if(!w.rsvp || typeof w.rsvp!=='object') w.rsvp={};
+  if(!w.rsvp.fields || typeof w.rsvp.fields!=='object') w.rsvp.fields={};
+  if(!w.rsvp.customColors || typeof w.rsvp.customColors!=='object') w.rsvp.customColors={};
   if(!w.layout || typeof w.layout!=='object') w.layout={};
   if(!w.details || typeof w.details!=='object') w.details={};
   if(!w.details.hide || typeof w.details.hide!=='object') w.details.hide={};
@@ -33857,6 +33860,50 @@ function _wbSetCtaMode(mode){
 function openWbRsvp(){
   const url = _rsvpLink();
   const hasUid = !url.endsWith('?rsvp=true');
+  const w=_wbSite(), r=w.rsvp;
+  const pSel=r.palette||'sage', sSel=r.headerStyle||'classic';
+  const fields=r.fields||{}, cc=r.customColors||{};
+  const pal=(STATE.inspo&&STATE.inspo.colors)||[];
+
+  const styleCard=(id,label,svgBody)=>`<button type="button" id="rsvp-style-${id}" data-style="${id}"
+    onclick="_wbRsvpSetStyle('${id}')"
+    style="flex:1;min-width:0;padding:8px 6px;border-radius:9px;border:2px solid ${sSel===id?'var(--gold)':'var(--border)'};background:${sSel===id?'color-mix(in srgb,var(--gold) 10%,var(--card) 90%)':'var(--card)'};cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .15s">
+    <div style="width:100%;max-width:60px;height:36px;border-radius:5px;overflow:hidden;border:1px solid var(--border)">${svgBody}</div>
+    <div style="font-size:10.5px;font-weight:${sSel===id?'600':'400'};color:${sSel===id?'var(--gold)':'var(--fg)'}">${label}</div>
+  </button>`;
+
+  const palBtn=(id,label,[bg,ac])=>{const on=pSel===id;return`<button type="button" id="rsvp-pal-${id}" data-pal="${id}"
+    onclick="_wbRsvpSetPalette('${id}')"
+    style="flex:1;min-width:0;padding:7px 4px;border-radius:9px;border:2px solid ${on?'var(--gold)':'var(--border)'};background:${on?'color-mix(in srgb,var(--gold) 10%,var(--card) 90%)':'var(--card)'};cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
+    <div style="display:flex;gap:3px"><div style="width:14px;height:14px;border-radius:3px;background:${bg}"></div><div style="width:14px;height:14px;border-radius:3px;background:${ac}"></div></div>
+    <div style="font-size:10px;font-weight:${on?'600':'400'};color:${on?'var(--gold)':'var(--muted)'};white-space:nowrap">${label}</div>
+  </button>`;};
+
+  const customRoles=[['bg','Background'],['surf','Surface'],['accent','Accent'],['ink','Text']];
+  const renderCustomRows=()=>customRoles.map(([role,label])=>{
+    const cur=cc[role]||'#888888';
+    return `<div class="wb-role" data-role="${role}">
+      <span class="wb-role-name">${label}</span>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;align-items:center">
+        ${pal.map(hex=>`<button type="button" class="wb-pal-sw ${cur===hex?'on':''}" style="background:${_escHtml(hex)};width:22px;height:22px;border-radius:5px" onclick="_wbRsvpSetColor('${role}','${_escHtml(hex)}',this.closest('[data-role]'))" title="${_escHtml(hex)}"></button>`).join('')}
+        <label class="wb-pal-sw" style="background:${_escHtml(cur)};width:22px;height:22px;border-radius:5px;border:2px dashed var(--border);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+          <input type="color" value="${_escHtml(cur)}" onchange="_wbRsvpSetColor('${role}',this.value,this.closest('[data-role]'))" style="position:absolute;inset:0;opacity:0;cursor:pointer"/>
+        </label>
+      </div>
+    </div>`;
+  }).join('');
+
+  const fieldTog=(field,label)=>{
+    const on=field in fields?!!fields[field]:true;
+    return `<label class="tl-pub-row" style="padding:9px 10px;border-radius:0;cursor:pointer">
+      <span class="tl-pub-title">${label}</span>
+      <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
+        <input type="checkbox" ${on?'checked':''} onchange="_wbRsvpToggleField('${field}',this.checked)"/>
+        <span class="toggle-track"></span>
+      </span>
+    </label>`;
+  };
+
   _wbPanel('RSVP', `<div style="display:flex;flex-direction:column;gap:16px">
     <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Share this link with your guests. When they open it they'll see a form to submit their RSVP — no login needed.</div>
     ${hasUid
@@ -33865,6 +33912,58 @@ function openWbRsvp(){
            <button type="button" class="btn btn-outline" onclick="_copyRsvpLink()" style="white-space:nowrap">Copy</button>
          </div>`
       : '<div style="color:var(--red);font-size:12.5px">Sign in to get your RSVP link.</div>'}
+
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding-top:4px">Appearance</div>
+
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Header style</div>
+      <div id="rsvp-style-grid" style="display:flex;gap:6px">
+        ${styleCard('classic','Classic',`<svg width="100%" height="100%" viewBox="0 0 60 36" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="36" fill="#e8ddd0"/><rect x="18" y="11" width="24" height="3" rx="1.5" fill="#a08050"/><rect x="22" y="16" width="16" height="2" rx="1" fill="#c0a070"/><rect x="26" y="20" width="8" height="1.5" rx=".75" fill="#c0a070" opacity=".5"/></svg>`)}
+        ${styleCard('minimal','Minimal',`<svg width="100%" height="100%" viewBox="0 0 60 36" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="36" fill="#f8f4ee"/><rect x="10" y="15" width="40" height="2.5" rx="1.25" fill="#a08050"/><rect x="18" y="20" width="24" height="1.5" rx=".75" fill="#c0a070" opacity=".7"/></svg>`)}
+        ${styleCard('banner','Banner',`<svg width="100%" height="100%" viewBox="0 0 60 36" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="36" fill="#2d3d35"/><rect x="14" y="11" width="32" height="3" rx="1.5" fill="rgba(255,255,255,.85)"/><rect x="18" y="16" width="24" height="2" rx="1" fill="rgba(255,255,255,.55)"/><rect x="24" y="20" width="12" height="1.5" rx=".75" fill="rgba(255,255,255,.35)"/></svg>`)}
+      </div>
+    </div>
+
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Colour scheme</div>
+      <div id="rsvp-pal-grid" style="display:flex;gap:5px">
+        ${palBtn('sage','Sage',['#E8EDEA','#5C7D6B'])}
+        ${palBtn('ivory','Ivory',['#F5F0E8','#A08050'])}
+        ${palBtn('blush','Blush',['#F5EDE9','#C0745A'])}
+        ${palBtn('midnight','Midnight',['#1A1E2A','#7B95C8'])}
+        ${palBtn('slate','Slate',['#1E2226','#8AA4A8'])}
+        ${palBtn('custom','Custom',['var(--card)','var(--gold)'])}
+      </div>
+    </div>
+
+    <div id="rsvp-custom-colors" style="display:${pSel==='custom'?'flex':'none'};flex-direction:column;gap:4px;padding:10px;background:var(--card);border-radius:10px;border:1px solid var(--border)">
+      <div class="wb-slot-lbl" style="margin-bottom:4px">Custom colours</div>
+      <div id="rsvp-custom-rows">${pSel==='custom'?renderCustomRows():''}</div>
+    </div>
+
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding-top:4px">Form fields</div>
+    <div style="display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:-8px">
+      ${fieldTog('dietary','Dietary requirements')}
+      ${fieldTog('email','Email address')}
+      ${fieldTog('phone','Phone number')}
+      ${fieldTog('address','Postal address')}
+      ${fieldTog('message','Message to couple')}
+    </div>
+
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding-top:4px">Button labels</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:-8px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label" style="margin-bottom:4px">Attending</label>
+        <input class="form-input" value="${_escHtml(r.btnYes||'')}" placeholder="Joyfully accepts"
+          oninput="_wbRsvpSet('btnYes',this.value)" style="font-size:13px"/>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label" style="margin-bottom:4px">Not attending</label>
+        <input class="form-input" value="${_escHtml(r.btnNo||'')}" placeholder="Regretfully declines"
+          oninput="_wbRsvpSet('btnNo',this.value)" style="font-size:13px"/>
+      </div>
+    </div>
+
     ${_wbLayoutHtml('rsvp')}
     ${_wbBlocksHtml('rsvp')}
   </div>`,
@@ -33879,6 +33978,64 @@ function _copyRsvpLink(){
   const done = ()=>{ if(btn){ const old=btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=old, 1800); } };
   if(navigator.clipboard) navigator.clipboard.writeText(inp.value).then(done).catch(()=>{ inp.select(); document.execCommand('copy'); done(); });
   else { inp.select(); document.execCommand('copy'); done(); }
+}
+function _wbRsvpSetStyle(s){
+  _wbSite().rsvp.headerStyle=s; saveToStorage(); _wbLiveSoon();
+  document.querySelectorAll('#rsvp-style-grid button').forEach(b=>{
+    const on=b.dataset.style===s;
+    b.style.borderColor=on?'var(--gold)':'var(--border)';
+    b.style.background=on?'color-mix(in srgb,var(--gold) 10%,var(--card) 90%)':'var(--card)';
+    const lbl=b.querySelector('div:last-child');
+    if(lbl){lbl.style.fontWeight=on?'600':'400';lbl.style.color=on?'var(--gold)':'var(--fg)';}
+  });
+}
+function _wbRsvpSetPalette(id){
+  _wbSite().rsvp.palette=id; saveToStorage(); _wbLiveSoon();
+  document.querySelectorAll('#rsvp-pal-grid button').forEach(b=>{
+    const on=b.dataset.pal===id;
+    b.style.borderColor=on?'var(--gold)':'var(--border)';
+    b.style.background=on?'color-mix(in srgb,var(--gold) 10%,var(--card) 90%)':'var(--card)';
+    const lbl=b.querySelector('div:last-child');
+    if(lbl){lbl.style.fontWeight=on?'600':'400';lbl.style.color=on?'var(--gold)':'var(--muted)';}
+  });
+  const cc=document.getElementById('rsvp-custom-colors');
+  if(cc){
+    cc.style.display=id==='custom'?'flex':'none';
+    if(id==='custom'){const rows=document.getElementById('rsvp-custom-rows');if(rows&&!rows.children.length)_wbRsvpBuildCustomEditor();}
+  }
+}
+function _wbRsvpBuildCustomEditor(){
+  const rows=document.getElementById('rsvp-custom-rows'); if(!rows) return;
+  const r=_wbSite().rsvp; const cc=r.customColors||{};
+  const pal=(STATE.inspo&&STATE.inspo.colors)||[];
+  rows.innerHTML=[['bg','Background'],['surf','Surface'],['accent','Accent'],['ink','Text']].map(([role,label])=>{
+    const cur=cc[role]||'#888888';
+    return `<div class="wb-role" data-role="${role}">
+      <span class="wb-role-name">${label}</span>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;align-items:center">
+        ${pal.map(hex=>`<button type="button" class="wb-pal-sw ${cur===hex?'on':''}" style="background:${_escHtml(hex)};width:22px;height:22px;border-radius:5px" onclick="_wbRsvpSetColor('${role}','${_escHtml(hex)}',this.closest('[data-role]'))" title="${_escHtml(hex)}"></button>`).join('')}
+        <label class="wb-pal-sw" style="background:${_escHtml(cur)};width:22px;height:22px;border-radius:5px;border:2px dashed var(--border);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+          <input type="color" value="${_escHtml(cur)}" onchange="_wbRsvpSetColor('${role}',this.value,this.closest('[data-role]'))" style="position:absolute;inset:0;opacity:0;cursor:pointer"/>
+        </label>
+      </div>
+    </div>`;
+  }).join('');
+}
+function _wbRsvpSetColor(role, hex, rowEl){
+  const r=_wbSite().rsvp; if(!r.customColors) r.customColors={};
+  r.customColors[role]=hex; saveToStorage(); _wbLiveSoon();
+  if(rowEl){
+    rowEl.querySelectorAll('button.wb-pal-sw').forEach(b=>b.classList.toggle('on',b.title===hex));
+    const lbl=rowEl.querySelector('label.wb-pal-sw');
+    if(lbl){lbl.style.background=hex;const inp=lbl.querySelector('input[type=color]');if(inp)inp.value=hex;}
+  }
+}
+function _wbRsvpToggleField(field, on){
+  const r=_wbSite().rsvp; if(!r.fields) r.fields={};
+  r.fields[field]=on; saveToStorage(); _wbLiveSoon();
+}
+function _wbRsvpSet(key, val){
+  _wbSite().rsvp[key]=val; saveToStorage(); _wbLiveSoon();
 }
 
 function openWbDetails(){
@@ -46443,6 +46600,18 @@ function _showRsvpExpired(){
 }
 
 // ── _showRsvpForm: public RSVP form for guests ───────────────────────────────
+const _RSVP_PALS={
+  sage:    {bg:'#E8EDEA',surf:'#D2DDD7',accent:'#5C7D6B',ink:'#2D3D35'},
+  ivory:   {bg:'#F5F0E8',surf:'#EDE6D8',accent:'#A08050',ink:'#3A3020'},
+  blush:   {bg:'#F5EDE9',surf:'#EDD9D2',accent:'#C0745A',ink:'#3D2820'},
+  midnight:{bg:'#1A1E2A',surf:'#252A38',accent:'#7B95C8',ink:'#D0D8E8'},
+  slate:   {bg:'#1E2226',surf:'#272D32',accent:'#8AA4A8',ink:'#CAD3D6'},
+};
+function _isDarkHex(hex){
+  const h=(hex||'').replace('#',''); if(h.length<6) return false;
+  const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  return (r*0.299+g*0.587+b*0.114)<128;
+}
 async function _showRsvpForm(coupleId){
   // 1. Fetch couple's planner data (event details + guest list + website theme)
   let eventName='', eventDate='', eventVenue='', theme={}, guestNames=[];
@@ -46460,6 +46629,8 @@ async function _showRsvpForm(coupleId){
       eventDate = ev.date||'';
       eventVenue= ev.venue||'';
       theme = (sec.website&&sec.website.theme)||{};
+      const rsvp = (sec.website&&sec.website.rsvp)||{};
+      const rfields = rsvp.fields||{};
       // Build guest name list (A-list only, names only, sorted)
       guestNames = (sec.guests||[])
         .filter(g=>(g.listType||'A')!=='B' && g.name)
@@ -46488,19 +46659,16 @@ async function _showRsvpForm(coupleId){
 
   _publicPageShell(`
     ${_publicCss(theme.accent,theme.page,theme.band,theme.heading,theme.text,theme.headFont,theme.bodyFont)}
+    ${(()=>{const _p=rsvp.palette,_c=_p==='custom'?(rsvp.customColors||{}):(_RSVP_PALS[_p]||null);if(!_c)return '';const _dk=_isDarkHex(_c.bg||'#fff'),_bfg=_isDarkHex(_c.accent||'#888')?'#fff':'#1a1a1a';return `<style>:root,:root[data-theme="light"],:root[data-theme="dark"]{--pub-page:${_c.bg||'#e8ddd0'}!important;--pub-band:${_c.surf||_c.bg||'#ded6c8'}!important;--pub-surface:${_c.surf||_c.bg||'#ede6d8'}!important;--pub-accent:${_c.accent||'#a08050'}!important;--pub-ink:${_c.ink||'#3a3020'}!important;--pub-text:${_c.ink||'#3a3020'}!important;--pub-btn:${_c.accent||'#a08050'}!important;--pub-btn-fg:${_bfg}!important;color-scheme:${_dk?'dark':'light'}!important}body{background:${_c.bg||'#e8ddd0'}!important;color:${_c.ink||'#3a3020'}!important}</style>`})()}
     <button class="pub-theme-btn" onclick="_pubToggleTheme()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       Theme
     </button>
-    <div class="pub-header">
-      <div class="pub-ring">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
-      </div>
-      <div class="pub-eyebrow">You're invited</div>
-      <div class="pub-couple">${eventName||'Wedding RSVP'}</div>
-      ${dateStr||eventVenue?`<div class="pub-dateline">${[dateStr,eventVenue].filter(Boolean).join(' · ')}</div>`:''}
-      <div class="pub-divider"></div>
-    </div>
+    ${(()=>{const hs=rsvp.headerStyle||'classic';const dl=dateStr||eventVenue?`<div class="pub-dateline">${[dateStr,eventVenue].filter(Boolean).join(' · ')}</div>`:'';
+      if(hs==='minimal')return`<div class="pub-header" style="background:transparent;padding:28px 24px 20px;border-bottom:1px solid var(--pub-border)"><div class="pub-couple" style="font-size:26px;margin-bottom:4px">${eventName||'Wedding RSVP'}</div>${dl}</div>`;
+      if(hs==='banner')return`<div class="pub-header" style="background:var(--pub-accent);padding:40px 24px 32px;border-bottom:none"><div class="pub-eyebrow" style="color:var(--pub-btn-fg);opacity:.8">You're invited</div><div class="pub-couple" style="color:var(--pub-btn-fg)">${eventName||'Wedding RSVP'}</div>${dl?dl.replace('class="pub-dateline"','class="pub-dateline" style="color:var(--pub-btn-fg);opacity:.7"'):''}<div class="pub-divider" style="background:var(--pub-btn-fg);opacity:.5"></div></div>`;
+      return`<div class="pub-header"><div class="pub-ring"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div><div class="pub-eyebrow">You're invited</div><div class="pub-couple">${eventName||'Wedding RSVP'}</div>${dl}<div class="pub-divider"></div></div>`;
+    })()}
     <div class="pub-body" id="rsvp-form-body">
       <div>
         <div class="pub-label">Your name</div>
@@ -46519,23 +46687,23 @@ async function _showRsvpForm(coupleId){
       <div>
         <div class="pub-label">Will you be attending?</div>
         <div class="pub-attend-pills">
-          <div class="pub-attend-pill" id="rf-yes" onclick="_rfSetAttend('yes')">✓ Joyfully accepts</div>
-          <div class="pub-attend-pill" id="rf-no"  onclick="_rfSetAttend('no')">Regretfully declines</div>
+          <div class="pub-attend-pill" id="rf-yes" onclick="_rfSetAttend('yes')">✓ ${rsvp.btnYes||'Joyfully accepts'}</div>
+          <div class="pub-attend-pill" id="rf-no"  onclick="_rfSetAttend('no')">${rsvp.btnNo||'Regretfully declines'}</div>
         </div>
       </div>
-      <div>
+      ${rfields.dietary===false?'':`<div>
         <div class="pub-label">Dietary requirements <span class="opt">(optional)</span></div>
         <div class="pub-diet-grid">${dietHtml}</div>
-      </div>
-      <div>
+      </div>`}
+      ${rfields.email===false?'':`<div>
         <div class="pub-label">Email address <span class="opt">(optional)</span></div>
         <input class="pub-input" id="rf-email" type="email" placeholder="So we can reach you"/>
-      </div>
-      <div>
+      </div>`}
+      ${rfields.phone===false?'':`<div>
         <div class="pub-label">Phone number <span class="opt">(optional)</span></div>
         <input class="pub-input" id="rf-phone" type="tel" placeholder="For day-of contact"/>
-      </div>
-      <div>
+      </div>`}
+      ${rfields.address===false?'':`<div>
         <div class="pub-label">Postal address <span class="opt">(optional — for thank-you cards)</span></div>
         <input class="pub-input" id="rf-street" placeholder="Street address"/>
         <div class="pub-addr-row">
@@ -46543,11 +46711,11 @@ async function _showRsvpForm(coupleId){
           <input class="pub-input" id="rf-state"  placeholder="State"/>
           <input class="pub-input" id="rf-post"   placeholder="Postcode"/>
         </div>
-      </div>
-      <div>
+      </div>`}
+      ${rfields.message===false?'':`<div>
         <div class="pub-label">A message for the couple <span class="opt">(optional)</span></div>
         <textarea class="pub-textarea" id="rf-message" placeholder="Any well-wishes, song requests, or notes…"></textarea>
-      </div>
+      </div>`}
       <button class="pub-submit" id="rf-submit" onclick="_rfSubmit('${coupleId}')">Send my RSVP</button>
       <div class="pub-footer">Your response goes straight to ${eventName||'the couple'}.</div>
     </div>
