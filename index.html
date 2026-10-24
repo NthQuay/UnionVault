@@ -46614,7 +46614,7 @@ function _isDarkHex(hex){
 }
 async function _showRsvpForm(coupleId){
   // 1. Fetch couple's planner data (event details + guest list + website theme)
-  let eventName='', eventDate='', eventVenue='', theme={}, guestNames=[];
+  let eventName='', eventDate='', eventVenue='', theme={}, guestNames=[], rsvp={}, rfields={};
   try{
     const res = await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website)`,{
       headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
@@ -46629,8 +46629,8 @@ async function _showRsvpForm(coupleId){
       eventDate = ev.date||'';
       eventVenue= ev.venue||'';
       theme = (sec.website&&sec.website.theme)||{};
-      const rsvp = (sec.website&&sec.website.rsvp)||{};
-      const rfields = rsvp.fields||{};
+      rsvp = (sec.website&&sec.website.rsvp)||{};
+      rfields = rsvp.fields||{};
       // Build guest name list (A-list only, names only, sorted)
       guestNames = (sec.guests||[])
         .filter(g=>(g.listType||'A')!=='B' && g.name)
