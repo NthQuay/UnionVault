@@ -3716,6 +3716,16 @@ document.addEventListener('keydown', function(e){
 // Vision board scrapbook wallpaper (seamless mirror-tile of blush willow reference).
 const VB_WALLPAPER_LIGHT="https://raw.githubusercontent.com/mandyjane/UnionVault/main/assets/vb-wallpaper-light.png";
 const VB_WALLPAPER_DARK="https://raw.githubusercontent.com/mandyjane/UnionVault/main/assets/vb-wallpaper-dark.png";
+const VB_BOTANICAL_LIGHT="https://raw.githubusercontent.com/mandyjane/UnionVault/main/assets/vb-botanical-light.png";
+const VB_BOTANICAL_DARK="https://raw.githubusercontent.com/mandyjane/UnionVault/main/assets/vb-botanical-dark.png";
+const VB_MARBLE_LIGHT="https://raw.githubusercontent.com/mandyjane/UnionVault/main/assets/vb-marble-light.png";
+const VB_MARBLE_DARK="https://raw.githubusercontent.com/mandyjane/UnionVault/main/assets/vb-marble-dark.png";
+function _vbWallUrl(isDark){
+  const bg=(STATE.settings&&STATE.settings.vbBackground)||'wallpaper';
+  if(bg==='botanical') return isDark ? VB_BOTANICAL_DARK : VB_BOTANICAL_LIGHT;
+  if(bg==='marble')    return isDark ? VB_MARBLE_DARK    : VB_MARBLE_LIGHT;
+  return isDark ? VB_WALLPAPER_DARK : VB_WALLPAPER_LIGHT;
+}
 
 // ══════════════════════════════════════════════
 // STATE
@@ -4459,7 +4469,7 @@ function buildDashVisionHtml(){
   if(!vbItems.length){ gridHtml=emptyHtml; }
   else if(layout==='scrapbook'){
     // Match the full board: seamless willow wallpaper behind the cards, theme-aware, with a soft veil or palette tint.
-    const _dashWall = isDark ? VB_WALLPAPER_DARK : VB_WALLPAPER_LIGHT;
+    const _dashWall = _vbWallUrl(isDark);
     const _dashTint = _vbTintLayers(isDark);
     gridHtml=`<div class="vb-board vb-scrapbook vb-dash vb-size-${vbSize}" style="display:grid;grid-template-columns:${gridCols};gap:20px;padding:28px 24px 32px;background-image:${_dashTint.grad},url('${_dashWall}');background-size:auto,360px;background-repeat:repeat,repeat;background-blend-mode:${_dashTint.blend},normal;border:1px solid var(--border);border-radius:16px;overflow:hidden">
       ${vbItems.map((item,idx)=>{const tilt=tilts[idx%tilts.length];const tape=tapeColors[idx%tapeColors.length];return`<div${cardClick(item)} style="position:relative;${cardCursor}background:${_scrapBg};border-radius:3px;padding:${_scrapPad};box-shadow:${_scrapShadow};transform:rotate(${tilt}deg);transform-origin:center top">${_mediaUrl(item.image)?`<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:42px;height:16px;background:${tape};border-radius:2px;opacity:.85"></div>`:''}${miniCard(item)}</div>`;}).join('')}
@@ -32096,6 +32106,7 @@ let vbLayout = STATE.settings.vbLayout || 'scrapbook';
 let vbDragId = null;
 
 function setVbLayout(l){ vbLayout=l; STATE.settings.vbLayout=l; saveToStorage(); navigate('visionboard'); }
+function setVbBackground(bg){ if(!STATE.settings)STATE.settings={}; STATE.settings.vbBackground=bg; saveToStorage(); navigate(_currentPage||'visionboard'); }
 function setVbDensity(d){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbDensity=d; saveToStorage(); navigate('visionboard'); }
 function setVbSize(sz){ if(!STATE.settings) STATE.settings={}; if(!['xsmall','small','medium','large'].includes(sz)) sz='small'; STATE.settings.vbSize=sz; delete STATE.settings.vbDensity; saveToStorage(); navigate(_currentPage||'visionboard'); }
 function setVbImagesOnly(v){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbDashImagesOnly=!!v; saveToStorage(); navigate(_currentPage||'dashboard'); }
@@ -37781,7 +37792,7 @@ function renderVisionboard(c,actions){
     // Deterministic pseudo-random from index so positions are stable across re-renders.
     const jit=(n,seed)=>{ const x=Math.sin((n+1)*9.73+seed*4.19)*43758.5453; return x-Math.floor(x); };
     // Seamless willow wallpaper behind the cards (theme-aware), with a soft veil for legibility.
-    const vbWall = isDark ? VB_WALLPAPER_DARK : VB_WALLPAPER_LIGHT;
+    const vbWall = _vbWallUrl(isDark);
     const vbTint = _vbTintLayers(isDark);
     const _vbMobile = window.innerWidth <= 900;
     boardHtml = items.length ? `<div class="vb-scrapbook-wrap" style="position:relative;border-radius:16px;overflow:hidden;border:1px solid ${isDark?'#2A2533':'#E6CFC9'};padding:30px 26px 34px;background-image:${vbTint.grad},url('${vbWall}');background-size:auto,480px;background-repeat:repeat,repeat;background-blend-mode:${vbTint.blend},normal">
@@ -37854,6 +37865,13 @@ function renderVisionboard(c,actions){
     </div>
   </div>`;
 
+  const vbBg = (STATE.settings&&STATE.settings.vbBackground)||'wallpaper';
+  const _bgSrcs=[
+    {id:'wallpaper',label:'Wallpaper',url:isDark?VB_WALLPAPER_DARK:VB_WALLPAPER_LIGHT},
+    {id:'botanical',label:'Botanical',url:isDark?VB_BOTANICAL_DARK:VB_BOTANICAL_LIGHT},
+    {id:'marble',   label:'Marble',   url:isDark?VB_MARBLE_DARK:VB_MARBLE_LIGHT},
+  ];
+  const bgPickerHtml = vbLayout==='scrapbook' ? `<div style="display:inline-flex;border:.5px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)">${_bgSrcs.map((bg,i)=>`<button type="button" onclick="setVbBackground('${bg.id}')" title="${bg.label}" style="${i>0?'border-left:.5px solid var(--border);':''}border:none;background:transparent;padding:0;cursor:pointer;width:38px;height:28px;overflow:hidden;vertical-align:top;transition:opacity .15s;${vbBg===bg.id?'box-shadow:inset 0 0 0 2px var(--gold);opacity:1;':'opacity:.5;'}"><img src="${bg.url}" style="width:100%;height:100%;object-fit:cover;display:block"/></button>`).join('')}</div>` : '';
   const colPaletteHtml = colors.length ? `<div style="margin-bottom:32px">
     <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;color:${mutedInk};margin-bottom:12px;letter-spacing:.04em">colour palette</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
@@ -37884,6 +37902,7 @@ function renderVisionboard(c,actions){
           </div>`).join('')}
         </div>
       </div>
+      ${bgPickerHtml}
       ${layoutDropdownHtml}
     </div>
   </div>
