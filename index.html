@@ -41059,6 +41059,7 @@ function _groupSuggestBannerHtml(){
 function _dismissGroupBanner(){
   _groupBannerDismissed=true;
   if(_groupBannerTimer){ clearTimeout(_groupBannerTimer); _groupBannerTimer=null; }
+  saveToStorage();
   if(_currentPage==='guests') renderGuestList();
 }
 function _showGroupBanner(){
@@ -41305,6 +41306,7 @@ function _grNotNow(){
   if(_groupBannerTimer){ clearTimeout(_groupBannerTimer); _groupBannerTimer=null; }
   closeModalDirect();
   // ...but suggestions stay in memory; the cog/chip re-entry points remain available.
+  saveToStorage();
   if(_currentPage==='guests') renderGuestList();
 }
 
@@ -44998,7 +45000,9 @@ function saveToStorage(){
     inviteMeta: STATE.inviteMeta||{},
     dashWidgetOrder: STATE.dashWidgetOrder,
     dashLayout: STATE.dashLayout,
-    dashHiddenWidgets: STATE.dashHiddenWidgets
+    dashHiddenWidgets: STATE.dashHiddenWidgets,
+    pendingGroups: _groupSuggestions.length ? _groupSuggestions : undefined,
+    pendingGroupsBannerDismissed: _groupBannerDismissed || undefined
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -45841,6 +45845,10 @@ function loadFromStorage(){
     if(saved.dashWidgetOrder)STATE.dashWidgetOrder = saved.dashWidgetOrder;
     if(saved.dashLayout)STATE.dashLayout = saved.dashLayout;
     if(saved.dashHiddenWidgets)STATE.dashHiddenWidgets = saved.dashHiddenWidgets;
+    if(Array.isArray(saved.pendingGroups) && saved.pendingGroups.length){
+      _groupSuggestions = saved.pendingGroups;
+      _groupBannerDismissed = !!saved.pendingGroupsBannerDismissed;
+    }
     document.body.classList.toggle('dark', !!saved.darkMode);
     // Sync data-theme on <html> so OS dark-mode media queries don't override
     // CSS variables when the user's saved preference is light mode.
