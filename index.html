@@ -44554,17 +44554,24 @@ async function _submitSupportForm(btn){
   btn.disabled=true; btn.textContent='Sending…';
   try{
     const files=Array.from((document.getElementById('_supp-files')||{}).files||[]).slice(0,4);
-    const attachments=await Promise.all(files.map(function(file){return new Promise(function(resolve,reject){
-      if(file.size>5*1024*1024){reject(new Error(file.name+' is over 5 MB'));return;}
-      const r=new FileReader();
-      r.onload=function(e){resolve({name:file.name,content:e.target.result.split(',')[1],type:file.type});};
-      r.onerror=reject;
-      r.readAsDataURL(file);
-    });}));
+    files.forEach(function(f){if(f.size>5*1024*1024)throw new Error(f.name+' is over 5 MB');});
     const coupleName=(document.getElementById('sidebar-couple-names')||{}).textContent||'';
-    const body={access_key:_W3F_KEY,subject:'['+subject+'] from '+(coupleName||email),from_name:coupleName||'Union Vault user',name:coupleName||email,email:email.trim(),message:msg.trim(),redirect:'false'};
-    if(attachments.length) body.attachments=attachments;
-    const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
+    let res;
+    if(files.length){
+      const fd=new FormData();
+      fd.append('access_key',_W3F_KEY);
+      fd.append('subject','['+subject+'] from '+(coupleName||email));
+      fd.append('from_name',coupleName||'Union Vault user');
+      fd.append('name',coupleName||email);
+      fd.append('email',email.trim());
+      fd.append('message',msg.trim());
+      fd.append('redirect','false');
+      files.forEach(function(f,i){fd.append('attachment['+i+']',f,f.name);});
+      res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Accept':'application/json'},body:fd});
+    }else{
+      const body={access_key:_W3F_KEY,subject:'['+subject+'] from '+(coupleName||email),from_name:coupleName||'Union Vault user',name:coupleName||email,email:email.trim(),message:msg.trim(),redirect:'false'};
+      res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
+    }
     const data=await res.json();
     if(!data.success) throw new Error(data.message||'Submission failed');
     _suppStatus('Message sent ✔ We’ll get back to you shortly.',true);
