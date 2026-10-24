@@ -40540,7 +40540,7 @@ function openGuestImport(){
           style="font-family:monospace;font-size:11.5px;resize:vertical"></textarea>
       </div>
       <div style="font-size:11.5px;color:var(--muted)">
-        <strong>Tip:</strong> Supported columns (any order, any capitalisation): <em>Name, First Name, Last Name / Surname, Email, Phone (incl. Mobile / Home / Work number), RSVP / Status, Dietary / Diet, Tags / Group, Side (matches your Partner Titles), Address (incl. Mailing address), Relationship, Prefix / Title / Salutation</em>
+        <strong>Tip:</strong> Supported columns (any order, any capitalisation): <em>Name, First Name, Last Name / Surname, Email, Phone (incl. Mobile / Home / Work number), RSVP / Status, Dietary / Diet, Tags / Group, Side (matches your Partner Titles), Address (incl. Mailing address), Relationship, Prefix / Title / Salutation, Instagram handle / Facebook handle</em>
       </div>
     </div>`,
     `<button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
@@ -40587,7 +40587,7 @@ function parseGuestImport(){
     if(/^(tag|group|party|table)/.test(h)) return 'tags';
     if(/(phone|mobile|cell|contact|homenumber|worknumber|homephone|workphone|landline)/.test(h)) return 'phone';
     if(/(address|location|suburb|city|mailing|postal)/.test(h)) return 'address';
-    if(/(instagram|^ig$|handle|messenger|socialmedia|^social$|^dm$|username|^insta$)/.test(h)) return 'handle';
+    if(/(instagram|^ig$|handle|messenger|socialmedia|^social$|^dm$|username|^insta$|facebook|^fb$)/.test(h)) return 'handle';
     if(/^(relationship|type|role)/.test(h)) return 'relationship';
     return 'skip';
   }
@@ -40648,6 +40648,7 @@ function _importDiet(cell){
 function applyGuestImport(){
   const mapping = _importHeaders.map((_,i)=>document.getElementById(`col-map-${i}`)?.value||'skip');
   function colVal(row,key){ const idx=mapping.indexOf(key); return idx>=0?(row[idx]||'').trim():''; }
+  function handleColPlatform(){ const idx=mapping.indexOf('handle'); if(idx<0)return'instagram'; const h=(_importHeaders[idx]||'').toLowerCase().replace(/[\s_-]/g,''); return/(facebook|^fb$)/.test(h)&&!/(instagram|^ig$|^insta$)/.test(h)?'facebook':'instagram'; }
   function parseRsvp(val){
     const v=val.toLowerCase().replace(/[\s-_]/g,'');
     if(/^(yes|y|attending|confirmed|accepted|coming|1|true)$/.test(v)) return 'attending';
@@ -40703,7 +40704,7 @@ function applyGuestImport(){
     const isDuplicate=!!existingGuest;
     const imported={id:uid(),name,prefix:colVal(row,'prefix')||'',isDuplicate,existingId:existingGuest?.id||null,
       rsvp:parseRsvp(colVal(row,'rsvp')),phone:colVal(row,'phone'),email:colVal(row,'email'),
-      address:colVal(row,'address'),handle:colVal(row,'handle')||'',relationship:colVal(row,'relationship')||'',
+      address:colVal(row,'address'),handle:colVal(row,'handle')||'',handlePlatform:handleColPlatform(),relationship:colVal(row,'relationship')||'',
       ...(_importDiet(colVal(row,'dietary')||'')),
       tags:(()=>{const base=(colVal(row,'tags')||'').split(/[,;|]/).map(t=>t.trim()).filter(Boolean);const side=normaliseSide(colVal(row,'side'));if(side&&!base.includes(side))base.push(side);return base;})(),
       skip:isDuplicate,action:isDuplicate?'skip':'add',updateFields:{}};
@@ -40799,8 +40800,8 @@ function finaliseGuestImport(skipped=0){
       }
       return;
     }
-    const{id,name,prefix,rsvp,phone,email,address,handle,relationship,dietary,tags,allergens,allergyNote,dietOther}=g;
-    STATE.guests.push({id,name,prefix:prefix||'',rsvp,dietary,tags,allergens:allergens||[],allergyNote:allergyNote||'',dietOther:dietOther||'',phone,email,address,handle:handle||'',handlePlatform:(handle||'').trim()?'instagram':undefined,relationship:relationship||'Guest',coupleId:null,plusOneId:null,plusOne:false,isMain:true,notes:'',listType:'A'});
+    const{id,name,prefix,rsvp,phone,email,address,handle,handlePlatform,relationship,dietary,tags,allergens,allergyNote,dietOther}=g;
+    STATE.guests.push({id,name,prefix:prefix||'',rsvp,dietary,tags,allergens:allergens||[],allergyNote:allergyNote||'',dietOther:dietOther||'',phone,email,address,handle:handle||'',handlePlatform:(handle||'').trim()?(handlePlatform||'instagram'):undefined,relationship:relationship||'Guest',coupleId:null,plusOneId:null,plusOne:false,isMain:true,notes:'',listType:'A'});
     _newlyImportedIds.add(id); addedIds.push(id);
     added++;
   });
