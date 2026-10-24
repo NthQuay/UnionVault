@@ -46696,8 +46696,8 @@ async function _showRsvpForm(coupleId){
       .rf-submit:hover{opacity:.88}
       .rf-submit:disabled{opacity:.5;cursor:not-allowed}
       .rf-msg-box{text-align:center;padding:48px 24px;background:var(--pub-surface);border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,.06)}
-      .rf-footer{text-align:center;padding:40px 20px 24px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--pub-text);opacity:.65}
-      .rf-footer-mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:16px;border:1.5px solid currentColor;border-radius:3px;font-size:7.5px;font-weight:800;letter-spacing:.03em}
+      .rf-footer{text-align:center;padding:40px 20px 24px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;color:var(--pub-text);opacity:.65}
+      .rf-footer-uv{display:inline-flex;align-items:center;justify-content:center;opacity:.8}
     </style>
 
     <div class="rf-page">
@@ -46720,26 +46720,27 @@ async function _showRsvpForm(coupleId){
           </div>
           <div class="rf-hint">Can't find your name? <a href="mailto:" id="rf-contact-link">Contact the couple</a></div>
         </div>
-        <div class="rf-card">
+        <div class="rf-card" id="rf-attend-card" hidden>
           <div class="rf-lbl">Will you be attending?</div>
           <div class="rf-pills">
             <div class="rf-pill" id="rf-yes" onclick="_rfSetAttend('yes')">✓ ${rsvp.btnYes||'Joyfully accepts'}</div>
             <div class="rf-pill" id="rf-no"  onclick="_rfSetAttend('no')">${rsvp.btnNo||'Regretfully declines'}</div>
           </div>
         </div>
-        ${rfields.dietary===false?'':`<div class="rf-card">
+        <div id="rf-contact-group" hidden>
+          ${rfields.dietary===false?'':`<div class="rf-card">
           <div class="rf-lbl">Dietary requirements <span class="opt">(optional)</span></div>
           <div class="rf-diet-grid">${dietHtml}</div>
         </div>`}
-        ${rfields.email===false?'':`<div class="rf-card">
+          ${rfields.email===false?'':`<div class="rf-card">
           <div class="rf-lbl">Email address <span class="opt">(optional)</span></div>
           <input class="rf-inp" id="rf-email" type="email" placeholder="So we can reach you"/>
         </div>`}
-        ${rfields.phone===false?'':`<div class="rf-card">
+          ${rfields.phone===false?'':`<div class="rf-card">
           <div class="rf-lbl">Phone number <span class="opt">(optional)</span></div>
           <input class="rf-inp" id="rf-phone" type="tel" placeholder="For day-of contact"/>
         </div>`}
-        ${rfields.address===false?'':`<div class="rf-card">
+          ${rfields.address===false?'':`<div class="rf-card">
           <div class="rf-lbl">Postal address <span class="opt">(optional)</span></div>
           <input class="rf-inp" id="rf-street" placeholder="Street address"/>
           <div class="rf-addr-row">
@@ -46748,16 +46749,23 @@ async function _showRsvpForm(coupleId){
             <input class="rf-inp" id="rf-post"   placeholder="Postcode"/>
           </div>
         </div>`}
-        ${rfields.message===false?'':`<div class="rf-card">
+          ${rfields.message===false?'':`<div class="rf-card">
           <div class="rf-lbl">A message <span class="opt">(optional)</span></div>
           <textarea class="rf-inp" id="rf-message" placeholder="Any well-wishes, song requests, or notes…" style="resize:vertical;min-height:88px"></textarea>
         </div>`}
-        <button class="rf-submit" id="rf-submit" onclick="_rfSubmit('${coupleId}')">Send my RSVP</button>
+        </div>
+        <button class="rf-submit" id="rf-submit" onclick="_rfSubmit('${coupleId}')" hidden>Send my RSVP</button>
       </div>
       <div class="rf-footer">
-        Powered by
-        <span class="rf-footer-mark">UV</span>
-        <span style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:10px">Union Vault</span>
+        <span style="opacity:.7;font-size:10px;letter-spacing:.04em">Powered by</span>
+        <span class="rf-footer-uv" aria-label="Union Vault">
+          <svg width="22" height="18" viewBox="0 0 44 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">
+            <path d="M6 4 C6 4 6 22 6 24 C6 30 11 34 22 34 C33 34 38 30 38 24 C38 22 38 4 38 4" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+            <path d="M22 4 L30 26" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+            <path d="M22 4 L14 26" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </span>
+        <span style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:9.5px">Union Vault</span>
       </div>
     </div>
     <div id="rf-guest-data" style="display:none" data-guests='${guestNamesJson.replace(/'/g,"&#39;")}'></div>
@@ -46790,6 +46798,8 @@ function _rfPickName(name){
   const list=document.getElementById('rf-ac-list');
   if(inp){inp.value=name;inp.style.borderColor='var(--pub-accent)';inp.style.boxShadow='0 0 0 3px color-mix(in srgb,var(--pub-accent) 20%,transparent 80%)';}
   if(list)list.style.display='none';
+  const ac=document.getElementById('rf-attend-card');
+  if(ac){ac.hidden=false;ac.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
 function _rfNameKey(e){
   const list=document.getElementById('rf-ac-list');
@@ -46822,6 +46832,10 @@ function _rfSetAttend(val){
   document.getElementById('rf-yes').classList.toggle('no',  false);
   document.getElementById('rf-no').classList.toggle('no',   val==='no');
   document.getElementById('rf-no').classList.toggle('yes',  false);
+  const cg=document.getElementById('rf-contact-group');
+  const sb=document.getElementById('rf-submit');
+  if(cg) cg.hidden=(val!=='yes');
+  if(sb){sb.hidden=false;setTimeout(()=>sb.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
 }
 
 async function _rfSubmit(coupleId){
