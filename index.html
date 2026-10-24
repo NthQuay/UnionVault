@@ -437,6 +437,7 @@ body.dark .rsvp-style-btn:hover{color:#CBBBA0;border-color:#A2957A;background:#2
 body.dark .vb-layout-trigger{border-color:#2E2D33;color:#D2CEC6}
 body.dark .vb-layout-trigger:hover{border-color:#B0A085}
 body.dark .vb-layout-item.active{background:#2C2C32}
+@media(max-width:560px){.vb-tb-label{display:none!important}.vb-layout-trigger{gap:4px;padding:6px 8px}}
 /* Custom colour picker */
 body.dark .hex-input-wrap{background:#24242B;border-color:#3A3940}
 body.dark .hex-text-input{background:#24242B;color:#D2CEC6}
@@ -28307,7 +28308,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v203';
+const APP_BUILD='v204';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38288,7 +38289,7 @@ function renderVisionboard(c,actions){
     <div class="vb-layout-select" id="vb-layout-select">
       <button class="vb-layout-trigger" onclick="toggleVbLayoutMenu(event)" aria-haspopup="true" title="Change layout">
         <span style="display:inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${curLayout.icon}"/></svg></span>
-        <span style="min-width:58px;text-align:left">${curLayout.label}</span>
+        <span class="vb-tb-label" style="min-width:58px;text-align:left">${curLayout.label}</span>
         <svg class="vb-layout-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="vb-layout-menu" id="vb-layout-menu" style="display:none">
@@ -38511,7 +38512,7 @@ function renderVisionboard(c,actions){
       <div class="vb-layout-select" id="vb-size-select">
         <button class="vb-layout-trigger" onclick="toggleVbSizeMenu(event)" aria-haspopup="true" title="Card size">
           <span style="display:inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${curSize.icon}"/></svg></span>
-          <span style="min-width:50px;text-align:left">${curSize.label}</span>
+          <span class="vb-tb-label" style="min-width:50px;text-align:left">${curSize.label}</span>
           <svg class="vb-layout-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="vb-layout-menu" id="vb-size-menu" style="display:none">
@@ -38524,7 +38525,7 @@ function renderVisionboard(c,actions){
       </div>
       <button type="button" onclick="setVbGrouped(${!vbGrouped})" title="${vbGrouped?'Show as one board':'Group by category'}" style="display:inline-flex;align-items:center;gap:5px;border:.5px solid ${vbGrouped?'var(--gold-deep)':'var(--border)'};border-radius:8px;background:${vbGrouped?'rgba(196,168,130,.12)':'var(--surface)'};color:${vbGrouped?'var(--gold-deep)':'var(--muted)'};padding:6px 10px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:${vbGrouped?'600':'500'};white-space:nowrap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg>
-        Group
+        <span class="vb-tb-label">Group</span>
       </button>
       ${bgPickerHtml}
       ${layoutDropdownHtml}
