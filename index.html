@@ -12028,7 +12028,7 @@ async function _loadOnlineRsvps(){
     // Build table
     const rowsHtml = rows.map(r=>{
       const dietStr = Array.isArray(r.dietary)&&r.dietary.length
-        ? r.dietary.map(d=>dietLabels[d]||d).join(', ')
+        ? r.dietary.map(function(d){if(d&&d.startsWith('other:')){const n=d.slice(6);return n?'Other ('+n+')':'Other';}return dietLabels[d]||d;}).join(', ')
         : '—';
       const attendBadge = r.attending==='yes'
         ? `<span style="color:var(--green);font-weight:600">✓ Yes</span>`
@@ -12100,7 +12100,9 @@ async function _loadOnlineRsvps(){
         }
         // Carry dietary across if the guest has none set
         if(Array.isArray(r.dietary)&&r.dietary.length&&(!g.dietary||!g.dietary.length)){
-          g.dietary=r.dietary.slice();
+          g.dietary=r.dietary.map(function(d){return(d&&d.startsWith('other:'))?'other':d;});
+          const _oi=r.dietary.find(function(d){return d&&d.startsWith('other:');});
+          if(_oi&&!g.dietOther) g.dietOther=_oi.slice(6);
           rowChanged=true;
         }
         // Carry phone, email, address across if not already on guest record
@@ -28376,7 +28378,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v214';
+const APP_BUILD='v215';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47179,9 +47181,9 @@ async function _showRsvpForm(coupleId,mode){
     ['nutallergy','Nut allergy'],['other','Other']
   ];
   const dietHtml=dietOptions.map(([k,lbl])=>`
-    <div class="rf-diet-chip" onclick="this.classList.toggle('on')" data-diet="${k}">
+    <div class="rf-diet-chip" onclick="${k==='other'?'_rfOtherToggle(this)':"this.classList.toggle('on')"}" data-diet="${k}">
       <span class="rf-chk"><svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg></span>${lbl}
-    </div>`).join('');
+    </div>`).join('')+`<input class="rf-inp rf-diet-other" type="text" placeholder="Please describe your dietary requirement…" style="display:none;flex-basis:100%;margin-top:6px">`;
 
   const _hf=theme.headFont||"'Cormorant Garamond',serif";
   const _bf=theme.bodyFont||"'Inter',sans-serif";
@@ -47522,6 +47524,11 @@ function _rfSetMemberAttend(memberId,val){
   }
 }
 
+function _rfOtherToggle(chip){
+  chip.classList.toggle('on');
+  const inp=chip.closest('.rf-diet-grid').querySelector('.rf-diet-other');
+  if(inp){const on=chip.classList.contains('on');inp.style.display=on?'block':'none';if(on)setTimeout(function(){inp.focus();},0);}
+}
 async function _rfSubmit(coupleId){
   const nameEl=document.getElementById('rf-name');
   const submitEl=document.getElementById('rf-submit');
@@ -47538,6 +47545,9 @@ async function _rfSubmit(coupleId){
   }
 
   const diet=Array.from(document.querySelectorAll('#rf-diet-s0 .rf-diet-chip.on')).map(el=>el.dataset.diet);
+  const _otherInp0=document.querySelector('#rf-diet-s0 .rf-diet-other');
+  const _otherNote0=_otherInp0?_otherInp0.value.trim():'';
+  const dietFinal=diet.map(function(d){return(d==='other'&&_otherNote0)?'other:'+_otherNote0:d;});
   const street=(document.getElementById('rf-street')||{}).value||'';
   const suburb=(document.getElementById('rf-suburb')||{}).value||'';
   const state=(document.getElementById('rf-state')||{}).value||'';
@@ -47560,10 +47570,13 @@ async function _rfSubmit(coupleId){
         const g=objs.find(o=>o.id===id)||{name};
         const eid2=id.replace(/[^a-z0-9]/gi,'');
         const mDiet=Array.from(document.querySelectorAll('#rf-diet-'+eid2+' .rf-diet-chip.on')).map(el=>el.dataset.diet);
-        return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:mDiet.length?mDiet:null};
+        const _mOtherInp=document.querySelector('#rf-diet-'+eid2+' .rf-diet-other');
+        const _mOtherNote=_mOtherInp?_mOtherInp.value.trim():'';
+        const mDietFinal=mDiet.map(function(d){return(d==='other'&&_mOtherNote)?'other:'+_mOtherNote:d;});
+        return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:mDietFinal.length?mDietFinal:null};
       });
     } else {
-      payloads=[{couple_id:coupleId,guest_name:name,email,phone,address,message,attending:_rfAttending,dietary:diet.length?diet:null}];
+      payloads=[{couple_id:coupleId,guest_name:name,email,phone,address,message,attending:_rfAttending,dietary:dietFinal.length?dietFinal:null}];
     }
 
     const results=await Promise.all(payloads.map(body=>
