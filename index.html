@@ -4710,6 +4710,7 @@ function renderDashboard(c, actions){
   });
   const _allAList=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B');
   const total=_allAList.length;
+  const invitedCount=_allAList.filter(g=>_invitedGuestIds.has(g.id)).length;
   const attending=_allAList.filter(g=>g.rsvp==='attending').length;
   const declined=_allAList.filter(g=>g.rsvp==='declined').length;
   const awaiting=total-attending-declined;
@@ -4838,7 +4839,7 @@ function renderDashboard(c, actions){
           </div>
           <div style="font-size:11.5px;color:var(--muted)">${sub}</div>
         </div>`;
-        cards = ring('Guests',`${total}`,'guests invited',1,'var(--gold)','guests')
+        cards = ring('Guests',`${total}`,`${invitedCount} invited`,invitedCount/Math.max(1,total),'var(--gold)','guests')
           + ring('Attending',`${attending}`,`${attendPct}% confirmed`,attendPct/100,'var(--green)','guests')
           + ring('Planning',`${pct}<span style="font-size:14px">%</span>`,`${checkDone} of ${checkTotal} tasks`,pct/100,'var(--gold)','checklist')
           + ring('Budget Used',`${BU.p}<span style="font-size:14px">%</span>`,BU.sub,BUf,'var(--gold)','budget');
@@ -4850,7 +4851,7 @@ function renderDashboard(c, actions){
           <div style="font-size:11.5px;color:var(--muted);margin:4px 0 12px">${sub}</div>
           <div style="height:4px;background:var(--surface);border-radius:2px;overflow:hidden;margin-top:auto"><div style="height:100%;width:${Math.max(0,Math.min(100,frac*100))}%;background:${color};border-radius:2px;transition:width .4s"></div></div>
         </div>`;
-        cards = barCard('Guests',`${total}`,'guests invited',1,'var(--gold)','guests')
+        cards = barCard('Guests',`${total}`,`${invitedCount} invited`,invitedCount/Math.max(1,total),'var(--gold)','guests')
           + barCard('Attending',`${attending}`,`${attendPct}% confirmed`,attendPct/100,'var(--green)','guests')
           + barCard('Planning',`${pct}<span style="font-size:20px">%</span>`,`${checkDone} of ${checkTotal} tasks`,pct/100,'var(--gold)','checklist')
           + barCard('Budget Used',`${BU.p}<span style="font-size:20px">%</span>`,BU.sub,BUf,'var(--gold)','budget');
@@ -4871,7 +4872,7 @@ function renderDashboard(c, actions){
           <div style="font-family:Cormorant Garamond,serif;font-size:42px;font-weight:600;line-height:1;color:${color==='var(--green)'?'var(--green)':'var(--ink)'};margin:2px 0">${valueHtml}</div>
           <div style="font-size:11px;color:var(--muted)">${sub}</div>
         </div>`;
-        cards = plaque('Guests',`${total}`,'guests invited','var(--ink)','guests')
+        cards = plaque('Guests',`${total}`,`${invitedCount} invited`,'var(--ink)','guests')
           + plaque('Attending',`${attending}`,`${attendPct}% confirmed`,'var(--green)','guests')
           + plaque('Planning',`${pct}<span style="font-size:22px">%</span>`,`${checkDone} of ${checkTotal} tasks`,'var(--ink)','checklist')
           + plaque('Budget Used',`${BU.p}<span style="font-size:22px">%</span>`,BU.sub,'var(--ink)','budget');
@@ -28651,7 +28652,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v253';
+const APP_BUILD='v254';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
