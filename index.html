@@ -12550,6 +12550,8 @@ function _rsvpColOrder(){
     const ii=ord.indexOf('invited');
     if(ii>=0) ord.splice(ii,0,'savedate'); else ord.unshift('savedate');
   }
+  // Enforce savedate always before invited — fix saved orders where invited got dragged ahead.
+  {const si=ord.indexOf('savedate'),ii=ord.indexOf('invited');if(si>=0&&ii>=0&&si>ii){ord.splice(si,1);ord.splice(ii,0,'savedate');}}
   // 'name' is now a real orderable column. Older saved orders predate it (Name used
   // to be pinned right after Invite). Slot it immediately after 'invited' to match
   // that historical position; fall back to the front if invite isn't present.
@@ -12778,6 +12780,7 @@ function _mealSetOn(on){
   if(on){ if(!STATE.settings.rsvpCols) STATE.settings.rsvpCols={}; STATE.settings.rsvpCols.meal=true; }
   saveToStorage();
   rsvpRerenderList();
+  _rsvpReopenColMenu();
 }
 function _mealOptsArr(){
   if(!STATE.settings) STATE.settings={};
@@ -12785,8 +12788,8 @@ function _mealOptsArr(){
   return STATE.settings.mealOptions;
 }
 function _mealSetOpt(i,v){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a[i]=String(v||'').trim(); saveToStorage(); rsvpRerenderList(); }
-function _mealAddOpt(){ _mealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); }
-function _mealDelOpt(i){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); }
+function _mealAddOpt(){ _mealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); _rsvpReopenColMenu(); }
+function _mealDelOpt(i){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); _rsvpReopenColMenu(); }
 function _rsvpSetEmailNotif(on){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpEmailOn=!!on;
@@ -28391,7 +28394,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v226';
+const APP_BUILD='v227';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
