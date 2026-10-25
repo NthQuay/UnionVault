@@ -28391,7 +28391,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v223';
+const APP_BUILD='v224';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32753,7 +32753,10 @@ async function _wbSaveSlug(val){
           return;
         }
       }
-    }catch(e){ /* timeout or network error — proceed anyway */ }
+    }catch(e){
+      _setMsg(e.message==='timeout'?'Could not verify availability — please try again.':'Connection error — please try again.','var(--red)');
+      return;
+    }
   }
   _wbSite().slug = slug;
   saveToStorage();
