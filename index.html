@@ -5768,7 +5768,18 @@ function updateBulkBar(){
   const familyBtn=document.getElementById('bulk-family-btn');
   if(bar) bar.style.display=bulkSelected.size>0?'flex':'none';
   if(countEl) countEl.textContent=`${bulkSelected.size} selected`;
-  if(linkBtn){ const exactly2=bulkSelected.size===2; linkBtn.style.display=exactly2?'inline-flex':'none'; }
+  if(linkBtn){
+    const exactly2=bulkSelected.size===2;
+    linkBtn.style.display=exactly2?'inline-flex':'none';
+    if(exactly2){
+      const _bids=[...bulkSelected];
+      const _bg1=STATE.guests.find(x=>x.id===_bids[0]), _bg2=STATE.guests.find(x=>x.id===_bids[1]);
+      const _alreadyLinked=_bg1&&_bg2&&_bg1.coupleId===_bg2.id;
+      const _lbl=linkBtn.querySelector('.gbtn-label');
+      if(_lbl) _lbl.textContent=_alreadyLinked?'Unlink Couple':'Link as Couple';
+      linkBtn.title=_alreadyLinked?'Unlink Couple':'Link as Couple';
+    }
+  }
   if(familyBtn){ familyBtn.style.display=bulkSelected.size>=2?'inline-flex':'none'; }
   // Context-aware list buttons: hide the list a selection already belongs to.
   // All A-list → hide "A Primary List"; all B-list → hide "B List"; mixed → show both.
@@ -5821,6 +5832,40 @@ function confirmBulkLinkCouple(id1,id2){
   // Link them — preserve any existing role rather than overwriting with 'Couple'
   g1.coupleId=g2.id; if(!g1.relationship||g1.relationship==='Guest') g1.relationship='Couple';
   g2.coupleId=g1.id; if(!g2.relationship||g2.relationship==='Guest') g2.relationship='Couple';
+  bulkSelected.clear();
+  saveToStorage(); closeModalDirect(); navigate('guests');
+}
+function bulkLinkOrUnlink(){
+  const ids=[...bulkSelected];
+  if(ids.length!==2) return;
+  const g1=STATE.guests.find(x=>x.id===ids[0]), g2=STATE.guests.find(x=>x.id===ids[1]);
+  if(g1&&g2&&g1.coupleId===g2.id) bulkUnlinkCouple();
+  else bulkLinkCouple();
+}
+function bulkUnlinkCouple(){
+  const ids=[...bulkSelected];
+  if(ids.length!==2){ alert('Please select exactly 2 guests.'); return; }
+  const [g1,g2]=[STATE.guests.find(x=>x.id===ids[0]), STATE.guests.find(x=>x.id===ids[1])];
+  if(!g1||!g2||g1.coupleId!==g2.id){ alert('Those guests are not linked as a couple.'); return; }
+  openModal('Unlink Couple',`
+    <div style="text-align:center;padding:8px 0">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;margin-bottom:12px;color:var(--ink)">Unlink this couple?</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px">
+        <div style="background:var(--parchment);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:500;color:var(--ink)">${_escHtml(g1.name)}</div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><line x1="14" y1="12" x2="16" y2="12" stroke-dasharray="2 2"/><circle cx="16" cy="12" r="4"/></svg>
+        <div style="background:var(--parchment);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:500;color:var(--ink)">${_escHtml(g2.name)}</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.5">They'll each appear as individual guests on the list.</div>
+    </div>`,
+    `<button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
+     <button class="btn btn-primary" onclick="confirmBulkUnlinkCouple('${ids[0]}','${ids[1]}')">Unlink</button>`);
+}
+function confirmBulkUnlinkCouple(id1,id2){
+  const g1=STATE.guests.find(x=>x.id===id1);
+  const g2=STATE.guests.find(x=>x.id===id2);
+  if(!g1||!g2){ closeModalDirect(); return; }
+  _preservePairInvite(g1.id, g2.id);
+  g1.coupleId=null; g2.coupleId=null;
   bulkSelected.clear();
   saveToStorage(); closeModalDirect(); navigate('guests');
 }
@@ -6731,7 +6776,7 @@ function renderGuests(c,actions){
         </button>
         <span id="bulk-count" style="font-size:12.5px;color:var(--muted);font-weight:500">0 selected</span>
         <div style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <button id="bulk-link-btn" class="btn btn-outline btn-sm gbtn" onclick="bulkLinkCouple()" title="Link as Couple" style="display:none;align-items:center;gap:3px;padding:4px 6px">
+          <button id="bulk-link-btn" class="btn btn-outline btn-sm gbtn" onclick="bulkLinkOrUnlink()" title="Link as Couple" style="display:none;align-items:center;gap:3px;padding:4px 6px">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/></svg>
             <span class="gbtn-label">Link as Couple</span>
           </button>
@@ -28571,7 +28616,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v238';
+const APP_BUILD='v239';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
