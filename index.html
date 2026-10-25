@@ -3841,7 +3841,7 @@ const STATE = {
   tagDefs: {},
   invites: [],
   inviteMeta: {},
-  settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, mealChoiceOn:false, mealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current' },
+  settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current' },
   // Guest-facing website. Content is NOT duplicated here — sections read from the
   // planner (details, timeline, inspo, wishingwell) so there is one source of truth.
   // This object holds only what the planner has no opinion about: which sections are
@@ -12040,10 +12040,12 @@ async function _loadOnlineRsvps(){
         : r.attending==='no'
           ? `<span style="color:var(--red)">✗ No</span>`
           : `<span style="color:var(--muted)">—</span>`;
+      const mealStr=r.meal||'—';
       return `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:8px 10px;font-size:12.5px;color:var(--ink);font-weight:500">${r.guest_name||'—'}</td>
         <td style="padding:8px 10px;font-size:12.5px">${attendBadge}</td>
         <td style="padding:8px 10px;font-size:12px;color:var(--muted)">${dietStr}</td>
+        <td style="padding:8px 10px;font-size:12px;color:var(--muted)">${mealStr}</td>
         <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.email||'—'}</td>
         <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.phone||'—'}</td>
         <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.address||'—'}</td>
@@ -12076,6 +12078,7 @@ async function _loadOnlineRsvps(){
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Guest</th>
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Attending</th>
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Dietary</th>
+              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Meal</th>
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Email</th>
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Phone</th>
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Address</th>
@@ -12116,7 +12119,8 @@ async function _loadOnlineRsvps(){
           if(_ai&&!g.allergyNote) g.allergyNote=_ai.slice(8);
           rowChanged=true;
         }
-        // Carry phone, email, address across if not already on guest record
+        // Carry meal, phone, email, address across if not already on guest record
+        if(r.meal&&!g.meal){g.meal=r.meal;g.mealSrc='guest';rowChanged=true;}
         if(r.phone&&!(g.phone||'').trim()){g.phone=r.phone.trim();rowChanged=true;}
         if(r.email&&!(g.email||'').trim()){g.email=r.email.trim();rowChanged=true;}
         if(r.address&&!(g.address||'').trim()){g.address=r.address.trim();rowChanged=true;}
@@ -12682,7 +12686,7 @@ function _rsvpToggleFreezeName(e){
 function _rsvpColMenuHtml(){
   const c=_rsvpCols();
   const order=_rsvpColOrder();
-  const labels={status:'RSVP status',name:'Name',ageband:'Age band',savedate:'Save the Date',invited:'Invite',date:'RSVP date',rsvpby:'RSVP by',reminder:'Reminder',dietary:'Dietary',tags:'Tags',phone:'Phone',email:'Email',address:'Address',handle:'IG / Messenger'};
+  const labels={status:'RSVP status',name:'Name',ageband:'Age band',savedate:'Save the Date',invited:'Invite',date:'RSVP date',rsvpby:'RSVP by',reminder:'Reminder',dietary:'Dietary',meal:'Meal',tags:'Tags',phone:'Phone',email:'Email',address:'Address',handle:'IG / Messenger'};
   const locked=new Set(['invited','name']); // always shown (can't be hidden), but ARE reorderable
   const grip=`<svg class="dragrow-grip" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);cursor:grab;flex-shrink:0"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>`;
   const snow=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="17" y1="5" x2="7" y2="19"/><line x1="7" y1="5" x2="17" y2="19"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`;
@@ -12757,18 +12761,11 @@ function _mealSetupHtml(){
       `:''}
 
       <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);margin:12px 0 6px">When a guest RSVPs</div>
-      <div class="needs-host">
-        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-bottom:4px">
-          <input type="checkbox" disabled style="width:15px;height:15px;flex-shrink:0"/><span>Email me</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)">
-          <input type="checkbox" disabled style="width:15px;height:15px;flex-shrink:0"/><span>Notify me on my phone</span>
-        </label>
-      </div>
-      <div class="needs-host-note">
-        Both need somewhere for the RSVP to <i>arrive</i> — an email can't be sent, and a phone can't be
-        notified, by a page sitting on a guest's device. <b>These switch on when the site is hosted.</b>
-      </div>
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer;margin-bottom:7px">
+        <input type="checkbox" ${(STATE.settings&&STATE.settings.rsvpEmailOn!==false)?'checked':''} onchange="_rsvpSetEmailNotif(this.checked)" style="width:15px;height:15px;accent-color:var(--gold-deep);cursor:pointer;flex-shrink:0"/>
+        <span>Email me</span>
+      </label>
+      <div class="needs-host-note" style="margin-top:0">Notifications are sent to your account email. Uncheck to turn off.</div>
     </div>`;
 }
 function _mealSetOn(on){
@@ -12790,6 +12787,11 @@ function _mealOptsArr(){
 function _mealSetOpt(i,v){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a[i]=String(v||'').trim(); saveToStorage(); rsvpRerenderList(); }
 function _mealAddOpt(){ _mealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); }
 function _mealDelOpt(i){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); }
+function _rsvpSetEmailNotif(on){
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.rsvpEmailOn=!!on;
+  saveToStorage();
+}
 
 // The unified guest table. Keeps inline status editing; respects column choices + order.
 // Columns are content-sized (a real <table>), so the grid only takes the width it needs.
@@ -28389,7 +28391,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v218';
+const APP_BUILD='v219';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47150,7 +47152,7 @@ async function _showRsvpForm(coupleId,mode){
   // mode: 'page' (default — for ?rsvp= URL) | 'modal' (preview from within app)
   let eventName='',eventDate='',eventVenue='',theme={},guestObjs=[],rsvp={},rfields={};
   try{
-    const res=await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website,families)`,{
+    const res=await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website,families,settings)`,{
       headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
     });
     if(res.ok){
@@ -47181,6 +47183,11 @@ async function _showRsvpForm(coupleId,mode){
     const d=new Date(eventDate+'T00:00:00');if(isNaN(d))return'';
     return d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   })():'';
+
+  const mealOn=!!(sec.settings&&sec.settings.mealChoiceOn)&&Array.isArray(sec.settings.mealOptions)&&(sec.settings.mealOptions||[]).filter(x=>String(x||'').trim()).length>0;
+  const mealOpts=mealOn?(sec.settings.mealOptions||[]).filter(x=>String(x||'').trim()):[];
+  const rfEmailNotif=!((sec.settings&&sec.settings.rsvpEmailOn===false));
+  const mealHtml=mealOpts.map(o=>`<button type="button" class="rf-meal-chip" onclick="_rfPickMeal(this)" data-meal="${o.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}">${o.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</button>`).join('');
 
   const guestNames=[...guestObjs].map(g=>g.name).sort((a,b)=>a.localeCompare(b));
   const guestNamesJson=JSON.stringify(guestNames);
@@ -47253,6 +47260,10 @@ async function _showRsvpForm(coupleId,mode){
       .rf-diet-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;border:1.5px solid var(--pub-border);background:var(--pub-page);font-size:12.5px;color:var(--pub-ink);cursor:pointer;transition:all .15s;user-select:none;-webkit-user-select:none}
       .rf-diet-chip:hover{border-color:var(--pub-accent)}
       .rf-diet-chip.on{background:color-mix(in srgb,var(--pub-accent) 12%,var(--pub-surface) 88%);border-color:var(--pub-accent)}
+      .rf-meal-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+      .rf-meal-chip{padding:9px 16px;border-radius:20px;border:1.5px solid var(--pub-border);background:var(--pub-page);font-size:13px;font-weight:500;color:var(--pub-ink);cursor:pointer;transition:all .15s;font-family:inherit}
+      .rf-meal-chip:hover{border-color:var(--pub-accent)}
+      .rf-meal-chip.on{border-color:var(--pub-accent);background:color-mix(in srgb,var(--pub-accent) 14%,var(--pub-surface) 86%);color:var(--pub-ink)}
       .rf-chk{width:13px;height:13px;border-radius:3px;border:1.5px solid var(--pub-border);background:var(--pub-surface);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
       .rf-diet-chip.on .rf-chk{background:var(--pub-accent);border-color:var(--pub-accent);color:var(--pub-btn-fg,#fff)}
       .rf-chk svg{visibility:hidden}.rf-diet-chip.on .rf-chk svg{visibility:visible}
@@ -47303,6 +47314,7 @@ async function _showRsvpForm(coupleId,mode){
           <div id="rf-group-rows"></div>
         </div>
         <div id="rf-contact-group" hidden>
+          ${mealOn?`<div id="rf-per-meal"></div>`:''}
           ${rfields.dietary===false?'':`<div id="rf-per-diet"></div>`}
           ${rfields.email===false?'':`<div class="rf-card">
           <div class="rf-lbl">Email address</div>
@@ -47343,9 +47355,11 @@ async function _showRsvpForm(coupleId,mode){
       data-guests='${guestNamesJson.replace(/'/g,"&#39;")}'
       data-guest-objs='${guestObjsJson.replace(/'/g,"&#39;")}'
       data-btn-yes='${btnYes.replace(/'/g,"&#39;")}'
-      data-btn-no='${btnNo.replace(/'/g,"&#39;")}'>
+      data-btn-no='${btnNo.replace(/'/g,"&#39;")}'
+      data-email-notif='${rfEmailNotif?'1':'0'}'>
     </div>
     ${rfields.dietary===false?'':`<template id="rf-diet-template">${dietHtml}</template>`}
+    ${mealOn?`<template id="rf-meal-template"><div class="rf-meal-chips">${mealHtml}</div></template>`:''}
   `;
 
   if(isModal){
@@ -47508,6 +47522,17 @@ function _rfSetAttend(val){
       card.appendChild(tog);card.appendChild(grid);pd.innerHTML='';pd.appendChild(card);
     }else if(val!=='yes'){pd.innerHTML='';}
   }
+  const mealTmpl=document.getElementById('rf-meal-template');
+  const pm=document.getElementById('rf-per-meal');
+  if(pm&&mealTmpl){
+    if(val==='yes'&&!document.getElementById('rf-meal-s0')){
+      const wrap=document.createElement('div');wrap.className='rf-card';wrap.id='rf-meal-card-s0';
+      wrap.innerHTML='<div class="rf-lbl">Meal choice</div>';
+      const chips=document.createElement('div');chips.id='rf-meal-s0';
+      chips.appendChild(mealTmpl.content.cloneNode(true));
+      wrap.appendChild(chips);pm.innerHTML='';pm.appendChild(wrap);
+    }else if(val!=='yes'){pm.innerHTML='';}
+  }
 }
 function _rfSetMemberAttend(memberId,val){
   _rfMemberAttend[memberId]=val;
@@ -47542,12 +47567,33 @@ function _rfSetMemberAttend(memberId,val){
       if(dietCard)dietCard.remove();
     }
   }
+  const mealTmpl2=document.getElementById('rf-meal-template');
+  const pm2=document.getElementById('rf-per-meal');
+  if(pm2&&mealTmpl2){
+    if(val==='yes'&&!document.getElementById('rf-meal-card-'+eid)){
+      const mrow2=document.querySelector('#rf-group-rows [data-mid="'+memberId+'"] .rf-member-name');
+      const mname2=mrow2?mrow2.textContent:'Guest';
+      const wrap=document.createElement('div');wrap.className='rf-card';wrap.id='rf-meal-card-'+eid;
+      wrap.innerHTML='<div class="rf-lbl">'+mname2+'\u2019s meal choice</div>';
+      const chips=document.createElement('div');chips.id='rf-meal-'+eid;
+      chips.appendChild(mealTmpl2.content.cloneNode(true));
+      wrap.appendChild(chips);pm2.appendChild(wrap);
+    }else if(val!=='yes'){
+      const mc=document.getElementById('rf-meal-card-'+eid);if(mc)mc.remove();
+    }
+  }
 }
 
 function _rfNoteToggle(chip){
   chip.classList.toggle('on');
   const inp=chip.closest('.rf-diet-grid').querySelector('.rf-diet-note[data-for="'+chip.dataset.diet+'"]');
   if(inp){const on=chip.classList.contains('on');inp.style.display=on?'block':'none';if(on)setTimeout(function(){inp.focus();},0);}
+}
+function _rfPickMeal(chip){
+  const chips=chip.closest('.rf-meal-chips');
+  if(!chips) return;
+  chips.querySelectorAll('.rf-meal-chip').forEach(c=>c.classList.remove('on'));
+  chip.classList.add('on');
 }
 async function _rfSubmit(coupleId){
   const nameEl=document.getElementById('rf-name');
@@ -47580,21 +47626,25 @@ async function _rfSubmit(coupleId){
 
   submitEl.disabled=true;submitEl.textContent='Sending…';
 
+  const _gd=document.getElementById('rf-guest-data');
+  const _rfEmailNotif=!(_gd&&_gd.dataset.emailNotif==='0');
+
   try{
     let payloads;
     if(isGroup){
-      const gd=document.getElementById('rf-guest-data');
-      const objs=gd?JSON.parse(gd.dataset.guestObjs||'[]'):[];
+      const objs=_gd?JSON.parse(_gd.dataset.guestObjs||'[]'):[];
       const memberIds=[...rows].map(r=>r.dataset.mid);
       payloads=memberIds.map(id=>{
         const g=objs.find(o=>o.id===id)||{name};
         const eid2=id.replace(/[^a-z0-9]/gi,'');
         const mDiet=Array.from(document.querySelectorAll('#rf-diet-'+eid2+' .rf-diet-chip.on')).map(el=>el.dataset.diet);
         const mDietFinal=_encDiet(mDiet,'rf-diet-'+eid2);
-        return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:mDietFinal.length?mDietFinal:null};
+        const mMealEl=document.querySelector('#rf-meal-'+eid2+' .rf-meal-chip.on');
+        return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:mDietFinal.length?mDietFinal:null,meal:mMealEl?mMealEl.dataset.meal:null};
       });
     } else {
-      payloads=[{couple_id:coupleId,guest_name:name,email,phone,address,message,attending:_rfAttending,dietary:dietFinal.length?dietFinal:null}];
+      const mealEl=document.querySelector('#rf-meal-s0 .rf-meal-chip.on');
+      payloads=[{couple_id:coupleId,guest_name:name,email,phone,address,message,attending:_rfAttending,dietary:dietFinal.length?dietFinal:null,meal:mealEl?mealEl.dataset.meal:null}];
     }
 
     const results=await Promise.all(payloads.map(body=>
@@ -47609,13 +47659,15 @@ async function _rfSubmit(coupleId){
     if(allOk){
       const anyYes=isGroup?Object.values(_rfMemberAttend).some(v=>v==='yes'):_rfAttending==='yes';
       try{
-        const notifName=isGroup?payloads.map(function(p){return p.guest_name;}).join(', '):name;
-        const notifAttending=isGroup?(anyYes?'yes':'no'):_rfAttending;
-        fetch(_SB_URL+'/functions/v1/rsvp-notify',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','apikey':_SB_KEY},
-          body:JSON.stringify({couple_id:coupleId,guest_name:notifName,attending:notifAttending,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending,dietary:p.dietary||[]};}),phone:phone||null,email:email||null,address:address||null,message:message||null})
-        }).catch(function(){});
+        if(_rfEmailNotif){
+          const notifName=isGroup?payloads.map(function(p){return p.guest_name;}).join(', '):name;
+          const notifAttending=isGroup?(anyYes?'yes':'no'):_rfAttending;
+          fetch(_SB_URL+'/functions/v1/rsvp-notify',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','apikey':_SB_KEY},
+            body:JSON.stringify({couple_id:coupleId,guest_name:notifName,attending:notifAttending,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending,dietary:p.dietary||[],meal:p.meal||null};}),phone:phone||null,email:email||null,address:address||null,message:message||null})
+          }).catch(function(){});
+        }
       }catch(e2){}
       const formBody=document.getElementById('rsvp-form-body');
       if(formBody){
