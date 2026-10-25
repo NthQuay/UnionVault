@@ -10623,9 +10623,14 @@ function _gtEditGuestSlot(ids){
       </span>
       <svg class="gt-mp-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>`).join('');
+  const idSet=new Set(ids||[]);
+  const fam=(STATE.families||[]).find(f=>f.memberIds.some(id=>idSet.has(id)));
+  const editGroupBtn=fam
+    ?`<button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="closeModalDirect();openEditFamily('${fam.id}')">Edit group…</button>`
+    :'';
   const body=`<div style="font-size:12.5px;color:var(--muted);margin:-2px 0 12px">${_escHtml(groupLabel)} — choose a member to edit.</div>
     <div class="gt-mp-list">${rows}</div>`;
-  const footer=`<button class="btn" onclick="closeModalDirect()">Cancel</button>`;
+  const footer=`${editGroupBtn}<button class="btn" onclick="closeModalDirect()">Cancel</button>`;
   openModal('Edit which guest?', body, footer);
 }
 // Collapsible section for the redesigned guest forms. `summaryHtml` shows inline
@@ -28449,7 +28454,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v231';
+const APP_BUILD='v232';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
