@@ -7763,7 +7763,8 @@ function guestInGroup(g, group){
       const partner=(STATE.guests||[]).find(x=>x.id===g.coupleId);
       // Mutual link → proper couple member
       if(partner && partner.coupleId===g.id) return true;
-      // partner.plusOneId===g.id → this guest IS the +1, not the host; handled via plusone slot
+      // This guest IS the +1 of their partner — include so both show in couples view
+      if(partner && partner.plusOneId===g.id) return true;
     }
     return false;
   }
@@ -28641,7 +28642,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v249';
+const APP_BUILD='v250';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
