@@ -28391,7 +28391,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v221';
+const APP_BUILD='v222';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -45618,18 +45618,22 @@ async function _autoSyncCheckOnBoot(){
     const rows=await res.json();
     if(!rows||!rows.length) return;
     const localTsRaw=STATE.settings&&STATE.settings._lastCloudSave;
-    if(!localTsRaw){
-      // Never cloud-synced on this device — restore with toast so user sees it happen
-      cloudLoadClick(false);
-      return;
-    }
     const maxTs=Math.max(...rows.map(r=>r.updated_at?new Date(r.updated_at).getTime():0));
     if(!maxTs) return;
     const cloudTs=maxTs;
+    if(!localTsRaw){
+      // Never cloud-synced on this device
+      // If there's existing local data, ask first — don't silently overwrite it
+      const hasLocal=!!(STATE.guests&&STATE.guests.length)||!!(STATE.event&&(STATE.event.names||STATE.event.date));
+      if(hasLocal){ _showConflictDialog(cloudTs,0); return; }
+      // No local data — safe to restore silently
+      cloudLoadClick(false);
+      return;
+    }
     const localTs=new Date(localTsRaw).getTime();
     if(cloudTs-localTs>5000){
-      // Cloud is newer — load and notify the user so they see the sync happened
-      cloudLoadClick(false);
+      // Cloud is newer — show dialog so user can choose to keep local changes
+      _showConflictDialog(cloudTs,localTs);
     } else {
       // Cloud is same age or older — push local up if auto-sync is on
       if(_autoSyncEnabled()) _autoSyncSchedule();
