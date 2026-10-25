@@ -12040,6 +12040,8 @@ async function _loadOnlineRsvps(){
         <td style="padding:8px 10px;font-size:12.5px">${attendBadge}</td>
         <td style="padding:8px 10px;font-size:12px;color:var(--muted)">${dietStr}</td>
         <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.email||'—'}</td>
+        <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.phone||'—'}</td>
+        <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.address||'—'}</td>
         <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${fmt(r.created_at)}</td>
       </tr>`;
     }).join('');
@@ -12070,6 +12072,8 @@ async function _loadOnlineRsvps(){
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Attending</th>
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Dietary</th>
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Email</th>
+              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Phone</th>
+              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Address</th>
               <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Submitted</th>
             </tr>
           </thead>
@@ -28372,7 +28376,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v213';
+const APP_BUILD='v214';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47579,7 +47583,7 @@ async function _rfSubmit(coupleId){
         fetch(_SB_URL+'/functions/v1/rsvp-notify',{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':_SB_KEY},
-          body:JSON.stringify({couple_id:coupleId,guest_name:notifName,attending:notifAttending})
+          body:JSON.stringify({couple_id:coupleId,guest_name:notifName,attending:notifAttending,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending,dietary:p.dietary||[]};}),phone:phone||null,email:email||null,address:address||null,message:message||null})
         }).catch(function(){});
       }catch(e2){}
       const formBody=document.getElementById('rsvp-form-body');
