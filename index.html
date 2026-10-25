@@ -2858,8 +2858,18 @@ body.dark .vlu-msgcomp .snd{color:var(--ink)}
           <div class="topbar-title" id="topbar-title">Dashboard</div>
         </div>
       </div>
+      <div id="topbar-account-chip" style="display:none;align-items:center;gap:5px;padding:3px 9px 3px 7px;border-radius:20px;background:var(--surface);border:1px solid var(--border);font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;max-width:180px;flex-shrink:1;cursor:default" title="Signed-in account">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span id="topbar-account-email" style="overflow:hidden;text-overflow:ellipsis"></span>
+      </div>
       <div class="topbar-actions" id="topbar-actions"></div>
     </header>
+    <div id="sync-fail-banner" style="display:none;background:#b91c1c;color:#fff;font-size:12.5px;padding:7px 16px;display:none;align-items:center;gap:10px;flex-shrink:0">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span style="flex:1">Auto-sync failed — your changes are saved locally but <b>not backed up to the cloud</b>. Check your connection or sign in again.</span>
+      <button onclick="_syncFailBannerRetry()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;white-space:nowrap">Retry now</button>
+      <button onclick="_syncFailBannerDismiss()" style="background:none;border:none;color:rgba(255,255,255,0.7);font-size:16px;line-height:1;cursor:pointer;padding:2px 4px" title="Dismiss">×</button>
+    </div>
     <div class="content" id="main-content"></div>
   </main>
 </div>
@@ -3438,6 +3448,7 @@ async function _lpSignIn() {
   try{ localStorage.setItem('uv_uid', r.user.id); }catch(_){}
   document.getElementById('welcome-overlay').classList.add('hidden');
   if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
+  if(typeof _updateAccountChip !== 'undefined') _updateAccountChip();
   if(typeof _cloudToast !== 'undefined') _cloudToast('Signed in as ' + r.user.email);
   // New device (no localStorage) — check cloud for existing data before showing setup
   if(!alreadySetUp) {
@@ -28630,7 +28641,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v246';
+const APP_BUILD='v247';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -46115,7 +46126,7 @@ function _syncStatusHtml(){
 window._autoSyncState='idle';
 window._autoSyncLastSaved=null;
 let _autoSyncTimer=null;
-const _AUTOSYNC_DEBOUNCE=5000; // 5 s
+const _AUTOSYNC_DEBOUNCE=2000; // 2 s
 
 function _autoSyncEnabled(){
   return _sbSession && (typeof STATE==='undefined' || STATE.settings==null || STATE.settings.autoSync!==false);
@@ -46132,6 +46143,36 @@ function _syncStatusRefresh(){
   if(track) track.style.background=on?'var(--gold,#c9a84c)':'var(--muted)';
   if(thumb) thumb.style.left=on?'19px':'3px';
   if(chk) chk.checked=on;
+  // Show/hide the persistent sync-fail banner
+  const banner=document.getElementById('sync-fail-banner');
+  if(banner){
+    const failed=window._autoSyncState==='error';
+    banner.style.display=failed&&!banner._dismissed?'flex':'none';
+  }
+  // Keep account chip updated
+  _updateAccountChip();
+}
+let _syncFailBannerDismissedUntil=0;
+function _syncFailBannerDismiss(){ document.getElementById('sync-fail-banner')._dismissed=true; document.getElementById('sync-fail-banner').style.display='none'; }
+async function _syncFailBannerRetry(){
+  const banner=document.getElementById('sync-fail-banner');
+  if(banner){ banner._dismissed=false; }
+  window._autoSyncState='saving'; _syncStatusRefresh();
+  const r=await _cloudSave(true);
+  if(r&&r.ok){ window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now(); }
+  else { window._autoSyncState='error'; }
+  _syncStatusRefresh();
+}
+function _updateAccountChip(){
+  const chip=document.getElementById('topbar-account-chip');
+  const emailEl=document.getElementById('topbar-account-email');
+  if(!chip||!emailEl) return;
+  if(_sbSession&&_sbSession.user&&_sbSession.user.email){
+    emailEl.textContent=_sbSession.user.email;
+    chip.style.display='flex';
+  } else {
+    chip.style.display='none';
+  }
 }
 
 function _autoSyncToggleChange(on){
@@ -48537,6 +48578,7 @@ function _showVendorError(type){
     // Fully set up + signed in → go straight to app, then check for cloud conflict
     document.getElementById('welcome-overlay').classList.add('hidden');
     updateTopbarSub();
+    if(typeof _updateAccountChip !== 'undefined') _updateAccountChip();
     navigate('dashboard');
     // Stage 3: async conflict check (runs after UI is visible, non-blocking)
     setTimeout(_autoSyncCheckOnBoot, 800);
