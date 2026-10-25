@@ -28616,7 +28616,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v241';
+const APP_BUILD='v242';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -31583,14 +31583,17 @@ function renderSeatingFloor(c,actions){
     const padX=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
     _initAvailW=Math.max(0,((c&&c.clientWidth)||0)-padX);
   }catch(_){}
+  const _POOL_SIDEBAR_W=276; // 260px panel + 16px gap
+  const _showPoolSidebar=(!arrangeTablesMode)&&(_initAvailW>=700);
+  const _vpAvailW=_showPoolSidebar?Math.max(300,_initAvailW-_POOL_SIDEBAR_W):_initAvailW;
   let _initCanvasStyle, _initVpStyle;
-  if(_initAvailW && _initAvailW < canvasW){
-    const s=_initAvailW/canvasW;
+  if(_vpAvailW && _vpAvailW < canvasW){
+    const s=_vpAvailW/canvasW;
     _initCanvasStyle=`width:${canvasW}px;height:${canvasH}px;transform:scale(${s});transform-origin:0 0`;
     _initVpStyle=`width:100%;overflow:hidden;margin-bottom:20px;height:${Math.round(canvasH*s)}px`;
   } else {
     _initCanvasStyle=`width:100%;height:${canvasH}px`;
-    _initVpStyle=`width:100%;overflow:hidden;margin-bottom:20px${_initAvailW?`;height:${canvasH}px`:''}`;
+    _initVpStyle=`width:100%;overflow:hidden;margin-bottom:20px${_vpAvailW?`;height:${canvasH}px`:''}`;
   }
 
   c.innerHTML=`
@@ -31614,20 +31617,40 @@ function renderSeatingFloor(c,actions){
     ${_floorLockBtnHtml()}
     <span style="font-size:11.5px;color:var(--muted);margin-left:auto;text-align:right">${_floorLayoutLocked()?(_floorAllLocked()?'Locked — nothing can be moved · zoom &amp; pan still work':'Tables &amp; areas locked · guests can still be seated'):'<span class="floor-hint-full">Drag tables to arrange · Ctrl + scroll to zoom · Ctrl + drag to move the plan</span><span class="floor-hint-short">Drag tables to arrange</span>'}</span>
   </div>
-  <div id="floor-viewport" style="${_initVpStyle};position:relative">
-    <div id="floor-canvas" class="floor-canvas${STATE.settings.floorGrid?' grid-on':''}${_floorLayoutLocked()?' floor-locked':''}${_floorAllLocked()?' floor-locked-all':''}" data-cw="${canvasW}" data-ch="${canvasH}" style="${_initCanvasStyle}" ondragover="event.preventDefault()">
-      ${(STATE.settings.floorDecor||[]).map(_floorDecorHtml).join('')}
-      ${(STATE.tables||[]).map(t=>_floorTableHtml(t,style,cf,sep)).join('')}
-      ${!STATE.tables||!STATE.tables.length?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">No tables yet — use <span style="color:var(--gold-deep);margin:0 4px">Add Table</span> to begin.</div>`:''}
+  <div id="floor-and-pool" style="display:flex;gap:16px;align-items:flex-start">
+    <div style="flex:1 1 0%;min-width:0">
+      <div id="floor-viewport" style="${_initVpStyle};position:relative">
+        <div id="floor-canvas" class="floor-canvas${STATE.settings.floorGrid?' grid-on':''}${_floorLayoutLocked()?' floor-locked':''}${_floorAllLocked()?' floor-locked-all':''}" data-cw="${canvasW}" data-ch="${canvasH}" style="${_initCanvasStyle}" ondragover="event.preventDefault()">
+          ${(STATE.settings.floorDecor||[]).map(_floorDecorHtml).join('')}
+          ${(STATE.tables||[]).map(t=>_floorTableHtml(t,style,cf,sep)).join('')}
+          ${!STATE.tables||!STATE.tables.length?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">No tables yet — use <span style="color:var(--gold-deep);margin:0 4px">Add Table</span> to begin.</div>`:''}
+        </div>
+        ${(STATE.tables&&STATE.tables.length&&!(STATE.settings&&STATE.settings.floorHideZoomBtns))?`<div class="floor-zoom-ctrl" aria-label="Zoom controls">
+          <button type="button" onclick="_floorZoomBtn(1)" title="Zoom in" aria-label="Zoom in"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <div id="floor-zoom-pct" class="floor-zoom-pct">100%</div>
+          <button type="button" onclick="_floorZoomBtn(-1)" title="Zoom out" aria-label="Zoom out"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <button type="button" onclick="_floorZoomReset()" title="Reset zoom" aria-label="Reset zoom"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 9 8 9"/></svg></button>
+        </div>`:''}
+      </div>
     </div>
-    ${(STATE.tables&&STATE.tables.length&&!(STATE.settings&&STATE.settings.floorHideZoomBtns))?`<div class="floor-zoom-ctrl" aria-label="Zoom controls">
-      <button type="button" onclick="_floorZoomBtn(1)" title="Zoom in" aria-label="Zoom in"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-      <div id="floor-zoom-pct" class="floor-zoom-pct">100%</div>
-      <button type="button" onclick="_floorZoomBtn(-1)" title="Zoom out" aria-label="Zoom out"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-      <button type="button" onclick="_floorZoomReset()" title="Reset zoom" aria-label="Reset zoom"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 9 8 9"/></svg></button>
+    ${_showPoolSidebar?`<div id="floor-pool-sidebar" style="flex:0 0 260px;width:260px;position:sticky;top:56px;max-height:calc(100vh - 80px);overflow-y:auto">
+      <div class="card" style="margin-bottom:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div class="section-eyebrow" style="margin-bottom:0;font-size:11px">Unassigned Guests</div>
+          <div style="position:relative;flex:1;min-width:0">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:7px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="seating-search" class="form-input" placeholder="Search…" style="padding:4px 28px 4px 24px;font-size:11.5px;height:27px;width:100%"
+              oninput="filterSeatingPool(this.value)" onkeydown="if(event.key==='Escape'){this.value='';filterSeatingPool('')}"/>
+            <button type="button" onclick="filterSeatingPool('');const _se=document.getElementById('seating-search');if(_se){_se.value='';_se.focus()}" title="Clear" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;line-height:0;display:flex;align-items:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+        </div>
+        <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-wrap:wrap;gap:5px;padding:2px">
+          ${unseated.length?unseated.map(g=>`<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)} ${g.name}</span>`).join(''):'<span style="font-size:12px;color:var(--muted)">All guests assigned ✓</span>'}
+        </div>
+      </div>
     </div>`:''}
   </div>
-  <div class="card">
+  ${!_showPoolSidebar?`<div class="card">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
       <div class="section-eyebrow" style="margin-bottom:0">Unassigned Guests</div>
       <div style="position:relative;flex:1;min-width:140px;max-width:260px;margin-left:auto">
@@ -31640,7 +31663,7 @@ function renderSeatingFloor(c,actions){
     <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-wrap:wrap;gap:6px;padding:4px">
       ${unseated.length?unseated.map(g=>`<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)} ${g.name}</span>`).join(''):'<span style="font-size:13px;color:var(--muted)">All guests assigned ✓</span>'}
     </div>
-  </div>`;
+  </div>`:''}` ;
 
   // Apply the authoritative fit synchronously (canvas is already in the DOM) so the
   // browser only ever paints the correctly-scaled state — no second rescale frame.
