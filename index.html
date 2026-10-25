@@ -12489,7 +12489,7 @@ function renderRsvpMgr(c, actions){
     // at any key that carries a row break (a break sits BEFORE that key).
     const dockedSet=new Set(_dockedKeys);
     const gridKeys=order.filter(k=>k!=='tracker' && !dockedSet.has(k) && _placements[k]==='grid' && !hidden.has(k) && !!cardHtml[k]);
-    const flushRow=(buf)=>{ if(!buf.length) return ''; return `<div class="rsvp-card-grid" data-cols="${cols}" style="display:grid;grid-template-columns:${gridCols};gap:18px;margin-top:18px;align-items:stretch">${buf.map(k=>cardHtml[k]).join('')}</div>`; };
+    const flushRow=(buf)=>{ if(!buf.length) return ''; return `<div class="rsvp-card-grid" data-cols="${cols}" style="display:grid;grid-template-columns:${gridCols};gap:18px;margin-top:18px;align-items:stretch">${buf.map(k=>k==='onlinersvps'?`<div style="grid-column:1/-1">${cardHtml[k]}</div>`:cardHtml[k]).join('')}</div>`; };
     // Build the grid rows (respecting row breaks) as a string we can place after the tracker.
     let gridHtml='',rowBuf=[];
     gridKeys.forEach((k,i)=>{ if(i>0 && rowBreaks.has(k)){ gridHtml+=flushRow(rowBuf); rowBuf=[]; } rowBuf.push(k); });
@@ -28641,7 +28641,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v248';
+const APP_BUILD='v249';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47896,6 +47896,7 @@ async function _showRsvpForm(coupleId,mode){
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400&display=swap" rel="stylesheet">
     <style>
       *,*::before,*::after{box-sizing:border-box}
+      html{background:var(--pub-page)}
       body{margin:0;background:var(--pub-page);color:var(--pub-ink);font-family:${_bf};${isModal?'':'min-height:100vh'}}
       .rf-wrap{max-width:460px;margin:0 auto;padding:${isModal?'36px 28px 28px':'52px 20px 64px'}}
       .rf-top{text-align:center;margin-bottom:36px}
