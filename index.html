@@ -13399,30 +13399,45 @@ function _rsvpPrintInviteList(){
   const date=STATE.event.date?fmtDate(STATE.event.date):'';
   const gs=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B');
   const invitedIds=_invitedGuestIdSet();
+  if(!STATE.inviteMeta) STATE.inviteMeta={};
 
-  // Build groups: families → couples/plusones → singles. Each group = one "envelope".
+  // Collect a field from multiple guests, joining non-empty values
+  function _gf(members, field, sep){
+    return members.map(g=>{const v=g[field];return(Array.isArray(v)?v.join(', '):(v||'')).trim();}).filter(Boolean).join(sep||', ');
+  }
+
   const used=new Set();
   const envelopes=[];
+
   // Families
   (STATE.families||[]).forEach(fam=>{
     const mem=fam.memberIds.map(id=>gs.find(g=>g.id===id)).filter(Boolean);
     if(!mem.length) return;
     mem.forEach(g=>used.add(g.id));
-    const invited=mem.some(g=>invitedIds.has(g.id));
-    const addr=mem.map(g=>(g.address||'').trim()).filter(Boolean);
-    const uniqueAddr=[...new Set(addr)];
-    envelopes.push({names:mem.map(g=>g.name),address:uniqueAddr[0]||'',invited,kind:'family'});
+    const slotKey='fam:'+fam.id;
+    const meta=STATE.inviteMeta[slotKey]||{};
+    const addrs=[...new Set(mem.map(g=>(g.address||'').trim()).filter(Boolean))];
+    envelopes.push({names:mem.map(g=>g.name),kind:'family',
+      invited:mem.some(g=>invitedIds.has(g.id)),
+      inviteMeta:meta.invite||null, savedateMeta:meta.savedate||null,
+      address:addrs[0]||'', phone:_gf(mem,'phone'), email:_gf(mem,'email'), dietary:_gf(mem,'dietary','; ')});
   });
-  // Couples + plus-ones
+
+  // Couples + plus-ones + solos
   gs.forEach(g=>{
     if(used.has(g.id)) return;
     if(g.coupleId){
       const partner=gs.find(x=>x.id===g.coupleId);
       if(partner&&!used.has(partner.id)){
         used.add(g.id); used.add(partner.id);
-        const invited=invitedIds.has(g.id)||invitedIds.has(partner.id);
-        const addr=(g.address||partner.address||'').trim();
-        envelopes.push({names:[g.name,partner.name],address:addr,invited,kind:'couple'});
+        const slotKey='couple:'+g.id;
+        const meta=STATE.inviteMeta[slotKey]||{};
+        const mem=[g,partner];
+        envelopes.push({names:[g.name,partner.name],kind:'couple',
+          invited:invitedIds.has(g.id)||invitedIds.has(partner.id),
+          inviteMeta:meta.invite||null, savedateMeta:meta.savedate||null,
+          address:(g.address||partner.address||'').trim(),
+          phone:_gf(mem,'phone'), email:_gf(mem,'email'), dietary:_gf(mem,'dietary','; ')});
         return;
       }
     }
@@ -13430,78 +13445,163 @@ function _rsvpPrintInviteList(){
       const plus=gs.find(x=>x.id===g.plusOneId);
       if(plus&&!used.has(plus.id)){
         used.add(g.id); used.add(plus.id);
-        const invited=invitedIds.has(g.id)||invitedIds.has(plus.id);
-        const addr=(g.address||plus.address||'').trim();
-        envelopes.push({names:[g.name,plus.name],address:addr,invited,kind:'plusone'});
+        const slotKey='plusone:'+g.id;
+        const meta=STATE.inviteMeta[slotKey]||{};
+        const mem=[g,plus];
+        envelopes.push({names:[g.name,plus.name],kind:'plusone',
+          invited:invitedIds.has(g.id)||invitedIds.has(plus.id),
+          inviteMeta:meta.invite||null, savedateMeta:meta.savedate||null,
+          address:(g.address||plus.address||'').trim(),
+          phone:_gf(mem,'phone'), email:_gf(mem,'email'), dietary:_gf(mem,'dietary','; ')});
         return;
       }
     }
     if(!used.has(g.id)){
       used.add(g.id);
-      const invited=invitedIds.has(g.id);
-      envelopes.push({names:[g.name],address:(g.address||'').trim(),invited,kind:'solo'});
+      const slotKey='solo:'+g.id;
+      const meta=STATE.inviteMeta[slotKey]||{};
+      envelopes.push({names:[g.name],kind:'solo',
+        invited:invitedIds.has(g.id),
+        inviteMeta:meta.invite||null, savedateMeta:meta.savedate||null,
+        address:(g.address||'').trim(), phone:(g.phone||'').trim(),
+        email:(g.email||'').trim(),
+        dietary:(Array.isArray(g.dietary)?g.dietary.join(', '):(g.dietary||'')).trim()});
     }
   });
 
-  // Sort: invited first, then alphabetically by first name
+  // Sort: invited > save-the-date > not yet, then alphabetical
   envelopes.sort((a,b)=>{
-    if(a.invited!==b.invited) return a.invited?-1:1;
+    const rank=e=>e.invited?2:(e.savedateMeta?1:0);
+    const r=rank(b)-rank(a); if(r) return r;
     return (a.names[0]||'').localeCompare(b.names[0]||'');
   });
 
   const total=envelopes.length;
   const invitedCount=envelopes.filter(e=>e.invited).length;
+  const savedateCount=envelopes.filter(e=>!e.invited&&e.savedateMeta).length;
   const missingAddr=envelopes.filter(e=>!e.address).length;
 
-  const rowHtml=envelopes.map((env,i)=>{
-    const nameStr=env.names.length>1?env.names.join(' &amp; '):env.names[0]||'';
-    const addrStr=env.address?env.address.replace(/\n/g,'<br>'):'<span style="color:#C0392B;font-style:italic">No address</span>';
-    const badge=env.invited
-      ? `<span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#4A7C59;background:rgba(74,124,89,.12);padding:2px 7px;border-radius:8px;white-space:nowrap">Invited</span>`
-      : `<span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;background:#f3f3f0;padding:2px 7px;border-radius:8px;white-space:nowrap">Not sent</span>`;
-    return `<tr style="${i%2===0?'background:#fff':'background:#FAFAF8'}">
-      <td style="padding:9px 13px;font-size:12.5px;color:#1A1A18;border-bottom:1px solid #EFE8DC">${nameStr}</td>
-      <td style="padding:9px 13px;font-size:12px;color:#3A352F;border-bottom:1px solid #EFE8DC">${addrStr}</td>
-      <td style="padding:9px 13px;text-align:center;border-bottom:1px solid #EFE8DC">${badge}</td>
-    </tr>`;
-  }).join('');
+  const p1e=p1.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const p2e=p2.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const CH_J=JSON.stringify({post:'Post',email:'Email',text:'Text',whatsapp:'WhatsApp',messenger:'Messenger',instagram:'Instagram',inperson:'In person',other:'Other'});
+  const ENV_J=JSON.stringify(envelopes);
 
-  const htmlContent=`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-  <title>Invite List — ${p1} &amp; ${p2}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:#FAFAF8;color:#1A1A18;padding:32px 40px}
-  @media print{body{padding:20px 24px}.no-print{display:none}table{page-break-inside:auto}tr{page-break-inside:avoid}}
-  h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:500;margin-bottom:2px}
-  .sub{font-size:13px;color:#6B6B69;margin-bottom:6px}
-  .meta{font-size:11.5px;color:#9A9389;margin-bottom:20px;display:flex;gap:16px;flex-wrap:wrap}
-  .meta span{display:inline-flex;align-items:center;gap:4px}
-  table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #E0D8CF;margin-top:4px}
-  th{text-align:left;padding:9px 13px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9A9389;background:#F3EFE9;border-bottom:1px solid #E0D8CF}
-  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:500}
-  .btn-p{background:#9A7B2E;color:#fff}.btn-o{background:#fff;border:1px solid #E0D8CF;color:#3A352F}
-  </style></head><body>
-  <h1>Invite List</h1>
-  <div class="sub">${p1} &amp; ${p2}${date?` · ${date}`:''}</div>
-  <div class="meta">
-    <span>&#128203; ${total} household${total!==1?'s':''}</span>
-    <span>&#9993; ${invitedCount} invited</span>
-    ${missingAddr>0?`<span style="color:#C0392B">&#9888; ${missingAddr} missing address</span>`:''}
-  </div>
-  <div class="no-print" style="display:flex;gap:8px;margin-bottom:20px">
-    <button class="btn btn-p" onclick="window.print()">Print</button>
-    <button class="btn btn-o" onclick="window.close()">Close</button>
-  </div>
-  <table>
-    <thead><tr><th>Name(s)</th><th>Address</th><th style="text-align:center">Status</th></tr></thead>
-    <tbody>${rowHtml}</tbody>
-  </table>
-  </body></html>`;
-  const blob=new Blob([htmlContent],{type:'text/html'});
+  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invite List — ${p1e} &amp; ${p2e}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#FAFAF8;color:#1A1A18;padding:28px 36px}
+@media print{.no-print{display:none!important}table{page-break-inside:auto}tr{page-break-inside:avoid;page-break-after:auto}}
+h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:500;margin-bottom:2px}
+.sub{font-size:13px;color:#6B6B69;margin-bottom:6px}
+.meta{font-size:11.5px;color:#9A9389;margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap}
+.meta span{display:inline-flex;align-items:center;gap:4px}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:500}
+.btn-p{background:#9A7B2E;color:#fff}.btn-o{background:#fff;border:1px solid #E0D8CF;color:#3A352F}
+.cc{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #E0D8CF;border-radius:8px;padding:8px 14px;margin-bottom:20px}
+.ccl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9A9389;margin-right:4px}
+.cc label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none;font-size:12.5px;color:#3A352F}
+.cc input{cursor:pointer;accent-color:#9A7B2E}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #E0D8CF}
+th{text-align:left;padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9A9389;background:#F3EFE9;border-bottom:1px solid #E0D8CF;white-space:nowrap}
+td{padding:9px 12px;font-size:12px;color:#1A1A18;border-bottom:1px solid #EFE8DC;vertical-align:top}
+tr:nth-child(even) td{background:#FAFAF8}
+.pill{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;white-space:nowrap;letter-spacing:.03em}
+.ps{background:rgba(74,124,89,.13);color:#3E7056}
+.pd{background:rgba(154,123,46,.11);color:#9A7B2E}
+.mdt{font-size:10.5px;color:#9A9389;margin-left:3px}
+.na{color:#C0392B;font-style:italic;font-size:11.5px}
+.dim{color:#C8C3BB;font-size:11px}
+</style>
+</head><body>
+<h1>Invite List</h1>
+<div class="sub">${p1e} &amp; ${p2e}${date?' · '+date:''}</div>
+<div class="meta">
+  <span>&#128203; ${total} household${total!==1?'s':''}</span>
+  <span style="color:#3E7056">&#9993; ${invitedCount} invited</span>
+  ${savedateCount?'<span style="color:#9A7B2E">&#128197; '+savedateCount+' save the date</span>':''}
+  ${missingAddr?'<span style="color:#C0392B">&#9888; '+missingAddr+' missing address</span>':''}
+</div>
+<div class="no-print toolbar">
+  <button class="btn btn-p" onclick="window.print()">Print</button>
+  <button class="btn btn-o" onclick="window.close()">Close</button>
+</div>
+<div class="cc no-print">
+  <span class="ccl">Columns</span>
+  <label><input type="checkbox" id="ca" checked onchange="tog('addr',this.checked)"> Address</label>
+  <label><input type="checkbox" id="cp" onchange="tog('phone',this.checked)"> Phone</label>
+  <label><input type="checkbox" id="ce" onchange="tog('email',this.checked)"> Email</label>
+  <label><input type="checkbox" id="cd" onchange="tog('dietary',this.checked)"> Dietary</label>
+</div>
+<table>
+<thead><tr>
+  <th>Name(s)</th><th>Save the Date</th><th>Invite</th>
+  <th data-col="addr">Address</th>
+  <th data-col="phone" style="display:none">Phone</th>
+  <th data-col="email" style="display:none">Email</th>
+  <th data-col="dietary" style="display:none">Dietary</th>
+</tr></thead>
+<tbody id="tb"></tbody>
+</table>
+<script>
+var CH=${CH_J};
+var ENVS=${ENV_J};
+function fmtD(s){
+  if(!s) return '';
+  var d=new Date(s+'T00:00:00');
+  return d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+}
+function hname(ns){
+  if(!ns||!ns.length) return '';
+  if(ns.length===1) return ns[0];
+  var parse=function(n){var w=n.trim().split(/\\s+/);return{f:w.slice(0,-1).join(' '),l:w[w.length-1]};};
+  var ps=ns.map(parse),sh=ps[0].l;
+  if(ps.every(function(p){return p.l.toLowerCase()===sh.toLowerCase();})){
+    var fs=ps.map(function(p){return p.f;});
+    if(fs.length===2) return fs[0]+' &amp; '+fs[1]+' '+sh;
+    return fs.slice(0,-1).join(', ')+' &amp; '+fs[fs.length-1]+' '+sh;
+  }
+  if(ns.length===2) return ns[0]+' &amp; '+ns[1];
+  return ns.slice(0,-1).join(', ')+' &amp; '+ns[ns.length-1];
+}
+function sdCell(m){
+  if(!m||!m.method) return '<span class="dim">—</span>';
+  var d=m.date?' <span class="mdt">'+fmtD(m.date)+'<\\/span>':'';
+  return '<span class="pill pd">'+(CH[m.method]||m.method)+'<\\/span>'+d;
+}
+function invCell(m,inv){
+  if(!inv) return '<span class="dim">—</span>';
+  if(!m||!m.method) return '<span class="pill ps">Invited<\\/span>';
+  var d=m.date?' <span class="mdt">'+fmtD(m.date)+'<\\/span>':'';
+  return '<span class="pill ps">'+(CH[m.method]||m.method)+'<\\/span>'+d;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function tog(col,show){
+  document.querySelectorAll('[data-col="'+col+'"]').forEach(function(el){el.style.display=show?'':'none';});
+}
+var tb=document.getElementById('tb');
+tb.innerHTML=ENVS.map(function(e){
+  var addr=e.address?esc(e.address).replace(/\\n/g,'<br>'):'<span class="na">No address<\\/span>';
+  return '<tr>'
+    +'<td>'+hname(e.names)+'<\\/td>'
+    +'<td>'+sdCell(e.savedateMeta)+'<\\/td>'
+    +'<td>'+invCell(e.inviteMeta,e.invited)+'<\\/td>'
+    +'<td data-col="addr">'+addr+'<\\/td>'
+    +'<td data-col="phone" style="display:none">'+(e.phone?esc(e.phone):'<span class="dim">—<\\/span>')+'<\\/td>'
+    +'<td data-col="email" style="display:none">'+(e.email?esc(e.email):'<span class="dim">—<\\/span>')+'<\\/td>'
+    +'<td data-col="dietary" style="display:none">'+(e.dietary?esc(e.dietary):'<span class="dim">—<\\/span>')+'<\\/td>'
+    +'<\\/tr>';
+}).join('');
+<\/script>
+</body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
   const url=URL.createObjectURL(blob);
   const w=window.open(url,'_blank');
   if(!w) alert('Allow pop-ups to open the invite list.');
-  // Revoke after a delay so the window has time to load
-  setTimeout(()=>URL.revokeObjectURL(url), 10000);
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
 
 // ── Address Label Print ──────────────────────────────────────────────────────
@@ -28469,7 +28569,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v236';
+const APP_BUILD='v237';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
