@@ -28642,7 +28642,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v250';
+const APP_BUILD='v251';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -33798,8 +33798,8 @@ function _wbThemeBody(){
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
       </div>
       <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad||52} px</div>
-        <input type="range" min="0" max="200" step="4" value="${t.secpad||52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad!=null?t.secpad:52} px</div>
+        <input type="range" min="0" max="200" step="4" value="${t.secpad!=null?t.secpad:52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
       </div>
       <div style="margin-bottom:14px">
@@ -34025,7 +34025,7 @@ function _wbNum(field, v){
     if(l.textContent.indexOf('Body size')===0)    l.textContent='Body size · '+t.bodyScale+'%';
     if(l.textContent.indexOf('Spacing')===0)      l.textContent='Spacing · '+(t.space<95?'Snug':(t.space>105?'Airy':'Normal'));
     if(l.textContent.indexOf('Section gap')===0)  l.textContent='Section gap · '+t.gap+' px';
-    if(l.textContent.indexOf('Section padding')===0) l.textContent='Section padding · '+(t.secpad||52)+' px';
+    if(l.textContent.indexOf('Section padding')===0) l.textContent='Section padding · '+(t.secpad!=null?t.secpad:52)+' px';
     if(l.textContent.indexOf('Section width')===0) l.textContent='Section width · '+(t.maxWidth||720)+' px';
     if(l.textContent.indexOf('Section shadow')===0) l.textContent='Section shadow · '+(t.shadow||0);
     if(l.textContent.indexOf('Card edge')===0) l.textContent='Card edge · '+(t.cardStyle||0);
@@ -34176,8 +34176,8 @@ function _wbRepaintTheme(){
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
       </div>
       <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad||52} px</div>
-        <input type="range" min="0" max="200" step="4" value="${t.secpad||52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad!=null?t.secpad:52} px</div>
+        <input type="range" min="0" max="200" step="4" value="${t.secpad!=null?t.secpad:52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
       </div>
       <div style="margin-bottom:14px">
@@ -37190,7 +37190,7 @@ function _wbBuildSite(forDownload){
   const sc  = scb;   // legacy alias — every call site below is re-pointed explicitly
   const sp = (n)=>Math.round(n*(Number(t2.space)||100)/100);
   const secGap = Math.max(0, Number(t2.gap)||0);
-  const secPad = Math.max(0, Number(t2.secpad)||52);
+  const secPad = t2.secpad!=null ? Math.max(0, Number(t2.secpad)) : 52;
   const rad = WB_CORNERS[t2.corners]||'10px';
   // imgRad caps at 10px — pill (999px) is for buttons only, not images or cards
   const imgRad = t2.corners==='sharp'?'0px':'10px';
