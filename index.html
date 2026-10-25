@@ -1707,6 +1707,20 @@ body.dark .budget-subitem-box{background:#26262C;border:none}
 .seat-chip:active{cursor:grabbing;opacity:.7}
 .seat-chip-grip{color:var(--muted);font-size:11px;letter-spacing:-1px;margin-right:1px;cursor:grab}
 .seat-chip-drag.drag-over{border-color:var(--gold-deep);box-shadow:0 0 0 1px var(--gold-deep)}
+/* ── Pool groups (couple / family blocks in unassigned panel) ─────── */
+.pool-group{border:1.5px solid var(--border);border-radius:9px;padding:6px 8px 5px;background:var(--surface);margin-bottom:6px;width:100%;box-sizing:border-box;cursor:grab;user-select:none;transition:border-color .15s}
+.pool-group:active{cursor:grabbing;opacity:.75}
+.pool-group.pg-couple{border-color:#c5b8e0}
+.pool-group.pg-family{border-color:#a8c4a0}
+.pool-group.pg-drag-over{border-color:var(--gold-deep);box-shadow:0 0 0 1px var(--gold-deep)}
+body.dark .pool-group{background:#1e1e24}
+body.dark .pool-group.pg-couple{border-color:#7a5f96}
+body.dark .pool-group.pg-family{border-color:#4e7a58}
+.pool-group-hd{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;pointer-events:none}
+.pool-group-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pool-group-seat-btn{font-size:10px;font-weight:600;font-family:inherit;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--cream);color:var(--gold-deep);cursor:pointer;flex-shrink:0;pointer-events:auto;white-space:nowrap}
+.pool-group-chips{display:flex;flex-wrap:wrap;gap:4px;pointer-events:auto}
+.pool-group-chips .seat-chip{margin:0}
 /* ── Seating Floorplan ─────────────────────────────────────────────── */
 .floor-canvas{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;overflow-anchor:none;transform-origin:0 0}
 .floor-canvas.zooming{will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
@@ -27650,6 +27664,7 @@ function confirmDeleteSubItem(pid,sid,linkAction){
 // SEATING CHART
 // ══════════════════════════════════════════════
 let dragSeatId=null, dragFromTable=null;
+let dragGroupIds=null; // array of gids when dragging a whole couple/family group
 let arrangeTablesMode=false;
 let dragTableId=null;
 
@@ -27874,7 +27889,7 @@ function renderSeating(c,actions){
       </div>
     </div>
     <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-wrap:wrap;gap:6px;padding:4px">
-      ${unseated.length?unseated.map(g=>`<span class="seat-chip" data-sname="${g.name.toLowerCase()}" draggable="true" ondragstart="dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)} ${g.name}</span>`).join(''):'<span style="font-size:13px;color:var(--muted)">All guests assigned ✓</span>'}
+      ${_poolGroupsHtml(unseated)}
     </div>
   </div>`:''}`;
   // Collapse the seating action buttons (Arrange/Add/Reset) to icons only when the
@@ -28616,7 +28631,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v244';
+const APP_BUILD='v245';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -29224,6 +29239,13 @@ function filterSeatingPool(val){
     const name=chip.dataset.sname||'';
     chip.style.display=(!q||name.includes(q))?'':'none';
   });
+  // Hide a group block if ALL its chips are hidden; show if any match
+  document.querySelectorAll('#seating-pool .pool-group').forEach(grp=>{
+    const chips=grp.querySelectorAll('.seat-chip');
+    if(!chips.length) return;
+    const anyVisible=[...chips].some(c=>c.style.display!=='none');
+    grp.style.display=anyVisible?'':'none';
+  });
 }
 // Attending-only toggle: flip the flag, clear any active pool search filter (so a
 // stale search can't keep a now-eligible guest hidden), then re-render. The full
@@ -29426,6 +29448,10 @@ function dragSeat(e,gid,tableId){
   }
 }
 function dropOnTable(e,tableId){
+  if(dragGroupIds){
+    dragGroupIds.forEach(gid=>{ if(!_seatIds(tableId).includes(gid)) _seatFirstFree(tableId,gid); });
+    dragGroupIds=null; dragSeatId=null; dragFromTable=null; saveToStorage(); navigate('seating'); return;
+  }
   if(!dragSeatId)return;
   if(dragFromTable&&dragFromTable!==tableId) _seatClear(dragFromTable,dragSeatId);
   // The LIST view has no chairs to aim at, so it takes the first free one — which,
@@ -29435,11 +29461,108 @@ function dropOnTable(e,tableId){
   dragSeatId=null; dragFromTable=null; saveToStorage(); navigate('seating');
 }
 function returnToPool(){
+  if(dragGroupIds){ dragGroupIds=null; dragSeatId=null; dragFromTable=null; _floorSeatHighlightOff(); saveToStorage(); navigate('seating'); return; }
   if(!dragSeatId)return;
   if(dragFromTable){ _seatClear(dragFromTable,dragSeatId); _seatTrim(dragFromTable); }
   dragSeatId=null; dragFromTable=null; saveToStorage(); navigate('seating');
 }
 function removeSeat(gid,tableId){ _seatClear(tableId,gid); _seatTrim(tableId); saveToStorage(); navigate('seating'); }
+
+// ── Group drag (couple / family pool blocks) ─────────────────────────
+function dragGroup(e, idsJson){
+  try{ dragGroupIds=JSON.parse(idsJson); } catch(_){ dragGroupIds=null; return; }
+  dragSeatId=null; dragFromTable=null;
+  const c=document.getElementById('floor-canvas');
+  if(c) c.classList.add('seat-dragging');
+  if(e&&e.dataTransfer) e.dataTransfer.effectAllowed='move';
+  if(e&&e.target){
+    e.target.addEventListener('dragend',function _de(){
+      _floorSeatHighlightOff();
+      e.target.removeEventListener('dragend',_de);
+    });
+  }
+}
+
+// ── Pool-group builder ───────────────────────────────────────────────
+// Returns array of { type:'couple'|'family'|'solo', label, ids, members }
+function _poolGroups(unseated){
+  const byId=Object.fromEntries((unseated||[]).map(g=>[g.id,g]));
+  const done=new Set(); const groups=[];
+  // 1. STATE.families
+  (STATE.families||[]).forEach(fam=>{
+    const members=fam.memberIds.map(id=>byId[id]).filter(Boolean);
+    if(!members.length) return;
+    members.forEach(g=>done.add(g.id));
+    if(members.length===1){ groups.push({type:'solo',label:'',ids:[members[0].id],members}); return; }
+    groups.push({type:'family',label:fam.name,ids:members.map(g=>g.id),members});
+  });
+  // 2. coupleId pairs not already in a family
+  for(const g of unseated){
+    if(done.has(g.id)) continue;
+    if(g.coupleId&&byId[g.coupleId]&&!done.has(g.coupleId)){
+      const partner=byId[g.coupleId];
+      done.add(g.id); done.add(partner.id);
+      const label=_couplePoolLabel(g,partner);
+      groups.push({type:'couple',label,ids:[g.id,partner.id],members:[g,partner]});
+    }
+  }
+  // 3. Solo guests (no family / couple link in pool)
+  for(const g of unseated){
+    if(done.has(g.id)) continue;
+    done.add(g.id);
+    groups.push({type:'solo',label:'',ids:[g.id],members:[g]});
+  }
+  return groups;
+}
+function _couplePoolLabel(g,p){
+  const fn=n=>n.split(' ')[0];
+  const ln1=(g.name||'').split(' ').slice(1).join(' ');
+  const ln2=(p.name||'').split(' ').slice(1).join(' ');
+  if(ln1&&ln1===ln2) return fn(g.name)+' & '+fn(p.name)+' '+ln1;
+  return fn(g.name)+' & '+fn(p.name);
+}
+
+// ── Pool HTML with group blocks ───────────────────────────────────────
+function _poolGroupsHtml(unseated){
+  if(!unseated.length) return '<span style="font-size:13px;color:var(--muted)">All guests assigned ✓</span>';
+  const showKids=!(STATE.settings&&STATE.settings.seatHideChildren);
+  const visible=showKids?unseated:unseated.filter(g=>_guestAgeBand(g)==='adult');
+  if(!visible.length) return '<span style="font-size:13px;color:var(--muted)">All adult guests assigned ✓</span>';
+  const useGroups=!(STATE.settings&&STATE.settings.seatFlatPool);
+  if(!useGroups){
+    return visible.map(g=>`<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`).join('');
+  }
+  const groups=_poolGroups(visible);
+  return groups.map(grp=>{
+    if(grp.type==='solo'){
+      const g=grp.members[0];
+      return `<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`;
+    }
+    const idsJson=JSON.stringify(grp.ids).replace(/"/g,'&quot;');
+    const svgCouple='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3.5"/><path d="M3 20v-1.5a5 5 0 0 1 5-5h2"/><circle cx="17" cy="7" r="3.5"/><path d="M13 14.5a5 5 0 0 1 5-5h1a5 5 0 0 1 5 5V20"/></svg>';
+    const svgFamily='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v9.5h14V10"/></svg>';
+    const chipClass=grp.type==='couple'?'pg-couple':'pg-family';
+    const icon=grp.type==='couple'?svgCouple:svgFamily;
+    const chipHtml=grp.members.map(g=>`<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`).join('');
+    return `<div class="pool-group ${chipClass}" draggable="true" ondragstart="dragGroup(event,'${idsJson}')" ondragover="event.preventDefault();this.classList.add('pg-drag-over')" ondragleave="this.classList.remove('pg-drag-over')" ondrop="this.classList.remove('pg-drag-over')">
+      <div class="pool-group-hd">${icon}<span class="pool-group-label">${grp.label||grp.members.map(g=>g.name.split(' ')[0]).join(' & ')}</span><span style="font-size:10px;opacity:.6">${grp.members.length} guests</span></div>
+      <div class="pool-group-chips">${chipHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// Toggle children/infants visibility in the pool
+function toggleSeatShowChildren(){
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.seatHideChildren=!STATE.settings.seatHideChildren;
+  saveToStorage(); navigate('seating'); _seatReopenCog();
+}
+// Toggle flat vs grouped pool
+function toggleSeatFlatPool(){
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.seatFlatPool=!STATE.settings.seatFlatPool;
+  saveToStorage(); navigate('seating'); _seatReopenCog();
+}
 function _predictTableName(){
   const used=new Set();
   (STATE.tables||[]).forEach(t=>{
@@ -30214,6 +30337,20 @@ function _seatCogMenuHtml(style, layout){
       <div style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;left:${seatingAttendingOnly?'16px':'2.5px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
     </div>
   </label>`;
+  // Unassigned pool — group by couple/family toggle
+  const groupPoolOn=!(STATE.settings&&STATE.settings.seatFlatPool);
+  const groupPoolToggle=`<label style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink);margin-bottom:11px;cursor:pointer;user-select:none" title="Group couples and families together in the unassigned guests panel">Group couples &amp; families
+    <div onclick="event.preventDefault();toggleSeatFlatPool()" style="width:32px;height:18px;border-radius:9px;background:${groupPoolOn?'var(--gold)':'var(--border)'};position:relative;transition:background .2s;flex-shrink:0;cursor:pointer">
+      <div style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;left:${groupPoolOn?'16px':'2.5px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+    </div>
+  </label>`;
+  // Unassigned pool — show children & infants toggle
+  const showKidsOn=!(STATE.settings&&STATE.settings.seatHideChildren);
+  const showKidsToggle=`<label style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink);margin-bottom:11px;cursor:pointer;user-select:none" title="Show or hide children and infants in the unassigned guests panel">Show children &amp; infants
+    <div onclick="event.preventDefault();toggleSeatShowChildren()" style="width:32px;height:18px;border-radius:9px;background:${showKidsOn?'var(--gold)':'var(--border)'};position:relative;transition:background .2s;flex-shrink:0;cursor:pointer">
+      <div style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;left:${showKidsOn?'16px':'2.5px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+    </div>
+  </label>`;
   // Display section — Show dietary key toggle (both views).
   const dietToggle=`<label style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink);margin-bottom:11px;cursor:pointer;user-select:none" title="Show or hide the dietary requirements key in the toolbar">Show dietary key
     <div onclick="event.preventDefault();toggleSeatDietKey()" style="width:32px;height:18px;border-radius:9px;background:${!keyHidden?'var(--gold)':'var(--border)'};position:relative;transition:background .2s;flex-shrink:0;cursor:pointer">
@@ -30254,6 +30391,8 @@ function _seatCogMenuHtml(style, layout){
   return `<div id="seat-cog-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;width:225px;background:var(--cream);border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 24px rgba(26,26,24,.12);padding:13px 15px;text-align:left">
     <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:8px">Display</div>
     ${attendingToggle}
+    ${groupPoolToggle}
+    ${showKidsToggle}
     ${dietToggle}
     ${famSepToggle}
     ${zoomToggle}
@@ -30633,7 +30772,7 @@ function _floorDecorHtml(d){
   </div>`;
 }
 
-function _floorDropOnTable(e,id){ e.preventDefault(); e.stopPropagation(); dropOnTable(e,id); }
+function _floorDropOnTable(e,id){ e.preventDefault(); e.stopPropagation(); if(dragGroupIds||dragSeatId) dropOnTable(e,id); }
 
 // ═══ POOL CHIP -> A SPECIFIC CHAIR (v140) ═══════════════════════════════════
 // Pool chips are HTML5-draggable (`ondragstart="dragSeat(...)"`), which is a wholly
@@ -30642,7 +30781,7 @@ function _floorDropOnTable(e,id){ e.preventDefault(); e.stopPropagation(); dropO
 // table as a whole, so a chip aimed at chair 6 landed in whatever chair happened to be
 // free, and on a full table it silently went nowhere.
 function _chairDragOver(e,tid,si){
-  if(!dragSeatId) return;               // not a seat drag — leave it alone
+  if(!dragSeatId&&!dragGroupIds) return;  // not a seat drag — leave it alone
   e.preventDefault(); e.stopPropagation();
   const el=e.currentTarget;
   document.querySelectorAll('.floor-seat.seat-drop-hot').forEach(x=>x.classList.remove('seat-drop-hot'));
@@ -30657,6 +30796,16 @@ function _chairDragLeave(e){
 // the Unassigned pool — including on a full table, where that is the only way to get a
 // guest in at all. A guest dropped onto their own chair is a no-op.
 function _chairDrop(e,tid,si){
+  if(dragGroupIds){
+    e.preventDefault(); e.stopPropagation(); _floorSeatHighlightOff();
+    // Seat lead member at the target chair, rest fill free seats
+    const [lead,...rest]=dragGroupIds;
+    const arr=_seatArr(tid); const occupant=arr[si]||null;
+    if(occupant&&occupant!==lead){ _seatClear(tid,occupant); }
+    _seatClearAll(lead); _seatAt(tid,si,lead);
+    rest.forEach(gid=>{ if(!_seatIds(tid).includes(gid)) _seatFirstFree(tid,gid); });
+    dragGroupIds=null; dragSeatId=null; dragFromTable=null; saveToStorage(); navigate('seating'); return;
+  }
   if(!dragSeatId) return;
   e.preventDefault(); e.stopPropagation();
   _floorSeatHighlightOff();
@@ -31644,8 +31793,8 @@ function renderSeatingFloor(c,actions){
             <button type="button" onclick="filterSeatingPool('');const _se=document.getElementById('seating-search');if(_se){_se.value='';_se.focus()}" title="Clear" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;line-height:0;display:flex;align-items:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
         </div>
-        <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-wrap:wrap;gap:5px;padding:2px">
-          ${unseated.length?unseated.map(g=>`<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)} ${g.name}</span>`).join(''):'<span style="font-size:12px;color:var(--muted)">All guests assigned ✓</span>'}
+        <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-wrap:wrap;gap:6px;padding:2px">
+          ${_poolGroupsHtml(unseated)}
         </div>
       </div>
     </div>`:''}
@@ -31661,7 +31810,7 @@ function renderSeatingFloor(c,actions){
       </div>
     </div>
     <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-wrap:wrap;gap:6px;padding:4px">
-      ${unseated.length?unseated.map(g=>`<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)} ${g.name}</span>`).join(''):'<span style="font-size:13px;color:var(--muted)">All guests assigned ✓</span>'}
+      ${_poolGroupsHtml(unseated)}
     </div>
   </div>`:''}` ;
 
