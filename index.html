@@ -12791,7 +12791,10 @@ function _rsvpColMenuHtml(){
    Meal column is switched on, and a control should sit next to the thing it controls. */
 function _mealSetupHtml(){
   const on=!!(STATE.settings && STATE.settings.mealChoiceOn);
-  const opts=_mealOpts();
+  // Use the raw array (including empty in-progress entries) so a just-added blank
+  // input is visible. _mealOpts() filters empties, which is correct for display
+  // elsewhere but would swallow the new row before the user can type into it.
+  const opts=on ? _mealOptsArr() : _mealOpts();
   return `
     <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px">
       <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:6px">Meal choice</div>
@@ -28454,7 +28457,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v232';
+const APP_BUILD='v233';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
