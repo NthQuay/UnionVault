@@ -28616,7 +28616,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v240';
+const APP_BUILD='v241';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38951,7 +38951,7 @@ function renderInvitation(c, actions){
 function _invitationSectionHtml(which){
   if(!STATE.invitation) STATE.invitation = {};
   const inv = STATE.invitation;
-  const hasInvite = !!(inv.html || inv.fileName);
+  const hasInvite = !!(inv.html || inv.fileName || inv.link || inv.file);
 
   const guests = Array.isArray(STATE.guests) ? STATE.guests : [];
   const withEmail = guests.filter(g => (g.email||'').trim()).length;
@@ -38959,24 +38959,98 @@ function _invitationSectionHtml(which){
   const missingBoth = guests.filter(g => !(g.email||'').trim() && !(g.phone||'').trim()).length;
 
   if(which==='invitation'){
-    const mount = hasInvite
-      ? `<div id="invitation-mount" style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);min-height:200px">
-           <div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Invitation loaded${inv.fileName?`: <strong style="color:var(--ink)">${_escHtml(inv.fileName)}</strong>`:''}. Connect your builder file to render it here.</div>
-         </div>`
-      : `<div id="invitation-mount" style="border:1.5px dashed #D8C9B2;border-radius:12px;background:var(--surface);min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;gap:10px">
-           <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#C9B89C" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7L22 6"/></svg>
-           <div style="font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--ink)">No invitation yet</div>
-           <div style="font-size:12.5px;color:var(--muted);max-width:360px">Build an animated, interactive invitation from scratch, or upload an existing invitation file to preview it here.</div>
-           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
-             <button class="btn btn-primary btn-sm" onclick="_invitationCreate()">Create invitation</button>
-             <button class="btn btn-outline btn-sm" onclick="_invitationUpload()">Upload file</button>
-           </div>
-         </div>`;
+    const hasLink=!!(inv.link&&inv.link.url);
+    const hasFile=!!(inv.file&&inv.file.name);
+    const _fileInput=`<input type="file" id="inv-file-input" accept="image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.gif" style="display:none" onchange="_invFileSelected(event)"/>`;
+    const _greenCheck=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    let content='';
+    if(!hasLink&&!hasFile){
+      content=`${_fileInput}
+      <div style="border:1.5px dashed var(--border);border-radius:12px;padding:26px 20px 20px;text-align:center;background:var(--surface)">
+        <div style="margin-bottom:12px;opacity:.45"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><polyline points="2 7 12 13 22 7"/></svg></div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:500;color:var(--ink);margin-bottom:5px">No invitation yet</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px">Upload your invitation file or link to a design in Canva, Google Drive, or elsewhere.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px">
+          <button class="btn btn-primary btn-sm" onclick="_invTriggerUpload()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload file</button>
+          <button class="btn btn-outline btn-sm" onclick="_invOpenAddLink()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Add link</button>
+        </div>
+        <div><button onclick="_invComingSoon()" style="background:none;border:none;padding:4px 8px;font-size:11.5px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Create invitation</button></div>
+      </div>`;
+    } else if(hasLink&&hasFile){
+      const lp=_invPlatformInfo(inv.link.url);
+      const utrun=inv.link.url.length>50?inv.link.url.slice(0,48)+'…':inv.link.url;
+      const ftrun=inv.file.name.length>40?inv.file.name.slice(0,38)+'…':inv.file.name;
+      content=`${_fileInput}
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px 13px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+            <div style="flex:1;min-width:0">${lp?`<div style="font-size:11px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.05em">${_escHtml(lp.label)}</div>`:''}<div style="font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(utrun)}</div></div>
+            <a href="${_escHtml(inv.link.url)}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="flex-shrink:0">Open</a>
+            <button class="btn btn-sm" onclick="_invRemoveLink()" style="flex-shrink:0;background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Remove link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+        </div>
+        <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px 13px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(ftrun)}</div><div style="font-size:11.5px;color:var(--muted)">${_escHtml(inv.file.sizeLabel||'')}</div></div>
+            <button class="btn btn-sm" onclick="_invRemoveFile()" style="flex-shrink:0;background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Remove file"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 0 0;border-top:1px solid var(--border);margin-top:12px;font-size:12px;color:var(--green)">${_greenCheck} 1 link · 1 file<button onclick="_invOpenAddLink()" style="margin-left:auto;background:none;border:none;font-size:11.5px;color:var(--muted);cursor:pointer;font-family:inherit;padding:0">+ Change link</button></div>`;
+    } else if(hasLink){
+      const lp=_invPlatformInfo(inv.link.url);
+      const ldate=inv.link.addedAt?new Date(inv.link.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'';
+      const utrun=inv.link.url.length>60?inv.link.url.slice(0,58)+'…':inv.link.url;
+      content=`${_fileInput}
+      <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="height:120px;background:var(--surface);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);position:relative">
+          <svg width="56" height="56" viewBox="0 0 60 60" fill="none" opacity=".2"><rect x="8" y="10" width="44" height="40" rx="4" stroke="var(--gold)" stroke-width="1.5"/><line x1="15" y1="22" x2="45" y2="22" stroke="var(--gold)" stroke-width="1"/><line x1="20" y1="28" x2="40" y2="28" stroke="var(--gold)" stroke-width="1"/><line x1="18" y1="34" x2="42" y2="34" stroke="var(--gold)" stroke-width="1"/><line x1="22" y1="40" x2="38" y2="40" stroke="var(--gold)" stroke-width="1"/></svg>
+          ${lp?`<div style="position:absolute;top:10px;left:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:600;background:var(--card);border:1px solid var(--border);color:var(--ink)">${_escHtml(lp.label)}</div>`:''}
+          <div style="position:absolute;bottom:8px;right:10px;font-size:11px;color:var(--muted);font-style:italic">Opens externally</div>
+        </div>
+        <div style="padding:12px 14px">
+          <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:10px">${_escHtml(utrun)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <a href="${_escHtml(inv.link.url)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Open</a>
+            <button class="btn btn-outline btn-sm" onclick="_invCopyLink(this)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy link</button>
+            <button class="btn btn-outline btn-sm" onclick="_invTriggerUpload()" style="margin-left:auto"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Add file too</button>
+            <button class="btn btn-sm" onclick="_invOpenAddLink()" style="background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Change link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="btn btn-sm" onclick="_invRemoveLink()" style="background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Remove"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 0 0;border-top:1px solid var(--border);margin-top:12px;font-size:12px;color:var(--green)">${_greenCheck} Linked${ldate?' · Added '+ldate:''}</div>`;
+    } else {
+      const fdate=inv.file.addedAt?new Date(inv.file.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'';
+      const ftrun=inv.file.name.length>40?inv.file.name.slice(0,38)+'…':inv.file.name;
+      const fext=(inv.file.name.match(/\.(\w+)$/)||['','file'])[1].toUpperCase();
+      const hasPreview=!!(inv.file.dataUrl);
+      content=`${_fileInput}
+      <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="height:120px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid var(--border);gap:6px">
+          ${hasPreview&&inv.file.dataUrl.startsWith('data:image')?`<img src="${inv.file.dataUrl}" style="max-height:110px;max-width:100%;object-fit:contain" alt=""/>`:
+          `<svg width="36" height="44" viewBox="0 0 40 48" fill="none" opacity=".3"><path d="M4 4C4 1.79 5.79 0 8 0H28L40 12V44C40 46.21 38.21 48 36 48H8C5.79 48 4 46.21 4 44V4Z" fill="var(--muted)"/><path d="M28 0L40 12H32C29.79 12 28 10.21 28 8V0Z" fill="rgba(0,0,0,.15)"/></svg>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:var(--muted);padding:2px 8px;border-radius:4px">${_escHtml(fext)}</span>`}
+        </div>
+        <div style="padding:12px 14px">
+          <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(ftrun)}</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px">${_escHtml(inv.file.sizeLabel||'')}${fdate?' · '+fdate:''}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${hasPreview?`<a href="${inv.file.dataUrl}" target="_blank" class="btn btn-primary btn-sm"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview</a>`:''}
+            <button class="btn btn-outline btn-sm" onclick="_invOpenAddLink()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Add link too</button>
+            <button class="btn btn-sm" onclick="_invRemoveFile()" style="margin-left:auto;background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Remove"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 0 0;border-top:1px solid var(--border);margin-top:12px;font-size:12px;color:var(--green)">${_greenCheck} Uploaded · ${_escHtml(inv.file.sizeLabel||'')}${fdate?' · '+fdate:''}</div>`;
+    }
     return `
     <div class="card" style="padding:24px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;margin-bottom:4px">Your Invitation</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:18px">Create a new animated invitation or upload one you already have. Once it's ready, send it to your guests by email or text.</div>
-      ${mount}
+      <div style="font-size:13px;color:var(--muted);margin-bottom:18px">Upload your invitation file or link to a design in Canva, Google Drive, or elsewhere.</div>
+      ${content}
     </div>`;
   }
 
@@ -39011,10 +39085,135 @@ function _invitationSectionHtml(which){
     </div>`;
 }
 
-// Placeholder hooks — wire these to the invitation builder file / send service later.
-function _invitationCreate(){ alert('Invitation builder coming soon. Drop your invitation HTML file in here to get started.'); }
-function _invitationUpload(){ alert('Upload support coming soon. This will let you load an existing invitation file to preview and send.'); }
-function _invitationSend(channel){ alert('Sending by '+channel+' will be enabled once your invitation builder is connected.'); }
+function _invitationCreate(){ _invComingSoon(); }
+function _invitationUpload(){ _invTriggerUpload(); }
+function _invitationSend(channel){ alert('Sending by '+channel+' will be enabled soon.'); }
+
+function _invPlatformInfo(url){
+  if(!url) return null;
+  const v=url.toLowerCase();
+  if(v.includes('canva.com')) return {key:'canva',label:'Canva'};
+  if(v.includes('drive.google')||v.includes('docs.google')||v.includes('slides.google')||v.includes('sheets.google')) return {key:'google',label:'Google Drive'};
+  if(v.includes('dropbox.com')) return {key:'dropbox',label:'Dropbox'};
+  if(v.match(/\.pdf($|\?)/)) return {key:'pdf',label:'PDF'};
+  if(v.startsWith('http')) return {key:'link',label:'Link'};
+  return null;
+}
+function _invComingSoon(){
+  openModal('Invite Builder',
+    `<div style="text-align:center;padding:8px 0 16px">
+      <div style="width:52px;height:52px;border-radius:14px;background:var(--gold-lt);border:1.5px solid var(--gold-med);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div style="display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;background:var(--gold-lt);color:var(--gold);border:1px solid var(--gold-med);margin-bottom:12px">Coming soon</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--ink);margin-bottom:8px">Invite Builder</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">Design beautiful animated invitations directly in UnionVault — no external tools needed. This feature is on its way.</div>
+    </div>`,
+    `<button class="btn btn-primary" onclick="closeModalDirect()" style="width:100%;justify-content:center">Got it</button>`
+  );
+}
+function _invOpenAddLink(){
+  openModal('Add invitation link',
+    `<div style="padding:4px 0 0">
+      <div style="border:1.5px solid var(--border);border-radius:8px;overflow:hidden;display:flex;margin-bottom:14px">
+        <button id="inv-tab-link" class="btn btn-sm" style="flex:1;justify-content:center;border-radius:0;border:none;background:var(--gold);color:#fff;gap:6px" onclick="_invSwitchTab('link')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Paste link</button>
+        <button id="inv-tab-upload" class="btn btn-sm" style="flex:1;justify-content:center;border-radius:0;border:none;border-left:1px solid var(--border);background:var(--surface);color:var(--muted);gap:6px" onclick="_invSwitchTab('upload')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload file</button>
+      </div>
+      <div id="inv-tab-link-panel">
+        <div style="position:relative;margin-bottom:10px">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+          <input id="inv-link-input" type="url" placeholder="Paste your link here…" autocomplete="off" style="width:100%;padding:9px 12px 9px 36px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--ink);background:var(--surface);font-family:inherit;outline:none" oninput="_invLinkDetect(this.value)" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"/>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">${['Canva','PDF','Google Drive','Dropbox','Any URL'].map(p=>`<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border)">${p}</span>`).join('')}</div>
+        <div id="inv-platform-detected" style="display:none;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--gold-lt);border:1px solid var(--gold-med);border-radius:8px;font-size:12px;color:var(--gold)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span id="inv-platform-label"></span></div>
+        </div>
+      </div>
+      <div id="inv-tab-upload-panel" style="display:none;text-align:center;padding:12px 0">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Choose a file from your device</div>
+        <button class="btn btn-primary btn-sm" onclick="closeModalDirect();setTimeout(_invTriggerUpload,100)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Choose file</button>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:8px">JPG, PNG, PDF or GIF · max 20 MB</div>
+      </div>
+    </div>`,
+    `<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
+     <button class="btn btn-primary btn-sm" onclick="_invSaveLink()">Save link</button>`
+  );
+}
+function _invSwitchTab(t){
+  const lp=document.getElementById('inv-tab-link-panel');
+  const up=document.getElementById('inv-tab-upload-panel');
+  const lt=document.getElementById('inv-tab-link');
+  const ut=document.getElementById('inv-tab-upload');
+  const ft=document.getElementById('modal-footer');
+  if(t==='link'){
+    lp.style.display=''; up.style.display='none';
+    lt.style.background='var(--gold)'; lt.style.color='#fff';
+    ut.style.background='var(--surface)'; ut.style.color='var(--muted)';
+    if(ft) ft.style.display='';
+  } else {
+    lp.style.display='none'; up.style.display='';
+    lt.style.background='var(--surface)'; lt.style.color='var(--muted)';
+    ut.style.background='var(--gold)'; ut.style.color='#fff';
+    if(ft) ft.style.display='none';
+  }
+}
+function _invLinkDetect(val){
+  const pd=document.getElementById('inv-platform-detected');
+  const pl=document.getElementById('inv-platform-label');
+  if(!pd||!pl) return;
+  const info=_invPlatformInfo(val);
+  if(info&&val.trim()){ pl.textContent=info.label+' link detected'; pd.style.display='block'; }
+  else { pd.style.display='none'; }
+}
+function _invSaveLink(){
+  const inp=document.getElementById('inv-link-input');
+  if(!inp) return;
+  const url=inp.value.trim();
+  if(!url){ inp.focus(); return; }
+  if(!STATE.invitation) STATE.invitation={};
+  const info=_invPlatformInfo(url);
+  STATE.invitation.link={ url, platform:info?info.key:'link', addedAt:Date.now() };
+  saveToStorage(); closeModalDirect(); navigate('rsvp-mgr');
+}
+function _invRemoveLink(){
+  if(!STATE.invitation) return;
+  delete STATE.invitation.link;
+  saveToStorage(); navigate('rsvp-mgr');
+}
+function _invTriggerUpload(){
+  const inp=document.getElementById('inv-file-input');
+  if(inp) inp.click();
+}
+function _invFileSelected(e){
+  const file=e&&e.target&&e.target.files?e.target.files[0]:null;
+  if(!file) return;
+  const sizeLabel=file.size<1024*1024?Math.round(file.size/1024)+' KB':(file.size/1024/1024).toFixed(1)+' MB';
+  if(!STATE.invitation) STATE.invitation={};
+  const storeData=file.size<=5*1024*1024;
+  if(storeData){
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      STATE.invitation.file={ name:file.name, sizeLabel, addedAt:Date.now(), dataUrl:ev.target.result };
+      saveToStorage(); navigate('rsvp-mgr');
+    };
+    reader.readAsDataURL(file);
+  } else {
+    STATE.invitation.file={ name:file.name, sizeLabel, addedAt:Date.now(), dataUrl:null };
+    saveToStorage(); navigate('rsvp-mgr');
+  }
+}
+function _invRemoveFile(){
+  if(!STATE.invitation) return;
+  delete STATE.invitation.file;
+  saveToStorage(); navigate('rsvp-mgr');
+}
+function _invCopyLink(btn){
+  const url=STATE.invitation&&STATE.invitation.link&&STATE.invitation.link.url;
+  if(!url) return;
+  navigator.clipboard.writeText(url).then(()=>{
+    if(btn){ const orig=btn.innerHTML; btn.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Copied'; setTimeout(()=>{btn.innerHTML=orig;},1800); }
+  }).catch(()=>{});
+}
 /* ═══════════════════════════════════════════════════════════════
    VENDOR LOOK UP  —  couple-facing vendor directory
    Mounted into the Vendors page. Opened by the "Find new vendors"
