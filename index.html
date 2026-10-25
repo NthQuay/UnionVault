@@ -4222,7 +4222,7 @@ function coupleDisplayName(name1, name2){
    `g.allergyNote` (anything else, kept exactly as typed). Unticking Allergy keeps both, so an
    accidental untick loses nothing; every reader shows them only while 'allergy' is ticked. */
 const DIET_KEYS=['vegetarian','pescatarian','vegan','halal','kosher','lactose','gluten','allergy','other'];
-const DIET_LABELS={vegetarian:'Vegetarian',pescatarian:'Pescatarian',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose',gluten:'Gluten',allergy:'Allergy',other:'Other'};
+const DIET_LABELS={vegetarian:'Vegetarian',pescatarian:'Pescatarian',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose intolerant',gluten:'Gluten intolerant',allergy:'Allergy',other:'Other'};
 const ALLERGENS=[['peanuts','Peanuts'],['treenuts','Tree nuts'],['shellfish','Shellfish'],['fish','Fish'],['eggs','Eggs'],['milk','Milk'],['sesame','Sesame'],['soy','Soy'],['wheat','Wheat']];
 /* The muted one-line summary on guest cards keeps its existing lower-case keys; only the
    allergy segment changes — it carries its detail and is red so it doesn't hide in the line. */
@@ -12128,7 +12128,7 @@ async function _loadOnlineRsvps(){
     rows.filter(r=>r.attending==='yes'&&Array.isArray(r.dietary)).forEach(r=>{
       r.dietary.forEach(d=>{ dietMap[d]=(dietMap[d]||0)+1; });
     });
-    const dietLabels={vegetarian:'Veg',pescatarian:'Pesc',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose',gluten:'Gluten',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut'};
+    const dietLabels={vegetarian:'Veg',pescatarian:'Pesc',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose int.',gluten:'Gluten int.',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut'};
     const dietSummary=Object.entries(dietMap).map(([k,v])=>`${dietLabels[k]||k} ×${v}`).join(' · ')||'None noted';
 
     // Format date helper
@@ -12291,7 +12291,7 @@ function renderRsvpMgr(c, actions){
   };
 
   // ── Option C: dietary + plus-one breakdown (reads live from guests) ──
-  const dietLabels={vegetarian:'Vegetarian',vegan:'Vegan',lactose:'Lactose intolerance',gluten:'Gluten intolerance',allergy:'Allergy',other:'Other restriction'};
+  const dietLabels={vegetarian:'Vegetarian',vegan:'Vegan',lactose:'Lactose intolerant',gluten:'Gluten intolerant',allergy:'Allergy',other:'Other restriction'};
   const dietCounts={vegetarian:0,vegan:0,lactose:0,gluten:0,allergy:0,other:0};
   // Allergy breakdown for the caterer: each common allergen counted, typed notes listed as
   // written (grouped case-insensitively), and anyone ticked with no detail flagged to chase.
@@ -13287,7 +13287,7 @@ function _trackerPrintDoc(cfg){
     allergy:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:#A8322A"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
     other:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
   };
-  const DIET_LBL={vegetarian:'Vegetarian',vegan:'Vegan',lactose:'Lactose',gluten:'Gluten',allergy:'Allergy',other:'Other'};
+  const DIET_LBL={vegetarian:'Vegetarian',vegan:'Vegan',lactose:'Lactose intolerant',gluten:'Gluten intolerant',allergy:'Allergy',other:'Other'};
   // Serialise config + assets for the embedded script.
   const DATA=JSON.stringify(cfg).replace(/<\/script>/gi,'<\\/script>');
   const DSVG=JSON.stringify(DIET_SVG).replace(/<\/script>/gi,'<\\/script>');
@@ -28616,7 +28616,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v243';
+const APP_BUILD='v244';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -37067,7 +37067,7 @@ function _wbBuildSite(forDownload){
   const _uvGuestJson=JSON.stringify((STATE.guests||[]).filter(g=>(g.listType||'A')!=='B'&&g.name).map(g=>String(g.name).trim()).filter(Boolean).sort((a,b)=>a.localeCompare(b))).replace(/'/g,'&#39;');
   const _uvBtnYes=_escHtml(_uvRsvp.btnYes||'Joyfully accepts');
   const _uvBtnNo=_escHtml(_uvRsvp.btnNo||'Regretfully declines');
-  const _uvDietHtml=[['vegetarian','Vegetarian'],['vegan','Vegan'],['glutenfree','Gluten free'],['dairyfree','Dairy free'],['nutfree','Nut free'],['halal','Halal'],['kosher','Kosher'],['other','Other']].map(([v,l])=>`<div class="rf-diet-chip" data-diet="${v}" onclick="this.classList.toggle('on')">${l}</div>`).join('');
+  const _uvDietHtml=[['vegetarian','Vegetarian'],['vegan','Vegan'],['glutenfree','Gluten intolerant'],['dairyfree','Lactose intolerant'],['nutfree','Nut free'],['halal','Halal'],['kosher','Kosher'],['other','Other']].map(([v,l])=>`<div class="rf-diet-chip" data-diet="${v}" onclick="this.classList.toggle('on')">${l}</div>`).join('');
   const _uvModal=t2.rsvpMode==='modal'&&_uvCoupleId?`<style>
 #uv-rsvp-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);flex-direction:column;justify-content:flex-end;overscroll-behavior:none}
 #uv-rsvp-overlay.open{display:flex}
@@ -47674,8 +47674,8 @@ async function _showRsvpForm(coupleId,mode){
 
   const dietOptions=[
     ['vegetarian','Vegetarian'],['pescatarian','Pescatarian'],['vegan','Vegan'],
-    ['halal','Halal'],['kosher','Kosher'],['lactose','Lactose'],
-    ['gluten','Gluten'],['allergy','Allergy'],['other','Other']
+    ['halal','Halal'],['kosher','Kosher'],['lactose','Lactose intolerant'],
+    ['gluten','Gluten intolerant'],['allergy','Allergy'],['other','Other']
   ];
   const dietHtml=dietOptions.map(([k,lbl])=>`
     <div class="rf-diet-chip" onclick="${(k==='other'||k==='allergy')?'_rfNoteToggle(this)':"this.classList.toggle('on')"}" data-diet="${k}">
