@@ -7913,12 +7913,7 @@ function guestTableHtml(list){
     if(type==='text') return textCellHtml(g,key, key==='role'? ((g.relationship&&g.relationship!=='Couple'&&g.relationship!=='Guest'&&g.relationship!=='Plus One')?g.relationship:'') : g[key]);
     if(type==='rsvp'){
       const m=statusMeta[st];
-      return `<td style="${td};white-space:nowrap"><select onchange="_gtSetRsvp('${g.id}',this.value)" class="form-input"
-        style="width:auto;min-width:100px;font-size:11px;padding:4px 22px 4px 9px;border-radius:13px;background-color:${m.bg};color:${m.fg};font-weight:500;cursor:pointer;appearance:none;-webkit-appearance:none">
-        <option value="awaiting"${st==='awaiting'?' selected':''}>Awaiting</option>
-        <option value="attending"${st==='attending'?' selected':''}>Attending</option>
-        <option value="declined"${st==='declined'?' selected':''}>Declined</option>
-      </select></td>`;
+      return `<td style="${td};white-space:nowrap"><span style="display:inline-flex;align-items:center;font-size:11px;padding:4px 10px;border-radius:13px;background-color:${m.bg};color:${m.fg};font-weight:500;white-space:nowrap">${m.label}</span></td>`;
     }
     if(type==='list'){
       const lt=(g.listType||'A');
@@ -28394,7 +28389,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v227';
+const APP_BUILD='v228';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
