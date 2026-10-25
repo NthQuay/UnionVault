@@ -28457,7 +28457,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v233';
+const APP_BUILD='v234';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -45638,7 +45638,9 @@ async function _autoSyncFlush(keepalive){
 let _lastVisibilitySync=0;
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='hidden'){
-    if(_autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; _autoSyncFlush(true); }
+    // Do NOT flush during an account-switch reload — the new session is set but STATE still
+    // belongs to the old account; flushing here would write old data to the new account.
+    if(_autoSyncTimer && !window._uvWipeInProgress){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; _autoSyncFlush(true); }
   } else if(document.visibilityState==='visible'){
     // PWA resumed from background — re-check cloud for newer data (throttled to once per 5 min)
     const now=Date.now();
@@ -45649,7 +45651,8 @@ document.addEventListener('visibilitychange',function(){
   }
 });
 window.addEventListener('beforeunload',function(){
-  if(_autoSyncTimer){
+  // Do NOT flush during an account-switch reload — same reason as visibilitychange above.
+  if(_autoSyncTimer && !window._uvWipeInProgress){
     clearTimeout(_autoSyncTimer);
     _autoSyncTimer=null;
     // keepalive:true lets the fetch survive tab close (browser allows up to ~64KB)
