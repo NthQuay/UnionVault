@@ -28391,7 +28391,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v224';
+const APP_BUILD='v225';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32742,12 +32742,15 @@ async function _wbSaveSlug(val){
     _setMsg('Checking availability…','var(--muted)');
     try{
       const uid = _sbSession.user.id;
-      const chkUrl = `${_SB_URL}/rest/v1/planner_data?select=user_id&section=eq.website&data->>slug=eq.${encodeURIComponent(slug)}&user_id=neq.${encodeURIComponent(uid)}&limit=1`;
+      const rpcUrl = `${_SB_URL}/rest/v1/rpc/check_slug_available`;
       const _timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000));
-      const chk = await Promise.race([fetch(chkUrl,{headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json'}}),_timeout]);
+      const chk = await Promise.race([
+        fetch(rpcUrl,{method:'POST',headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({p_slug:slug,p_user_id:uid})}),
+        _timeout
+      ]);
       if(chk.ok){
-        const taken = await chk.json();
-        if(taken && taken.length){
+        const available = await chk.json();
+        if(!available){
           _setMsg('That link name is already taken — try a different one.','var(--red)');
           if(inp) inp.value = currentSlug;
           return;
