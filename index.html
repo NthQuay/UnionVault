@@ -10444,8 +10444,8 @@ function saveGuest(type){
     const rl2=document.getElementById('gf-rel2')?.value.trim()||'';
     const hn2=document.getElementById('gf-handle2')?.value.trim()||'';
     const pfx1=_pfxGetVal('gf1'); const pfx2=_pfxGetVal('gf2');
-    const g1={id:uid(),name:n1,prefix:pfx1,rsvp:'awaiting',dietary:[],tags,phone:ph1,email:em1,address:addr,handle:hn1,handlePlatform:_formPlat('gf-handle1'),coupleId:null,plusOneId:null,plusOne:false,relationship:rl1||'Couple',isMain:true,listType,...(rsvpByOverride?{rsvpByOverride}:{})};
-    const g2={id:uid(),name:n2,prefix:pfx2,rsvp:'awaiting',dietary:[],tags,phone:ph2,email:em2,address:addr,handle:hn2,handlePlatform:_formPlat('gf-handle2'),coupleId:null,plusOneId:null,plusOne:false,relationship:rl2||'Couple',isMain:false,listType,...(rsvpByOverride?{rsvpByOverride}:{})};
+    const g1={id:uid(),name:n1,prefix:pfx1,rsvp:'awaiting',dietary:[],tags:tags.slice(),phone:ph1,email:em1,address:addr,handle:hn1,handlePlatform:_formPlat('gf-handle1'),coupleId:null,plusOneId:null,plusOne:false,relationship:rl1||'Couple',isMain:true,listType,...(rsvpByOverride?{rsvpByOverride}:{})};
+    const g2={id:uid(),name:n2,prefix:pfx2,rsvp:'awaiting',dietary:[],tags:tags.slice(),phone:ph2,email:em2,address:addr,handle:hn2,handlePlatform:_formPlat('gf-handle2'),coupleId:null,plusOneId:null,plusOne:false,relationship:rl2||'Couple',isMain:false,listType,...(rsvpByOverride?{rsvpByOverride}:{})};
     g1.coupleId=g2.id; g2.coupleId=g1.id;
     STATE.guests.push(g1,g2);
   } else {
@@ -28469,7 +28469,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v235';
+const APP_BUILD='v236';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
