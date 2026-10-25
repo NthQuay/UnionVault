@@ -28391,7 +28391,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v220';
+const APP_BUILD='v221';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32740,13 +32740,11 @@ async function _wbSaveSlug(val){
   const currentSlug = _wbSite().slug;
   if(_sbSession && slug !== currentSlug){
     _setMsg('Checking availability…','var(--muted)');
-    const _ctrl = new AbortController();
-    const _timer = setTimeout(()=>_ctrl.abort(), 5000);
     try{
       const uid = _sbSession.user.id;
       const chkUrl = `${_SB_URL}/rest/v1/planner_data?select=user_id&section=eq.website&data->>slug=eq.${encodeURIComponent(slug)}&user_id=neq.${encodeURIComponent(uid)}&limit=1`;
-      const chk = await fetch(chkUrl,{headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json'},signal:_ctrl.signal});
-      clearTimeout(_timer);
+      const _timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000));
+      const chk = await Promise.race([fetch(chkUrl,{headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json'}}),_timeout]);
       if(chk.ok){
         const taken = await chk.json();
         if(taken && taken.length){
@@ -32755,7 +32753,7 @@ async function _wbSaveSlug(val){
           return;
         }
       }
-    }catch(e){ clearTimeout(_timer); /* network error or timeout — proceed anyway */ }
+    }catch(e){ /* timeout or network error — proceed anyway */ }
   }
   _wbSite().slug = slug;
   _save();
