@@ -28391,7 +28391,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v225';
+const APP_BUILD='v226';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32751,7 +32751,7 @@ async function _wbSaveSlug(val){
       if(chk.ok){
         const available = await chk.json();
         if(!available){
-          _setMsg('That link name is already taken — try a different one.','var(--red)');
+          _setMsg('Link unavailable. Please try a different link.','var(--red)');
           if(inp) inp.value = currentSlug;
           return;
         }
@@ -32763,7 +32763,7 @@ async function _wbSaveSlug(val){
   }
   _wbSite().slug = slug;
   saveToStorage();
-  _setMsg('Saved!','var(--green)');
+  _setMsg('Link available. Saved! ✓','var(--green)');
   setTimeout(()=>_setMsg('Auto-generated from your names. Edit to customise — letters, numbers and hyphens only.','var(--muted)'),2000);
   // Rebuild QR with new URL
   _wbQrBuilt=false;
