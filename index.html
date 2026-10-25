@@ -11945,6 +11945,18 @@ function _setGuestAgeBand(g, band){
   if(_AGE_BANDS.indexOf(band)<0) band='adult';
   if(band==='adult') delete g.ageBand; else g.ageBand=band; // keep default implicit
 }
+// Infer age band from a guest's tag list. Returns 'infant', 'child', or null.
+// 'adult' is the implicit default so null means "no tag-derived band, leave as-is".
+function _ageBandFromTags(tags){
+  if(!Array.isArray(tags)||!tags.length) return null;
+  const n=t=>String(t||'').toLowerCase().replace(/[\s_-]/g,'');
+  for(const t of tags){
+    const k=n(t);
+    if(/^(infant|baby|bub|bubs|newborn)$/.test(k)) return 'infant';
+    if(/^(child|children|kid|kids|toddler|junior)$/.test(k)) return 'child';
+  }
+  return null;
+}
 // Small badge shown beside a name (nothing for adults). Uses class-based dark
 // overrides via .age-badge-child / .age-badge-infant (defined in CSS).
 function _ageBandLabel(band){ return (_AGE_BAND_META[band]||{}).label||''; }
@@ -28457,7 +28469,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v234';
+const APP_BUILD='v235';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -41588,6 +41600,7 @@ function finaliseGuestImport(skipped=0){
     }
     const{id,name,prefix,rsvp,phone,email,address,handle,handlePlatform,relationship,dietary,tags,allergens,allergyNote,dietOther}=g;
     STATE.guests.push({id,name,prefix:prefix||'',rsvp,dietary,tags,allergens:allergens||[],allergyNote:allergyNote||'',dietOther:dietOther||'',phone,email,address,handle:handle||'',handlePlatform:(handle||'').trim()?(handlePlatform||'instagram'):undefined,relationship:relationship||'Guest',coupleId:null,plusOneId:null,plusOne:false,isMain:true,notes:'',listType:'A'});
+    { const _ng=STATE.guests[STATE.guests.length-1]; const _ab=_ageBandFromTags(tags); if(_ab) _setGuestAgeBand(_ng,_ab); }
     _newlyImportedIds.add(id); addedIds.push(id);
     added++;
   });
@@ -46601,6 +46614,14 @@ function loadFromStorage(){
     (STATE.guests||[]).forEach(g=>{
       if(g && (g.handle||'').trim() && !g.handlePlatform) g.handlePlatform='instagram';
     });
+    // Backfill: guests tagged "Child" or "Infant" (and variants) with no explicit
+    // ageBand get their band set automatically. Idempotent — skips guests that
+    // already have an explicit ageBand so manual overrides are never disturbed.
+    if(typeof _ageBandFromTags==='function'&&typeof _setGuestAgeBand==='function'){
+      (STATE.guests||[]).forEach(g=>{
+        if(g && !g.ageBand){ const b=_ageBandFromTags(g.tags); if(b) _setGuestAgeBand(g,b); }
+      });
+    }
     // v177: dietary entries that aren't app keys (raw text from older CSV imports) are
     // normalised once — recognised words to their tick-box, the rest to Other + its words,
     // merged with anything already there. Guests holding only app keys are untouched, so
