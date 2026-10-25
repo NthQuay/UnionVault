@@ -28389,8 +28389,8 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v216';
-const APP_BUILD_DATE='2026-10-24';
+const APP_BUILD='v217';
+const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
   const p1=_escHtml(ev.partner1||'Partner'), p2=_escHtml(ev.partner2||'Partner');
@@ -47534,7 +47534,7 @@ function _rfSetMemberAttend(memberId,val){
       const grid=document.createElement(‘div’);grid.className=’rf-diet-grid’;grid.id=’rf-diet-’+eid;grid.hidden=true;
       grid.appendChild(tmpl.content.cloneNode(true));
       const tog=document.createElement(‘button’);tog.type=’button’;tog.className=’rf-diet-toggle’;
-      tog.innerHTML=’Note ‘+mname+’’s dietary requirements<svg class="rf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,9 12,15 18,9"/></svg>’;
+      tog.innerHTML=’Note ‘+mname+’\u2019s dietary requirements<svg class="rf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,9 12,15 18,9"/></svg>’;
       tog.onclick=function(){const open=card.classList.toggle(‘diet-open’);grid.hidden=!open;};
       card.appendChild(tog);card.appendChild(grid);pd.appendChild(card);
     }else if(val!=='yes'){
