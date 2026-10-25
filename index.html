@@ -28391,7 +28391,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v219';
+const APP_BUILD='v220';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32740,10 +32740,13 @@ async function _wbSaveSlug(val){
   const currentSlug = _wbSite().slug;
   if(_sbSession && slug !== currentSlug){
     _setMsg('Checking availability…','var(--muted)');
+    const _ctrl = new AbortController();
+    const _timer = setTimeout(()=>_ctrl.abort(), 5000);
     try{
       const uid = _sbSession.user.id;
       const chkUrl = `${_SB_URL}/rest/v1/planner_data?select=user_id&section=eq.website&data->>slug=eq.${encodeURIComponent(slug)}&user_id=neq.${encodeURIComponent(uid)}&limit=1`;
-      const chk = await fetch(chkUrl,{headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json'}});
+      const chk = await fetch(chkUrl,{headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json'},signal:_ctrl.signal});
+      clearTimeout(_timer);
       if(chk.ok){
         const taken = await chk.json();
         if(taken && taken.length){
@@ -32752,7 +32755,7 @@ async function _wbSaveSlug(val){
           return;
         }
       }
-    }catch(e){ /* network error — proceed anyway */ }
+    }catch(e){ clearTimeout(_timer); /* network error or timeout — proceed anyway */ }
   }
   _wbSite().slug = slug;
   _save();
@@ -32943,7 +32946,8 @@ function renderWebsite(c, actions){
         <div style="border-top:1px solid var(--border);padding-top:10px">
           <div style="font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Your link name</div>
           <div style="display:flex;gap:6px;align-items:center">
-            <input id="wb-slug-inp" class="form-input" value="${_escHtml(wSlug)}" style="flex:1;font-size:11.5px;padding:5px 8px" placeholder="your-names" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')" onblur="_wbSaveSlug(this.value)" onkeydown="if(event.key==='Enter'){_wbSaveSlug(this.value);this.blur();}"/>
+            <input id="wb-slug-inp" class="form-input" value="${_escHtml(wSlug)}" style="flex:1;font-size:11.5px;padding:5px 8px" placeholder="your-names" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')" onkeydown="if(event.key==='Enter'){event.preventDefault();_wbSaveSlug(this.value);}"/>
+            <button class="btn btn-sm btn-outline" onclick="_wbSaveSlug(document.getElementById('wb-slug-inp').value)" style="white-space:nowrap;font-size:11px;padding:5px 10px;flex-shrink:0">Check availability</button>
           </div>
           <div id="wb-slug-msg" style="font-size:10px;margin-top:5px;line-height:1.4;color:var(--muted)">Auto-generated from your names. Edit to customise — letters, numbers and hyphens only.</div>
         </div>
