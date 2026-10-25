@@ -28641,7 +28641,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v247';
+const APP_BUILD='v248';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47819,13 +47819,13 @@ function _isDarkHex(hex){
 async function _showRsvpForm(coupleId,mode){
   // mode: 'page' (default — for ?rsvp= URL) | 'modal' (preview from within app)
   let eventName='',eventDate='',eventVenue='',theme={},guestObjs=[],rsvp={},rfields={};
+  let sec={};
   try{
     const res=await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website,families,settings)`,{
       headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
     });
     if(res.ok){
       const rows=await res.json();
-      const sec={};
       (rows||[]).forEach(r=>{sec[r.section]=r.data;});
       const ev=sec.event||{};
       const p1=ev.partner1||'',p2=ev.partner2||'';
