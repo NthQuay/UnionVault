@@ -10096,7 +10096,6 @@ function updateRsvpCountDisplay(){
 
 let dragGuestId=null;
 let dragGroupType=null;
-let dragGroupIds=null;
 let dragSlotKey=null; // unique key for the dragged slot
 let _groupDragDocOver=null; // document-level dragover handler kept alive during a reorder drag
 
@@ -28631,7 +28630,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v245';
+const APP_BUILD='v246';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
