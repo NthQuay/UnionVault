@@ -64,7 +64,7 @@
 :root{
   --cream:#FFFFFF;--ink:#3A352F;--gold:#C4A882;--gold-deep:#8B7355;--parchment:#E8E0D5;
   --muted:#9A9389;--surface:#F3EFE9;--border:#E0D8CF;--connector:#E7DECF;--red:#C0392B;--red-deep:#8B0000;
-  --green:#4A7C59;--sep-ink:#9A4F95;--gt-couple:#9A7B2E;--gt-fam:#5B7BA0;--gt-house:#8A6BA8;--sidebar-w:168px;--sidebar-collapsed:56px;
+  --green:#4A7C59;--sep-ink:#9A4F95;--gt-couple:#9A7B2E;--gt-fam:#5B7BA0;--gt-house:#8A6BA8;--sidebar-w:188px;--sidebar-collapsed:56px;
   --shadow:0 2px 20px rgba(26,26,24,.07);--radius:12px;
 }
 /* ── DARK MODE ── */
@@ -12019,7 +12019,7 @@ async function _loadOnlineRsvps(){
     rows.filter(r=>r.attending==='yes'&&Array.isArray(r.dietary)).forEach(r=>{
       r.dietary.forEach(d=>{ dietMap[d]=(dietMap[d]||0)+1; });
     });
-    const dietLabels={vegetarian:'Veg',vegan:'Vegan',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut',other:'Other'};
+    const dietLabels={vegetarian:'Veg',pescatarian:'Pesc',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose',gluten:'Gluten',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut'};
     const dietSummary=Object.entries(dietMap).map(([k,v])=>`${dietLabels[k]||k} ×${v}`).join(' · ')||'None noted';
 
     // Format date helper
@@ -12027,8 +12027,13 @@ async function _loadOnlineRsvps(){
 
     // Build table
     const rowsHtml = rows.map(r=>{
+      const _parseDietItem=function(d){
+        if(d&&d.startsWith('other:')){const n=d.slice(6);return n?'Other ('+n+')':'Other';}
+        if(d&&d.startsWith('allergy:')){const n=d.slice(8);return n?'Allergy ('+n+')':'Allergy';}
+        return dietLabels[d]||d;
+      };
       const dietStr = Array.isArray(r.dietary)&&r.dietary.length
-        ? r.dietary.map(function(d){if(d&&d.startsWith('other:')){const n=d.slice(6);return n?'Other ('+n+')':'Other';}return dietLabels[d]||d;}).join(', ')
+        ? r.dietary.map(_parseDietItem).join(', ')
         : '—';
       const attendBadge = r.attending==='yes'
         ? `<span style="color:var(--green);font-weight:600">✓ Yes</span>`
@@ -12100,9 +12105,15 @@ async function _loadOnlineRsvps(){
         }
         // Carry dietary across if the guest has none set
         if(Array.isArray(r.dietary)&&r.dietary.length&&(!g.dietary||!g.dietary.length)){
-          g.dietary=r.dietary.map(function(d){return(d&&d.startsWith('other:'))?'other':d;});
+          g.dietary=r.dietary.map(function(d){
+            if(d&&d.startsWith('other:'))return'other';
+            if(d&&d.startsWith('allergy:'))return'allergy';
+            return d;
+          });
           const _oi=r.dietary.find(function(d){return d&&d.startsWith('other:');});
           if(_oi&&!g.dietOther) g.dietOther=_oi.slice(6);
+          const _ai=r.dietary.find(function(d){return d&&d.startsWith('allergy:');});
+          if(_ai&&!g.allergyNote) g.allergyNote=_ai.slice(8);
           rowChanged=true;
         }
         // Carry phone, email, address across if not already on guest record
@@ -28378,7 +28389,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v215';
+const APP_BUILD='v216';
 const APP_BUILD_DATE='2026-10-24';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47176,14 +47187,16 @@ async function _showRsvpForm(coupleId,mode){
   const guestObjsJson=JSON.stringify(guestObjs);
 
   const dietOptions=[
-    ['vegetarian','Vegetarian'],['vegan','Vegan'],
-    ['glutenfree','Gluten free'],['dairyfree','Dairy free'],
-    ['nutallergy','Nut allergy'],['other','Other']
+    ['vegetarian','Vegetarian'],['pescatarian','Pescatarian'],['vegan','Vegan'],
+    ['halal','Halal'],['kosher','Kosher'],['lactose','Lactose'],
+    ['gluten','Gluten'],['allergy','Allergy'],['other','Other']
   ];
   const dietHtml=dietOptions.map(([k,lbl])=>`
-    <div class="rf-diet-chip" onclick="${k==='other'?'_rfOtherToggle(this)':"this.classList.toggle('on')"}" data-diet="${k}">
+    <div class="rf-diet-chip" onclick="${(k==='other'||k==='allergy')?'_rfNoteToggle(this)':"this.classList.toggle('on')"}" data-diet="${k}">
       <span class="rf-chk"><svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg></span>${lbl}
-    </div>`).join('')+`<input class="rf-inp rf-diet-other" type="text" placeholder="Please describe your dietary requirement…" style="display:none;flex-basis:100%;margin-top:6px">`;
+    </div>`).join('')
+  +`<input class="rf-inp rf-diet-note" data-for="allergy" type="text" placeholder="Please describe your allergy…" style="display:none;flex-basis:100%;margin-top:6px">`
+  +`<input class="rf-inp rf-diet-note" data-for="other" type="text" placeholder="Please describe your dietary requirement…" style="display:none;flex-basis:100%;margin-top:6px">`;
 
   const _hf=theme.headFont||"'Cormorant Garamond',serif";
   const _bf=theme.bodyFont||"'Inter',sans-serif";
@@ -47244,6 +47257,9 @@ async function _showRsvpForm(coupleId,mode){
       .rf-diet-chip.on .rf-chk{background:var(--pub-accent);border-color:var(--pub-accent);color:var(--pub-btn-fg,#fff)}
       .rf-chk svg{visibility:hidden}.rf-diet-chip.on .rf-chk svg{visibility:visible}
       .rf-addr-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-top:8px}
+      .rf-diet-toggle{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;padding:0;font-family:inherit;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--pub-text);cursor:pointer;text-align:left}
+      .rf-diet-toggle svg.rf-chevron{margin-left:auto;transition:transform .2s;flex-shrink:0}
+      .rf-card.diet-open .rf-diet-toggle svg.rf-chevron{transform:rotate(180deg)}
       .rf-submit{width:100%;padding:14px;font-size:15px;font-weight:600;font-family:inherit;color:var(--pub-btn-fg,#fff);background:var(--pub-btn);border:none;border-radius:12px;cursor:pointer;transition:opacity .15s;margin-top:6px}
       .rf-submit:hover{opacity:.88}
       .rf-submit:disabled{opacity:.5;cursor:not-allowed}
@@ -47484,10 +47500,12 @@ function _rfSetAttend(val){
   if(pd&&tmpl){
     if(val==='yes'&&!document.getElementById('rf-diet-s0')){
       const card=document.createElement('div');card.className='rf-card';
-      const lbl=document.createElement('div');lbl.className='rf-lbl';lbl.textContent='Dietary requirements';
-      const grid=document.createElement('div');grid.className='rf-diet-grid';grid.id='rf-diet-s0';
+      const grid=document.createElement('div');grid.className='rf-diet-grid';grid.id='rf-diet-s0';grid.hidden=true;
       grid.appendChild(tmpl.content.cloneNode(true));
-      card.appendChild(lbl);card.appendChild(grid);pd.innerHTML='';pd.appendChild(card);
+      const tog=document.createElement('button');tog.type='button';tog.className='rf-diet-toggle';
+      tog.innerHTML='Note dietary requirements<svg class="rf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,9 12,15 18,9"/></svg>';
+      tog.onclick=function(){const open=card.classList.toggle('diet-open');grid.hidden=!open;};
+      card.appendChild(tog);card.appendChild(grid);pd.innerHTML='';pd.appendChild(card);
     }else if(val!=='yes'){pd.innerHTML='';}
   }
 }
@@ -47509,14 +47527,16 @@ function _rfSetMemberAttend(memberId,val){
   const pd=document.getElementById('rf-per-diet');
   const tmpl=document.getElementById('rf-diet-template');
   if(pd&&tmpl){
-    if(val==='yes'&&!document.getElementById('rf-diet-'+eid)){
-      const mrow=document.querySelector('#rf-group-rows [data-mid="'+memberId+'"] .rf-member-name');
-      const mname=mrow?mrow.textContent:'Guest';
-      const card=document.createElement('div');card.className='rf-card';card.id='rf-diet-card-'+eid;
-      const lbl=document.createElement('div');lbl.className='rf-lbl';lbl.textContent=mname+'’s dietary requirements';
-      const grid=document.createElement('div');grid.className='rf-diet-grid';grid.id='rf-diet-'+eid;
+    if(val===’yes’&&!document.getElementById(‘rf-diet-’+eid)){
+      const mrow=document.querySelector(‘#rf-group-rows [data-mid="’+memberId+’"] .rf-member-name’);
+      const mname=mrow?mrow.textContent:’Guest’;
+      const card=document.createElement(‘div’);card.className=’rf-card’;card.id=’rf-diet-card-’+eid;
+      const grid=document.createElement(‘div’);grid.className=’rf-diet-grid’;grid.id=’rf-diet-’+eid;grid.hidden=true;
       grid.appendChild(tmpl.content.cloneNode(true));
-      card.appendChild(lbl);card.appendChild(grid);pd.appendChild(card);
+      const tog=document.createElement(‘button’);tog.type=’button’;tog.className=’rf-diet-toggle’;
+      tog.innerHTML=’Note ‘+mname+’’s dietary requirements<svg class="rf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,9 12,15 18,9"/></svg>’;
+      tog.onclick=function(){const open=card.classList.toggle(‘diet-open’);grid.hidden=!open;};
+      card.appendChild(tog);card.appendChild(grid);pd.appendChild(card);
     }else if(val!=='yes'){
       const dietCard=document.getElementById('rf-diet-card-'+eid);
       if(dietCard)dietCard.remove();
@@ -47524,9 +47544,9 @@ function _rfSetMemberAttend(memberId,val){
   }
 }
 
-function _rfOtherToggle(chip){
+function _rfNoteToggle(chip){
   chip.classList.toggle('on');
-  const inp=chip.closest('.rf-diet-grid').querySelector('.rf-diet-other');
+  const inp=chip.closest('.rf-diet-grid').querySelector('.rf-diet-note[data-for="'+chip.dataset.diet+'"]');
   if(inp){const on=chip.classList.contains('on');inp.style.display=on?'block':'none';if(on)setTimeout(function(){inp.focus();},0);}
 }
 async function _rfSubmit(coupleId){
@@ -47545,9 +47565,9 @@ async function _rfSubmit(coupleId){
   }
 
   const diet=Array.from(document.querySelectorAll('#rf-diet-s0 .rf-diet-chip.on')).map(el=>el.dataset.diet);
-  const _otherInp0=document.querySelector('#rf-diet-s0 .rf-diet-other');
-  const _otherNote0=_otherInp0?_otherInp0.value.trim():'';
-  const dietFinal=diet.map(function(d){return(d==='other'&&_otherNote0)?'other:'+_otherNote0:d;});
+  const _getNoteVal=function(grid,key){const i=document.querySelector('#'+grid+' .rf-diet-note[data-for="'+key+'"]');return i?i.value.trim():'';};
+  const _encDiet=function(arr,gridId){return arr.map(function(d){if(d==='other'||d==='allergy'){const n=_getNoteVal(gridId,d);return n?d+':'+n:d;}return d;});};
+  const dietFinal=_encDiet(diet,'rf-diet-s0');
   const street=(document.getElementById('rf-street')||{}).value||'';
   const suburb=(document.getElementById('rf-suburb')||{}).value||'';
   const state=(document.getElementById('rf-state')||{}).value||'';
@@ -47570,9 +47590,7 @@ async function _rfSubmit(coupleId){
         const g=objs.find(o=>o.id===id)||{name};
         const eid2=id.replace(/[^a-z0-9]/gi,'');
         const mDiet=Array.from(document.querySelectorAll('#rf-diet-'+eid2+' .rf-diet-chip.on')).map(el=>el.dataset.diet);
-        const _mOtherInp=document.querySelector('#rf-diet-'+eid2+' .rf-diet-other');
-        const _mOtherNote=_mOtherInp?_mOtherInp.value.trim():'';
-        const mDietFinal=mDiet.map(function(d){return(d==='other'&&_mOtherNote)?'other:'+_mOtherNote:d;});
+        const mDietFinal=_encDiet(mDiet,'rf-diet-'+eid2);
         return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:mDietFinal.length?mDietFinal:null};
       });
     } else {
