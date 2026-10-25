@@ -28245,10 +28245,20 @@ async function cloudLoadClick(silent){
   if(btn){btn.disabled=false;btn.innerHTML=_cldBtnHtml();}
   if(!r.ok){if(!silent)_cloudToast(r.error||'Load failed',true);return;}
   if(r.empty){if(!silent)_cloudToast('No cloud data yet — save from this device first.');return;}
+  // Snapshot local families before cloud data overwrites them — families not yet
+  // uploaded (created on this device since last cloud save) must be preserved
+  const _localFamiliesBeforeLoad = STATE.families ? STATE.families.slice() : [];
   if(r.saved.event)    Object.assign(STATE.event,r.saved.event);
   if(r.saved.settings) Object.assign(STATE.settings,r.saved.settings);
   ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
   ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
+  // Re-add any local-only families (not present in cloud) whose members still
+  // exist in the cloud-loaded guest list — this is why couple links survive but
+  // family groups were clearing: couples live on guest objects, families don't
+  { const gids=new Set((STATE.guests||[]).map(g=>g.id));
+    const cids=new Set((STATE.families||[]).map(f=>f.id));
+    const extras=_localFamiliesBeforeLoad.filter(f=>!cids.has(f.id)&&f.memberIds.filter(id=>gids.has(id)).length>=2);
+    if(extras.length) STATE.families=(STATE.families||[]).concat(extras); }
   saveToStorage();
   // Cancel the auto-sync push-back that saveToStorage just scheduled — data came FROM the cloud
   // so there is nothing to push; the next real user edit will reschedule it naturally
@@ -28439,7 +28449,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v230';
+const APP_BUILD='v231';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
