@@ -10776,7 +10776,7 @@ function openEditGuest(id){
     </div>
     <div class="form-group"><label class="form-label">Address</label><input class="form-input" id="eg-addr" value="${g.address||''}"/></div>
 
-    ${(()=>{ const _b=_egPlusOneBlockHtml(g); return _b?`<div style="border-top:1px solid var(--border);padding-top:11px;margin-top:2px"><div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:8px">Plus One</div>${_b}</div>`:''; })()}
+    ${(()=>{ const _ab=_guestAgeBand(g); if(_ab==='child'||_ab==='infant') return ''; const _b=_egPlusOneBlockHtml(g); return _b?`<div style="border-top:1px solid var(--border);padding-top:11px;margin-top:2px"><div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:8px">Plus One</div>${_b}</div>`:''; })()}
 
     <div style="margin-top:6px">
       ${_egSection('more','More details', _moreSummary, _moreBody)}
@@ -28616,7 +28616,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v239';
+const APP_BUILD='v240';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
