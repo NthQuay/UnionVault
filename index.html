@@ -5818,9 +5818,9 @@ function confirmBulkLinkCouple(id1,id2){
     if(g.plusOneId){ const old=STATE.guests.find(x=>x.id===g.plusOneId); _preservePairInvite(g.id, g.plusOneId); if(old){ old.coupleId=null; old.plusOneId=null; } }
     g.coupleId=null; g.plusOneId=null;
   });
-  // Link them
-  g1.coupleId=g2.id; g1.relationship='Couple';
-  g2.coupleId=g1.id; g2.relationship='Couple';
+  // Link them — preserve any existing role rather than overwriting with 'Couple'
+  g1.coupleId=g2.id; if(!g1.relationship||g1.relationship==='Guest') g1.relationship='Couple';
+  g2.coupleId=g1.id; if(!g2.relationship||g2.relationship==='Guest') g2.relationship='Couple';
   bulkSelected.clear();
   saveToStorage(); closeModalDirect(); navigate('guests');
 }
@@ -10544,8 +10544,10 @@ function _egLinkSearch(query){
   if(!wrap) return;
   if(!q){ wrap.style.display='none'; wrap.innerHTML=''; return; }
   // Include current partner even if already linked so user can re-select/clear
+  // Exclude children and infants — they cannot be linked as a partner
   const items=STATE.guests
     .filter(x=>x.id!==selfId)
+    .filter(x=>x.ageBand!=='child'&&x.ageBand!=='infant')
     .filter(x=>!q||(x.name||'').toLowerCase().includes(q))
     .slice(0,8);
   if(!items.length){ wrap.innerHTML=`<div style="font-size:12.5px;color:var(--muted);padding:10px 12px">No matches.</div>`; wrap.style.display='block'; return; }
@@ -10682,7 +10684,7 @@ function openEditGuest(id){
     </div>
     <div class="form-group"><label class="form-label">IG / Messenger handle</label><input class="form-input" id="eg-handle" value="${(g.handle||'').replace(/"/g,'&quot;')}" placeholder="@username"/>${_platRadioHtml('eg-handle', _guestHandlePlatform(g))}</div>
     <div class="form-group" style="margin-top:12px"><label class="form-label">Tags</label><input type="hidden" id="eg-tags" value="${(g.tags||[]).join(', ')}"/>${_tagDropdownHtml('eg-tags', g.tags||[])}</div>
-    <div class="form-group" style="margin-top:12px">
+    ${(()=>{const _ab=_guestAgeBand(g);if(_ab==='child'||_ab==='infant') return '';return `<div class="form-group" style="margin-top:12px">
       <label class="form-label">Linked Partner</label>
       <input type="hidden" id="eg-link" value="${currentPartner?currentPartner.id:''}"/>
       <div style="position:relative">
@@ -10691,7 +10693,7 @@ function openEditGuest(id){
       </div>
       <div id="eg-link-results" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:200px;overflow-y:auto;margin-top:4px;display:none"></div>
       <div id="eg-link-lbl" style="font-size:11.5px;color:var(--muted);margin-top:4px">${currentPartner?`Linked with ${_escHtml(currentPartner.name)}. Search to change, or clear the field to unlink.`:''}</div>
-    </div>`;
+    </div>`;})()}`;
   const _alOn=_hasAllergy(g);
   const _alSel=new Set(Array.isArray(g.allergens)?g.allergens:[]);
   const _dietBody=`<div style="display:flex;flex-wrap:wrap;gap:12px">
@@ -28569,7 +28571,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v237';
+const APP_BUILD='v238';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
