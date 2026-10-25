@@ -11893,6 +11893,7 @@ function _setGuestAgeBand(g, band){
 }
 // Small badge shown beside a name (nothing for adults). Uses class-based dark
 // overrides via .age-badge-child / .age-badge-infant (defined in CSS).
+function _ageBandLabel(band){ return (_AGE_BAND_META[band]||{}).label||''; }
 function _ageBandBadge(g){
   const b=_guestAgeBand(g);
   if(b==='adult') return '';
@@ -28389,7 +28390,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v228';
+const APP_BUILD='v229';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -41718,6 +41719,14 @@ function _buildGroupSuggestions(addedIds){
       memberIds:ids, looseIds:[], confidence:'low', reason:'surname',
       surname:members[0].name.split(/\s+/).pop(), accepted:false });
   });
+
+  // Never suggest a couple pairing where any member is marked child or infant.
+  for(let i=out.length-1;i>=0;i--){
+    const s=out[i];
+    if(s.kind==='couple' && s.memberIds.some(id=>{ const m=byId(id); return m&&_guestAgeBand(m)!=='adult'; })){
+      out.splice(i,1);
+    }
+  }
 
   return out;
 }
