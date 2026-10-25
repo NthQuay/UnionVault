@@ -2454,6 +2454,11 @@ body.dark .tsend-ctl.sent{background:rgba(92,143,114,.2);border-color:rgba(92,14
 .tchan-sep{height:1px;background:var(--border);margin:4px 6px}
 .tchan-clear{color:var(--muted)}
 .tchan-clear svg{color:var(--muted)}
+.tchan-item.unavail{cursor:not-allowed;pointer-events:none}
+.tchan-item.unavail svg{opacity:.28}
+.tchan-item.unavail .tchan-label{color:var(--muted);opacity:.45}
+.tchan-unavail-tag{font-size:9px;font-style:italic;color:var(--muted);opacity:.55;margin-left:auto;white-space:nowrap}
+.inv-chip.unavail{opacity:.38;cursor:not-allowed;pointer-events:none}
 </style>
 <style id="cal-dark-style">
 /* ══ VENDOR LOOK UP ══════════════════════════════════════════════
@@ -8830,6 +8835,8 @@ function _inviteChipRow(kind, slotKey){
   const label = _kindHeading(kind);
   const chips = list.map(c=>{
     const on = cur && cur.method===c.key;
+    const avail=_chanContactAvail(c.key,slotKey);
+    if(!avail) return `<button type="button" class="inv-chip unavail" disabled title="Not recorded">${_svgIcon(c.svg)}${c.label}</button>`;
     return `<button type="button" class="inv-chip${on?(kind==='reminder'?' on green':' on'):''}" onclick="event.stopPropagation();setInviteMethod('${kind}','${slotKey}','${c.key}')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${c.svg}</svg>${c.label}</button>`;
   }).join('');
@@ -8893,6 +8900,43 @@ function _trackerMethodPill(kind, slotKey){
   }
   return `<button type="button" class="tmethod-pill none" onclick="event.stopPropagation();openTrackerMethodMenu(event,'${kind}','${key}')" title="Set method">Set…</button>`;
 }
+// Resolve guest member objects for a slot key (used for contact-field availability).
+function _slotContactMembers(slotKey){
+  const all=STATE.guests||[];
+  if(!slotKey) return [];
+  if(slotKey.startsWith('solo:')){
+    const g=all.find(x=>x.id===slotKey.slice(5)); return g?[g]:[];
+  }
+  if(slotKey.startsWith('couple:')){
+    const lead=all.find(x=>x.id===slotKey.slice(7)); if(!lead) return [];
+    const partner=all.find(x=>x.id===lead.coupleId); return [lead,partner].filter(Boolean);
+  }
+  if(slotKey.startsWith('plusone:')){
+    const lead=all.find(x=>x.id===slotKey.slice(8)); if(!lead) return [];
+    const plus=all.find(x=>x.id===lead.plusOneId)||all.find(x=>x.plusOneId===lead.id);
+    return [lead,plus].filter(Boolean);
+  }
+  if(slotKey.startsWith('fam:')){
+    const fam=(STATE.families||[]).find(f=>f.id===slotKey.slice(4));
+    return fam?fam.memberIds.map(id=>all.find(x=>x.id===id)).filter(Boolean):[];
+  }
+  return [];
+}
+// Returns true when any slot member has the contact field this channel requires.
+// Always returns true for channels with no contact requirement (inperson, other).
+function _chanContactAvail(chanKey, slotKey){
+  if(chanKey==='inperson'||chanKey==='other') return true;
+  const members=_slotContactMembers(slotKey);
+  if(!members.length) return true;
+  if(chanKey==='post')    return members.some(g=>!!(g.address||'').trim());
+  if(chanKey==='email')   return members.some(g=>!!(g.email||'').trim());
+  if(chanKey==='text'||chanKey==='whatsapp'||chanKey==='call')
+    return members.some(g=>!!(g.phone||'').trim());
+  if(chanKey==='messenger'||chanKey==='instagram')
+    return members.some(g=>!!(g.handle||'').trim());
+  return true;
+}
+
 // Build the popup menu markup for a kind+slot (positioned by the opener).
 function _trackerMethodMenuHtml(kind, slotKey){
   const meta=(STATE.inviteMeta&&STATE.inviteMeta[slotKey])||{};
@@ -8903,6 +8947,11 @@ function _trackerMethodMenuHtml(kind, slotKey){
   const key=slotKey.replace(/'/g,"\\'");
   const items=_visibleInviteChannels(kind).map(c=>{
     const on=activeMethod===c.key;
+    const avail=_chanContactAvail(c.key,slotKey);
+    if(!avail) return `<button type="button" class="tchan-item unavail" disabled>
+      ${_svgIcon(c.svg)}<span class="tchan-label">${c.label}</span>
+      <span class="tchan-unavail-tag">Not recorded</span>
+    </button>`;
     return `<button type="button" class="tchan-item${on?' on':''}" onclick="event.stopPropagation();_trackerPickMethod('${kind}','${key}','${c.key}')">
       ${_svgIcon(c.svg)}<span class="tchan-label">${c.label}</span>
       <span class="tchan-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
@@ -28390,7 +28439,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v229';
+const APP_BUILD='v230';
 const APP_BUILD_DATE='2026-10-25';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
