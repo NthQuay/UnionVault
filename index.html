@@ -3458,7 +3458,7 @@ async function _lpSignIn() {
       if(cloudChk.saved.event)    Object.assign(STATE.event, cloudChk.saved.event);
       if(cloudChk.saved.settings) Object.assign(STATE.settings, cloudChk.saved.settings);
       ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
-      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
+      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
       saveToStorage();
       if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
       if(typeof navigate !== 'undefined') navigate('dashboard');
@@ -28512,7 +28512,7 @@ const _CS=['event','settings','guests','checklist','vendors','quotes',
   'checklistCategories','checklistDrafts','checklistCatOrder',
   'budget','tables','seating','inspo','visionboard','wishingwell',
   'website','timeline','events','tagDefs','families',
-  'invites','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'];
+  'invites','inviteMeta','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets'];
 
 async function _cloudSave(silent,keepalive){
   if(!_sbSession) return {error:'Not signed in'};
@@ -28532,7 +28532,7 @@ async function _cloudSave(silent,keepalive){
     wishingwell:STATE.wishingwell, website:STATE.website,
     timeline:STATE.timeline||[], events:STATE.events,
     tagDefs:STATE.tagDefs||{}, families:STATE.families||[],
-    invites:STATE.invites||[], inviteMeta:STATE.inviteMeta||{},
+    invites:STATE.invites||[], inviteMeta:STATE.inviteMeta||{}, invitation:STATE.invitation||{},
     dashWidgetOrder:STATE.dashWidgetOrder,
     dashLayout:STATE.dashLayout, dashHiddenWidgets:STATE.dashHiddenWidgets
   };
@@ -28598,7 +28598,7 @@ async function cloudLoadClick(silent){
   if(r.saved.event)    Object.assign(STATE.event,r.saved.event);
   if(r.saved.settings) Object.assign(STATE.settings,r.saved.settings);
   ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
-  ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
+  ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
   // Re-add any local-only families (not present in cloud) whose members still
   // exist in the cloud-loaded guest list — this is why couple links survive but
   // family groups were clearing: couples live on guest objects, families don't
@@ -28796,7 +28796,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v262';
+const APP_BUILD='v263';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -39363,11 +39363,13 @@ function _invitationSectionHtml(which){
       const fdate=inv.file.addedAt?new Date(inv.file.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'';
       const ftrun=inv.file.name.length>40?inv.file.name.slice(0,38)+'…':inv.file.name;
       const fext=(inv.file.name.match(/\.(\w+)$/)||['','file'])[1].toUpperCase();
-      const hasPreview=!!(inv.file.dataUrl);
+      const _invSrc=_mediaUrl(inv.file.mediaId||inv.file.dataUrl||'');
+      const _invIsImg=/^image\//.test(inv.file.type||'') || /^data:image/.test(inv.file.dataUrl||'') || /\.(png|jpe?g|gif|webp)$/i.test(inv.file.name||'');
+      const hasPreview=!!_invSrc;
       content=`${_fileInput}
       <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden">
         <div style="height:120px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid var(--border);gap:6px">
-          ${hasPreview&&inv.file.dataUrl.startsWith('data:image')?`<img src="${inv.file.dataUrl}" style="max-height:110px;max-width:100%;object-fit:contain" alt=""/>`:
+          ${hasPreview&&_invIsImg?`<img src="${_escHtml(_invSrc)}" style="max-height:110px;max-width:100%;object-fit:contain" alt=""/>`:
           `<svg width="36" height="44" viewBox="0 0 40 48" fill="none" opacity=".3"><path d="M4 4C4 1.79 5.79 0 8 0H28L40 12V44C40 46.21 38.21 48 36 48H8C5.79 48 4 46.21 4 44V4Z" fill="var(--muted)"/><path d="M28 0L40 12H32C29.79 12 28 10.21 28 8V0Z" fill="rgba(0,0,0,.15)"/></svg>
           <span style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:var(--muted);padding:2px 8px;border-radius:4px">${_escHtml(fext)}</span>`}
         </div>
@@ -39375,7 +39377,7 @@ function _invitationSectionHtml(which){
           <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(ftrun)}</div>
           <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px">${_escHtml(inv.file.sizeLabel||'')}${fdate?' · '+fdate:''}</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            ${hasPreview?`<a href="${inv.file.dataUrl}" target="_blank" class="btn btn-primary btn-sm"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview</a>`:''}
+            ${hasPreview?`<button type="button" onclick="_invPreviewFile()" class="btn btn-primary btn-sm"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview</button>`:''}
             <button class="btn btn-outline btn-sm" onclick="_invOpenAddLink()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Add link too</button>
             <button class="btn btn-sm" onclick="_invRemoveFile()" style="margin-left:auto;background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Remove"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
           </div>
@@ -39524,24 +39526,38 @@ function _invTriggerUpload(){
 function _invFileSelected(e){
   const file=e&&e.target&&e.target.files?e.target.files[0]:null;
   if(!file) return;
+  if(e.target) e.target.value='';   // allow re-picking the same file
+  if(file.size>20*1024*1024){ alert('That file is over 20 MB — please choose a smaller one.'); return; }
   const sizeLabel=file.size<1024*1024?Math.round(file.size/1024)+' KB':(file.size/1024/1024).toFixed(1)+' MB';
   if(!STATE.invitation) STATE.invitation={};
-  const storeData=file.size<=5*1024*1024;
-  if(storeData){
-    const reader=new FileReader();
-    reader.onload=function(ev){
-      STATE.invitation.file={ name:file.name, sizeLabel, addedAt:Date.now(), dataUrl:ev.target.result };
-      saveToStorage(); navigate('rsvp-mgr');
-    };
-    reader.readAsDataURL(file);
-  } else {
-    STATE.invitation.file={ name:file.name, sizeLabel, addedAt:Date.now(), dataUrl:null };
+  // The file itself goes to the media store (IndexedDB + Supabase Storage, like Vision Board
+  // photos); STATE keeps only its id, so it survives reloads and syncs across devices.
+  const reader=new FileReader();
+  reader.onload=async function(ev){
+    let mediaId='';
+    try{ mediaId=await _mediaPut(ev.target.result, file.name, file.type); }catch(err){ console.warn('Invitation store failed', err); }
+    if(!mediaId){ alert('Sorry — the invitation could not be saved on this device. Please try again.'); return; }
+    const oldId=STATE.invitation.file&&STATE.invitation.file.mediaId;
+    STATE.invitation.file={ name:file.name, sizeLabel, type:file.type||'', addedAt:Date.now(), mediaId };
     saveToStorage(); navigate('rsvp-mgr');
-  }
+    if(oldId && oldId!==mediaId) _mediaDelete(oldId);
+  };
+  reader.readAsDataURL(file);
+}
+// Open the uploaded invitation in a new tab. Uses a blob: URL — browsers show a blank page
+// for a top-level data: URL, which is why the old Preview link opened empty.
+function _invPreviewFile(){
+  const f=STATE.invitation&&STATE.invitation.file; if(!f) return;
+  let url=_mediaUrl(f.mediaId||f.dataUrl||'');
+  if(url && url.startsWith('data:')){ try{ url=URL.createObjectURL(_dataUrlToBlob(url)); }catch(_){} }
+  if(!url){ alert('This invitation isn\'t available on this device yet — it may still be syncing. Try again shortly.'); return; }
+  const w=window.open(url,'_blank'); if(!w) location.href=url;
 }
 function _invRemoveFile(){
   if(!STATE.invitation) return;
+  const oldId=STATE.invitation.file&&STATE.invitation.file.mediaId;
   delete STATE.invitation.file;
+  if(oldId) _mediaDelete(oldId);
   saveToStorage(); navigate('rsvp-mgr');
 }
 function _invCopyLink(btn){
@@ -41875,6 +41891,7 @@ async function _exportDataJsonInner(){
     tagDefs: STATE.tagDefs||{},
     invites: STATE.invites||[],
     inviteMeta: STATE.inviteMeta||{},
+    invitation: STATE.invitation||{},
     dashWidgetOrder: STATE.dashWidgetOrder,
     dashLayout: STATE.dashLayout,
     dashHiddenWidgets: STATE.dashHiddenWidgets,
@@ -46746,6 +46763,7 @@ function saveToStorage(){
     families: STATE.families||[],
     invites: STATE.invites||[],
     inviteMeta: STATE.inviteMeta||{},
+    invitation: STATE.invitation||{},
     dashWidgetOrder: STATE.dashWidgetOrder,
     dashLayout: STATE.dashLayout,
     dashHiddenWidgets: STATE.dashHiddenWidgets,
@@ -47599,6 +47617,7 @@ function loadFromStorage(){
     if(!STATE.tagDefs || typeof STATE.tagDefs!=='object') STATE.tagDefs = {};
     if(saved.invites)STATE.invites = saved.invites;
     if(saved.inviteMeta && typeof saved.inviteMeta==='object') STATE.inviteMeta = saved.inviteMeta;
+    if(saved.invitation && typeof saved.invitation==='object') STATE.invitation = saved.invitation;
     if(saved.dashWidgetOrder)STATE.dashWidgetOrder = saved.dashWidgetOrder;
     if(saved.dashLayout)STATE.dashLayout = saved.dashLayout;
     if(saved.dashHiddenWidgets)STATE.dashHiddenWidgets = saved.dashHiddenWidgets;
@@ -48942,7 +48961,7 @@ function _showVendorError(type){
       if(_bootCloud.saved.event)    Object.assign(STATE.event, _bootCloud.saved.event);
       if(_bootCloud.saved.settings) Object.assign(STATE.settings, _bootCloud.saved.settings);
       ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
-      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
+      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
       saveToStorage();
       document.getElementById('welcome-overlay').classList.add('hidden');
       updateTopbarSub();
