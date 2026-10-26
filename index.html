@@ -22693,7 +22693,7 @@ function _apptFormSave(){
       t._apptHostAuto=false;
     }
     saveToStorage();
-    const done=()=>{ _closeConfirm2Direct(); if(inTaskModal) _ciApptRenderList(); else if(_currentPage==='checklist') navigate('checklist'); else if(_currentPage==='calendar') navigate('calendar'); };
+    const done=()=>{ _closeConfirm2Direct(); if(inTaskModal) _ciApptRenderList(); else _apptRefreshPage(); };
     // If the appointment has a date that differs from the task's due date, ask before changing it.
     if(appt.date && appt.date!==(t.dueDate||'')){
       _apptDateTaskId=t.id; _apptDateNewDate=appt.date; _apptDateNext=()=>_apptAfterSaveFlow(t, appt, done);
@@ -22710,6 +22710,11 @@ function _apptFormSave(){
     _ciApptRenderList();
     _apptAfterSaveFlow({id:'__staged__', text:document.getElementById('ci-text')?.value||'Appointment', appointments:window._ciApptStage}, appt, null);
   }
+}
+// Redraw whichever page shows appointments (checklist, calendar, vendor cards, dashboard)
+// so a just-saved appointment appears without navigating away and back.
+function _apptRefreshPage(){
+  if(['checklist','calendar','vendors','dashboard'].includes(_currentPage)) navigate(_currentPage);
 }
 // Post-save offers: email confirm (if ticked) and fee→budget. Mirrors old behaviour
 // but scoped to a single appointment. `done` runs when no popup is shown.
@@ -23064,7 +23069,7 @@ function _apptEmailCancel(){
   }
   _closeConfirm2Direct();
   if(document.getElementById('ci-appt-list')){ _ciApptRenderList(); }
-  else if(_currentPage==='checklist'){ navigate('checklist'); }
+  else _apptRefreshPage();
 }
 async function _apptEmailSendViaEdge(task, a, recipients){
   try{
@@ -23089,9 +23094,9 @@ function _apptEmailSend(){
     a.emailMe=true; a.recipients=recips.slice();
     if(task.id!=='__staged__') saveToStorage();
   }
-  if(!recips.length){ _closeConfirm2Direct(); if(document.getElementById('ci-appt-list')){_ciApptRenderList();}else if(_currentPage==='checklist'){navigate('checklist');} return; }
+  if(!recips.length){ _closeConfirm2Direct(); if(document.getElementById('ci-appt-list')){_ciApptRenderList();}else{_apptRefreshPage();} return; }
   const list=recips.map(e=>_escHtml(e)).join(', ');
-  const doneFooter=`<button class="btn btn-primary btn-sm" onclick="_closeConfirm2Direct();if(document.getElementById('ci-appt-list')){_ciApptRenderList();}else if(_currentPage==='checklist'){navigate('checklist');}">Done</button>`;
+  const doneFooter=`<button class="btn btn-primary btn-sm" onclick="_closeConfirm2Direct();if(document.getElementById('ci-appt-list')){_ciApptRenderList();}else{_apptRefreshPage();}">Done</button>`;
   // Show a sending indicator, then call the edge function
   openConfirm2('Sending…', `<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><span style="font-size:20px">✉</span><span style="font-size:13.5px;color:var(--ink)">Sending to ${list}…</span></div>`, '');
   _apptEmailSendViaEdge(task, a, recips).then(sent=>{
@@ -23157,7 +23162,7 @@ function _askAddApptFeeToBudget(task, a){
   </div>`;
   openConfirm2('Add appointment fee to budget?', body, '');
 }
-function _apptFeeSkip(){ _apptFeeTaskId=null; _apptFeeApptId=null; _closeConfirm2Direct(); }
+function _apptFeeSkip(){ _apptFeeTaskId=null; _apptFeeApptId=null; _closeConfirm2Direct(); _apptRefreshPage(); }
 function _apptFeeAdd(){
   const t=STATE.checklist.find(x=>x.id===_apptFeeTaskId);
   const a=t?_taskApptList(t).find(x=>x.id===_apptFeeApptId):null;
@@ -23170,7 +23175,7 @@ function _apptFeeAdd(){
     saveToStorage();
   }
   _closeConfirm2Direct();
-  if(_currentPage==='checklist') navigate('checklist');
+  _apptRefreshPage();
 }
 // ── Missed-appointment nudge (task keyword, but no appointment added) ──
 let _apptPromptTaskId=null;
@@ -29041,7 +29046,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v267';
+const APP_BUILD='v268';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
