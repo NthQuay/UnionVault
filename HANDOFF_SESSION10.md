@@ -95,7 +95,7 @@ All schema changes since Session 7 (the last time CLAUDE_CODE_CONTEXT.md was upd
   Key name: RESEND_API_KEY
   Value:    (user's Resend API key — NOT YET SET as of Session 9)
   ```
-- **Status:** ⚠️ Edge function is deployed but `RESEND_API_KEY` secret has NOT been set. Appointment emails will fail silently until this secret is added. **This is the top pending action.**
+- **Status:** ✅ `RESEND_API_KEY` IS SET (24 Oct 2026, confirmed Session 10). `unionvault.app` is verified in Resend. Do not ask the user for the key again.
 
 ### 3.2 No new SQL tables since Session 7
 
@@ -105,7 +105,7 @@ No new Supabase tables have been created since Session 7. The schema from CLAUDE
 - `vendor_tokens` — per-vendor tokenised brief URLs
 - `photos` (Storage bucket) — vision board photos
 
-**Still-parked:** Supabase Storage SELECT RLS policy for `photos` bucket (cross-device photo sync is blocked without it). See CLAUDE_CODE_CONTEXT.md §4 P2 for the SQL.
+**Done:** Supabase Storage SELECT RLS policy for `photos` already exists ("Users can read own photos") — confirmed Session 10.
 
 ---
 
@@ -213,7 +213,9 @@ let _evPickFilterOpen = false;
 
 ## 7. Immediate Action Plan — Next 3 Steps
 
-### Step 1 (BLOCKING — do this first): Set `RESEND_API_KEY` in Supabase
+> **Session 10 update:** Steps 1 and 2 are already DONE (key set 24 Oct; storage policy exists). Only Step 3 remains.
+
+### Step 1 (✅ DONE): Set `RESEND_API_KEY` in Supabase
 
 Appointment emails are fully built and deployed, but the edge function has no API key. The user needs to:
 
@@ -266,7 +268,7 @@ These items are still parked. Do not action them without user request:
 | # | Item | Status |
 |---|---|---|
 | P1 | Hash routing boot intercept for wedding website QR codes | 🅿️ Parked |
-| P2 | Supabase Storage SELECT RLS policy for `photos` | **→ Step 2 above** |
+| P2 | Supabase Storage SELECT RLS policy for `photos` | ✅ Done (policy exists) |
 | P3 | VB wallpaper deduplication (remove ~175 KB from file) | 🔄 In Progress — awaiting user to upload files to GitHub |
 | P4 | Wedding site watermark branding check | 🅿️ Parked |
 | P5 | Remove debug `console.log` from `_lpSignIn()` | 🅿️ Parked |

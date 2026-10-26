@@ -31,7 +31,7 @@ You are continuing development of **UnionVault**, a single-file PWA wedding plan
 
 ## Immediate next 3 steps (from HANDOFF_SESSION10.md §7)
 
-1. **Set `RESEND_API_KEY` secret in Supabase** — appointment emails are built but the edge function has no API key yet. Ask me for my Resend API key and then use `mcp__Supabase__create_edge_function_secret` to set it on project `hzafdlfprtzfxtyaebmc`.
+1. ~~Set `RESEND_API_KEY`~~ — ✅ already set (24 Oct 2026). Do not ask for the key.
 
 2. **Add Supabase Storage SELECT RLS policy** — Vision Board cross-device photo sync is silently broken without it. SQL in HANDOFF_SESSION10.md §3.2. Use `mcp__Supabase__execute_sql`.
 
