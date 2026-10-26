@@ -20400,13 +20400,16 @@ function _otherSelectChange(id){
 }
 // Rebuild the "+ Add […]" / linked-card block for a ceremony role to reflect the
 // current (unsaved) dropdown choice, so the button label tracks the selection live.
-function _cerRefreshLink(role, selectId){
+// A dropdown change is a fresh choice, so any previously linked vendor is dropped —
+// otherwise re-picking "Celebrant" silently brings back an old link.
+function _cerRefreshLink(role, selectId, keepLink){
   const host=document.getElementById('cer-link-'+role); if(!host) return;
   const val=_otherSelectValue(selectId);
   const ev=STATE.event||{};
-  const linkedId = role==='venue' ? ev.venueVendorId : ev.officiantVendorId;
-  host.innerHTML=_cerLinkInner(role, val, linkedId);
+  if(!keepLink && ev[_cerRoleField(role)]){ ev[_cerRoleField(role)]=''; saveToStorage(); }
+  host.innerHTML=_cerLinkInner(role, val, ev[_cerRoleField(role)]);
 }
+function _cerSelectId(role){ return role==='venue' ? 'ven-cervenue' : 'ven-officiant'; }
 function _otherSelectValue(id){
   const sel=document.getElementById(id); if(!sel) return '';
   if(sel.value==='__other__'){ return (document.getElementById(id+'-other')?.value||'').trim(); }
@@ -21259,6 +21262,10 @@ function _cerRoleCategory(role){ return role==='venue' ? 'Ceremony venue' : 'Cel
 function _cerRoleField(role){ return role==='venue' ? 'venueVendorId' : 'officiantVendorId'; }
 // Open a picker: link an existing vendor card or add a new one for this ceremony role.
 function _cerLinkOpen(role){
+  // Linking a vendor confirms the dropdown choice — keep it so it survives re-renders.
+  if(!STATE.event) STATE.event={};
+  const _sel=_otherSelectValue(_cerSelectId(role));
+  if(_sel){ STATE.event[role==='venue'?'ceremonyVenue':'officiant']=_sel; saveToStorage(); }
   const cat=_cerRoleCategory(role);
   const matches=(STATE.vendors||[]).filter(v=>!v.category || v.category===cat);
   const list=(STATE.vendors||[]);
@@ -21281,7 +21288,8 @@ function _cerLinkPick(role, vendorId){
   STATE.event[_cerRoleField(role)]=vendorId;
   saveToStorage();
   closeModalDirect();
-  navigate(_currentPage||'details');
+  if(document.getElementById('cer-link-'+role)) _cerRefreshLink(role, _cerSelectId(role), true);
+  else navigate(_currentPage||'details');
 }
 function _cerLinkAddNew(role){
   closeModalDirect();
@@ -21291,7 +21299,9 @@ function _cerLinkAddNew(role){
 function _cerUnlink(role){
   if(STATE.event) STATE.event[_cerRoleField(role)]='';
   saveToStorage();
-  navigate(_currentPage||'details');
+  // Refresh in place so the (possibly unsaved) dropdown choice isn't reset to "—".
+  if(document.getElementById('cer-link-'+role)) _cerRefreshLink(role, _cerSelectId(role), true);
+  else navigate(_currentPage||'details');
 }
 // ── Hide / show popup (matches the Guest List "Show / hide items" format) ─────
 const _VENDOR_HIDE_SECTIONS=[
@@ -28766,7 +28776,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v258';
+const APP_BUILD='v259';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};

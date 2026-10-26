@@ -251,7 +251,7 @@ This unblocks Vision Board photo sync across devices without any frontend code c
 ### Step 3: Test end-to-end appointment email flow
 
 After Step 1 is done:
-1. Open Event Details → create or edit an appointment → tick "Email to myself" → tap Send
+1. Vendors → tap an appointment row on a vendor card → Email (or vendor card → Appointments → new appointment with email ticked → save)
 2. Verify email arrives with the `.ics` calendar attachment
 3. Verify partner email (Step 1 of Event Details form) auto-fills and appears in the recipient selector
 4. Verify that emailing with both self + partner selected sends two emails
