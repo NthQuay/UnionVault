@@ -3871,7 +3871,7 @@ const STATE = {
   tagDefs: {},
   invites: [],
   inviteMeta: {},
-  settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current' },
+  settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current', partnerEmail:'' },
   // Guest-facing website. Content is NOT duplicated here — sections read from the
   // planner (details, timeline, inspo, wishingwell) so there is one source of truth.
   // This object holds only what the planner has no opinion about: which sections are
@@ -5571,10 +5571,22 @@ function renderDetails(c, actions){
             Partner Titles
           </button>
         </div>
+        <div class="form-group" id="details-email-group">
+          ${(()=>{
+            const loginEmail=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.user&&_sbSession.user.email||'').trim();
+            if(loginEmail&&!STATE.settings.userEmail){STATE.settings.userEmail=loginEmail;saveToStorage();}
+            const stored=(STATE.settings.userEmail||'').trim();
+            const synced=loginEmail&&stored&&stored.toLowerCase()===loginEmail.toLowerCase();
+            const differs=loginEmail&&stored&&!synced;
+            return `<label class="form-label">Your email</label>
+          <input class="form-input" type="email" inputmode="email" id="details-user-email" placeholder="you@email.com" value="${_escHtml(stored)}" oninput="_detailsUserEmailChange(this)"/>
+          <div id="details-email-note" style="font-size:11.5px;margin-top:4px">${synced?`<span style="color:var(--green)">✓ Synced from your login account.</span>`:differs?`<span style="color:var(--gold-deep)">⚠ Different from your login email (${_escHtml(loginEmail)}). RSVP replies and appointment emails go to this address.</span>`:`<span style="color:var(--muted)">Used when emailing appointments to yourself.</span>`}</div>`;
+          })()}
+        </div>
         <div class="form-group">
-          <label class="form-label">Your email</label>
-          <div style="font-size:12px;color:var(--muted);margin:-2px 0 8px">Suggested when emailing appointments to yourself</div>
-          <input class="form-input" type="email" inputmode="email" id="details-user-email" placeholder="you@email.com" value="${_escHtml(STATE.settings.userEmail||'')}" onchange="STATE.settings.userEmail=this.value.trim();saveToStorage()"/>
+          <label class="form-label">Partner's email</label>
+          <input class="form-input" type="email" inputmode="email" id="details-partner-email" placeholder="partner@email.com" value="${_escHtml(STATE.settings.partnerEmail||'')}" oninput="_detailsPartnerEmailChange(this)"/>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Quick-add your partner when emailing appointments, RSVPs, and reminders.</div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;padding-top:4px">
           <button class="btn btn-primary" onclick="saveDetailsAndConfirm(this)">Save Details</button>
@@ -5672,6 +5684,17 @@ function _partnerTitleCustomInput(which){
 // (Legacy Details-page event functions removed — superseded by the Events section.
 //  openEventForm / saveEvent / deleteEvent / confirmDeleteEvent now live in the
 //  Events module further down. Old data is migrated on load.)
+
+function _detailsUserEmailChange(el){
+  STATE.settings.userEmail=el.value.trim(); saveToStorage();
+  const loginEmail=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.user&&_sbSession.user.email||'').trim();
+  const stored=STATE.settings.userEmail;
+  const note=document.getElementById('details-email-note'); if(!note) return;
+  if(!loginEmail){ note.innerHTML=`<span style="color:var(--muted)">Used when emailing appointments to yourself.</span>`; return; }
+  if(!stored||stored.toLowerCase()===loginEmail.toLowerCase()) note.innerHTML=`<span style="color:var(--green)">✓ Synced from your login account.</span>`;
+  else note.innerHTML=`<span style="color:var(--gold-deep)">⚠ Different from your login email (${_escHtml(loginEmail)}). RSVP replies and appointment emails go to this address.</span>`;
+}
+function _detailsPartnerEmailChange(el){ STATE.settings.partnerEmail=el.value.trim(); saveToStorage(); }
 
 function saveDetailsAndConfirm(btn){
   saveToStorage();
@@ -22664,21 +22687,71 @@ function _apptOpenEmailDraft(task, a, recipients){
 // Email confirm box (recipients editable) → send. `task` may be a real task or the
 // synthetic staged task; `appt` is the specific appointment.
 let _apptEmailTask=null, _apptEmailAppt=null, _apptEmailRecips=[];
+function _apptEmailNamedRecips(){
+  const a=_apptEmailAppt||{};
+  const loginEmail=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.user&&_sbSession.user.email||'').trim();
+  const youEmail=((STATE.settings&&STATE.settings.userEmail)||loginEmail||'').trim();
+  const partnerEmail=((STATE.settings&&STATE.settings.partnerEmail)||'').trim();
+  const vendorEmail=(a.email||'').trim();
+  const rows=[];
+  if(youEmail) rows.push({label:'You',email:youEmail,kind:'you'});
+  if(partnerEmail) rows.push({label:'Partner',email:partnerEmail,kind:'partner'});
+  if(vendorEmail) rows.push({label:'Vendor',email:vendorEmail,kind:'vendor'});
+  return rows;
+}
 function _apptEmailConfirm(task, a){
   _apptEmailTask=task; _apptEmailAppt=a;
-  _apptEmailRecips=(a.recipients&&a.recipients.length)?a.recipients.slice():((STATE.settings&&STATE.settings.userEmail||'').trim()?[(STATE.settings.userEmail).trim()]:[]);
-  openConfirm2('Send calendar invite', _apptEmailConfirmBody(),
-    `<button class="btn btn-outline btn-sm" onclick="_apptEmailCancel()">Skip</button>
-     <button class="btn btn-primary btn-sm" onclick="_apptEmailSend()">Send</button>`);
+  if(a.recipients&&a.recipients.length){
+    _apptEmailRecips=a.recipients.slice();
+  } else {
+    const named=_apptEmailNamedRecips();
+    _apptEmailRecips=named.map(r=>r.email);
+    // also include any stored extras not in named set
+  }
+  openConfirm2('Email Appointment', _apptEmailConfirmBody(),
+    `<button class="btn btn-outline btn-sm" onclick="_apptEmailCancel()">Cancel</button>
+     <button class="btn btn-primary btn-sm" onclick="_apptEmailSend()">Send Email</button>`);
 }
 function _apptEmailConfirmBody(){
-  const chips=_apptEmailRecips.map((e,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;background:var(--surface);color:var(--gold-deep);border:.5px solid var(--border);border-radius:14px;padding:4px 6px 4px 11px">${_escHtml(e)}<button type="button" onclick="_apptCEmRemove(${i})" aria-label="Remove" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 2px">&times;</button></span>`).join('');
-  return `<div style="font-size:13px;color:var(--ink);line-height:1.5;margin-bottom:11px">The calendar invite will be sent to:</div>
-    <div id="ci-cem-recips" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:9px">${chips}<button type="button" onclick="_apptCEmAddPrompt()" style="font-size:12px;color:var(--gold-deep);border:1px dashed var(--border);border-radius:14px;padding:4px 11px;background:none;cursor:pointer">+ add email</button></div>
-    <div style="font-size:11.5px;color:var(--muted);line-height:1.5">This opens a pre-addressed email draft and downloads a calendar (.ics) file you can open to add the appointment to your calendar.</div>`;
+  const named=_apptEmailNamedRecips();
+  const namedEmails=named.map(r=>r.email);
+  const avStyle={you:'background:rgba(196,168,130,.18);color:var(--gold-deep)',partner:'background:rgba(90,130,190,.18);color:#5a82be',vendor:'background:rgba(90,160,100,.18);color:var(--green,#5C8A4E)'};
+  const namedRows=named.map(r=>{
+    const on=_apptEmailRecips.includes(r.email);
+    return `<div style="display:flex;align-items:center;gap:9px;padding:5px 0">
+      <div style="width:26px;height:26px;border-radius:50%;${avStyle[r.kind]||''};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${r.label[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--ink)">${_escHtml(r.label)}</div>
+        <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(r.email)}</div>
+      </div>
+      <div onclick="_apptCEmToggle('${r.email.replace(/'/g,"\\'")}')" style="width:28px;height:16px;border-radius:8px;background:${on?'var(--gold)':'var(--border-strong,#c8c3ba)'};cursor:pointer;flex-shrink:0;position:relative;transition:background .15s">
+        <div style="width:12px;height:12px;border-radius:50%;background:white;position:absolute;top:2px;${on?'right:2px':'left:2px'};transition:all .15s"></div>
+      </div>
+    </div>`;
+  }).join('');
+  const extras=_apptEmailRecips.filter(e=>!namedEmails.includes(e));
+  const extraChips=extras.map((e,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;background:var(--surface);color:var(--gold-deep);border:.5px solid var(--border);border-radius:14px;padding:4px 6px 4px 11px">${_escHtml(e)}<button type="button" onclick="_apptCEmRemoveExtra(${i})" aria-label="Remove" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 2px">&times;</button></span>`).join('');
+  return `${namedRows}
+    ${extras.length?`<div id="ci-cem-extra" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">${extraChips}</div>`:''}
+    <div id="ci-cem-recips" style="margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <button type="button" onclick="_apptCEmAddPrompt()" style="font-size:12px;color:var(--gold-deep);border:1px dashed var(--border);border-radius:14px;padding:4px 12px;background:none;cursor:pointer">+ add email</button>
+    </div>
+    <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)">Sends the appointment details with a .ics calendar file attached.</div>`;
+}
+function _apptCEmToggle(email){
+  const idx=_apptEmailRecips.indexOf(email);
+  if(idx>=0) _apptEmailRecips.splice(idx,1); else _apptEmailRecips.push(email);
+  _apptCEmRefresh();
 }
 function _apptCEmRefresh(){ const b=document.getElementById('confirm2-body'); if(b) b.innerHTML=_apptEmailConfirmBody(); }
 function _apptCEmRemove(i){ _apptEmailRecips.splice(i,1); _apptCEmRefresh(); }
+function _apptCEmRemoveExtra(i){
+  const named=_apptEmailNamedRecips().map(r=>r.email);
+  const extras=_apptEmailRecips.filter(e=>!named.includes(e));
+  const toRemove=extras[i]; if(!toRemove) return;
+  const idx=_apptEmailRecips.indexOf(toRemove); if(idx>=0) _apptEmailRecips.splice(idx,1);
+  _apptCEmRefresh();
+}
 function _apptCEmAddPrompt(){
   const wrap=document.getElementById('ci-cem-recips'); if(!wrap||document.getElementById('ci-cem-input')){document.getElementById('ci-cem-input')?.focus();return;}
   const span=document.createElement('span');
@@ -22692,9 +22765,6 @@ function _apptCEmCommit(){
   _apptCEmRefresh();
 }
 function _apptEmailCancel(){
-  // Skip: the appointment is already saved (at "Save appointment"). Persist any
-  // recipient edits made in this dialog, then close and re-render so the saved
-  // appointment shows immediately — matching the Send → Done flow.
   const inp=document.getElementById('ci-cem-input');
   if(inp){ const v=(inp.value||'').trim(); if(v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && !_apptEmailRecips.includes(v)) _apptEmailRecips.push(v); }
   const task=_apptEmailTask, a=_apptEmailAppt;
@@ -22706,21 +22776,50 @@ function _apptEmailCancel(){
   if(document.getElementById('ci-appt-list')){ _ciApptRenderList(); }
   else if(_currentPage==='checklist'){ navigate('checklist'); }
 }
+async function _apptEmailSendViaEdge(task, a, recipients){
+  try{
+    const m=_apptBuildMailto(task,a,recipients);
+    const ics=_apptBuildIcs(task,a);
+    const token=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.access_token)||'';
+    const r=await fetch(_SB_URL+'/functions/v1/send-appointment-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||_SB_KEY),'apikey':_SB_KEY},
+      body:JSON.stringify({to:recipients,subject:m.subject,body:m.body,ics:btoa(unescape(encodeURIComponent(ics)))})
+    });
+    if(!r.ok) return false;
+    const d=await r.json();
+    return d.ok===true;
+  }catch(_){ return false; }
+}
 function _apptEmailSend(){
   const inp=document.getElementById('ci-cem-input'); if(inp){ const v=(inp.value||'').trim(); if(v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && !_apptEmailRecips.includes(v)) _apptEmailRecips.push(v); }
   const task=_apptEmailTask, a=_apptEmailAppt;
+  const recips=_apptEmailRecips.filter(e=>e);
   if(task && a){
-    a.emailMe=true; a.recipients=_apptEmailRecips.slice();
+    a.emailMe=true; a.recipients=recips.slice();
     if(task.id!=='__staged__') saveToStorage();
-    _apptDownloadIcs(task, a);
-    _apptOpenEmailDraft(task, a, _apptEmailRecips);
   }
-  const sent=_apptEmailRecips.slice();
-  const list=sent.length?sent.map(e=>_escHtml(e)).join(', '):'your email';
-  openConfirm2('Invite ready', `<div style="display:flex;align-items:flex-start;gap:10px">
-      <span style="width:30px;height:30px;border-radius:50%;background:rgba(92,138,78,.16);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--green,#5C8A4E)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-      <div style="font-size:13.5px;color:var(--ink);line-height:1.5">Your email draft is open and a calendar file was downloaded for <strong>${list}</strong>. Open the .ics file to add it to your calendar.</div>
-    </div>`, `<button class="btn btn-primary btn-sm" onclick="_closeConfirm2Direct();if(document.getElementById('ci-appt-list')){_ciApptRenderList();}else if(_currentPage==='checklist'){navigate('checklist');}">Done</button>`);
+  if(!recips.length){ _closeConfirm2Direct(); if(document.getElementById('ci-appt-list')){_ciApptRenderList();}else if(_currentPage==='checklist'){navigate('checklist');} return; }
+  const list=recips.map(e=>_escHtml(e)).join(', ');
+  const doneFooter=`<button class="btn btn-primary btn-sm" onclick="_closeConfirm2Direct();if(document.getElementById('ci-appt-list')){_ciApptRenderList();}else if(_currentPage==='checklist'){navigate('checklist');}">Done</button>`;
+  // Show a sending indicator, then call the edge function
+  openConfirm2('Sending…', `<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><span style="font-size:20px">✉</span><span style="font-size:13.5px;color:var(--ink)">Sending to ${list}…</span></div>`, '');
+  _apptEmailSendViaEdge(task, a, recips).then(sent=>{
+    if(sent){
+      openConfirm2('Email sent!', `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:4px 0;text-align:center">
+        <span style="font-size:28px;line-height:1">✉</span>
+        <div style="font-size:13.5px;color:var(--ink);font-weight:600">Sent!</div>
+        <div style="font-size:12px;color:var(--muted)">${list}</div>
+      </div>`, doneFooter);
+    } else {
+      // Fallback: open mailto + download ics
+      if(task&&a){ _apptDownloadIcs(task,a); _apptOpenEmailDraft(task,a,recips); }
+      openConfirm2('Invite ready', `<div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="width:30px;height:30px;border-radius:50%;background:rgba(92,138,78,.16);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--green,#5C8A4E)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <div style="font-size:13.5px;color:var(--ink);line-height:1.5">Email draft opened for <strong>${list}</strong>. Open the downloaded .ics file to add the appointment to your calendar.</div>
+      </div>`, doneFooter);
+    }
+  });
 }
 // ── Appointment fee → budget offer (per appointment) ──
 let _apptFeeTaskId=null, _apptFeeApptId=null;
@@ -28652,8 +28751,8 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v255';
-const APP_BUILD_DATE='2026-10-25';
+const APP_BUILD='v256';
+const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
   const p1=_escHtml(ev.partner1||'Partner'), p2=_escHtml(ev.partner2||'Partner');
