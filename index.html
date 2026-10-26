@@ -29268,7 +29268,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v279';
+const APP_BUILD='v280';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -37495,8 +37495,8 @@ function _wbBuildSite(forDownload){
         const btnsJustify=b.align==='left'?'flex-start':b.align==='right'?'flex-end':'center';
         return `<div class="btns" style="justify-content:${btnsJustify}">${rows.map(x=>{
           const um=x.urlMode||'custom';
-          if(um==='rsvp'&&t.rsvpMode==='modal') return `<button type="button" class="ics" onclick="_uvOpenRsvp()">${_escHtml(x.label)}</button>`;
-          const href=um==='ics'?(_wbIcs()||''):um==='rsvp'?_rsvpLink():_normalizeUrl(x.url);
+          if(um==='rsvp') return `<button type="button" class="ics" onclick="_uvOpenRsvp()">${_escHtml(x.label)}</button>`;
+          const href=um==='ics'?(_wbIcs()||''):_normalizeUrl(x.url);
           const attrs=um==='ics'?'download="save-the-date.ics"':'target="_blank" rel="noopener noreferrer"';
           return `<a class="ics" href="${_escHtml(href)}" ${attrs}>${_escHtml(x.label)}</a>`;
         }).join('')}</div>`;
@@ -37854,19 +37854,19 @@ function _wbBuildSite(forDownload){
   const _uvBtnYes=_escHtml(_uvRsvp.btnYes||'Joyfully accepts');
   const _uvBtnNo=_escHtml(_uvRsvp.btnNo||'Regretfully declines');
   const _uvDietHtml=[['vegetarian','Vegetarian'],['vegan','Vegan'],['glutenfree','Gluten intolerant'],['dairyfree','Lactose intolerant'],['nutfree','Nut free'],['halal','Halal'],['kosher','Kosher'],['other','Other']].map(([v,l])=>`<div class="rf-diet-chip" data-diet="${v}" onclick="this.classList.toggle('on')">${l}</div>`).join('');
-  const _uvModal=t2.rsvpMode==='modal'&&_uvCoupleId?`<style>
+  const _uvModal=_uvCoupleId?`<style>
 #uv-rsvp-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);flex-direction:column;justify-content:flex-end;overscroll-behavior:none}
 #uv-rsvp-overlay.open{display:flex}
-#uv-rsvp-sheet{background:${t2.background||t2.page};color:${t2.text};border-radius:22px 22px 0 0;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:500px;margin:0 auto;box-shadow:0 -8px 40px rgba(0,0,0,.28)}
+#uv-rsvp-sheet{background:${t2.background||t2.page};color:${t2.text};border-radius:22px 22px 0 0;min-height:60dvh;max-height:94dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:520px;margin:0 auto;box-shadow:0 -8px 40px rgba(0,0,0,.28)}
 .rfm-drag{width:36px;height:4px;background:${t2.heading}30;border-radius:2px;margin:12px auto 0;cursor:pointer}
 .rfm-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 4px;position:sticky;top:0;background:${t2.background||t2.page};z-index:1}
 .rfm-title{font-family:${t2.headFont};font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:${t2.heading};font-weight:600}
 .rfm-close{background:none;border:none;cursor:pointer;color:${t2.text};opacity:.55;font-size:24px;line-height:1;padding:2px 8px;border-radius:4px;transition:opacity .15s}
 .rfm-close:hover{opacity:1}
-#uv-rsvp-sheet .rf-body{padding:12px 20px 36px}
-#uv-rsvp-sheet .rf-card{border:1px solid ${t2.heading}18;border-radius:12px;padding:16px;margin-bottom:12px;position:relative}
+#uv-rsvp-sheet .rf-body{padding:16px 24px 56px}
+#uv-rsvp-sheet .rf-card{border:1px solid ${t2.heading}18;border-radius:12px;padding:20px;margin-bottom:14px;position:relative}
 #uv-rsvp-sheet .rf-lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:${t2.heading};opacity:.65;margin-bottom:8px;font-weight:600}
-#uv-rsvp-sheet .rf-inp{width:100%;border:1.5px solid ${t2.heading}28;border-radius:8px;padding:10px 13px;font-size:15px;background:${t2.background||t2.page};color:${t2.text};outline:none;box-sizing:border-box;font-family:inherit}
+#uv-rsvp-sheet .rf-inp{width:100%;border:1.5px solid ${t2.heading}28;border-radius:8px;padding:12px 14px;font-size:15.5px;background:${t2.background||t2.page};color:${t2.text};outline:none;box-sizing:border-box;font-family:inherit}
 #uv-rsvp-sheet .rf-inp:focus{border-color:${t2.accent};box-shadow:0 0 0 3px ${t2.accent}33}
 #uv-rsvp-sheet .pub-ac-list{list-style:none;margin:4px 0 0;padding:0;background:${t2.background||t2.page};border:1px solid ${t2.heading}22;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.14);overflow:hidden;position:absolute;left:16px;right:16px;z-index:10;display:none}
 #uv-rsvp-sheet .pub-ac-item{padding:11px 14px;cursor:pointer;font-size:15px;color:${t2.text}}
