@@ -6,7 +6,7 @@ Paste everything between the lines into a fresh Claude Code chat.
 
 You are continuing development of **UnionVault**, a single-file PWA wedding planner app deployed at `unionvault.app`.
 
-**Your first action:** Read `/home/user/unionvault/CLAUDE_CODE_CONTEXT.md` in full before doing anything else. That file is the authoritative state dump — architecture, line map, Supabase schema, recent changes, parked ideas, and working conventions. Do not ask me to re-explain anything already in it.
+**Your first action:** Read `/home/user/unionvault/docs/CLAUDE_CODE_CONTEXT.md` in full before doing anything else. That file is the authoritative state dump — architecture, line map, Supabase schema, recent changes, parked ideas, and working conventions. Do not ask me to re-explain anything already in it.
 
 **Repo:** `https://github.com/mandyjane/UnionVault`  
 **Working directory:** `/home/user/unionvault/`  

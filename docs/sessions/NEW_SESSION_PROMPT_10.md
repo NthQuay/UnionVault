@@ -7,8 +7,8 @@ You are continuing development of **UnionVault**, a single-file PWA wedding plan
 
 **Before doing anything else, read these two files from the repo in full:**
 
-1. `/home/user/unionvault/HANDOFF_SESSION10.md` — session-specific state, recent changes, and the immediate action plan
-2. `/home/user/unionvault/CLAUDE_CODE_CONTEXT.md` — full structural reference (architecture, Supabase schema, design tokens, working conventions, parked ideas)
+1. `/home/user/unionvault/docs/sessions/HANDOFF_SESSION10.md` — session-specific state, recent changes, and the immediate action plan
+2. `/home/user/unionvault/docs/CLAUDE_CODE_CONTEXT.md` — full structural reference (architecture, Supabase schema, design tokens, working conventions, parked ideas)
 
 **Do not ask me to re-explain anything already in those files.**
 
