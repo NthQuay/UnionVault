@@ -21490,12 +21490,19 @@ function _vendorAutofillFromPaste(){
   const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   const setIf=(id,val)=>{ if(!val) return false; const el=document.getElementById(id); if(el){ el.value=val; return true; } return false; };
   const filled=[];
-  // Rating + review count, e.g. "4.8 ★ (1,234)" or "4.8 stars 1,234 reviews".
+  // Rating + review count. Handle three Google formats:
+  // "4.8 ★★★★★ 7 Google reviews" (separated by stars)
+  // "4.8 (1,234)" (parenthesised count)
+  // "4.87 Google reviews" (count runs straight onto rating — no separator)
   let rating='', reviews='';
-  const rm = raw.match(/\b([0-5](?:\.\d)?)\s*(?:★+|stars?|\/\s*5)/i) || raw.match(/^\s*([0-5]\.\d)\b/m);
-  if(rm) rating=rm[1];
-  const rc = raw.match(/\(([\d,]+)\)/) || raw.match(/([\d,]+)\s+(?:\w+\s+)*reviews?/i);
-  if(rc) reviews=rc[1].replace(/,/g,'');
+  const rCombined=raw.match(/\b([0-5]\.\d)(\d+)\s+(?:\w+\s+)*reviews?/i);
+  if(rCombined){ rating=rCombined[1]; reviews=rCombined[2]; }
+  else {
+    const rm=raw.match(/\b([0-5](?:\.\d)?)\s*(?:★+|stars?|\/\s*5)/i)||raw.match(/^\s*([0-5]\.\d)\b/m);
+    if(rm) rating=rm[1];
+    const rc=raw.match(/\(([\d,]+)\)/)||raw.match(/([\d,]+)\s+(?:\w+\s+)*reviews?/i);
+    if(rc) reviews=rc[1].replace(/,/g,'');
+  }
   // Phone — AU/intl patterns.
   let phone='';
   const pm = raw.match(/(\+?\d[\d\s().-]{7,}\d)/);
@@ -21532,6 +21539,14 @@ function _vendorAutofillFromPaste(){
   if(hours && setIf('ven-f-hours', hours)) filled.push('hours');
   if(rating && setIf('ven-f-rating', rating)) filled.push('rating');
   if(reviews && setIf('ven-f-reviewcount', reviews)) filled.push('reviews');
+  // Category — guess from paste text (use name + full raw for broadest coverage).
+  const sel=document.getElementById('ven-f-category');
+  if(sel && (sel.value===''||sel.value==='—')){
+    const guessedCat=_guessVendorCategory({business:name,type:raw,notes:''});
+    if(guessedCat && [...sel.options].some(o=>o.value===guessedCat)){
+      sel.value=guessedCat; filled.push('category');
+    }
+  }
   if(msg){
     msg.style.display='block';
     if(filled.length){ msg.style.color='var(--green)'; msg.textContent='Filled: '+filled.join(', ')+'. Check the fields before saving.'; }
@@ -28751,7 +28766,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v256';
+const APP_BUILD='v257';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
