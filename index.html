@@ -667,7 +667,8 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
   .wb-strip-bar{display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Inter',sans-serif;font-size:12px;color:var(--ink);cursor:pointer}
   .wb-strip-chev{transition:transform .18s;color:var(--muted)}
   .wb-pane-inner{margin-top:8px;padding:8px}
-  .wb-pane-frame{height:280px}
+  .wb-pane-frame{height:400px}
+  .wb-view-toggle{display:none}
   .wb-pane-cap{display:none}
   .wb-strip-shut .wb-pane-inner{display:none}
   .wb-strip-shut .wb-strip-chev{transform:rotate(-90deg)}
@@ -29298,7 +29299,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v285';
+const APP_BUILD='v286';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -34108,7 +34109,7 @@ function renderWebsite(c, actions){
         <svg class="wb-strip-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="${_wbStripOpen?'M18 15l-6-6-6 6':'M6 9l6 6 6-6'}"/></svg>
       </div>
       <div class="wb-pane-inner">
-        <div style="display:flex;justify-content:center;padding:0 0 8px">
+        <div class="wb-view-toggle" style="display:flex;justify-content:center;padding:0 0 8px">
           <span class="inv-seg">
             <button type="button" id="wb-view-desktop" class="${_wbLiveViewMode==='desktop'?'active':''}" onclick="_wbViewSet('desktop')">Desktop</button>
             <button type="button" id="wb-view-mobile"  class="${_wbLiveViewMode==='mobile' ?'active':''}" onclick="_wbViewSet('mobile')">Mobile</button>
