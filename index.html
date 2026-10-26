@@ -6515,6 +6515,34 @@ function _prsDoCopy(url, btn){
 }
 
 // ── Public run sheet page ─────────────────────────────────────────────────────
+// Called at boot when ?invite=<uid>.<mediaId> is detected (the link added to invite
+// messages). Shows the file straight from the public photos bucket — no planner data
+// is read, so nothing but the invitation itself is exposed.
+function _showPublicInvite(param, isPdf){
+  const m=String(param||'').match(/^([0-9a-f-]{36})\.([A-Za-z0-9_-]{1,64})$/i);
+  document.body.style.background='#FBF8F3';
+  const shell=(inner)=>`<div style="min-height:100vh;box-sizing:border-box;padding:28px 16px 40px;display:flex;flex-direction:column;align-items:center;gap:18px;font-family:'Lato','Inter',sans-serif;color:#2C2222;background:#FBF8F3">${inner}</div>`;
+  if(!m){
+    document.body.innerHTML=shell(`<div style="margin-top:20vh;font-family:'Cormorant Garamond',serif;font-size:24px">This invitation link isn't valid.</div>`);
+    document.body.style.visibility='visible'; return;
+  }
+  const uid=m[1], id=m[2];
+  const src=`${_SB_URL}/storage/v1/object/public/${_SB_BUCKET}/${uid}/${id}`;
+  const rsvp=window.location.origin+window.location.pathname+'?rsvp='+encodeURIComponent(uid);
+  const btn='display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none';
+  const view = isPdf
+    ? `<iframe src="${src}" title="Invitation" style="width:100%;max-width:720px;height:75vh;border:1px solid rgba(0,0,0,.1);border-radius:12px;background:#fff"></iframe>`
+    : `<img src="${src}" alt="Wedding invitation" style="max-width:100%;width:auto;max-height:80vh;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.12)" onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'This invitation is no longer available.',style:'margin-top:10vh;font-size:15px;color:#6E6259'}))"/>`;
+  document.body.innerHTML=shell(`
+    <div style="font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600">You're invited</div>
+    ${view}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <a href="${rsvp}" style="${btn};background:#BF9B58;color:#1f1a14">RSVP</a>
+      <a href="${src}" target="_blank" rel="noopener" style="${btn};border:1px solid rgba(0,0,0,.15);color:#2C2222;background:#fff">Open full size</a>
+    </div>`);
+  document.title="You're invited";
+  document.body.style.visibility='visible';
+}
 // Called at boot when ?runsheet=<couple_id> is detected.
 // Fetches the couple's cloud-saved timeline (pub moments only) from Supabase and renders a clean read-only page.
 async function _showPublicRunSheet(coupleId){
@@ -9441,6 +9469,188 @@ function _channelHandoff(chanKey, grp, message){
   _copyText(message);
   return 'Message copied to your clipboard.';
 }
+// ── Send sheet: invitation / save-the-date with the file or link attached ──────
+// Chat/email links (mailto:, sms:, wa.me, Messenger, Instagram) can only carry text,
+// so the file travels one of two ways: email goes out through the send-guest-email
+// Edge Function with the file attached, and on a phone the OS share sheet attaches it.
+// Everywhere else the message carries a "View your invitation" link instead.
+const _SS_CHANNELS=['email','text','whatsapp','messenger','instagram'];
+let _ss=null; // {kind, slotKey, method, grp, base, file:File|null, asset, toList, toPick}
+function _ssIsPhone(){ try{ return matchMedia('(pointer:coarse)').matches; }catch(_){ return false; } }
+function _ssCanShareFiles(){
+  try{ return !!(navigator.canShare && navigator.canShare({files:[new File(['x'],'x.pdf',{type:'application/pdf'})]})); }catch(_){ return false; }
+}
+// Public pieces of the couple's invitation (invite kind only — save-the-date uploads aren't built yet).
+function _ssInviteAsset(){
+  const inv=STATE.invitation||{};
+  const uid=_sbSession&&_sbSession.user&&_sbSession.user.id;
+  const f=inv.file&&inv.file.mediaId?inv.file:null;
+  const out={file:null, publicUrl:'', viewUrl:'', link:(inv.link&&inv.link.url)||''};
+  if(f){
+    out.file=f;
+    if(uid){
+      out.publicUrl=`${_SB_URL}/storage/v1/object/public/${_SB_BUCKET}/${uid}/${f.mediaId}`;
+      const isPdf=/pdf/i.test(f.type||'')||/\.pdf$/i.test(f.name||'');
+      out.viewUrl=window.location.origin+window.location.pathname+'?invite='+encodeURIComponent(uid+'.'+f.mediaId)+(isPdf?'&t=pdf':'');
+    }
+  }
+  if(!out.viewUrl && out.link) out.viewUrl=out.link;
+  return out;
+}
+function _ssCoupleNames(){ const ev=STATE.event||{}; return [ev.partner1,ev.partner2].filter(Boolean).join(' & '); }
+function _ssMethodLabel(m){ const c=INVITE_CHANNELS.find(x=>x.key===m); return c?c.label:m; }
+function _ssOpen(kind, slotKey, method){
+  const grp=_groupFromSlotKey(slotKey); if(!grp) return;
+  const base=_fillTemplate(_inviteTpl(kind), grp);
+  const asset=kind==='invite'?_ssInviteAsset():{file:null,publicUrl:'',viewUrl:'',link:''};
+  const signedIn=!!(_sbSession&&_sbSession.access_token);
+  const emails=grp.members.map(g=>({name:g.name||'',email:(g.email||'').trim()})).filter(x=>x.email);
+  _ss={kind, slotKey, method, grp, base, asset, file:null, signedIn, emails,
+       to:emails.length?emails[0].email:'',
+       attach:!!asset.file, addLink:true};
+  // Email sent by UnionVault carries the file, so the link is opt-in there; elsewhere it's on.
+  _ss.addLink = !(_ssMode()==='email-direct' && asset.file);
+  // Share sheets need the File ready before the tap (iOS drops the gesture across an await).
+  if(asset.file && method!=='email' && _ssIsPhone() && _ssCanShareFiles()){
+    const src=_mediaUrl(asset.file.mediaId);
+    if(src) fetch(src).then(r=>r.blob()).then(b=>{ if(_ss&&_ss.slotKey===slotKey) _ss.file=new File([b], asset.file.name||'invitation', {type:asset.file.type||b.type}); _ssRender(); }).catch(()=>{});
+  }
+  _ssRender(true);
+}
+// Which delivery this sheet will use, given the method, device and what's attached.
+function _ssMode(){
+  if(!_ss) return 'link';
+  if(_ss.method==='email') return _ss.signedIn?'email-direct':'link';
+  if(_ss.asset.file && _ssIsPhone() && _ssCanShareFiles()) return 'share';
+  return 'link';
+}
+function _ssMessage(){
+  const s=_ss;
+  let msg=s.base;
+  const extra=[];
+  if(s.kind==='invite'){
+    if(s.asset.viewUrl && s.addLink) extra.push('View your invitation: '+s.asset.viewUrl);
+  } else if(s.kind==='savedate'){
+    const w=_wbSite(); if(w && w.published && w.slug) extra.push('Details: '+_wbSiteUrl());
+  }
+  if(extra.length) msg=msg.replace(/\s+$/,'')+'\n\n'+extra.join('\n');
+  return msg;
+}
+function _ssToggle(which){ if(!_ss) return; _ss[which]=!_ss[which]; _ssRender(); }
+function _ssPickTo(v){ if(_ss){ _ss.to=v; } }
+function _ssRender(open){
+  const s=_ss; if(!s) return;
+  const esc=_escHtml, mode=_ssMode();
+  const noun=s.kind==='invite'?'invite':'save the date';
+  const who=s.grp.members.map(g=>g.name).filter(Boolean).join(' & ');
+  const contact = s.method==='email' ? (s.emails.length>1?'':(s.to||'no email on file')) : (_groupContact(s.grp,'phone')||'');
+  const sw=(on,fn,label)=>`<span class="toggle-switch"><input type="checkbox" ${on?'checked':''} onchange="${fn}" aria-label="${esc(label)}"/><span class="toggle-track"></span></span>`;
+  const rowStyle='display:flex;align-items:center;gap:11px;border:.5px solid var(--border);border-radius:11px;padding:9px 10px;background:var(--surface)';
+  const lab='font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)';
+  let attachHtml='';
+  if(s.kind==='invite'){
+    const f=s.asset.file;
+    if(f){
+      const src=_mediaUrl(f.mediaId);
+      const isImg=/^image\//.test(f.type||'')||/\.(png|jpe?g|gif|webp)$/i.test(f.name||'');
+      const ext=((f.name||'').match(/\.(\w+)$/)||['','FILE'])[1].toUpperCase();
+      const thumb=isImg&&src?`<img src="${esc(src)}" alt="" style="width:40px;height:54px;object-fit:cover;border-radius:6px;flex-shrink:0"/>`:`<span style="width:40px;height:54px;border-radius:6px;background:rgba(196,168,130,.2);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${esc(ext)}</span>`;
+      if(mode==='email-direct'||mode==='share'){
+        attachHtml+=`<div style="${lab}">${mode==='share'?'Attached':'Include'}</div>
+        <label style="${rowStyle};cursor:pointer">${thumb}<span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">${mode==='email-direct'?'Attach invitation file':esc(f.name||'Invitation')}</span><span style="display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mode==='email-direct'?esc((f.name||'')+' · '):''}${esc(f.sizeLabel||'')}</span></span>${sw(s.attach,"_ssToggle('attach')",'Attach invitation file')}</label>`;
+        if(s.asset.viewUrl) attachHtml+=`<label style="${rowStyle};cursor:pointer;margin-top:7px"><span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">Add “View invitation” link</span><span style="display:block;font-size:11.5px;color:var(--muted)">${mode==='email-direct'?'For guests whose email blocks attachments':'In case the file doesn’t come through'}</span></span>${sw(s.addLink,"_ssToggle('addLink')",'Add view invitation link')}</label>`;
+      } else if(s.asset.viewUrl){
+        attachHtml+=`<div style="${lab}">Include</div>
+        <label style="${rowStyle};cursor:pointer">${thumb}<span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">Include invitation link</span><span style="display:block;font-size:11.5px;color:var(--muted)">${esc(_ssMethodLabel(s.method))} can’t take a file from here, so guests get a link to view it</span></span>${sw(s.addLink,"_ssToggle('addLink')",'Include invitation link')}</label>`;
+      }
+      if(!s.asset.viewUrl && !s.signedIn) attachHtml+=`<div style="font-size:11.5px;color:var(--muted);margin-top:6px">Sign in to share your invitation file with guests.</div>`;
+    } else if(s.asset.link){
+      attachHtml+=`<div style="${lab}">Include</div><label style="${rowStyle};cursor:pointer"><span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">Include invitation link</span><span style="display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.asset.link)}</span></span>${sw(s.addLink,"_ssToggle('addLink')",'Include invitation link')}</label>`;
+    } else {
+      attachHtml+=`<div style="border:1px dashed var(--border);border-radius:11px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5"><strong style="color:var(--ink)">No invitation uploaded yet</strong><br>Add one under Your Invitation to attach it. The message still sends on its own.</div>`;
+    }
+  } else {
+    const w=_wbSite(); const pub=!!(w&&w.published&&w.slug);
+    attachHtml+=`<div style="border:1px dashed var(--border);border-radius:11px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5"><strong style="color:var(--ink)">No save-the-date file yet</strong><br>${pub?'Your wedding website link goes in the message instead.':'Publish your wedding website to include its link.'} Uploading a save-the-date is coming soon.</div>`;
+  }
+  const toHtml = (s.method==='email' && s.emails.length>1) ? `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span style="color:var(--muted)">To</span><select class="form-input" style="font-size:12.5px;flex:1" onchange="_ssPickTo(this.value)">${s.emails.map(e=>`<option value="${esc(e.email)}" ${e.email===s.to?'selected':''}>${esc(e.name)} · ${esc(e.email)}</option>`).join('')}</select></div>` : '';
+  const msg=_ssMessage();
+  const body=`<div style="display:flex;flex-direction:column;gap:11px">
+    <div style="font-size:12.5px;color:var(--muted);margin-top:-6px">${esc(who)} · ${esc(_ssMethodLabel(s.method))}${contact?' · '+esc(contact):''}</div>
+    ${toHtml}
+    ${attachHtml}
+    <div style="${lab}">Message</div>
+    <div id="ss-msg" style="border:.5px solid var(--border);border-radius:11px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--ink);background:var(--surface);white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto">${esc(msg)}</div>
+    ${mode==='share'?`<div style="font-size:11.5px;color:var(--muted);line-height:1.5">Your phone's share menu opens with the invitation attached and the message ready — choose ${esc(_ssMethodLabel(s.method))}, then the guest's chat.</div>`:''}
+    ${mode==='email-direct'?`<div style="font-size:11.5px;color:var(--muted)">Sent from invites@unionvault.app as “${esc(_ssCoupleNames()||'UnionVault')}” — replies come to you.</div>`:''}
+  </div>`;
+  const primary = mode==='email-direct' ? 'Send email'
+    : mode==='share' ? 'Share to '+_ssMethodLabel(s.method)
+    : s.method==='email' ? 'Open mail app'
+    : s.method==='text' ? 'Open Messages' : 'Open '+_ssMethodLabel(s.method);
+  const footer=`<button class="btn btn-outline btn-sm" onclick="_ss=null;_closeConfirm2Direct()">Cancel</button>
+    <button class="btn btn-primary btn-sm" id="ss-go" onclick="_ssGo()">${esc(primary)}</button>`;
+  if(open || !document.getElementById('ss-msg')) openConfirm2('Send '+noun, body, footer);
+  else { const b=document.getElementById('confirm2-body'); if(b) b.innerHTML=body; const g=document.getElementById('ss-go'); if(g) g.textContent=primary; }
+}
+// Make sure the invitation is in cloud storage before guests are pointed at it.
+async function _ssEnsureUploaded(){
+  const f=_ss&&_ss.asset.file; if(!f||!_sbSession) return;
+  window._ssUploaded=window._ssUploaded||{};
+  if(window._ssUploaded[f.mediaId]) return;
+  try{
+    const src=_mediaUrl(f.mediaId); if(!src) return;
+    const blob=await (await fetch(src)).blob();
+    if(await _sbPhotoUpload(f.mediaId, blob)) window._ssUploaded[f.mediaId]=true;
+  }catch(_){}
+}
+async function _ssGo(){
+  const s=_ss; if(!s) return;
+  const mode=_ssMode(); const msg=_ssMessage();
+  const btn=document.getElementById('ss-go');
+  if(mode==='share'){
+    if(s.attach && !s.file){ if(typeof _showInfoToast==='function') _showInfoToast('Still preparing the file — tap again in a moment.', null, null); return; }
+    const data = s.attach ? {files:[s.file], text:msg} : {text:msg};
+    try{ await navigator.share(data); }
+    catch(e){ if(e && e.name==='AbortError') return; _ssFallback(msg); return; }
+    _ssDone('Shared — finish sending in '+_ssMethodLabel(s.method)+'.');
+    return;
+  }
+  if(mode==='email-direct'){
+    if(!s.to){ if(typeof _showInfoToast==='function') _showInfoToast('No email address on file for this guest.', null, null); return; }
+    if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+    if(s.asset.file && (s.attach||s.addLink)) await _ssEnsureUploaded();
+    const names=_ssCoupleNames();
+    const payload={ to:[s.to], subject:(s.kind==='invite'?'You’re invited':'Save the date')+(names?' — '+names:''), body:msg,
+      fromName:names||'UnionVault', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession.user&&_sbSession.user.email)||'' };
+    if(s.attach && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
+    let ok=false;
+    try{
+      await _sbEnsureFreshToken();
+      const r=await fetch(_SB_URL+'/functions/v1/send-guest-email',{ method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+_sbSession.access_token,'apikey':_SB_KEY},
+        body:JSON.stringify(payload) });
+      ok = r.ok && (await r.json()).ok===true;
+    }catch(_){ ok=false; }
+    if(ok){ _ssDone('Email sent to '+s.to+'.'); return; }
+    if(btn){ btn.disabled=false; btn.textContent='Send email'; }
+    if(typeof _showInfoToast==='function') _showInfoToast('Couldn’t send from UnionVault — opening your mail app instead.', null, null);
+    _ssFallback(msg); return;
+  }
+  if(s.asset.file && s.addLink) await _ssEnsureUploaded();
+  _ssFallback(msg);
+}
+// The existing per-channel hand-off (mail app / Messages / WhatsApp / Messenger / Instagram).
+function _ssFallback(msg){
+  const s=_ss; if(!s) return;
+  const note=_channelHandoff(s.method, s.grp, msg);
+  _ssDone(note);
+}
+function _ssDone(note){
+  const s=_ss; if(!s) return; _ss=null;
+  _closeConfirm2Direct();
+  _trackerRecordSend(s.kind, s.slotKey, s.method, note);
+}
 // --- Handle editor popup ---------------------------------------------------
 // One handle field + a platform radio (Instagram / Facebook). Opens from the guest
 // list (simple + card) and the tracker handle context. `after` is an optional
@@ -9557,9 +9767,21 @@ function trackerSend(kind, slotKey){
   if(!method){ if(typeof _showInfoToast==='function') _showInfoToast('Pick a method first.', null, null); return; }
   const grp=_groupFromSlotKey(slotKey);
   if(!grp){ return; }
+  // Save the dates + invites by email / chat go through the send sheet (file or link attached).
+  if((kind==='invite'||kind==='savedate') && _SS_CHANNELS.includes(method)){
+    _closeTrackerMenu();
+    _ssOpen(kind, slotKey, method);
+    return;
+  }
   const tpl=_inviteTpl(kind);
   const message=_fillTemplate(tpl, grp);
   const note=_channelHandoff(method, grp, message);
+  _trackerRecordSend(kind, slotKey, method, note);
+}
+// Record a send: stamp today, mark invited (invite kind) / sent (save-the-date, reminder).
+function _trackerRecordSend(kind, slotKey, method, note){
+  const meta=_inviteMeta(slotKey);
+  const field=_kindField(kind);
   // Stamp today's date as the sent date; mark invited (invite kind only).
   // Save the Date + reminder carry their own `sent` flag and never mark invited.
   // Sending a mirrored reminder materialises the method so the sent record is complete.
@@ -28819,7 +29041,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v266';
+const APP_BUILD='v267';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -48897,6 +49119,7 @@ function _showVendorError(type){
   const _rsvpParam     = _bootParams.get('rsvp');
   const _vendorParam   = _bootParams.get('vendor');
   const _runsheetParam = _bootParams.get('runsheet');
+  const _inviteParam   = _bootParams.get('invite');
 
   if(_rsvpParam){
     // Hide the app shell entirely — this is a public-facing page
@@ -48916,6 +49139,12 @@ function _showVendorError(type){
     document.body.style.visibility='hidden';
     await _showVendorPortal(_vendorParam);
     document.body.style.visibility='visible';
+    return; // do NOT boot the planner app
+  }
+
+  if(_inviteParam){
+    // Public "View your invitation" page — the couple's uploaded invitation + RSVP button.
+    _showPublicInvite(_inviteParam, _bootParams.get('t')==='pdf');
     return; // do NOT boot the planner app
   }
 
