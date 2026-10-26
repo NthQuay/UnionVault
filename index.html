@@ -3068,6 +3068,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 .price-feat{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink);font-weight:300;line-height:1.4}
 .price-check{color:var(--gold);flex-shrink:0;margin-top:1px}
 .price-muted{color:var(--muted)}
+.price-sub{display:block;font-size:11px;color:var(--muted);font-weight:300;margin-top:2px;line-height:1.4}
 .price-card .btn-outline{width:100%;padding:12px;background:none;color:var(--gold);border:1px solid var(--gold);border-radius:8px;font-family:var(--font-body);font-size:13px;font-weight:500;cursor:pointer;letter-spacing:.03em;transition:all .15s}
 .price-card .btn-outline:hover{background:var(--gold);color:#fff}
 
@@ -3150,7 +3151,7 @@ textarea.contact-input{resize:vertical;min-height:110px}
       <div class="hero-feats">
         <div class="hero-feat"><span class="hero-dot"></span>Guest list &amp; RSVP tracking</div>
         <div class="hero-feat"><span class="hero-dot"></span>Budget &amp; vendor management</div>
-        <div class="hero-feat"><span class="hero-dot"></span>Seating planner &amp; table builder</div>
+        <div class="hero-feat"><span class="hero-dot"></span>Seating planner &amp; floorplan builder</div>
         <div class="hero-feat"><span class="hero-dot"></span>Wishing well &amp; gift tracker</div>
         <div class="hero-feat"><span class="hero-dot"></span>Vision board &amp; inspiration</div>
         <div class="hero-feat"><span class="hero-dot"></span>Cloud sync — access anywhere</div>
@@ -3190,7 +3191,7 @@ textarea.contact-input{resize:vertical;min-height:110px}
           <button class="btn-gold" id="lp-in-btn" onclick="_lpSignIn()">Sign in</button>
           <div class="auth-links">
             <button id="lp-forgot-btn" onclick="_lpForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--gold-deep,#b8923a);cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;margin-top:6px">Forgot password?</button>
-            <div class="auth-legal">By continuing you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy</a></div>
+            <div class="auth-legal">By continuing you agree to our<br><a href="#" onclick="event.preventDefault();_openTermsModal()">Terms &amp; Privacy</a></div>
           </div>
         </div>
 
@@ -3220,7 +3221,7 @@ textarea.contact-input{resize:vertical;min-height:110px}
           <div id="lp-up-err" style="display:none;font-size:12px;color:#c0392b;margin-bottom:8px;padding:8px 10px;background:rgba(192,57,43,0.08);border-radius:6px"></div>
           <button class="btn-gold" id="lp-up-btn" onclick="_lpSignUp()">Create free account</button>
           <div class="auth-links">
-            <div class="auth-legal">By creating an account you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy</a></div>
+            <div class="auth-legal">By creating an account you agree to our<br><a href="#" onclick="event.preventDefault();_openTermsModal()">Terms &amp; Privacy</a></div>
           </div>
         </div>
       </div>
@@ -3250,7 +3251,7 @@ textarea.contact-input{resize:vertical;min-height:110px}
       <div class="feat-card">
         <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
         <div class="feat-name">Seating Planner</div>
-        <div class="feat-desc">Build tables, drag-and-drop guests into seats, and handle family groupings with ease.</div>
+        <div class="feat-desc">Build your floorplan, drag-and-drop guests into seats, then print or export to share.</div>
       </div>
       <div class="feat-card">
         <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
@@ -3279,19 +3280,20 @@ textarea.contact-input{resize:vertical;min-height:110px}
     <div class="section-body">Start free and upgrade when you're ready. No hidden fees, no surprises.</div>
     <div class="pricing-grid">
       <div class="price-card">
-        <div class="price-name">Free Trial</div>
-        <div class="price-tagline">Try everything, no card required</div>
+        <div class="price-name">Free Tier</div>
+        <div class="price-tagline">Start planning with no time limit</div>
         <div class="price-amount"><span>$</span>0</div>
-        <div class="price-cycle">for 30 days</div>
+        <div class="price-cycle">forever</div>
         <div class="price-divider"></div>
         <div class="price-features">
-          <div class="price-feat"><span class="price-check">✓</span> Full access to all features</div>
-          <div class="price-feat"><span class="price-check">✓</span> Up to 50 guests</div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Up to 50 guests<span class="price-sub">Guest list, dietary requirements &amp; live RSVP updates</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Budget &amp; vendor management<span class="price-sub">Track costs, bookings &amp; appointments</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Day-of timeline<span class="price-sub">Build a minute-by-minute run sheet for your whole day</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Wedding website builder<span class="price-sub">Your RSVP site, live in minutes</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span> Cloud sync &amp; backup</div>
-          <div class="price-feat"><span class="price-check">✓</span> Budget &amp; vendor tools</div>
           <div class="price-feat price-muted"><span style="color:var(--muted)">–</span> Priority support</div>
         </div>
-        <button class="btn-outline" onclick="var a=document.getElementById('auth');if(a){a.scrollIntoView({behavior:'smooth'});setTimeout(function(){document.querySelectorAll('.tab')[1].click();var e=document.getElementById('auth-up-email');if(e)e.focus();},400);}">Start free trial</button>
+        <button class="btn-outline" onclick="var a=document.getElementById('auth');if(a){a.scrollIntoView({behavior:'smooth'});setTimeout(function(){document.querySelectorAll('.tab')[1].click();var e=document.getElementById('auth-up-email');if(e)e.focus();},400);}">Start planning free</button>
       </div>
       <div class="price-card featured">
         <div class="price-badge">Most popular</div>
@@ -3301,10 +3303,12 @@ textarea.contact-input{resize:vertical;min-height:110px}
         <div class="price-cycle">pricing to be announced</div>
         <div class="price-divider"></div>
         <div class="price-features">
-          <div class="price-feat"><span class="price-check">✓</span> Everything in Free Trial</div>
-          <div class="price-feat"><span class="price-check">✓</span> Unlimited guests</div>
-          <div class="price-feat"><span class="price-check">✓</span> Invite builder &amp; website</div>
-          <div class="price-feat"><span class="price-check">✓</span> Vision board &amp; inspo tools</div>
+          <div class="price-feat"><span class="price-check">✓</span> Everything in Free Tier</div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Unlimited guests<span class="price-sub">Dietary requirements, meal choices &amp; live RSVP updates</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Floorplan builder<span class="price-sub">Design your layout, seat guests, then print or export to share</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Wishing well &amp; gift registry<span class="price-sub">Share a wish list and track contributions from your guests</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Save-the-dates &amp; invite sending<span class="price-sub">Email &amp; share to your full guest list</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Vision board &amp; inspo tools<span class="price-sub">Save styles, colours &amp; ideas in one place to share with vendors</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span> Priority support</div>
         </div>
         <button class="btn-gold" onclick="var a=document.getElementById('auth');if(a){a.scrollIntoView({behavior:'smooth'});setTimeout(function(){document.querySelectorAll('.tab')[1].click();var e=document.getElementById('auth-up-email');if(e)e.focus();},400);}">Get notified</button>
@@ -3321,7 +3325,7 @@ textarea.contact-input{resize:vertical;min-height:110px}
     <div class="faq-list">
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">Is there an app I can install?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-        <div class="faq-a">Yes — Union Vault installs directly to your home screen on iPhone, Android, and desktop without going through an app store. Tap <strong>Share → Add to Home Screen</strong> on iOS, or <strong>Install App</strong> in Chrome. Once installed it works offline, loads instantly, and will support push notifications for reminders and partner updates.</div>
+        <div class="faq-a">Yes — Union Vault installs directly to your home screen on iPhone, Android, and desktop without going through an app store. Tap <strong>Share → Add to Home Screen</strong> on iOS, or <strong>Install App</strong> in Chrome. Once installed it works offline and loads instantly.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">Can my partner access the planner too?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
@@ -3333,7 +3337,7 @@ textarea.contact-input{resize:vertical;min-height:110px}
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">What happens after my trial ends?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-        <div class="faq-a">Your data is never deleted. At the end of your trial you'll be prompted to upgrade to keep full access. Pricing details are coming soon.</div>
+        <div class="faq-a">Your data is never deleted. When you're ready to unlock unlimited guests and premium features, upgrade to Full Access. Pricing details are coming soon.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">Can I use it on my phone?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
@@ -3363,14 +3367,55 @@ textarea.contact-input{resize:vertical;min-height:110px}
   </div>
 </section>
 
+<!-- ══ TERMS & PRIVACY MODAL ══ -->
+<div id="lp-terms-modal" style="display:none;position:fixed;inset:0;z-index:9000;overflow-y:auto;padding:40px 16px;background:rgba(0,0,0,.55);" onclick="if(event.target===this)_closeTermsModal()">
+  <div style="max-width:680px;margin:0 auto;background:var(--surface);border-radius:20px;padding:36px 32px 40px;position:relative;color:var(--ink);">
+    <button onclick="_closeTermsModal()" style="position:absolute;top:16px;right:18px;background:none;border:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);">×</button>
+    <div style="font-family:var(--font-display,'Cormorant Garamond',serif);font-size:30px;font-weight:400;margin-bottom:4px;">Terms &amp; Privacy</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:16px;">Last updated October 2026 · <a href="mailto:support@unionvault.app" style="color:var(--gold);text-decoration:none;">support@unionvault.app</a></div>
+    <div style="display:flex;flex-direction:column;gap:20px;font-size:13.5px;line-height:1.65;font-family:var(--font-body,'Inter',sans-serif);font-weight:300;">
+      <div>
+        <div style="font-family:var(--font-display,'Cormorant Garamond',serif);font-size:18px;font-weight:600;margin-bottom:5px;">About Union Vault</div>
+        <p>Union Vault is a wedding planning app for couples. By creating an account and using Union Vault, you agree to these terms.</p>
+      </div>
+      <div>
+        <div style="font-family:var(--font-display,'Cormorant Garamond',serif);font-size:18px;font-weight:600;margin-bottom:5px;">What we collect</div>
+        <p>To provide the service we store your email address and hashed password, the planning data you enter (guests, vendors, budget, timeline and notes), and files you choose to upload. We also collect basic usage data to operate and improve the app.</p>
+      </div>
+      <div>
+        <div style="font-family:var(--font-display,'Cormorant Garamond',serif);font-size:18px;font-weight:600;margin-bottom:5px;">How we use your data</div>
+        <p>Your data is used solely to run Union Vault for you. We never sell, share or rent your personal information to third parties. Your data is stored securely via Supabase, an Australian-region cloud database.</p>
+      </div>
+      <div>
+        <div style="font-family:var(--font-display,'Cormorant Garamond',serif);font-size:18px;font-weight:600;margin-bottom:5px;">Emails we send</div>
+        <p>Union Vault sends emails on your instruction: appointment confirmations to vendors you book, and save-the-dates or invitations to your guests. We won't send unsolicited marketing email. We may send transactional emails for password resets or important service notices.</p>
+      </div>
+      <div>
+        <div style="font-family:var(--font-display,'Cormorant Garamond',serif);font-size:18px;font-weight:600;margin-bottom:5px;">Your rights</div>
+        <p>You can access, export or delete your data at any time from Settings → Account. Deleting your account permanently removes all your data. To request a copy or deletion of your data, email us at <a href="mailto:support@unionvault.app" style="color:var(--gold);">support@unionvault.app</a>.</p>
+      </div>
+      <div>
+        <div style="font-family:var(--font-display,'Cormorant Garamond',serif);font-size:18px;font-weight:600;margin-bottom:5px;">Security</div>
+        <p>All data is encrypted in transit (HTTPS). Passwords are hashed and never stored in plain text. We take reasonable steps to protect your information, though no online service can guarantee absolute security.</p>
+      </div>
+      <div>
+        <div style="font-family:var(--font-display,'Cormorant Garamond',serif);font-size:18px;font-weight:600;margin-bottom:5px;">Changes</div>
+        <p>We may update these terms from time to time and will notify you of significant changes by email. Continued use of Union Vault after changes are posted means you accept the updated terms.</p>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:16px;color:var(--muted);">
+        <p>Questions? Email <a href="mailto:support@unionvault.app" style="color:var(--gold);">support@unionvault.app</a> — we'll respond within two business days.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ FOOTER ══ -->
 <footer class="site-footer">
   <div class="footer-logo">
     <img src="https://raw.githubusercontent.com/mandyjane/UnionVault/main/logos/White%20full%20(Dark%20mode).png" alt="EA">
   </div>
   <div class="footer-links">
-    <a href="#">Terms</a>
-    <a href="#">Privacy</a>
+    <a href="#" onclick="event.preventDefault();_openTermsModal()">Terms &amp; Privacy</a>
     <a href="#contact">Contact</a>
   </div>
   <div class="footer-copy">&copy; 2026 Union Vault. All rights reserved.</div>
@@ -3379,6 +3424,16 @@ textarea.contact-input{resize:vertical;min-height:110px}
 <script>
 
 // ── Landing page helpers ────────────────────────────────────────────────
+function _openTermsModal(){
+  var m=document.getElementById('lp-terms-modal');
+  if(m){m.style.display='';m.scrollTop=0;}
+}
+function _closeTermsModal(){
+  var m=document.getElementById('lp-terms-modal');
+  if(m)m.style.display='none';
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')_closeTermsModal();});
+
 function switchTab(btn, panel) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   btn.classList.add('active');
@@ -29194,7 +29249,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v272';
+const APP_BUILD='v273';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
