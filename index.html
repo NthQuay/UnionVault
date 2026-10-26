@@ -3286,9 +3286,11 @@ textarea.contact-input{resize:vertical;min-height:110px}
         <div class="price-cycle">forever</div>
         <div class="price-divider"></div>
         <div class="price-features">
+          <div class="price-feat"><span class="price-check">✓</span><span>Dashboard<span class="price-sub">Your whole wedding at a glance — counts, upcoming tasks &amp; quick actions</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Up to 50 guests<span class="price-sub">Guest list, dietary requirements &amp; live RSVP updates</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Budget &amp; vendor management<span class="price-sub">Track costs, bookings &amp; appointments</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Day-of timeline<span class="price-sub">Build a minute-by-minute run sheet for your whole day</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Day-of timeline<span class="price-sub">Build a shareable run sheet with music links for special moments — aisle walk, first dance &amp; more</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Wedding checklist<span class="price-sub">A personalised task list so nothing slips through the cracks</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Wedding website builder<span class="price-sub">Your RSVP site, live in minutes</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span> Cloud sync &amp; backup</div>
           <div class="price-feat price-muted"><span style="color:var(--muted)">–</span> Priority support</div>
@@ -3305,7 +3307,10 @@ textarea.contact-input{resize:vertical;min-height:110px}
         <div class="price-features">
           <div class="price-feat"><span class="price-check">✓</span> Everything in Free Tier</div>
           <div class="price-feat"><span class="price-check">✓</span><span>Unlimited guests<span class="price-sub">Dietary requirements, meal choices &amp; live RSVP updates</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Multi-event planning<span class="price-sub">Manage your bridal shower, bucks &amp; bachelorette, rehearsal dinner &amp; more alongside your wedding day</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Calendar<span class="price-sub">See all appointments, events &amp; deadlines in one view</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Floorplan builder<span class="price-sub">Design your layout, seat guests, then print or export to share</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Shareable vendor brief<span class="price-sub">Send vendors a personalised brief page with everything they need to know</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Wishing well &amp; gift registry<span class="price-sub">Share a wish list and track contributions from your guests</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Save-the-dates &amp; invite sending<span class="price-sub">Email &amp; share to your full guest list</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Vision board &amp; inspo tools<span class="price-sub">Save styles, colours &amp; ideas in one place to share with vendors</span></span></div>
@@ -29268,7 +29273,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v280';
+const APP_BUILD='v281';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
