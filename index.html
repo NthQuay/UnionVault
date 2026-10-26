@@ -3868,7 +3868,16 @@ const STATE = {
   ],
   events: [],
   families: [],
-  tagDefs: {},
+  // Starter guest tags (name → colour + icon) for new accounts; users edit or delete freely.
+  tagDefs: {
+    'Adult':        {color:'#9A7B2E', icon:''},
+    "Bride's Side": {color:'#C56B8C', icon:'people'},
+    'Bridal Party': {color:'#5C8A4E', icon:'star'},
+    'Child':        {color:'#21b5a4', icon:''},
+    "Groom's Side": {color:'#4A7C9E', icon:'people'},
+    'Mutual':       {color:'#8E6BA8', icon:'people'},
+    '+1':           {color:'#5A5A57', icon:'people'}
+  },
   invites: [],
   inviteMeta: {},
   settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current', partnerEmail:'' },
@@ -28804,7 +28813,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v264';
+const APP_BUILD='v265';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
