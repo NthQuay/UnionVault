@@ -29194,7 +29194,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v271';
+const APP_BUILD='v272';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -46737,8 +46737,18 @@ function _toggleSignoutPop(){
   else {
     // populate email
     const emailEl=document.getElementById('sidebar-signout-email');
-    if(emailEl&&_sbSession&&_sbSession.user) emailEl.textContent=_sbSession.user.email||'Signed in';
+    if(emailEl&&_sbSession&&_sbSession.user){
+      emailEl.style.display='';
+      emailEl.innerHTML=`<div style="font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px">Signed in as</div><div style="font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(_sbSession.user.email||'')}</div>`;
+    }
     else if(emailEl) emailEl.style.display='none';
+    // A collapsed sidebar is 56px wide and clips overflow, so float the menu over the page instead.
+    const sb=document.getElementById('sidebar');
+    if(sb&&sb.classList.contains('collapsed')&&cd){
+      const r=cd.getBoundingClientRect();
+      pop.style.position='fixed'; pop.style.left=(r.left+4)+'px'; pop.style.right='auto';
+      pop.style.bottom=(window.innerHeight-r.top+6)+'px'; pop.style.width='230px';
+    } else { pop.style.position='absolute'; pop.style.left='0'; pop.style.right='0'; pop.style.bottom='calc(100% + 6px)'; pop.style.width=''; }
     pop.style.opacity='1';pop.style.transform='translateY(0)';pop.style.pointerEvents='auto';pop.classList.add('visible');cd.classList.add('open');
   }
 }
@@ -46982,12 +46992,8 @@ function _updateAccountChip(){
   const chip=document.getElementById('topbar-account-chip');
   const emailEl=document.getElementById('topbar-account-email');
   if(!chip||!emailEl) return;
-  if(_sbSession&&_sbSession.user&&_sbSession.user.email){
-    emailEl.textContent=_sbSession.user.email;
-    chip.style.display='flex';
-  } else {
-    chip.style.display='none';
-  }
+  // The login email now lives in the sidebar account menu ("Signed in as …"), not the top bar.
+  chip.style.display='none';
 }
 
 function _autoSyncToggleChange(on){
