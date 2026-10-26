@@ -22990,21 +22990,121 @@ function _apptEmailNamedRecips(){
   const rows=[];
   if(youEmail) rows.push({label:'You',email:youEmail,kind:'you'});
   if(partnerEmail) rows.push({label:'Partner',email:partnerEmail,kind:'partner'});
-  if(vendorEmail) rows.push({label:'Vendor',email:vendorEmail,kind:'vendor'});
+  if(vendorEmail){
+    const vn=(a.business||'').trim() || ((STATE.vendors||[]).find(v=>(v.email||'').trim().toLowerCase()===vendorEmail.toLowerCase())||{}).business || '';
+    rows.push({label:vn?('Vendor · '+vn):'Vendor',email:vendorEmail,kind:'vendor'});
+  }
   return rows;
 }
 // `afterSave` = opened straight after saving the appointment form (dismiss reads "Skip").
+let _apptEmailAfterSave=false;
 function _apptEmailConfirm(task, a, afterSave){
-  _apptEmailTask=task; _apptEmailAppt=a;
+  _apptEmailTask=task; _apptEmailAppt=a; _apptEmailAfterSave=!!afterSave;
   if(a.recipients&&a.recipients.length){
     _apptEmailRecips=a.recipients.slice();
   } else {
     // You + partner on by default; the vendor is opt-in.
     _apptEmailRecips=_apptEmailNamedRecips().filter(r=>r.kind!=='vendor').map(r=>r.email);
   }
+  _apptEmailOpenMain();
+}
+function _apptEmailOpenMain(){
   openConfirm2('Email appointment', _apptEmailConfirmBody(),
-    `<button class="btn btn-outline btn-sm" onclick="_apptEmailCancel()">${afterSave?'Skip':'Cancel'}</button>
+    `<button class="btn btn-outline btn-sm" onclick="_apptEmailCancel()">${_apptEmailAfterSave?'Skip':'Cancel'}</button>
      <button class="btn btn-primary btn-sm" id="appt-email-send-btn" onclick="_apptEmailSend()">${_apptEmailSendLabel()}</button>`);
+}
+// Who an address belongs to (guest or vendor), for the "Also send to" chips.
+function _apptEmailWho(email){
+  const e=String(email||'').trim().toLowerCase();
+  const g=(STATE.guests||[]).find(x=>(x.email||'').trim().toLowerCase()===e);
+  if(g){ const r=(g.relationship&&!['Couple','Guest','Plus One'].includes(g.relationship))?g.relationship:''; return {name:g.name||email, role:r}; }
+  const v=(STATE.vendors||[]).find(x=>(x.email||'').trim().toLowerCase()===e);
+  if(v) return {name:v.business||email, role:v.category||'Vendor'};
+  return {name:email, role:''};
+}
+// ── Add guests or vendors (picker inside the Email appointment dialog) ──
+let _apptPick=null; // {tab:'guests'|'vendors', q, filter:'all'|'sel'|'tag:<name>'|'fam:<id>', sel:Set<email>}
+function _apptPickOpen(){
+  _apptPick={tab:'guests', q:'', filter:'all', sel:new Set()};
+  _apptPickRender(true);
+}
+function _apptPickBack(){ _apptPick=null; _apptEmailOpenMain(); }
+function _apptPickItems(){
+  const p=_apptPick, q=p.q.trim().toLowerCase();
+  const already=new Set(_apptEmailRecips.map(e=>e.toLowerCase()));
+  let items;
+  if(p.tab==='vendors'){
+    items=(STATE.vendors||[]).map(v=>({key:'v:'+v.id, name:v.business||'Untitled vendor', sub:[v.category,(v.email||'').trim()||'no email on file'].filter(Boolean).join(' · '), email:(v.email||'').trim(), tags:[], famIds:[]}));
+  } else {
+    const famOf={}; (STATE.families||[]).forEach(f=>(f.memberIds||[]).forEach(id=>{ (famOf[id]=famOf[id]||[]).push(f.id); }));
+    items=(STATE.guests||[]).map(g=>{
+      const role=(g.relationship&&!['Couple','Guest','Plus One'].includes(g.relationship))?g.relationship:'';
+      const em=(g.email||'').trim();
+      return {key:'g:'+g.id, name:g.name||'Guest', sub:[role, em||'no email on file'].filter(Boolean).join(' · '), email:em, tags:g.tags||[], famIds:famOf[g.id]||[]};
+    });
+  }
+  items=items.filter(it=>!already.has(it.email.toLowerCase())||!it.email);
+  if(q) items=items.filter(it=>(it.name+' '+it.sub).toLowerCase().includes(q));
+  if(p.filter==='sel') items=items.filter(it=>it.email&&p.sel.has(it.email));
+  else if(p.filter.startsWith('tag:')){ const t=p.filter.slice(4); items=items.filter(it=>it.tags.includes(t)); }
+  else if(p.filter.startsWith('fam:')){ const f=p.filter.slice(4); items=items.filter(it=>it.famIds.includes(f)); }
+  return items;
+}
+function _apptPickRender(open){
+  const p=_apptPick; if(!p) return;
+  const esc=_escHtml, jq=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const chip=(label,val)=>{ const on=p.filter===val; return `<button type="button" onclick="_apptPickSet('filter','${jq(val)}')" style="font-size:12px;padding:5px 11px;border-radius:14px;border:1px solid ${on?'var(--gold)':'var(--border)'};background:${on?'rgba(191,155,88,.18)':'var(--surface)'};color:${on?'var(--gold-deep)':'var(--ink)'};cursor:pointer;font-family:inherit">${esc(label)}</button>`; };
+  let filters='';
+  if(p.tab==='guests'){
+    const tags=[...new Set((STATE.guests||[]).flatMap(g=>g.tags||[]))].sort((a,b)=>a.localeCompare(b));
+    const fams=(STATE.families||[]).filter(f=>(f.memberIds||[]).length>1);
+    const famSel=fams.length?`<select class="form-input" aria-label="Family" onchange="_apptPickSet('filter',this.value?'fam:'+this.value:'all')" style="font-size:12px;padding:4px 8px;height:auto;width:auto;max-width:170px;border-radius:14px${p.filter.startsWith('fam:')?';border-color:var(--gold)':''}"><option value="">Family…</option>${fams.map(f=>`<option value="${esc(f.id)}" ${p.filter==='fam:'+f.id?'selected':''}>${esc(f.name||'Family')}</option>`).join('')}</select>`:'';
+    filters=chip('All','all')+tags.map(t=>chip(t,'tag:'+t)).join('')+famSel+(p.sel.size?chip('Selected ('+p.sel.size+')','sel'):'');
+  } else {
+    filters=chip('All','all')+(p.sel.size?chip('Selected ('+p.sel.size+')','sel'):'');
+  }
+  const items=_apptPickItems();
+  const withEmail=items.filter(it=>it.email);
+  const allOn=withEmail.length&&withEmail.every(it=>p.sel.has(it.email));
+  const rows=items.length?items.map(it=>{
+    const has=!!it.email, on=has&&p.sel.has(it.email);
+    return `<label style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-bottom:.5px solid var(--border);${has?'cursor:pointer':'opacity:.5'}">
+      <input type="checkbox" ${on?'checked':''} ${has?'':'disabled'} onchange="_apptPickToggle('${jq(it.email)}')" style="width:17px;height:17px;accent-color:var(--gold);flex-shrink:0;cursor:pointer"/>
+      <span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">${esc(it.name)}</span><span style="display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.sub)}</span></span>
+    </label>`;}).join(''):`<div style="padding:16px;text-align:center;font-size:12.5px;color:var(--muted)">No matches.</div>`;
+  const body=`<div style="display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;border:.5px solid var(--border);border-radius:10px;overflow:hidden">
+      <button type="button" aria-pressed="${p.tab==='guests'}" onclick="_apptPickSet('tab','guests')" style="flex:1;font-family:inherit;font-size:13px;padding:8px;border:none;cursor:pointer;${p.tab==='guests'?'background:var(--gold);color:#fff;font-weight:600':'background:var(--surface);color:var(--muted)'}">Guests</button>
+      <button type="button" aria-pressed="${p.tab==='vendors'}" onclick="_apptPickSet('tab','vendors')" style="flex:1;font-family:inherit;font-size:13px;padding:8px;border:none;cursor:pointer;${p.tab==='vendors'?'background:var(--gold);color:#fff;font-weight:600':'background:var(--surface);color:var(--muted)'}">Vendors</button>
+    </div>
+    <input id="appt-pick-q" type="search" class="form-input" placeholder="Search ${p.tab}…" value="${esc(p.q)}" oninput="_apptPickSearch(this.value)" style="font-size:13px"/>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">${filters}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted)"><span id="appt-pick-count">${items.length} ${p.tab==='guests'?'guest':'vendor'}${items.length===1?'':'s'}</span>${withEmail.length?`<button type="button" onclick="_apptPickAll()" style="font-family:inherit;font-size:12px;font-weight:700;color:var(--gold-deep);background:none;border:none;cursor:pointer">${allOn?'Clear these':'Select all with email'}</button>`:''}</div>
+    <div id="appt-pick-list" style="border:.5px solid var(--border);border-radius:11px;overflow:auto;max-height:46vh;background:var(--surface)">${rows}</div>
+  </div>`;
+  const footer=`<button class="btn btn-outline btn-sm" onclick="_apptPickBack()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="_apptPickAdd()" ${p.sel.size?'':'disabled style="opacity:.5"'}>${p.sel.size?'Add '+p.sel.size:'Add'}</button>`;
+  if(open || !document.getElementById('appt-pick-list')) openConfirm2('Add recipients', body, footer);
+  else {
+    const b=document.getElementById('confirm2-body'); if(b) b.innerHTML=body;
+    const f=document.getElementById('confirm2-footer'); if(f) f.innerHTML=footer; else openConfirm2('Add recipients', body, footer);
+    const qi=document.getElementById('appt-pick-q'); if(qi&&document.activeElement!==qi&&p._focusQ){ qi.focus(); qi.setSelectionRange(qi.value.length,qi.value.length); }
+  }
+}
+function _apptPickSet(k,v){ if(!_apptPick) return; _apptPick[k]=v; if(k==='tab'){ _apptPick.filter='all'; _apptPick.q=''; } _apptPick._focusQ=false; _apptPickRender(); }
+function _apptPickSearch(v){ if(!_apptPick) return; _apptPick.q=v; _apptPick._focusQ=true; _apptPickRender(); }
+function _apptPickToggle(email){ const s=_apptPick&&_apptPick.sel; if(!s||!email) return; s.has(email)?s.delete(email):s.add(email); _apptPick._focusQ=false; _apptPickRender(); }
+function _apptPickAll(){
+  const p=_apptPick; if(!p) return;
+  const em=_apptPickItems().map(it=>it.email).filter(Boolean);
+  const allOn=em.every(e=>p.sel.has(e));
+  em.forEach(e=>allOn?p.sel.delete(e):p.sel.add(e));
+  p._focusQ=false; _apptPickRender();
+}
+function _apptPickAdd(){
+  const p=_apptPick; if(!p) return;
+  p.sel.forEach(e=>{ if(!_apptEmailRecips.some(x=>x.toLowerCase()===e.toLowerCase())) _apptEmailRecips.push(e); });
+  _apptPickBack();
 }
 function _apptEmailSendLabel(){ const n=_apptEmailRecips.filter(Boolean).length; return n?('Send to '+n):'Send'; }
 function _apptEmailConfirmBody(){
@@ -23025,13 +23125,14 @@ function _apptEmailConfirmBody(){
     </div>`;
   }).join('');
   const extras=_apptEmailRecips.filter(e=>!namedEmails.includes(e));
-  const extraChips=extras.map((e,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;background:var(--surface);color:var(--gold-deep);border:.5px solid var(--border);border-radius:14px;padding:4px 6px 4px 11px">${_escHtml(e)}<button type="button" onclick="_apptCEmRemoveExtra(${i})" aria-label="Remove" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 2px">&times;</button></span>`).join('');
+  const extraChips=extras.map((e,i)=>{ const w=_apptEmailWho(e); return `<span title="${_escHtml(e)}" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;background:var(--surface);color:var(--ink);border:.5px solid var(--border);border-radius:14px;padding:4px 6px 4px 11px">${_escHtml(w.name)}${w.role?`<span style="color:var(--muted);font-size:11px">${_escHtml(w.role)}</span>`:''}<button type="button" onclick="_apptCEmRemoveExtra(${i})" aria-label="Remove" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 2px">&times;</button></span>`; }).join('');
   return `${namedRows}
-    ${extras.length?`<div id="ci-cem-extra" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">${extraChips}</div>`:''}
+    ${extras.length?`<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:8px">Also send to</div><div id="ci-cem-extra" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">${extraChips}</div>`:''}
     <div id="ci-cem-recips" style="margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <button type="button" onclick="_apptPickOpen()" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--gold-deep);border:1px solid var(--gold-med,rgba(191,155,88,.5));border-radius:14px;padding:4px 12px;background:none;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>Add guests or vendors</button>
       <button type="button" onclick="_apptCEmAddPrompt()" style="font-size:12px;color:var(--gold-deep);border:1px dashed var(--border);border-radius:14px;padding:4px 12px;background:none;cursor:pointer">+ add email</button>
     </div>
-    <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)">Sends the appointment details with a .ics calendar file attached.</div>`;
+    <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)">Each person gets their own email with a .ics calendar file attached.</div>`;
 }
 function _apptCEmToggle(email){
   const idx=_apptEmailRecips.indexOf(email);
@@ -23071,20 +23172,24 @@ function _apptEmailCancel(){
   if(document.getElementById('ci-appt-list')){ _ciApptRenderList(); }
   else _apptRefreshPage();
 }
+// One email per recipient, so guests and vendors never see each other's addresses.
+// Resolves to the recipients that could NOT be sent (empty = all sent).
 async function _apptEmailSendViaEdge(task, a, recipients){
-  try{
-    const m=_apptBuildMailto(task,a,recipients,true);
-    const ics=_apptBuildIcs(task,a);
-    const token=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.access_token)||'';
-    const r=await fetch(_SB_URL+'/functions/v1/send-appointment-email',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||_SB_KEY),'apikey':_SB_KEY},
-      body:JSON.stringify({to:recipients,subject:m.subject,body:m.body,ics:btoa(unescape(encodeURIComponent(ics)))})
-    });
-    if(!r.ok) return false;
-    const d=await r.json();
-    return d.ok===true;
-  }catch(_){ return false; }
+  const m=_apptBuildMailto(task,a,recipients,true);
+  const ics=btoa(unescape(encodeURIComponent(_apptBuildIcs(task,a))));
+  const token=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.access_token)||'';
+  const one=async(to)=>{
+    try{
+      const r=await fetch(_SB_URL+'/functions/v1/send-appointment-email',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||_SB_KEY),'apikey':_SB_KEY},
+        body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics})
+      });
+      return r.ok && (await r.json()).ok===true;
+    }catch(_){ return false; }
+  };
+  const res=await Promise.all(recipients.map(one));
+  return recipients.filter((_,i)=>!res[i]);
 }
 function _apptEmailSend(){
   const inp=document.getElementById('ci-cem-input'); if(inp){ const v=(inp.value||'').trim(); if(v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && !_apptEmailRecips.includes(v)) _apptEmailRecips.push(v); }
@@ -23099,8 +23204,8 @@ function _apptEmailSend(){
   const doneFooter=`<button class="btn btn-primary btn-sm" onclick="_closeConfirm2Direct();if(document.getElementById('ci-appt-list')){_ciApptRenderList();}else{_apptRefreshPage();}">Done</button>`;
   // Show a sending indicator, then call the edge function
   openConfirm2('Sending…', `<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><span style="font-size:20px">✉</span><span style="font-size:13.5px;color:var(--ink)">Sending to ${list}…</span></div>`, '');
-  _apptEmailSendViaEdge(task, a, recips).then(sent=>{
-    if(sent){
+  _apptEmailSendViaEdge(task, a, recips).then(failed=>{
+    if(!failed.length){
       openConfirm2('Email sent!', `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:4px 0;text-align:center">
         <span style="font-size:28px;line-height:1">✉</span>
         <div style="font-size:13.5px;color:var(--ink);font-weight:600">Sent!</div>
@@ -23108,10 +23213,12 @@ function _apptEmailSend(){
       </div>`, doneFooter);
     } else {
       // Fallback: open mailto + download ics
-      if(task&&a){ _apptDownloadIcs(task,a); _apptOpenEmailDraft(task,a,recips); }
+      // Fallback for whoever couldn't be emailed directly: mail-app draft + .ics download.
+      const flist=failed.map(e=>_escHtml(e)).join(', ');
+      if(task&&a){ _apptDownloadIcs(task,a); _apptOpenEmailDraft(task,a,failed); }
       openConfirm2('Invite ready', `<div style="display:flex;align-items:flex-start;gap:10px">
         <span style="width:30px;height:30px;border-radius:50%;background:rgba(92,138,78,.16);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--green,#5C8A4E)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-        <div style="font-size:13.5px;color:var(--ink);line-height:1.5">Email draft opened for <strong>${list}</strong>. Open the downloaded .ics file to add the appointment to your calendar.</div>
+        <div style="font-size:13.5px;color:var(--ink);line-height:1.5">${failed.length<recips.length?`Sent to ${recips.length-failed.length} of ${recips.length}. `:''}Email draft opened for <strong>${flist}</strong>. Open the downloaded .ics file to add the appointment to your calendar.</div>
       </div>`, doneFooter);
     }
   });
@@ -29046,7 +29153,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v268';
+const APP_BUILD='v269';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
