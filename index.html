@@ -667,7 +667,7 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
   .wb-strip-bar{display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Inter',sans-serif;font-size:12px;color:var(--ink);cursor:pointer}
   .wb-strip-chev{transition:transform .18s;color:var(--muted)}
   .wb-pane-inner{margin-top:8px;padding:8px}
-  .wb-pane-frame{height:210px}
+  .wb-pane-frame{height:280px}
   .wb-pane-cap{display:none}
   .wb-strip-shut .wb-pane-inner{display:none}
   .wb-strip-shut .wb-strip-chev{transform:rotate(-90deg)}
@@ -29298,7 +29298,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v284';
+const APP_BUILD='v285';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -35051,6 +35051,8 @@ function _wbSectionSave(){
     el.textContent = '✓ Saved';
     el.style.opacity = '1';
     clearTimeout(el._t);
+  } else if(typeof _showInfoToast === 'function'){
+    _showInfoToast('Saved');
   }
 }
 function _wbMarkChanged(){
@@ -35719,7 +35721,7 @@ function _wbStaysBody(){
   return _wbStaysSearchHtml()+_wbStaysListHtml();
 }
 function _wbStaysSearchHtml(){
-  const addr=[STATE.event.venueAddress,STATE.event.venue].filter(Boolean).join(', ');
+  const addr=STATE.event.venueAddress||(STATE.event.venue||'');
   if(!addr) return `<div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:12px">Places for guests who need somewhere to stay. Add your venue address in <strong>Wedding Details</strong> to search for nearby accommodation.</div>`;
   return `<div style="margin-bottom:12px">
     <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:8px">Places for guests who need somewhere to stay.</div>
@@ -35748,7 +35750,7 @@ function _wbStaysListHtml(){
 }
 var _wbStaySearchResults=[];
 async function _wbStaysSearch(){
-  const addr=[STATE.event.venueAddress,STATE.event.venue].filter(Boolean).join(', ');
+  const addr=STATE.event.venueAddress||(STATE.event.venue||'');
   const box=document.getElementById('wb-stays-search');
   if(!box) return;
   box.innerHTML='<div style="font-size:12.5px;color:var(--muted);padding:4px 0">Searching…</div>';
