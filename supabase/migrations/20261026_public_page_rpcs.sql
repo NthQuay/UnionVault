@@ -1,0 +1,5 @@
+-- Applied 2026-10-26 via Supabase MCP (migration "public_page_rpcs").
+-- public_wedding_extras(uid): guest names/groupings, meal settings and wishing well
+-- (minus contributions) for the public website + RSVP form.
+-- vendor_brief(t): one vendor token's brief (event, theme, guest count, vendor card).
+-- See the live database for the exact definitions (pg_get_functiondef).

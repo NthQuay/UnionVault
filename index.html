@@ -22893,10 +22893,13 @@ function _apptTitle(task, a){
   const type=((a&&a.type)||'Appointment').trim();
   const t=type.toLowerCase();
   let name=((task&&task.text)||'').trim();
-  const low=name.toLowerCase();
-  if(low===t) name='';
-  else if(low.endsWith(' '+t)) name=name.slice(0, -(t.length+1)).trim();
-  else if(low.startsWith(t+' ')) name=name.slice(t.length+1).trim();
+  // Drop the type word and a generic "appointment" from either end of the task name.
+  [t,'appointment'].forEach(w=>{
+    const low=name.toLowerCase();
+    if(low===w) name='';
+    else if(low.endsWith(' '+w)) name=name.slice(0, -(w.length+1)).trim();
+    else if(low.startsWith(w+' ')) name=name.slice(w.length+1).trim();
+  });
   return name ? `${type}: ${name}` : type;
 }
 // Build an .ics for a specific appointment of a task.
@@ -22917,6 +22920,7 @@ function _apptBuildIcs(task, a){
   if(a.email) descParts.push(`Email: ${a.email}`);
   if(Number(a.fee)>0) descParts.push(`Fee: ${fmt(Number(a.fee))}`);
   if(a.notes) descParts.push(a.notes);
+  if(_apptCoupleNames()) descParts.unshift(`For ${_apptCoupleNames()}'s wedding`);
   const uid=`${task.id||'appt'}-${a.id||Date.now()}@unionvault`;
   const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
   const lines=[
@@ -22944,11 +22948,17 @@ function _apptDownloadIcs(task, a){
   }catch(e){}
 }
 // `attached` = the .ics goes with the email (edge send) rather than downloaded separately.
+function _apptCoupleNames(){ const ev=STATE.event||{}; return [ev.partner1,ev.partner2].filter(Boolean).join(' & '); }
 function _apptBuildMailto(task, a, recipients, attached){
   a=a||{};
-  const subject=_apptTitle(task, a);
+  const couple=_apptCoupleNames();
+  const wedding=couple?`${couple}'s wedding`:'';
+  const subject=_apptTitle(task, a)+(wedding?` — ${wedding}`:'');
   const when=[a.date?fmtBudgetDate(a.date):'', a.time?(_fmtApptTime(a.time)+(a.endTime?('–'+_fmtApptTime(a.endTime)):'')):''].filter(Boolean).join(', ');
   const bodyLines=[];
+  // Context first, so anyone it's forwarded to (bridal party, family, the vendor) knows what it is.
+  const what=[(a.type||'Appointment'), a.business?`with ${a.business}`:''].filter(Boolean).join(' ');
+  bodyLines.push(wedding?`${what} for ${wedding}.`:`${what}.`, '');
   if(when) bodyLines.push(`When: ${when}`);
   if(a.virtual){ if(a.link) bodyLines.push(`Link: ${a.link}`); if(a.pass) bodyLines.push(`Password: ${a.pass}`); }
   else if(a.address) bodyLines.push(`Where: ${a.address}`);
@@ -22958,6 +22968,7 @@ function _apptBuildMailto(task, a, recipients, attached){
   if(Number(a.fee)>0) bodyLines.push(`Fee: ${fmt(Number(a.fee))}`);
   if(a.notes) bodyLines.push('', a.notes);
   bodyLines.push('', attached ? 'The calendar invite (.ics) is attached — open it to add this to your calendar.' : 'Calendar file (.ics) downloaded separately — open it to add this to your calendar.');
+  if(couple) bodyLines.push('', `Sent by ${couple} via UnionVault — reply to this email to reach them.`);
   const to=(recipients||[]).map(e=>encodeURIComponent(e)).join(',');
   const url=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
   return {subject, body:bodyLines.join('\n'), to:(recipients||[]).join(', '), url};
@@ -23183,7 +23194,8 @@ async function _apptEmailSendViaEdge(task, a, recipients){
       const r=await fetch(_SB_URL+'/functions/v1/send-appointment-email',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||_SB_KEY),'apikey':_SB_KEY},
-        body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics})
+        body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics,
+          fromName:_apptCoupleNames()||'', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||''})
       });
       return r.ok && (await r.json()).ok===true;
     }catch(_){ return false; }
@@ -29153,7 +29165,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v269';
+const APP_BUILD='v270';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -37825,7 +37837,7 @@ function _wbBuildSite(forDownload){
     var lq=q.toLowerCase(),gd=document.getElementById('uv-rf-data');
     var gs=gd?JSON.parse(gd.dataset.guests||'[]'):[];
     var hits=gs.filter(function(n){var p=n.toLowerCase().split(/[\s&,]+/);return p.some(function(x){return x.startsWith(lq);})||n.toLowerCase().indexOf(lq)>-1;}).slice(0,8);
-    ll.innerHTML=hits.length?hits.map(function(n,i){return '<li class="pub-ac-item" role="option" data-idx="'+i+'" onmouseenter="this.classList.add(\'focused\')" onmouseleave="this.classList.remove(\'focused\')" onmousedown="_rfPickName(this.textContent)">'+n+'</li>';}).join(''):'<li class="pub-ac-none">No match — try another spelling</li>';
+    ll.innerHTML=hits.length?hits.map(function(n,i){return '<li class="pub-ac-item" role="option" data-idx="'+i+'" onmouseenter="this.classList.add(\\'focused\\')" onmouseleave="this.classList.remove(\\'focused\\')" onmousedown="_rfPickName(this.textContent)">'+n+'</li>';}).join(''):'<li class="pub-ac-none">No match — try another spelling</li>';
     ll.style.display='block';
   };
   window._rfPickName=function(name){
@@ -48360,9 +48372,14 @@ async function _showPublicWeddingSite(slug){
 
   // Fetch the sections needed to build the site
   try{
-    const r2=await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${encodeURIComponent(uid)}&section=in.(website,event,timeline,guests,wishingwell,inspo)`,{
-      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
-    });
+    const [r2, _ex]=await Promise.all([
+      fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${encodeURIComponent(uid)}&section=in.(website,event,timeline,inspo)`,{
+        headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
+      }),
+      _publicWeddingExtras(uid)
+    ]);
+    if(Array.isArray(_ex.guests)) STATE.guests=_ex.guests;
+    if(_ex.wishingwell && typeof _ex.wishingwell==='object') STATE.wishingwell=_ex.wishingwell;
     if(r2.ok){
       const rows=await r2.json();
       rows.forEach(r=>{
@@ -48546,9 +48563,13 @@ async function _showRsvpForm(coupleId,mode){
   let eventName='',eventDate='',eventVenue='',theme={},guestObjs=[],rsvp={},rfields={};
   let sec={};
   try{
-    const res=await fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${coupleId}&section=in.(event,guests,website,families,settings)`,{
-      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
-    });
+    const [res, _ex]=await Promise.all([
+      fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${encodeURIComponent(coupleId)}&section=in.(event,website)`,{
+        headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
+      }),
+      _publicWeddingExtras(coupleId)
+    ]);
+    sec.guests=_ex.guests||[]; sec.families=_ex.families||[]; sec.settings=_ex.settings||{};
     if(res.ok){
       const rows=await res.json();
       (rows||[]).forEach(r=>{sec[r.section]=r.data;});
@@ -49082,30 +49103,41 @@ async function _rfSubmit(coupleId){
   }
 }
 
+// Public pages get guest names/groupings, meal settings and the wishing well (minus
+// contributions) through this RPC — the raw guests/settings/families rows are not
+// readable without signing in, so no contact details ever reach a public page.
+async function _publicWeddingExtras(uid){
+  try{
+    const r=await fetch(`${_SB_URL}/rest/v1/rpc/public_wedding_extras`,{
+      method:'POST',
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({uid})
+    });
+    if(r.ok){ const d=await r.json(); if(d&&typeof d==='object') return d; }
+  }catch(e){ console.warn('Public data fetch failed',e); }
+  return {};
+}
 // ── _showVendorPortal: read-only vendor brief (Option B style) ───────────────
 async function _showVendorPortal(token){
   let vendor={}, couple={}, theme={}, expired=false;
   try{
-    const res = await fetch(`${_SB_URL}/rest/v1/vendor_tokens?token=eq.${encodeURIComponent(token)}&select=*&limit=1`,{
-      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
+    // One RPC returns just this token's brief (the token table itself isn't publicly listable).
+    const res = await fetch(`${_SB_URL}/rest/v1/rpc/vendor_brief`,{
+      method:'POST',
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({t:token})
     });
     if(res.ok){
-      const rows = await res.json();
-      if(!rows||!rows[0]){ _showVendorError('not-found'); return; }
-      vendor = rows[0];
+      const b = await res.json();
+      if(!b||!b.vendor){ _showVendorError('not-found'); return; }
+      vendor = b.vendor;
       // Check expiry
       if(vendor.expires_at && new Date(vendor.expires_at) < new Date()){ expired=true; }
-      // Fetch couple's data for booking details + theme
-      const pr = await fetch(`${_SB_URL}/rest/v1/planner_data?select=data&user_id=eq.${vendor.couple_id}&limit=1`,{
-        headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
-      });
-      if(pr.ok){
-        const pd = await pr.json();
-        if(pd&&pd[0]&&pd[0].data){
-          couple = pd[0].data;
-          theme = (couple.website&&couple.website.theme)||{};
-        }
-      }
+      // Shape it like the planner data the portal renders from.
+      const vc = b.vendorCard||{};
+      couple = { event:b.event||{}, guestCount:b.guestCount||0,
+                 vendors:[Object.assign({business:vendor.vendor_name}, vc)] };
+      theme = b.theme||{};
     } else { _showVendorError('not-found'); return; }
   }catch(e){ console.warn('Vendor portal error',e); _showVendorError('error'); return; }
 
@@ -49126,7 +49158,7 @@ async function _showVendorPortal(token){
     ['Venue', ev.venue||'TBC'],
     ['Service', matchedVendor.category||vendor.vendor_name||'—'],
     ['Setup time', matchedVendor.setupTime||matchedVendor.notes||'TBC'],
-    ['Guest count', (()=>{ const gc=(couple.guests||[]).filter(g=>(g.listType||'A')!=='B').length; return gc||'TBC'; })()]
+    ['Guest count', couple.guestCount||'TBC']
   ].filter(([,v])=>v&&v!=='TBC'||true);
 
   const sections = Array.isArray(vendor.sections)&&vendor.sections.length ? vendor.sections : [];
