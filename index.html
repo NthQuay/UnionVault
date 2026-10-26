@@ -22183,12 +22183,10 @@ function _apptOpenForm(ctx, existing){
     <div class="form-group" style="margin:0"><label class="form-label">Fee <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-fee" type="number" min="0" step="0.01" placeholder="0" value="${a.fee!=null&&a.fee!==''?a.fee:''}"/><div style="font-size:10.5px;color:var(--gold-deep);margin-top:4px">If a fee is entered, we'll offer to add it to your budget on save.</div></div>
     <div class="form-group" style="margin:0"><label class="form-label">Appointment notes</label><textarea class="form-input" id="af-notes" rows="2" placeholder="e.g. bring swatches, park at rear" style="resize:vertical">${_escHtml(a.notes||'')}</textarea></div>
     <div style="border-top:.5px solid var(--border);margin-top:2px;padding-top:11px">
-      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);cursor:pointer"><input type="checkbox" id="af-emailme" onchange="_apptFormEmailMeToggle()" ${a.emailMe?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)"/> Email this appointment to myself</label>
-      <div id="af-emailme-box" style="display:${a.emailMe?'block':'none'};background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:10px 11px;margin-top:8px">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Send calendar invite to</div>
-        <div id="af-recips" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:7px">Opens an email draft and downloads a calendar (.ics) file.</div>
-      </div>
+      <label for="af-emailme" style="display:flex;align-items:center;gap:12px;cursor:pointer">
+        <span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">Email a calendar invite</span><span style="display:block;font-size:11.5px;color:var(--muted)">You'll choose who gets it next</span></span>
+        <span class="toggle-switch"><input type="checkbox" id="af-emailme" ${a.emailMe?'checked':''}/><span class="toggle-track"></span></span>
+      </label>
     </div>
   </div>`;
   const footer=`<button class="btn btn-outline btn-sm" onclick="_apptFormBack()">Cancel</button>
@@ -22285,7 +22283,6 @@ function _apptFormEmailMeToggle(){
   const on=document.getElementById('af-emailme')?.checked;
   const box=document.getElementById('af-emailme-box');
   if(box) box.style.display=on?'block':'none';
-  if(on){ if(!_apptFormRecips.length){ const e=(STATE.settings&&STATE.settings.userEmail||'').trim(); if(e) _apptFormRecips=[e]; } _apptFormRenderRecips(); }
 }
 function _apptFormRenderRecips(){
   const wrap=document.getElementById('af-recips'); if(!wrap) return;
@@ -22473,7 +22470,7 @@ function _apptFormSave(){
 // but scoped to a single appointment. `done` runs when no popup is shown.
 function _apptAfterSaveFlow(task, appt, done){
   if(appt.emailMe){
-    _apptEmailConfirm(task, appt);
+    _apptEmailConfirm(task, appt, true);
     return;
   }
   if(Number(appt.fee)>0 && task.id!=='__staged__' && !task.budgetId){
@@ -22719,26 +22716,31 @@ function _apptEmailNamedRecips(){
   const loginEmail=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.user&&_sbSession.user.email||'').trim();
   const youEmail=((STATE.settings&&STATE.settings.userEmail)||loginEmail||'').trim();
   const partnerEmail=((STATE.settings&&STATE.settings.partnerEmail)||'').trim();
-  const vendorEmail=(a.email||'').trim();
+  let vendorEmail=(a.email||'').trim();
+  if(!vendorEmail){
+    const lv=(STATE.vendors||[]).find(v=>(a.vendorId&&v.id===a.vendorId) || _vendorMatches(v, a));
+    if(lv) vendorEmail=(lv.email||'').trim();
+  }
   const rows=[];
   if(youEmail) rows.push({label:'You',email:youEmail,kind:'you'});
   if(partnerEmail) rows.push({label:'Partner',email:partnerEmail,kind:'partner'});
   if(vendorEmail) rows.push({label:'Vendor',email:vendorEmail,kind:'vendor'});
   return rows;
 }
-function _apptEmailConfirm(task, a){
+// `afterSave` = opened straight after saving the appointment form (dismiss reads "Skip").
+function _apptEmailConfirm(task, a, afterSave){
   _apptEmailTask=task; _apptEmailAppt=a;
   if(a.recipients&&a.recipients.length){
     _apptEmailRecips=a.recipients.slice();
   } else {
-    const named=_apptEmailNamedRecips();
-    _apptEmailRecips=named.map(r=>r.email);
-    // also include any stored extras not in named set
+    // You + partner on by default; the vendor is opt-in.
+    _apptEmailRecips=_apptEmailNamedRecips().filter(r=>r.kind!=='vendor').map(r=>r.email);
   }
-  openConfirm2('Email Appointment', _apptEmailConfirmBody(),
-    `<button class="btn btn-outline btn-sm" onclick="_apptEmailCancel()">Cancel</button>
-     <button class="btn btn-primary btn-sm" onclick="_apptEmailSend()">Send Email</button>`);
+  openConfirm2('Email appointment', _apptEmailConfirmBody(),
+    `<button class="btn btn-outline btn-sm" onclick="_apptEmailCancel()">${afterSave?'Skip':'Cancel'}</button>
+     <button class="btn btn-primary btn-sm" id="appt-email-send-btn" onclick="_apptEmailSend()">${_apptEmailSendLabel()}</button>`);
 }
+function _apptEmailSendLabel(){ const n=_apptEmailRecips.filter(Boolean).length; return n?('Send to '+n):'Send'; }
 function _apptEmailConfirmBody(){
   const named=_apptEmailNamedRecips();
   const namedEmails=named.map(r=>r.email);
@@ -22770,7 +22772,7 @@ function _apptCEmToggle(email){
   if(idx>=0) _apptEmailRecips.splice(idx,1); else _apptEmailRecips.push(email);
   _apptCEmRefresh();
 }
-function _apptCEmRefresh(){ const b=document.getElementById('confirm2-body'); if(b) b.innerHTML=_apptEmailConfirmBody(); }
+function _apptCEmRefresh(){ const b=document.getElementById('confirm2-body'); if(b) b.innerHTML=_apptEmailConfirmBody(); const sb=document.getElementById('appt-email-send-btn'); if(sb) sb.textContent=_apptEmailSendLabel(); }
 function _apptCEmRemove(i){ _apptEmailRecips.splice(i,1); _apptCEmRefresh(); }
 function _apptCEmRemoveExtra(i){
   const named=_apptEmailNamedRecips().map(r=>r.email);
@@ -28778,7 +28780,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v260';
+const APP_BUILD='v261';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
