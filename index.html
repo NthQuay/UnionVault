@@ -9156,9 +9156,9 @@ function _trackerPickMethod(kind, slotKey, chanKey){
 
 // Default save-the-date / invite / reminder templates (editable in Settings).
 // Tokens: {guest} {names} {date} {rsvp_by} {link}
-const _DEFAULT_SAVEDATE_TPL="Dear {guest}, save the date! {names} are getting married on {date}. A formal invitation will follow. We can't wait to celebrate with you!";
-const _DEFAULT_INVITE_TPL="Dear {guest}, {names} would be delighted to have you at their wedding on {date}. Kindly RSVP by {rsvp_by} via {link}. With love.";
-const _DEFAULT_REMINDER_TPL="Hi {guest} — a gentle reminder to RSVP for {names}' wedding ({date}) by {rsvp_by}: {link}. Thank you!";
+const _DEFAULT_SAVEDATE_TPL="Dear {guest},\n\nSave the date! {names} are getting married on {date}. A formal invitation will follow. We can't wait to celebrate with you!";
+const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on {date}. Kindly RSVP by {rsvp_by} via {link}. With love.";
+const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding ({date}) by {rsvp_by}: {link}\n\nThank you!";
 function _inviteTpl(kind){
   const s=STATE.settings||{};
   if(kind==='reminder') return (s.reminderTemplate!=null?s.reminderTemplate:_DEFAULT_REMINDER_TPL);
@@ -9179,7 +9179,13 @@ function _rsvpLink(){
   return window.location.origin+window.location.pathname+'?rsvp=true'; // fallback if not signed in
 }
 // Resolve template tokens for a given group of guests.
+// The greeting ("Dear {guest}," / "Hi {guest}!") always sits on its own line with a blank
+// line after it — also for templates saved before that was the default.
+function _tplGreetingBreak(tpl){
+  return String(tpl||'').replace(/^(\s*(?:[A-Za-z]+\s+)?\{guest\}[,!])[ \t]*(?!\r?\n)(\S)/, (m, greet, ch)=>greet+'\n\n'+ch.toUpperCase());
+}
 function _fillTemplate(tpl, grp){
+  tpl=_tplGreetingBreak(tpl);
   const ev=STATE.event||{};
   const p1=ev.partner1||'', p2=ev.partner2||'';
   const names=(p1&&p2)?`${p1} & ${p2}`:(p1||p2||'the couple');
@@ -28813,7 +28819,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v265';
+const APP_BUILD='v266';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
