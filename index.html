@@ -28766,7 +28766,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v257';
+const APP_BUILD='v258';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -40680,12 +40680,16 @@ function _evRemoveOk(evId,gid){
 let _evPickSel=new Set();
 let _evPickEvId=null;
 let _evPickSlots=[];
+let _evPickFilters={ages:new Set(),groups:new Set(),tags:new Set()};
+let _evPickFilterOpen=false;
 
 function _evOpenPicker(evId){
   const ev=(STATE.events||[]).find(e=>e.id===evId); if(!ev) return;
   if(!ev.rsvps) ev.rsvps={};
   _evPickEvId=evId;
   _evPickSel=new Set();
+  _evPickFilters={ages:new Set(),groups:new Set(),tags:new Set()};
+  _evPickFilterOpen=false;
 
   const inSet=new Set(Object.keys(ev.rsvps));
   const all=STATE.guests||[]; const byId={}; all.forEach(g=>byId[g.id]=g);
@@ -40701,11 +40705,26 @@ function _evOpenPicker(evId){
   });
 
   const body=`<div style="display:flex;flex-direction:column;gap:0">
-    <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:7px 10px;margin-bottom:10px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="evp-q" type="search" placeholder="Search guests\u2026" oninput="_evPickSearch(this.value)" style="border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--ink);outline:none;flex:1;min-width:0" autocomplete="off"/>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:6px;flex:1;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:7px 10px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="evp-q" type="search" placeholder="Search guests\u2026" oninput="_evPickSearch(this.value)" style="border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--ink);outline:none;flex:1;min-width:0" autocomplete="off"/>
+      </div>
+      <button id="evp-filter-btn" onclick="_evPickToggleFilter()" style="display:flex;align-items:center;gap:4px;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:7px 11px;font-size:12.5px;color:var(--ink);cursor:pointer;white-space:nowrap;flex-shrink:0">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filter<span id="evp-filter-badge" style="display:none;margin-left:3px;background:var(--gold-deep);color:#fff;border-radius:8px;padding:0 5px;font-size:10px;font-weight:700">0</span>
+      </button>
     </div>
-    <div id="evp-list" style="max-height:min(46vh,380px);overflow-y:auto;border:.5px solid var(--border);border-radius:9px">${_evPickListHtml('',inSet)}</div>
+    <div id="evp-filter-panel" style="display:none;margin-bottom:8px;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:10px 12px"></div>
+    <div id="evp-active-chips" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 2px 6px;border-bottom:.5px solid var(--border);margin-bottom:6px">
+      <button id="evp-selall" onclick="_evPickSelectAll()" style="display:flex;align-items:center;gap:7px;background:none;border:none;padding:0;cursor:pointer;font-size:12.5px;color:var(--ink)">
+        <span id="evp-selall-box" style="width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+        Select all
+      </button>
+      <span id="evp-list-count" style="font-size:11.5px;color:var(--muted)"></span>
+    </div>
+    <div id="evp-list" style="max-height:min(40vh,340px);overflow-y:auto;border:.5px solid var(--border);border-radius:9px">${_evPickListHtml('',inSet)}</div>
   </div>`;
 
   const foot=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%">
@@ -40717,6 +40736,8 @@ function _evOpenPicker(evId){
   </div>`;
 
   openModal('Add guests', body, foot);
+  _evPickUpdateListCount('');
+  _evPickUpdateSelAllBtn();
 }
 
 function _evPickListHtml(q, inSet){
@@ -40724,24 +40745,30 @@ function _evPickListHtml(q, inSet){
   const CHK_ON=`<span style="width:18px;height:18px;border-radius:5px;background:var(--gold-deep);border:1.5px solid var(--gold-deep);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>`;
   const av=g=>`<span style="width:26px;height:26px;border-radius:50%;background:var(--surface);border:.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--gold-deep);flex-shrink:0">${initials(g.name)}</span>`;
   const match=g=>!ql||(g.name||'').toLowerCase().includes(ql)||(g.relationship||'').toLowerCase().includes(ql);
+  const passAge=g=>{if(!_evPickFilters.ages.size)return true;const b=_guestAgeBand(g);return _evPickFilters.ages.has(b);};
+  const passGroup=s=>{if(!_evPickFilters.groups.size)return true;return _evPickFilters.groups.has(s.kind);};
+  const passTag=g=>{if(!_evPickFilters.tags.size)return true;return(g.tags||[]).some(t=>_evPickFilters.tags.has(t));};
+  const passAll=g=>match(g)&&passAge(g)&&passTag(g);
 
-  const slots=_evPickSlots.filter(s=>s.members.some(match));
+  const slots=_evPickSlots.filter(s=>passGroup(s)&&s.members.some(passAll));
   if(!slots.length) return `<div style="padding:20px 16px;text-align:center;font-size:12.5px;color:var(--muted)">No guests found.</div>`;
 
   return slots.map((s,si)=>{
     const isLastSlot=si===slots.length-1;
+    const si2=_evPickSlots.indexOf(s);
     if(s.kind==='single'){
       const g=s.members[0];
-      if(!match(g)) return '';
+      if(!passAll(g)) return '';
       const sub=g.relationship?`<div style="font-size:10.5px;color:var(--muted);margin-top:1px">${_esc(g.relationship)}</div>`:'';
       const bb=isLastSlot?'':'border-bottom:.5px solid var(--border)';
+      const badge=_ageBandBadge(g);
       if(inSet.has(g.id)){
         return `<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;${bb};opacity:.42">${CHK_ON}${av(g)}
-          <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${_esc(g.name)} <span style="font-size:10px;color:var(--muted)">\u2014 already invited</span></div>${sub}</div></div>`;
+          <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${_esc(g.name)}${badge} <span style="font-size:10px;color:var(--muted)">\u2014 already invited</span></div>${sub}</div></div>`;
       }
       return `<div onclick="_evPickToggle('${g.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 13px;${bb};cursor:pointer">
         <span id="evk-${g.id}" style="width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:center;flex-shrink:0"></span>${av(g)}
-        <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${_esc(g.name)}</div>${sub}</div></div>`;
+        <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${_esc(g.name)}${badge}</div>${sub}</div></div>`;
     }
 
     // group header + members
@@ -40753,21 +40780,28 @@ function _evPickListHtml(q, inSet){
       gl=_esc(s.famName||s.members.map(g=>g.name).join(', '));
       gb=`<span style="font-size:10px;font-weight:600;color:#5B7BA0;background:rgba(91,123,160,.13);border-radius:4px;padding:1px 5px;margin-left:5px">${s.kind==='household'?'household':'family'} \u00b7 ${s.members.length}</span>`;
     }
-    const mem=s.members.filter(match);
+    const isFamily=s.kind==='family'||s.kind==='household';
+    const btnS='background:none;border:none;padding:0;cursor:pointer;font-size:10.5px;color:var(--gold-deep);white-space:nowrap';
+    const groupActions=`<div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-left:8px">
+      <button onclick="event.stopPropagation();_evPickSelectGroup(${si2})" style="${btnS}">Select group</button>
+      ${isFamily?`<span style="color:var(--border)">\u00b7</span><button onclick="event.stopPropagation();_evPickSelectHousehold(${si2})" style="${btnS}">Household</button>`:''}
+    </div>`;
+    const mem=s.members.filter(passAll);
     const rows=mem.map((g,i)=>{
       const isLastMem=i===mem.length-1;
       const bb=(isLastSlot&&isLastMem)?'':'border-bottom:.5px solid var(--border)';
       const sub=g.relationship?`<div style="font-size:10.5px;color:var(--muted);margin-top:1px">${_esc(g.relationship)}</div>`:'';
+      const badge=_ageBandBadge(g);
       if(inSet.has(g.id)){
         return `<div style="display:flex;align-items:center;gap:10px;padding:8px 13px 8px 30px;${bb};background:var(--surface);opacity:.42">${CHK_ON}${av(g)}
-          <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${_esc(g.name)} <span style="font-size:10px;color:var(--muted)">\u2014 already invited</span></div>${sub}</div></div>`;
+          <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${_esc(g.name)}${badge} <span style="font-size:10px;color:var(--muted)">\u2014 already invited</span></div>${sub}</div></div>`;
       }
       return `<div onclick="_evPickToggle('${g.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 13px 8px 30px;${bb};background:var(--surface);cursor:pointer">
         <span id="evk-${g.id}" style="width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:center;flex-shrink:0"></span>${av(g)}
-        <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${_esc(g.name)}</div>${sub}</div></div>`;
+        <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${_esc(g.name)}${badge}</div>${sub}</div></div>`;
     }).join('');
-    return `<div><div style="padding:6px 13px 4px;background:var(--surface);border-bottom:.5px solid var(--border)">
-        <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">${gl}</span>${gb}
+    return `<div><div style="display:flex;align-items:center;padding:6px 13px 4px;background:var(--surface);border-bottom:.5px solid var(--border)">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">${gl}</span>${gb}${groupActions}
       </div>${rows}</div>`;
   }).join('');
 }
@@ -40790,19 +40824,11 @@ function _evPickToggle(gid){
     gEl.disabled=!n; gEl.style.opacity=n?'1':'.45';
     gEl.textContent=n?`Add ${n} guest${n!==1?'s':''}`:'Add guests';
   }
+  _evPickUpdateSelAllBtn();
 }
 
 function _evPickSearch(q){
-  const ev=(STATE.events||[]).find(e=>e.id===_evPickEvId); if(!ev) return;
-  const inSet=new Set(Object.keys(ev.rsvps||{}));
-  const el=document.getElementById('evp-list'); if(!el) return;
-  el.innerHTML=_evPickListHtml(q, inSet);
-  // restore ticks for any still-visible selected guests
-  _evPickSel.forEach(gid=>{
-    const box=document.getElementById('evk-'+gid);
-    if(box){ box.style.background='var(--gold-deep)'; box.style.borderColor='var(--gold-deep)';
-      box.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'; }
-  });
+  _evPickRebuildAll(q);
 }
 
 function _evPickConfirm(){
@@ -40812,6 +40838,174 @@ function _evPickConfirm(){
   saveToStorage();
   closeModalDirect();
   _renderEventDetail();
+}
+
+function _evPickVisibleSelectableIds(q,inSet){
+  const ql=(q||'').toLowerCase();
+  const match=g=>!ql||(g.name||'').toLowerCase().includes(ql)||(g.relationship||'').toLowerCase().includes(ql);
+  const passAge=g=>{if(!_evPickFilters.ages.size)return true;const b=_guestAgeBand(g);return _evPickFilters.ages.has(b);};
+  const passGroup=s=>{if(!_evPickFilters.groups.size)return true;return _evPickFilters.groups.has(s.kind);};
+  const passTag=g=>{if(!_evPickFilters.tags.size)return true;return(g.tags||[]).some(t=>_evPickFilters.tags.has(t));};
+  const passAll=g=>match(g)&&passAge(g)&&passTag(g);
+  const ids=[];
+  _evPickSlots.filter(s=>passGroup(s)&&s.members.some(passAll)).forEach(s=>{
+    s.members.filter(passAll).forEach(g=>{if(!inSet.has(g.id))ids.push(g.id);});
+  });
+  return ids;
+}
+
+function _evPickSelectAll(){
+  const ev=(STATE.events||[]).find(e=>e.id===_evPickEvId); if(!ev) return;
+  const inSet=new Set(Object.keys(ev.rsvps||{}));
+  const q=document.getElementById('evp-q')?document.getElementById('evp-q').value:'';
+  const visible=_evPickVisibleSelectableIds(q,inSet);
+  const allSel=visible.length>0&&visible.every(id=>_evPickSel.has(id));
+  if(allSel){visible.forEach(id=>_evPickSel.delete(id));}
+  else{visible.forEach(id=>_evPickSel.add(id));}
+  _evPickRebuildAll(q);
+}
+
+function _evPickSelectGroup(si){
+  const s=_evPickSlots[si]; if(!s) return;
+  const ev=(STATE.events||[]).find(e=>e.id===_evPickEvId); if(!ev) return;
+  const inSet=new Set(Object.keys(ev.rsvps||{}));
+  s.members.forEach(g=>{if(!inSet.has(g.id))_evPickSel.add(g.id);});
+  const q=document.getElementById('evp-q')?document.getElementById('evp-q').value:'';
+  _evPickRebuildAll(q);
+}
+
+function _evPickSelectHousehold(si){
+  const s=_evPickSlots[si]; if(!s) return;
+  const ev=(STATE.events||[]).find(e=>e.id===_evPickEvId); if(!ev) return;
+  const inSet=new Set(Object.keys(ev.rsvps||{}));
+  s.members.filter(g=>_guestAgeBand(g)==='adult').forEach(g=>{if(!inSet.has(g.id))_evPickSel.add(g.id);});
+  const q=document.getElementById('evp-q')?document.getElementById('evp-q').value:'';
+  _evPickRebuildAll(q);
+}
+
+function _evPickUpdateSelectionUi(){
+  const n=_evPickSel.size;
+  const cEl=document.getElementById('evp-count'); if(cEl) cEl.textContent=n?`${n} selected`:'0 selected';
+  const gEl=document.getElementById('evp-go');
+  if(gEl){gEl.disabled=!n;gEl.style.opacity=n?'1':'.45';gEl.textContent=n?`Add ${n} guest${n!==1?'s':''}`:'Add guests';}
+  _evPickUpdateSelAllBtn();
+}
+
+function _evPickUpdateSelAllBtn(){
+  const ev=(STATE.events||[]).find(e=>e.id===_evPickEvId); if(!ev) return;
+  const inSet=new Set(Object.keys(ev.rsvps||{}));
+  const q=document.getElementById('evp-q')?document.getElementById('evp-q').value:'';
+  const visible=_evPickVisibleSelectableIds(q,inSet);
+  const box=document.getElementById('evp-selall-box'); if(!box) return;
+  if(!visible.length){box.style.borderColor='var(--border)';box.style.background='var(--cream)';box.innerHTML='';return;}
+  const selCount=visible.filter(id=>_evPickSel.has(id)).length;
+  if(selCount===0){box.style.borderColor='var(--border)';box.style.background='var(--cream)';box.innerHTML='';}
+  else if(selCount===visible.length){box.style.background='var(--gold-deep)';box.style.borderColor='var(--gold-deep)';box.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';}
+  else{box.style.background='var(--gold-deep)';box.style.borderColor='var(--gold-deep)';box.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>';}
+}
+
+function _evPickUpdateListCount(q){
+  const ev=(STATE.events||[]).find(e=>e.id===_evPickEvId); if(!ev) return;
+  const inSet=new Set(Object.keys(ev.rsvps||{}));
+  const visible=_evPickVisibleSelectableIds(q,inSet);
+  const el=document.getElementById('evp-list-count'); if(!el) return;
+  el.textContent=visible.length?`${visible.length} guest${visible.length!==1?'s':''}` :'';
+}
+
+function _evPickRebuildAll(q){
+  const ev=(STATE.events||[]).find(e=>e.id===_evPickEvId); if(!ev) return;
+  const inSet=new Set(Object.keys(ev.rsvps||{}));
+  const listEl=document.getElementById('evp-list');
+  if(listEl) listEl.innerHTML=_evPickListHtml(q||'',inSet);
+  _evPickSel.forEach(gid=>{
+    const box=document.getElementById('evk-'+gid);
+    if(box){box.style.background='var(--gold-deep)';box.style.borderColor='var(--gold-deep)';
+      box.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';}
+  });
+  _evPickUpdateSelectionUi();
+  _evPickUpdateListCount(q||'');
+  _evPickUpdateActiveChips();
+}
+
+function _evPickUpdateActiveChips(){
+  const el=document.getElementById('evp-active-chips'); if(!el) return;
+  const chips=[];
+  const AGE_LABELS={adult:'Adults',child:'Children',infant:'Infants'};
+  const GRP_LABELS={single:'Singles',couple:'Couples',plusone:'Plus ones',family:'Families',household:'Households'};
+  _evPickFilters.ages.forEach(v=>chips.push({label:AGE_LABELS[v]||v,remove:`_evPickToggleAgeFilter(${JSON.stringify(v)})`}));
+  _evPickFilters.groups.forEach(v=>chips.push({label:GRP_LABELS[v]||v,remove:`_evPickToggleGroupFilter(${JSON.stringify(v)})`}));
+  _evPickFilters.tags.forEach(v=>chips.push({label:v,remove:`_evPickToggleTagFilter(${JSON.stringify(v)})`}));
+  if(!chips.length){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='flex';
+  el.innerHTML=chips.map(c=>`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:.5px solid var(--gold-deep);border-radius:12px;padding:3px 8px;font-size:11.5px;color:var(--gold-deep)">${_esc(c.label)}<button onclick="${c.remove}" style="background:none;border:none;padding:0;cursor:pointer;font-size:13px;color:var(--gold-deep);line-height:1">×</button></span>`).join('');
+}
+
+function _evPickToggleFilter(){
+  _evPickFilterOpen=!_evPickFilterOpen;
+  const panel=document.getElementById('evp-filter-panel'); if(!panel) return;
+  const btn=document.getElementById('evp-filter-btn');
+  if(_evPickFilterOpen){
+    panel.style.display='block';
+    panel.innerHTML=_evPickFilterPanelHtml();
+    if(btn) btn.style.borderColor='var(--gold-deep)';
+  } else {
+    panel.style.display='none';
+    if(btn) btn.style.borderColor='var(--border)';
+  }
+  _evPickRebuildFilterBadge();
+}
+
+function _evPickRebuildFilterBadge(){
+  const n=_evPickFilters.ages.size+_evPickFilters.groups.size+_evPickFilters.tags.size;
+  const badge=document.getElementById('evp-filter-badge'); if(!badge) return;
+  badge.style.display=n?'inline':'none'; badge.textContent=n;
+  const btn=document.getElementById('evp-filter-btn');
+  if(btn) btn.style.color=n?'var(--gold-deep)':'var(--ink)';
+}
+
+function _evPickFilterPanelHtml(){
+  const all=STATE.guests||[];
+  const allTags=[...new Set(all.flatMap(g=>g.tags||[]))].sort();
+  const chip=(label,active,onclick)=>`<button onclick="${onclick}" style="background:${active?'var(--gold-deep)':'var(--surface)'};color:${active?'#fff':'var(--ink)'};border:.5px solid ${active?'var(--gold-deep)':'var(--border)'};border-radius:12px;padding:4px 10px;font-size:11.5px;cursor:pointer">${_esc(label)}</button>`;
+  const AGE=[['adult','Adults'],['child','Children'],['infant','Infants']];
+  const GRP=[['single','Singles'],['couple','Couples'],['plusone','Plus ones'],['family','Families'],['household','Households']];
+  const ageChips=AGE.map(([v,l])=>chip(l,_evPickFilters.ages.has(v),`_evPickToggleAgeFilter(${JSON.stringify(v)})`)).join('');
+  const grpChips=GRP.map(([v,l])=>chip(l,_evPickFilters.groups.has(v),`_evPickToggleGroupFilter(${JSON.stringify(v)})`)).join('');
+  const tagChips=allTags.map(t=>chip(t,_evPickFilters.tags.has(t),`_evPickToggleTagFilter(${JSON.stringify(t)})`)).join('');
+  const hasAny=_evPickFilters.ages.size+_evPickFilters.groups.size+_evPickFilters.tags.size>0;
+  let html=`<div style="display:flex;flex-direction:column;gap:10px">`;
+  html+=`<div style="display:flex;flex-direction:column;gap:5px"><div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Age group</div><div style="display:flex;flex-wrap:wrap;gap:5px">${ageChips}</div></div>`;
+  html+=`<div style="display:flex;flex-direction:column;gap:5px"><div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Group type</div><div style="display:flex;flex-wrap:wrap;gap:5px">${grpChips}</div></div>`;
+  if(allTags.length) html+=`<div style="display:flex;flex-direction:column;gap:5px"><div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Tags</div><div style="display:flex;flex-wrap:wrap;gap:5px">${tagChips}</div></div>`;
+  if(hasAny) html+=`<div style="text-align:right"><button onclick="_evPickClearFilter()" style="background:none;border:none;padding:0;cursor:pointer;font-size:11.5px;color:var(--muted)">Clear all</button></div>`;
+  html+=`</div>`;
+  return html;
+}
+
+function _evPickToggleAgeFilter(v){
+  if(_evPickFilters.ages.has(v))_evPickFilters.ages.delete(v);else _evPickFilters.ages.add(v);
+  _evPickApplyFilter();
+}
+function _evPickToggleGroupFilter(v){
+  if(_evPickFilters.groups.has(v))_evPickFilters.groups.delete(v);else _evPickFilters.groups.add(v);
+  _evPickApplyFilter();
+}
+function _evPickToggleTagFilter(v){
+  if(_evPickFilters.tags.has(v))_evPickFilters.tags.delete(v);else _evPickFilters.tags.add(v);
+  _evPickApplyFilter();
+}
+function _evPickClearFilter(){
+  _evPickFilters={ages:new Set(),groups:new Set(),tags:new Set()};
+  _evPickApplyFilter();
+}
+function _evPickApplyFilter(){
+  if(_evPickFilterOpen){
+    const panel=document.getElementById('evp-filter-panel');
+    if(panel) panel.innerHTML=_evPickFilterPanelHtml();
+  }
+  const q=document.getElementById('evp-q')?document.getElementById('evp-q').value:'';
+  _evPickRebuildFilterBadge();
+  _evPickRebuildAll(q);
 }
 
 function openEventForm(id){
