@@ -29323,7 +29323,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v287';
+const APP_BUILD='v288';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -48908,6 +48908,11 @@ async function _showRsvpForm(coupleId,mode){
       .rf-diet-toggle{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;padding:0;font-family:inherit;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--pub-text);cursor:pointer;text-align:left}
       .rf-diet-toggle svg.rf-chevron{margin-left:auto;transition:transform .2s;flex-shrink:0}
       .rf-card.diet-open .rf-diet-toggle svg.rf-chevron{transform:rotate(180deg)}
+      .rf-member-extras{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+      .rf-diet-wrap{background:var(--pub-surface);border:1.5px solid var(--pub-border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:0}
+      .rf-diet-wrap.diet-open .rf-diet-toggle svg.rf-chevron{transform:rotate(180deg)}
+      .rf-meal-wrap{background:var(--pub-surface);border:1.5px solid var(--pub-border);border-radius:12px;padding:12px 14px}
+      .rf-contact-hdr{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pub-text);opacity:.55;padding:8px 0 4px}
       .rf-submit{width:100%;padding:14px;font-size:15px;font-weight:600;font-family:inherit;color:var(--pub-btn-fg,#fff);background:var(--pub-btn);border:none;border-radius:12px;cursor:pointer;transition:opacity .15s;margin-top:6px}
       .rf-submit:hover{opacity:.88}
       .rf-submit:disabled{opacity:.5;cursor:not-allowed}
@@ -48951,6 +48956,7 @@ async function _showRsvpForm(coupleId,mode){
           <div id="rf-group-rows"></div>
         </div>
         <div id="rf-contact-group" hidden>
+          <div id="rf-contact-header"></div>
           ${mealOn?`<div id="rf-per-meal"></div>`:''}
           ${rfields.dietary===false?'':`<div id="rf-per-diet"></div>`}
           ${rfields.email===false?'':`<div class="rf-card">
@@ -49089,9 +49095,23 @@ function _rfPickName(name){
               <div class="rf-pill" id="rfmy-${eid}" onclick="_rfSetMemberAttend('${m.id}','yes')">✓ ${btnYes}</div>
               <div class="rf-pill" id="rfmn-${eid}" onclick="_rfSetMemberAttend('${m.id}','no')">${btnNo}</div>
             </div>
+            <div class="rf-member-extras" id="rfex-${eid}"></div>
           </div>`;
         }).join('');
+      window._rfIsGroup=true;
+      // Populate household contact header
+      const firstNames=members.map(m=>m.name.split(' ')[0]);
+      const hname=firstNames.length===2?firstNames[0]+' & '+firstNames[1]:firstNames.slice(0,-1).join(', ')+' & '+firstNames[firstNames.length-1];
+      const ch=document.getElementById('rf-contact-header');
+      if(ch)ch.innerHTML='<div class="rf-contact-hdr">'+hname+'’s contact details</div>';
+      const sb2=document.getElementById('rf-submit');
+      if(sb2)sb2.textContent='Send our RSVP';
     } else {
+      window._rfIsGroup=false;
+      const ch=document.getElementById('rf-contact-header');
+      if(ch)ch.innerHTML='';
+      const sb2=document.getElementById('rf-submit');
+      if(sb2)sb2.textContent='Send my RSVP';
       gr.innerHTML=`<div class="rf-lbl">Will you be attending?</div>
         <div class="rf-pills">
           <div class="rf-pill" id="rf-yes" onclick="_rfSetAttend('yes')">✓ ${btnYes}</div>
@@ -49188,35 +49208,45 @@ function _rfSetMemberAttend(memberId,val){
   if(sb){sb.hidden=!allSet;if(allSet)setTimeout(()=>sb.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
   const pd=document.getElementById('rf-per-diet');
   const tmpl=document.getElementById('rf-diet-template');
-  if(pd&&tmpl){
-    if(val==='yes'&&!document.getElementById('rf-diet-'+eid)){
-      const mrow=document.querySelector('#rf-group-rows [data-mid="'+memberId+'"] .rf-member-name');
-      const mname=mrow?mrow.textContent:'Guest';
-      const card=document.createElement('div');card.className='rf-card';card.id='rf-diet-card-'+eid;
-      const grid=document.createElement('div');grid.className='rf-diet-grid';grid.id='rf-diet-'+eid;grid.hidden=true;
-      grid.appendChild(tmpl.content.cloneNode(true));
-      const tog=document.createElement('button');tog.type='button';tog.className='rf-diet-toggle';
-      tog.innerHTML='Note '+mname+'\u2019s dietary requirements<svg class="rf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,9 12,15 18,9"/></svg>';
-      tog.onclick=function(){const open=card.classList.toggle('diet-open');grid.hidden=!open;};
-      card.appendChild(tog);card.appendChild(grid);pd.appendChild(card);
-    }else if(val!=='yes'){
-      const dietCard=document.getElementById('rf-diet-card-'+eid);
-      if(dietCard)dietCard.remove();
+  if(tmpl){
+    const dietTarget=window._rfIsGroup?document.getElementById('rfex-'+eid):pd;
+    if(dietTarget){
+      if(val==='yes'&&!document.getElementById('rf-diet-'+eid)){
+        const mrow=document.querySelector('#rf-group-rows [data-mid="'+memberId+'"] .rf-member-name');
+        const mname=mrow?mrow.textContent:'Guest';
+        const card=document.createElement('div');
+        card.className=window._rfIsGroup?'rf-diet-wrap':'rf-card';
+        card.id='rf-diet-card-'+eid;
+        const grid=document.createElement('div');grid.className='rf-diet-grid';grid.id='rf-diet-'+eid;grid.hidden=true;
+        grid.appendChild(tmpl.content.cloneNode(true));
+        const tog=document.createElement('button');tog.type='button';tog.className='rf-diet-toggle';
+        tog.innerHTML='Note '+mname+'\u2019s dietary requirements<svg class="rf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,9 12,15 18,9"/></svg>';
+        tog.onclick=function(){const open=card.classList.toggle('diet-open');grid.hidden=!open;};
+        card.appendChild(tog);card.appendChild(grid);dietTarget.appendChild(card);
+      }else if(val!=='yes'){
+        const dietCard=document.getElementById('rf-diet-card-'+eid);
+        if(dietCard)dietCard.remove();
+      }
     }
   }
   const mealTmpl2=document.getElementById('rf-meal-template');
   const pm2=document.getElementById('rf-per-meal');
-  if(pm2&&mealTmpl2){
-    if(val==='yes'&&!document.getElementById('rf-meal-card-'+eid)){
-      const mrow2=document.querySelector('#rf-group-rows [data-mid="'+memberId+'"] .rf-member-name');
-      const mname2=mrow2?mrow2.textContent:'Guest';
-      const wrap=document.createElement('div');wrap.className='rf-card';wrap.id='rf-meal-card-'+eid;
-      wrap.innerHTML='<div class="rf-lbl">'+mname2+'\u2019s meal choice</div>';
-      const chips=document.createElement('div');chips.id='rf-meal-'+eid;
-      chips.appendChild(mealTmpl2.content.cloneNode(true));
-      wrap.appendChild(chips);pm2.appendChild(wrap);
-    }else if(val!=='yes'){
-      const mc=document.getElementById('rf-meal-card-'+eid);if(mc)mc.remove();
+  if(mealTmpl2){
+    const mealTarget=window._rfIsGroup?document.getElementById('rfex-'+eid):pm2;
+    if(mealTarget){
+      if(val==='yes'&&!document.getElementById('rf-meal-card-'+eid)){
+        const mrow2=document.querySelector('#rf-group-rows [data-mid="'+memberId+'"] .rf-member-name');
+        const mname2=mrow2?mrow2.textContent:'Guest';
+        const wrap=document.createElement('div');
+        wrap.className=window._rfIsGroup?'rf-meal-wrap':'rf-card';
+        wrap.id='rf-meal-card-'+eid;
+        wrap.innerHTML='<div class="rf-lbl">'+mname2+'\u2019s meal choice</div>';
+        const chips=document.createElement('div');chips.id='rf-meal-'+eid;
+        chips.appendChild(mealTmpl2.content.cloneNode(true));
+        wrap.appendChild(chips);mealTarget.appendChild(wrap);
+      }else if(val!=='yes'){
+        const mc=document.getElementById('rf-meal-card-'+eid);if(mc)mc.remove();
+      }
     }
   }
 }
