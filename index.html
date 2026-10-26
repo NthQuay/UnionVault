@@ -9042,7 +9042,7 @@ function _chanContactAvail(chanKey, slotKey){
 }
 
 // Build the popup menu markup for a kind+slot (positioned by the opener).
-function _trackerMethodMenuHtml(kind, slotKey){
+function _trackerMethodMenuHtml(kind, slotKey, sendAfter){
   const meta=(STATE.inviteMeta&&STATE.inviteMeta[slotKey])||{};
   const manualCur=meta[_kindField(kind)]||null;
   const activeMethod = kind==='reminder' ? _effectiveReminderMethod(slotKey) : kind==='invite' ? _effectiveInviteMethod(slotKey) : _effectiveSavedateMethod(slotKey);
@@ -9070,12 +9070,17 @@ function _trackerMethodMenuHtml(kind, slotKey){
   const clear=(manualCur&&manualCur.method)?`<div class="tchan-sep"></div>
     <button type="button" class="tchan-item tchan-clear" onclick="event.stopPropagation();_trackerPickMethod('${kind}','${key}','')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span class="tchan-label">${kind==='reminder'?'Clear override':'Clear'}</span></button>`:'';
-  return `<div class="tchan-head">${heading}</div>${items}${mirrorNote}${clear}`;
+  // From the Send control: keep the old one-tap "mark sent" as the last option.
+  const markOnly = sendAfter ? `<div class="tchan-sep"></div>
+    <button type="button" class="tchan-item" onclick="event.stopPropagation();_closeTrackerMenu();_markSentQuick('${kind}','${key}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span class="tchan-label">Just mark as sent</span></button>` : '';
+  return `<div class="tchan-head">${sendAfter?'Send by…':heading}</div>${items}${mirrorNote}${sendAfter?'':clear}${markOnly}`;
 }
 // Toggle-open a menu anchored to the tapped pill.
-function openTrackerMethodMenu(ev, kind, slotKey){
+// `sendAfter` = opened from the Send control with no method set: picking a method then sends.
+function openTrackerMethodMenu(ev, kind, slotKey, sendAfter){
   if(ev) ev.stopPropagation();
-  const already=_trackerMenuState && _trackerMenuState.kind===kind && _trackerMenuState.slotKey===slotKey;
+  const already=_trackerMenuState && _trackerMenuState.kind===kind && _trackerMenuState.slotKey===slotKey && !!_trackerMenuState.sendAfter===!!sendAfter;
   _closeTrackerMenu();
   if(already) return;
   const anchor=ev&&ev.currentTarget?ev.currentTarget:null;
@@ -9083,7 +9088,7 @@ function openTrackerMethodMenu(ev, kind, slotKey){
   const menu=document.createElement('div');
   menu.className='tchan-menu';
   menu.id='tracker-method-menu';
-  menu.innerHTML=_trackerMethodMenuHtml(kind, slotKey);
+  menu.innerHTML=_trackerMethodMenuHtml(kind, slotKey, sendAfter);
   document.body.appendChild(menu);
   // Position under the pill, kept on-screen.
   const r=anchor.getBoundingClientRect();
@@ -9095,7 +9100,7 @@ function openTrackerMethodMenu(ev, kind, slotKey){
   if(r.bottom+mh>document.documentElement.clientHeight-8 && r.top-mh>8){ top=r.top+window.scrollY-mh-6; }
   menu.style.left=left+'px';
   menu.style.top=top+'px';
-  _trackerMenuState={kind, slotKey};
+  _trackerMenuState={kind, slotKey, sendAfter:!!sendAfter};
   setTimeout(()=>{
     document.addEventListener('click', _trackerMenuOutside, true);
     document.addEventListener('keydown', _trackerMenuEsc, true);
@@ -9120,6 +9125,7 @@ function _closeTrackerMenu(){
 // Pick (or clear, when chanKey==='') a method, stamp today, re-render the tracker only.
 // Picking a method does NOT mark invited — that happens on send (or via the tick).
 function _trackerPickMethod(kind, slotKey, chanKey){
+  const sendAfter=!!(chanKey && _trackerMenuState && _trackerMenuState.sendAfter && _trackerMenuState.kind===kind && _trackerMenuState.slotKey===slotKey);
   const meta=_inviteMeta(slotKey);
   const field=_kindField(kind);
   if(!chanKey){ delete meta[field]; }
@@ -9131,6 +9137,7 @@ function _trackerPickMethod(kind, slotKey, chanKey){
   }
   if(typeof saveToStorage==='function') saveToStorage();
   _closeTrackerMenu();
+  if(sendAfter){ trackerSend(kind, slotKey); return; }
   rsvpRerenderList();
 }
 
@@ -9581,7 +9588,8 @@ function _sendControl(kind, slotKey){
   if(effMethod){
     return `<button type="button" class="tsend-ctl ready" title="Send ${noun}${kind==='invite'?' + mark invited':''}" aria-label="Send" onclick="event.stopPropagation();trackerSend('${kind}','${key}')">${plane}</button>`;
   }
-  return `<button type="button" class="tsend-ctl idle" title="Tap to mark ${noun} sent today" aria-label="Mark sent today" onclick="event.stopPropagation();_markSentQuick('${kind}','${key}')">${plane}</button>`;
+  // No method yet: open the method list; picking one sends straight away.
+  return `<button type="button" class="tsend-ctl idle" title="Send ${noun} — choose a method" aria-label="Send — choose a method" onclick="event.stopPropagation();openTrackerMethodMenu(event,'${kind}','${key}',true)">${plane}</button>`;
 }
 // One-tap "mark sent today" with no method chosen (Option 3). Records the send +
 // today's date and flips to the green tick; date is editable later via the tick menu.
@@ -28796,7 +28804,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v263';
+const APP_BUILD='v264';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
