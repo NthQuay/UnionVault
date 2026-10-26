@@ -5,7 +5,12 @@ Read the latest `docs/sessions/HANDOFF_SESSION*.md` and `docs/CLAUDE_CODE_CONTEX
 ## Supabase (project `hzafdlfprtzfxtyaebmc`, ap-southeast-2)
 
 - **`RESEND_API_KEY` edge function secret is SET** (since 24 Oct 2026, SHA256 digest starts `45658b6c3e93…`). Never ask the user for the Resend key. Never write its value into this repo — the repo is public.
-- **`unionvault.app` is verified in Resend** (DNS done). Appointment emails send from `UnionVault <appointments@unionvault.app>` (default in `supabase/functions/send-appointment-email/index.ts`; overridable via an `EMAIL_FROM` secret, not set).
+- **`unionvault.app` is verified in Resend** (DNS done). Edge functions (source in `supabase/functions/`, all deployed):
+  - `send-appointment-email` — from `<couple names> <appointments@unionvault.app>`, reply-to the couple, signed-in users only.
+  - `send-guest-email` — save-the-dates/invites from `<couple names> <invites@unionvault.app>`, optional invitation attachment (own `photos` folder only), signed-in users only.
+  - `rsvp-notify` — RSVP alerts to the couple (service role; called by public RSVP form, no sign-in).
+  - All three send a branded HTML version (logo header, `assets/email-logo-black.png` / `-white.png`) built server-side from escaped plain text — never accept raw HTML from the client.
+- **Public pages read via RPCs**: `public_wedding_extras(uid)` (guest names/groupings, meal settings, wishing well minus contributions) and `vendor_brief(token)`. Raw `guests`/`settings`/`families`/`wishingwell` rows must never be readable by `anon`.
 - **Storage `photos` SELECT RLS policy EXISTS** ("Users can read own photos", plus "Users manage own photos …" SELECT/INSERT/UPDATE/DELETE). Parked item P2 is done.
 
 ## Conventions (short form)

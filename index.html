@@ -2651,6 +2651,19 @@ body.dark .vlu-dw-ic{color:var(--gold)}
 .vlu-dw-tag.need{background:rgba(196,168,130,.2);color:var(--gold-deep);cursor:pointer;transition:background .12s}
 body.dark .vlu-dw-tag.need{color:var(--gold)}
 .vlu-dw-tag.need:hover{background:rgba(196,168,130,.36)}
+.vlu-dw-tag.short{background:transparent;color:var(--muted);border:1px solid var(--border-strong,rgba(0,0,0,.16));cursor:pointer;max-width:170px}
+.vlu-dw-tag.short:hover{color:var(--ink)}
+.vlu-dw-edit{font-family:inherit;font-size:11px;font-weight:600;padding:4px 10px;border-radius:12px;border:1px solid rgba(196,168,130,.55);background:none;color:var(--gold-deep);cursor:pointer;min-height:28px}
+body.dark .vlu-dw-edit{color:var(--gold)}
+.vlu-dw-edit.on{background:var(--gold);border-color:var(--gold);color:#fff}
+body.dark .vlu-dw-edit.on{color:#1f1a14}
+.vlu-dw-rm{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--red,#A8322A);font-size:17px;line-height:1;cursor:pointer;flex-shrink:0}
+.vlu-dw-add{margin-top:10px;padding-top:11px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.vlu-dw-add-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.vlu-dw-add-chips{display:flex;flex-wrap:wrap;gap:6px}
+.vlu-dw-addchip{font-family:inherit;font-size:11.5px;padding:5px 11px;border-radius:13px;border:1px dashed rgba(196,168,130,.7);background:none;color:var(--gold-deep);cursor:pointer}
+body.dark .vlu-dw-addchip{color:var(--gold)}
+.vlu-dw-add-note,.vlu-dw-add-none{font-size:11px;color:var(--muted)}
 
 /* F3 — at ≤760px the nine wrapping chips (~140px tall at 360px) are replaced by a
    single row: category select + sort select + view toggle. The separate count/sort
@@ -9622,7 +9635,7 @@ async function _ssGo(){
     if(s.asset.file && (s.attach||s.addLink)) await _ssEnsureUploaded();
     const names=_ssCoupleNames();
     const payload={ to:[s.to], subject:(s.kind==='invite'?'You’re invited':'Save the date')+(names?' — '+names:''), body:msg,
-      fromName:names||'UnionVault', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession.user&&_sbSession.user.email)||'' };
+      fromName:names||'UnionVault', kicker:names?names+"'s wedding":'', title:s.kind==='invite'?'You’re invited':'Save the date', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession.user&&_sbSession.user.email)||'' };
     if(s.attach && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
     let ok=false;
     try{
@@ -22422,7 +22435,8 @@ function _apptOpenForm(ctx, existing){
         <div class="form-group" style="margin:0"><label class="form-label">Contact email <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-email" type="email" inputmode="email" placeholder="e.g. hello@boutique.com" value="${_escHtml(a.email||'')}"/></div>
         <div class="form-group" style="margin:0"><label class="form-label">Address <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-address" placeholder="e.g. 12 Main St, Melbourne" value="${_escHtml(a.address||'')}"/></div>
         <div class="form-group" style="margin:0"><label class="form-label">Website <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-website" placeholder="e.g. boutique.com" value="${_escHtml(a.website||'')}"/></div>
-        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer;padding-top:2px"><input type="checkbox" id="af-vendor-save" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold);flex-shrink:0"/> Save to my vendor list</label>
+        <label id="af-vendor-save-row" style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer;padding-top:2px"><input type="checkbox" id="af-vendor-save" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold);flex-shrink:0"/> Save to my vendor list</label>
+        <div id="af-vendor-known" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--green);padding-top:2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Already in your vendor list</div>
       </div>
     </div>
     <div class="form-group" style="margin:0"><label class="form-label">Fee <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" id="af-fee" type="number" min="0" step="0.01" placeholder="0" value="${a.fee!=null&&a.fee!==''?a.fee:''}"/><div style="font-size:10.5px;color:var(--gold-deep);margin-top:4px">If a fee is entered, we'll offer to add it to your budget on save.</div></div>
@@ -22438,6 +22452,8 @@ function _apptOpenForm(ctx, existing){
     <button class="btn btn-primary btn-sm" onclick="_apptFormSave()">${(existing&&existing.id)?'Save appointment':'Add appointment'}</button>`;
   openConfirm2((existing&&existing.id)?'Edit appointment':'Add appointment', body, footer);
   if(document.getElementById('af-emailme')?.checked) _apptFormRenderRecips();
+  ['af-business','af-contact','af-phone','af-email'].forEach(id=>document.getElementById(id)?.addEventListener('input', _apptVendorSaveSync));
+  _apptVendorSaveSync();
   // Recompute the end whenever Start changes (duration mode) or recompute the duration
   // when the Finish picker changes (finish mode).
   _tpHooks['af-time']=()=>{ _apptRecalcEnd(); };
@@ -22594,6 +22610,16 @@ function _apptRenderVendorPicker(q){
     <div style="max-height:200px;overflow-y:auto;border:.5px solid var(--border);border-radius:9px">${rowsHtml}</div>`;
   const s=document.getElementById('af-vendor-search'); if(s){ const v=s.value.length; try{s.setSelectionRange(v,v);}catch(_){} }
 }
+// Hide "Save to my vendor list" when the vendor fields match one already on the list.
+function _apptVendorSaveSync(){
+  const row=document.getElementById('af-vendor-save-row'), known=document.getElementById('af-vendor-known');
+  if(!row||!known) return;
+  const g=id=>(document.getElementById(id)?.value||'').trim();
+  const src={business:g('af-business'), contact:g('af-contact'), phone:g('af-phone'), email:g('af-email')};
+  const has=!!(src.business||src.phone||src.email) && (STATE.vendors||[]).some(v=>_vendorMatches(v, src));
+  row.style.display=has?'none':'flex'; known.style.display=has?'flex':'none';
+  if(has){ const cb=document.getElementById('af-vendor-save'); if(cb) cb.checked=false; }
+}
 function _apptUseVendorPick(vendorId){
   const v=(STATE.vendors||[]).find(x=>x.id===vendorId); if(!v) return;
   const set=(id,val)=>{ const el=document.getElementById(id); if(el && val) el.value=val; };
@@ -22607,6 +22633,7 @@ function _apptUseVendorPick(vendorId){
   if(v.notes){ const n=document.getElementById('af-notes'); if(n){ n.value = n.value.trim() ? (n.value.trim()+'\n'+v.notes) : v.notes; } }
   // Switch to 'new' mode so vendor fields are visible/editable after picking.
   _apptSetVendorMode('new');
+  _apptVendorSaveSync();
 }
 function _apptFormRead(){
   const c=_apptFormCtx||{};
@@ -22959,6 +22986,7 @@ function _apptBuildMailto(task, a, recipients, attached){
   // Context first, so anyone it's forwarded to (bridal party, family, the vendor) knows what it is.
   const what=[(a.type||'Appointment'), a.business?`with ${a.business}`:''].filter(Boolean).join(' ');
   bodyLines.push(wedding?`${what} for ${wedding}.`:`${what}.`, '');
+  const ctxLines=bodyLines.length; // the branded HTML shows these as heading + title instead
   if(when) bodyLines.push(`When: ${when}`);
   if(a.virtual){ if(a.link) bodyLines.push(`Link: ${a.link}`); if(a.pass) bodyLines.push(`Password: ${a.pass}`); }
   else if(a.address) bodyLines.push(`Where: ${a.address}`);
@@ -22971,7 +22999,8 @@ function _apptBuildMailto(task, a, recipients, attached){
   if(couple) bodyLines.push('', `Sent by ${couple} via UnionVault — reply to this email to reach them.`);
   const to=(recipients||[]).map(e=>encodeURIComponent(e)).join(',');
   const url=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
-  return {subject, body:bodyLines.join('\n'), to:(recipients||[]).join(', '), url};
+  return {subject, body:bodyLines.join('\n'), to:(recipients||[]).join(', '), url,
+    kicker:wedding, title:what, htmlText:bodyLines.slice(ctxLines).join('\n')};
 }
 function _apptOpenEmailDraft(task, a, recipients){
   const m=_apptBuildMailto(task, a, recipients);
@@ -23194,7 +23223,7 @@ async function _apptEmailSendViaEdge(task, a, recipients){
       const r=await fetch(_SB_URL+'/functions/v1/send-appointment-email',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||_SB_KEY),'apikey':_SB_KEY},
-        body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics,
+        body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics,kicker:m.kicker,title:m.title,htmlText:m.htmlText,
           fromName:_apptCoupleNames()||'', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||''})
       });
       return r.ok && (await r.json()).ok===true;
@@ -29165,7 +29194,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v270';
+const APP_BUILD='v271';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -40404,52 +40433,103 @@ function _vluOpenCat(luCat){
   navigate('vendors');
 }
 
+/* Categories the widget tracks: the user's own list (Edit list), else the eight key ones. */
+const _VLU_EXTRA_CATS = [
+  { cat:'Reception location',    lu:'Venues',        icon:'M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6' },
+  { cat:'MC',                    lu:'All',           icon:'M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4' },
+  { cat:'Bridal shop',           lu:'All',           icon:'M6 2l3 4-3 3 6 13 6-13-3-3 3-4' },
+  { cat:'Transport / Transfers', lu:'All',           icon:'M5 17h14M6 17V9l2-4h8l2 4v8|circle:8,17,2|circle:16,17,2' }
+];
+const _VLU_GENERIC_ICON='M3 9l1-5h16l1 5M4 9v11h16V9M9 20v-6h6v6';
+let _dwVendEdit=false;
+function _dwVendCatMeta(cat){
+  return VLU_KEY_CATS.concat(_VLU_EXTRA_CATS).find(k=>k.cat===cat) || {cat, lu:'All', icon:_VLU_GENERIC_ICON};
+}
+function _dwVendCats(){
+  const saved=STATE.settings&&STATE.settings.dashVendorCats;
+  return Array.isArray(saved) ? saved.slice() : VLU_KEY_CATS.map(k=>k.cat);
+}
+function _dwVendSetCats(list){ if(!STATE.settings) STATE.settings={}; STATE.settings.dashVendorCats=list; saveToStorage(); navigate('dashboard'); }
+function _dwVendToggleEdit(){ _dwVendEdit=!_dwVendEdit; navigate('dashboard'); }
+function _dwVendRemove(cat){ _dwVendSetCats(_dwVendCats().filter(c=>c!==cat)); }
+function _dwVendAdd(cat){ const l=_dwVendCats(); if(!l.includes(cat)) l.push(cat); _dwVendSetCats(l); }
+
 function buildDashVendorLookupHtml(){
   const vendors = STATE.vendors || [];
-  /* A category counts as covered if a vendor sits in it and isn't ruled out. */
-  const covered = {};
+  const esc=_escHtml, jq=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  /* Booked or confirmed = covered. Possible = shortlisted (not covered). Ruled out = ignored. */
+  const isBooked = v => v.status==='booked' || v.status==='confirmed';
+  const byCat = {};
   vendors.forEach(v=>{
     if(!v.category) return;
     if(v.status==='declined' || v.status==='passed' || v.status==='not_suitable') return;
-    if(!covered[v.category]) covered[v.category] = v;
-    /* a booked vendor outranks a possible one for the label */
-    else if(v.status==='booked' && covered[v.category].status!=='booked') covered[v.category] = v;
+    const b = byCat[v.category] || (byCat[v.category] = {booked:null, short:0});
+    if(isBooked(v)){ if(!b.booked || (v.status==='confirmed' && b.booked.status!=='confirmed')) b.booked=v; }
+    else b.short++;
   });
-
-  const rows = VLU_KEY_CATS.map(k=>{
-    const v = covered[k.cat];
-    if(v){
-      const booked = v.status==='booked';
+  const cats=_dwVendCats();
+  const rows = cats.map(cat=>{
+    const k=_dwVendCatMeta(cat), b=byCat[cat];
+    if(_dwVendEdit){
       return `<div class="vlu-dw-row">
         <span class="vlu-dw-ic">${_vluIconSvg(k.icon)}</span>
-        <span class="vlu-dw-name">${_escHtml(k.cat)}</span>
-        <span class="vlu-dw-tag have${booked?' booked':''}" title="${booked?'Booked':'On your list'}">${_escHtml(v.business||'Added')}</span>
+        <span class="vlu-dw-name">${esc(cat)}</span>
+        <button class="vlu-dw-rm" onclick="event.stopPropagation();_dwVendRemove('${jq(cat)}')" aria-label="Remove ${esc(cat)} from this list" title="Remove from this list">−</button>
+      </div>`;
+    }
+    if(b && b.booked){
+      const v=b.booked;
+      return `<div class="vlu-dw-row">
+        <span class="vlu-dw-ic">${_vluIconSvg(k.icon)}</span>
+        <span class="vlu-dw-name">${esc(cat)}</span>
+        <span class="vlu-dw-tag have booked" title="${v.status==='confirmed'?'Confirmed':'Booked'}">✓ ${esc(v.business||'Booked')}</span>
+      </div>`;
+    }
+    if(b && b.short){
+      return `<div class="vlu-dw-row">
+        <span class="vlu-dw-ic open">${_vluIconSvg(k.icon)}</span>
+        <span class="vlu-dw-name open">${esc(cat)}</span>
+        <button class="vlu-dw-tag short" onclick="event.stopPropagation();navigate('vendors')" title="On your vendor list as possible — not booked yet">${b.short} shortlisted · Compare →</button>
       </div>`;
     }
     return `<div class="vlu-dw-row">
       <span class="vlu-dw-ic open">${_vluIconSvg(k.icon)}</span>
-      <span class="vlu-dw-name open">${_escHtml(k.cat)}</span>
-      <button class="vlu-dw-tag need" onclick="event.stopPropagation();_vluOpenCat('${k.lu.replace(/'/g,"\\'")}')" title="Find a ${_escHtml(k.cat.toLowerCase())} in the directory">Find →</button>
+      <span class="vlu-dw-name open">${esc(cat)}</span>
+      <button class="vlu-dw-tag need" onclick="event.stopPropagation();_vluOpenCat('${jq(k.lu)}')" title="Find a ${esc(cat.toLowerCase())} in the directory">Find →</button>
     </div>`;
   }).join('');
 
-  const done = VLU_KEY_CATS.filter(k=>covered[k.cat]).length;
-  const left = VLU_KEY_CATS.length - done;
-  const allDone = left === 0;
+  const nBooked = cats.filter(c=>byCat[c]&&byCat[c].booked).length;
+  const nShort  = cats.filter(c=>byCat[c]&&!byCat[c].booked&&byCat[c].short).length;
+  const left = cats.length - nBooked - nShort;
+  /* Edit mode: every category the user could add — built-in ones plus their own vendor categories. */
+  let addHtml='';
+  if(_dwVendEdit){
+    const pool=[...new Set([...(typeof VENDOR_CATEGORIES!=='undefined'?VENDOR_CATEGORIES:[]), ...VLU_KEY_CATS.map(k=>k.cat), ..._VLU_EXTRA_CATS.map(k=>k.cat), ...vendors.map(v=>v.category).filter(Boolean)])]
+      .filter(c=>!cats.includes(c)).sort((a,b)=>a.localeCompare(b));
+    addHtml=`<div class="vlu-dw-add">
+      <div class="vlu-dw-add-lbl">Add to this list</div>
+      <div class="vlu-dw-add-chips">${pool.length?pool.map(c=>`<button class="vlu-dw-addchip" onclick="event.stopPropagation();_dwVendAdd('${jq(c)}')">+ ${esc(c)}</button>`).join(''):'<span class="vlu-dw-add-none">Every category is already on the list.</span>'}</div>
+      <div class="vlu-dw-add-note">Removing a category only hides it here — your vendors are untouched.</div>
+    </div>`;
+  }
 
   return `
     <div class="db-widget-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px">
       <span style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:500;color:var(--ink)">Vendors</span>
-      <button class="vlu-dw-link" onclick="event.stopPropagation();_vendorLookupOpen()">Look Up
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </button>
+      <span style="display:inline-flex;align-items:center;gap:10px">
+        ${_dwVendEdit?'':`<button class="vlu-dw-link" onclick="event.stopPropagation();_vendorLookupOpen()">Look Up
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>`}
+        <button class="vlu-dw-edit${_dwVendEdit?' on':''}" onclick="event.stopPropagation();_dwVendToggleEdit()" aria-pressed="${_dwVendEdit}">${_dwVendEdit?'Done':'Edit list'}</button>
+      </span>
     </div>
     <div class="vlu-dw-sum">
-      ${allDone
-        ? `<strong>All ${VLU_KEY_CATS.length} key categories covered.</strong> Nothing left to find.`
-        : `<strong>${done} of ${VLU_KEY_CATS.length}</strong> key categories covered · ${left} still to find`}
+      ${cats.length && nBooked===cats.length
+        ? `<strong>All ${cats.length} booked.</strong> Nothing left to find.`
+        : `<strong>${nBooked} of ${cats.length}</strong> booked${nShort?` · ${nShort} shortlisted`:''} · ${left} still to find`}
     </div>
-    <div class="vlu-dw-list">${rows}</div>`;
+    <div class="vlu-dw-list">${rows||'<div style="font-size:12.5px;color:var(--muted);padding:10px 0">No categories — tap Edit list to add some.</div>'}</div>${addHtml}`;
 }
 
 /* ── Messages — a placeholder, not an inbox ────────────────
