@@ -12620,8 +12620,31 @@ async function _loadOnlineRsvps(){
       </div>`;
     // ── Sync online RSVPs into guest list ──
     if(Array.isArray(STATE.guests) && STATE.guests.length){
+      // Always base the merge on the cloud's guest data so that a sparse local
+      // STATE (e.g. after a device conflict or stale localStorage) can never
+      // overwrite a richer cloud record. RSVP fill-blank changes are applied on
+      // top of the cloud version; local RSVP stamps already set are preserved.
+      let baseGuests = STATE.guests;
+      if(_sbSession){
+        try{
+          const _cgRows=await _sbSelect('planner_data',
+            `user_id=eq.${_sbSession.user.id}&section=eq.guests&select=data`);
+          if(_cgRows&&_cgRows.length&&Array.isArray(_cgRows[0].data)&&_cgRows[0].data.length){
+            const _cloudG=_cgRows[0].data;
+            // Use cloud as base; carry forward any local RSVP stamps that are already set
+            const _localById={};
+            STATE.guests.forEach(function(g){ if(g&&g.id) _localById[g.id]=g; });
+            baseGuests=_cloudG.map(function(g){
+              const loc=g&&g.id?_localById[g.id]:null;
+              if(loc&&loc.rsvp&&loc.rsvp!==g.rsvp)
+                return Object.assign({},g,{rsvp:loc.rsvp,rsvpDate:loc.rsvpDate||g.rsvpDate,rsvpDeclinedDate:loc.rsvpDeclinedDate||g.rsvpDeclinedDate});
+              return g;
+            });
+          }
+        }catch(e){ console.warn('RSVP sync: cloud guest fetch failed, using local state',e); }
+      }
       const guestsByName={};
-      STATE.guests.forEach(function(g){
+      baseGuests.forEach(function(g){
         if(g&&g.name) guestsByName[g.name.trim().toLowerCase()]=g;
       });
       let changed=0;
@@ -12657,6 +12680,7 @@ async function _loadOnlineRsvps(){
         if(rowChanged) changed++;
       });
       if(changed){
+        STATE.guests=baseGuests; // commit the cloud-merged list back to STATE
         saveToStorage();
         // Re-render the page so all stat cards (Response Summary, Final Numbers, etc.)
         // reflect the newly synced data. The auto-reload will fire again but changed
@@ -29299,7 +29323,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v286';
+const APP_BUILD='v287';
 const APP_BUILD_DATE='2026-10-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
