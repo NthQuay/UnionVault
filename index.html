@@ -29395,7 +29395,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v300';
+const APP_BUILD='v301';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -39990,6 +39990,9 @@ function _invitationSectionHtml(which){
       const lp=_invPlatformInfo(inv.link.url);
       const utrun=inv.link.url.length>50?inv.link.url.slice(0,48)+'…':inv.link.url;
       const ftrun=inv.file.name.length>40?inv.file.name.slice(0,38)+'…':inv.file.name;
+      const _invSrc2=_mediaUrl(inv.file.mediaId||inv.file.dataUrl||'');
+      const _invIsImg2=/^image\//.test(inv.file.type||'')||/^data:image/.test(inv.file.dataUrl||'')||/\.(png|jpe?g|gif|webp)$/i.test(inv.file.name||'');
+      const _fileThumb=_invSrc2&&_invIsImg2?`<div style="width:48px;height:48px;border-radius:6px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;background:var(--surface)"><img src="${_escHtml(_invSrc2)}" style="width:100%;height:100%;object-fit:cover" alt=""/></div>`:`<div style="width:28px;height:28px;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`;
       content=`${_fileInput}
       <div style="display:flex;flex-direction:column;gap:10px">
         <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px 13px">
@@ -40002,8 +40005,9 @@ function _invitationSectionHtml(which){
         </div>
         <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px 13px">
           <div style="display:flex;align-items:center;gap:8px">
-            <div style="width:28px;height:28px;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            ${_fileThumb}
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(ftrun)}</div><div style="font-size:11.5px;color:var(--muted)">${_escHtml(inv.file.sizeLabel||'')}</div></div>
+            ${_invSrc2?`<button type="button" onclick="_invPreviewFile()" class="btn btn-outline btn-sm" style="flex-shrink:0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview</button>`:''}
             <button class="btn btn-sm" onclick="_invRemoveFile()" style="flex-shrink:0;background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Remove file"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
         </div>

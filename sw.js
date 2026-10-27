@@ -1,4 +1,4 @@
-const CACHE = 'union-vault-v300';
+const CACHE = 'union-vault-v301';
 const SHELL = ['/UnionVault/', '/UnionVault/index.html'];
 
 self.addEventListener('install', e => {
