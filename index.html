@@ -29396,7 +29396,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v305';
+const APP_BUILD='v306';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47219,8 +47219,8 @@ function _cloudAccountHtml(){
     +`<button class="btn btn-primary btn-sm" id="cloud-load-btn" onclick="cloudLoadClick()" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:1">${_cldBtnHtml()}</button></div>`
     +`<p style="font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.4"><b>Save to cloud</b> — uploads your current planner.<br><b>Load from cloud</b> — replaces this device&#39;s data with the cloud version.</p>`
     +`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">`
-    +`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">`
-    +`<div><div style="font-size:12px;font-weight:500">Automatic backups</div><div style="font-size:11px;color:var(--muted)">Hourly snapshots, last 48 hours</div></div>`
+    +`<div style="margin-bottom:8px">`
+    +`<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:500">Automatic backups</div><div style="font-size:11px;color:var(--muted)">Hourly snapshots, last 48 hours</div></div>`
     +`<div style="display:flex;gap:8px">`
     +`<button class="btn btn-outline btn-sm" onclick="_backupNow(this)" style="font-size:11px;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-8.9"/></svg>Back up now</button>`
     +`<button class="btn btn-outline btn-sm" onclick="_openBackupModal()" style="font-size:11px;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>View backups</button>`
