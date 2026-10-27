@@ -1338,7 +1338,7 @@ body.dark .bi-name{color:#B0A085 !important}
 /* ── Budget jump-to-category bar (Settings → Budget) ── */
 /* Sticky strip of category chips that scroll to each card. Sits just under the
    summary banner (which is itself sticky at top:-32px, z-40), so this docks below it. */
-#budget-jumpbar{position:sticky;z-index:39;background:var(--cream);border-bottom:1px solid var(--border);margin:0 -28px 14px;padding:5px 28px;display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+#budget-jumpbar{position:sticky;top:0;z-index:39;background:var(--cream);border-bottom:1px solid var(--border);margin:0 -28px 14px;padding:5px 28px;display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 #budget-jumpbar::-webkit-scrollbar{height:5px}
 #budget-jumpbar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .bjump-chip{flex:0 0 auto;display:inline-flex;flex-direction:column;gap:1px;align-items:flex-start;padding:5px 12px;border-radius:16px;background:var(--sw-bg,#FBF8F3);border:.5px solid var(--sw-border,#E3D7C4);cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s,border-color .15s;text-align:left}
@@ -3445,7 +3445,10 @@ textarea.contact-input{resize:vertical;min-height:110px}
 // ── Landing page helpers ────────────────────────────────────────────────
 function _openTermsModal(){
   var m=document.getElementById('lp-terms-modal');
-  if(m){m.style.display='';m.scrollTop=0;}
+  if(!m) return;
+  if(m.parentNode!==document.body) document.body.appendChild(m);
+  m.style.display='';
+  m.scrollTop=0;
 }
 function _closeTermsModal(){
   var m=document.getElementById('lp-terms-modal');
@@ -4618,9 +4621,9 @@ function buildDashVisionHtml(){
     const _dashTint = _vbTintLayers(isDark);
     const jit=(n,seed)=>{ const x=Math.sin((n+1)*9.73+seed*4.19)*43758.5453; return x-Math.floor(x); };
     const _dashColMin = vbSize==='large' ? '210px' : (vbSize==='medium' ? '150px' : (vbSize==='xsmall' ? '78px' : '104px'));
-    gridHtml=`<div style="position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--border);padding:24px 12px 28px;background-image:${_dashTint.grad},url('${_dashWall}');background-size:auto,360px;background-repeat:repeat,repeat;background-blend-mode:${_dashTint.blend},normal">
-      <div class="vb-board vb-scrapbook vb-dash vb-size-${vbSize}" style="position:relative;z-index:1;columns:${_dashColMin};column-gap:12px;orphans:1;widows:1">
-        ${vbItems.map((item,idx)=>{const tilt=tilts[idx%tilts.length];const tape=tapeColors[idx%tapeColors.length];const nudge=(jit(idx,2.2)*8-4).toFixed(1);const tiltX=(tilt+(jit(idx,6.6)*2.4-1.2)).toFixed(2);const topGap=(6+jit(idx,8.8)*22).toFixed(0);return`<div${cardClick(item)} style="break-inside:avoid;margin:${topGap}px 0 18px;display:inline-block;width:100%;${cardCursor}transform:translateX(${nudge}px)"><div style="position:relative;background:${_scrapBg};border-radius:3px;padding:${_scrapPad};box-shadow:${_scrapShadow};transform:rotate(${tiltX}deg);transform-origin:center top;transition:transform .2s" onmouseover="this.style.transform='rotate(0deg) scale(1.02)'" onmouseout="this.style.transform='rotate(${tiltX}deg)'">${_mediaUrl(item.image)?`<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(${(tilt*0.4).toFixed(2)}deg);width:42px;height:16px;background:${tape};border-radius:2px;opacity:.85;z-index:2"></div>`:''}${miniCard(item)}</div></div>`;}).join('')}
+    gridHtml=`<div style="position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--border);padding:24px 6px 28px;background-image:${_dashTint.grad},url('${_dashWall}');background-size:auto,360px;background-repeat:repeat,repeat;background-blend-mode:${_dashTint.blend},normal">
+      <div class="vb-board vb-scrapbook vb-dash vb-size-${vbSize}" style="position:relative;z-index:1;columns:${_dashColMin};column-gap:8px;orphans:1;widows:1">
+        ${vbItems.map((item,idx)=>{const tilt=tilts[idx%tilts.length];const tape=tapeColors[idx%tapeColors.length];const nudge=(jit(idx,2.2)*4-2).toFixed(1);const tiltX=(tilt+(jit(idx,6.6)*2.4-1.2)).toFixed(2);const topGap=(6+jit(idx,8.8)*22).toFixed(0);return`<div${cardClick(item)} style="break-inside:avoid;margin:${topGap}px 0 18px;display:inline-block;width:100%;${cardCursor}transform:translateX(${nudge}px)"><div style="position:relative;background:${_scrapBg};border-radius:3px;padding:${_scrapPad};box-shadow:${_scrapShadow};transform:rotate(${tiltX}deg);transform-origin:center top;transition:transform .2s" onmouseover="this.style.transform='rotate(0deg) scale(1.02)'" onmouseout="this.style.transform='rotate(${tiltX}deg)'">${_mediaUrl(item.image)?`<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(${(tilt*0.4).toFixed(2)}deg);width:42px;height:16px;background:${tape};border-radius:2px;opacity:.85;z-index:2"></div>`:''}${miniCard(item)}</div></div>`;}).join('')}
       </div>
     </div>`;
   } else if(layout==='grid'){
@@ -29442,7 +29445,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v312';
+const APP_BUILD='v313';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -42061,7 +42064,7 @@ function renderSettings(c, actions){
 
       <div class=”dark-toggle-row” style=”margin-bottom:16px”>
         <div>
-          <div style=”font-size:13.5px;font-weight:500”>Category Jump Bar</div>
+          <div style=”font-size:13.5px;font-weight:600”>Category Jump Bar</div>
           <div style=”font-size:12px;color:var(--muted);margin-top:2px”>Show a strip of category names at the top of the budget page for quick navigation.</div>
         </div>
         <label class=”toggle-switch”>
@@ -42071,7 +42074,7 @@ function renderSettings(c, actions){
       </div>
       <div class=”dark-toggle-row” style=”margin-bottom:16px”>
         <div>
-          <div style=”font-size:13.5px;font-weight:500”>Calmer Category Cards</div>
+          <div style=”font-size:13.5px;font-weight:600”>Calmer Category Cards</div>
           <div style=”font-size:12px;color:var(--muted);margin-top:2px”>Softer category headers, tighter rows, and paid items dimmed.</div>
         </div>
         <label class=”toggle-switch”>
@@ -42081,7 +42084,7 @@ function renderSettings(c, actions){
       </div>
       <div class=”dark-toggle-row” style=”margin-bottom:16px”>
         <div>
-          <div style=”font-size:13.5px;font-weight:500”>Show Year on Budget Dates</div>
+          <div style=”font-size:13.5px;font-weight:600”>Show Year on Budget Dates</div>
           <div style=”font-size:12px;color:var(--muted);margin-top:2px”>Include the year in budget due, overdue &amp; paid dates.</div>
         </div>
         <label class=”toggle-switch”>
@@ -42383,7 +42386,7 @@ function renderSettings(c, actions){
         </div>
       </div>
     </div>
-    <div style="padding-top:24px;text-align:center">
+    <div id="settings-contact-footer" style="padding-top:24px;text-align:center">
       <button class="btn btn-outline" onclick="_showSupportModal()" style="width:100%;max-width:320px;display:inline-flex;align-items:center;justify-content:center;gap:8px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Contact Us
@@ -42560,6 +42563,8 @@ function _applySettingsView(mode){
     blocks.forEach(b=>group.appendChild(b)); // moves the live node (handlers preserved)
     card.appendChild(group);
   });
+  const ctFoot=document.getElementById('settings-contact-footer');
+  if(ctFoot) card.appendChild(ctFoot);
 }
 
 function _setSettingsView(mode){
