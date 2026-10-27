@@ -29396,7 +29396,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v306';
+const APP_BUILD='v307';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47232,20 +47232,28 @@ async function _backupNow(btn){
   if(!_sbSession){ _cloudToast('Not signed in',true); return; }
   if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
   try{
+    await _sbEnsureFreshToken();
     const uid=_sbSession.user.id;
     // Fetch all sections then bundle into one snapshot object
-    const rd=await _sb.from('planner_data').select('section,data').eq('user_id',uid);
-    if(rd.error) throw rd.error;
-    if(!rd.data||!rd.data.length) throw new Error('No data to back up');
+    const rows=await _sbSelect('planner_data','user_id=eq.'+uid+'&select=section,data');
+    if(!rows||!rows.length) throw new Error('No data to back up');
     const snapshot={};
-    rd.data.forEach(row=>{ snapshot[row.section]=row.data; });
-    const ins=await _sb.from('planner_backups').insert({user_id:uid,data:snapshot});
-    if(ins.error) throw ins.error;
+    rows.forEach(row=>{ snapshot[row.section]=row.data; });
+    // Insert new backup
+    const insR=await fetch(`${_SB_URL}/rest/v1/planner_backups`,{
+      method:'POST',
+      headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({user_id:uid,data:snapshot})
+    });
+    if(!insR.ok){ const eb=await insR.json().catch(()=>({})); throw new Error(eb.message||eb.error||'Insert failed'); }
     // Prune to 48 most recent — fetch all ids sorted newest-first then delete the tail
-    const ids=await _sb.from('planner_backups').select('id').eq('user_id',uid).order('created_at',{ascending:false});
-    if(!ids.error && ids.data && ids.data.length>48){
-      const toDelete=ids.data.slice(48).map(r=>r.id);
-      await _sb.from('planner_backups').delete().in('id',toDelete);
+    const ids=await _sbSelect('planner_backups','user_id=eq.'+uid+'&select=id&order=created_at.desc');
+    if(ids && ids.length>48){
+      const toDelete=ids.slice(48).map(r=>r.id);
+      await fetch(`${_SB_URL}/rest/v1/planner_backups?id=in.(${toDelete.join(',')})`,{
+        method:'DELETE',
+        headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Prefer':'return=minimal'}
+      });
     }
     _cloudToast('Backup saved ✓');
   }catch(e){
@@ -47259,9 +47267,10 @@ async function _openBackupModal(){
   if(!_sbSession){ _cloudToast('Not signed in',true); return; }
   openModal('Backups','<div style="text-align:center;padding:20px;color:var(--muted)">Loading…</div>','<button class="btn btn-primary" onclick="closeModalDirect()">Close</button>');
   try{
-    const r=await _sb.from('planner_backups').select('id,created_at').order('created_at',{ascending:false}).limit(48);
-    if(r.error) throw r.error;
-    const rows=r.data||[];
+    await _sbEnsureFreshToken();
+    const uid=_sbSession.user.id;
+    const rows=await _sbSelect('planner_backups','user_id=eq.'+uid+'&select=id,created_at&order=created_at.desc&limit=48');
+    if(!rows) throw new Error('Failed to load backups');
     const body=document.getElementById('modal-body');
     if(!body) return;
     if(!rows.length){
@@ -47290,14 +47299,15 @@ async function _restoreFromBackup(backupId, btn){
   if(!confirm('Restore this backup? Your current data will be replaced.')) return;
   if(btn){ btn.disabled=true; btn.textContent='Restoring…'; }
   try{
-    const r=await _sb.from('planner_backups').select('data').eq('id',backupId).single();
-    if(r.error) throw r.error;
-    const snap=r.data.data;
+    await _sbEnsureFreshToken();
+    const rows=await _sbSelect('planner_backups','id=eq.'+backupId+'&select=data&limit=1');
+    if(!rows||!rows.length) throw new Error('Backup not found');
+    const snap=rows[0].data;
     // Write each section back into planner_data
     const uid=_sbSession.user.id;
     const upserts=Object.entries(snap).map(([section,data])=>({user_id:uid,section,data,updated_at:new Date().toISOString()}));
-    const wr=await _sb.from('planner_data').upsert(upserts,{onConflict:'user_id,section'});
-    if(wr.error) throw wr.error;
+    const ok=await _sbUpsert('planner_data',upserts,'user_id,section');
+    if(!ok) throw new Error('Restore write failed');
     // Reload from cloud to update STATE
     await cloudLoadClick(true);
     closeModalDirect();
