@@ -670,7 +670,7 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
   .wb-strip-bar{display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Inter',sans-serif;font-size:12px;color:var(--ink);cursor:pointer}
   .wb-strip-chev{transition:transform .18s;color:var(--muted)}
   .wb-pane-inner{margin-top:8px;padding:8px}
-  .wb-pane-frame{height:400px}
+  .wb-pane-frame{height:min(400px,50vh)}
   .wb-view-toggle{display:none}
   .wb-pane-cap{display:none}
   .wb-strip-shut .wb-pane-inner{display:none}
@@ -29395,7 +29395,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v302';
+const APP_BUILD='v303';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -37586,7 +37586,7 @@ function _wbBuildSite(forDownload){
         const hd=_wbHeading(k);
         if(!hd) return '';
         if(t.format==='editorial'){
-          const _ewMap={details:'The Big Day',timeline:'The Day',rsvp:'Attend',gallery:'Moments',accommodation:'Stay',wishing:'With Gratitude',countdown:'Save the Date',faq:'Questions',registry:'Registry'};
+          const _ewMap={details:'The Big Day',timeline:'The Day',rsvp:'Attend',gallery:'Moments',accommodation:'Stay',wishing:'With Gratitude',countdown:'Countdown',faq:'Questions',registry:'Registry'};
           const ew=_wbIsCustom(k)?'':(_ewMap[k]||'');
           return (ew?`<p class="edit-eyebrow">${_escHtml(ew.toUpperCase())}</p>`:'')+`<h2>${_escHtml(hd)}</h2>`;
         }
