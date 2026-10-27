@@ -29221,6 +29221,12 @@ async function cloudLoadClick(silent){
   setTimeout(_mediaCloudSync, 500);
 }
 
+// Called by the manual "Load from cloud" button — silently backs up local state first
+// so the user can always recover if they accidentally overwrite the wrong version.
+async function cloudLoadManual(){
+  await _backupNow(null,true); // silent — errors don't block the load
+  await cloudLoadClick();
+}
 function _csvBtnHtml(){return'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Save to cloud';}
 function _cldBtnHtml(){return'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Load from cloud';}
 
@@ -29396,7 +29402,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v307';
+const APP_BUILD='v308';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47216,20 +47222,19 @@ function _cloudAccountHtml(){
     +`<label style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0"><input type="checkbox" id="auto-sync-toggle" onchange="_autoSyncToggleChange(this.checked)" style="opacity:0;width:0;height:0;position:absolute"><span onclick="" style="position:absolute;cursor:pointer;inset:0;background:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'var(--muted)':'var(--gold,#c9a84c)'};border-radius:11px;transition:.2s;display:block" id="auto-sync-track"></span><span id="auto-sync-thumb" style="position:absolute;left:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'3px':'19px'};top:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;pointer-events:none"></span></label></div>`
     +`<div style="display:flex;gap:10px">`
     +`<button class="btn btn-primary btn-sm" id="cloud-save-btn" onclick="cloudSaveClick()" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:1">${_csvBtnHtml()}</button>`
-    +`<button class="btn btn-primary btn-sm" id="cloud-load-btn" onclick="cloudLoadClick()" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:1">${_cldBtnHtml()}</button></div>`
+    +`<button class="btn btn-primary btn-sm" id="cloud-load-btn" onclick="cloudLoadManual()" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:1">${_cldBtnHtml()}</button></div>`
     +`<p style="font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.4"><b>Save to cloud</b> — uploads your current planner.<br><b>Load from cloud</b> — replaces this device&#39;s data with the cloud version.</p>`
     +`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">`
     +`<div style="margin-bottom:8px">`
-    +`<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:500">Automatic backups</div><div style="font-size:11px;color:var(--muted)">Hourly snapshots, last 48 hours</div></div>`
+    +`<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:500">Backups</div><div style="font-size:11px;color:var(--muted)">A snapshot is saved automatically before each cloud load, so you can always undo.</div></div>`
     +`<div style="display:flex;gap:8px">`
-    +`<button class="btn btn-outline btn-sm" onclick="_backupNow(this)" style="font-size:11px;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-8.9"/></svg>Back up now</button>`
     +`<button class="btn btn-outline btn-sm" onclick="_openBackupModal()" style="font-size:11px;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>View backups</button>`
     +`</div></div></div>`;
 }
 
 // ── CLOUD BACKUPS ────────────────────────────────────────────────────────────
-async function _backupNow(btn){
-  if(!_sbSession){ _cloudToast('Not signed in',true); return; }
+async function _backupNow(btn, silent){
+  if(!_sbSession){ if(!silent) _cloudToast('Not signed in',true); return; }
   if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
   try{
     await _sbEnsureFreshToken();
@@ -47255,9 +47260,9 @@ async function _backupNow(btn){
         headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Prefer':'return=minimal'}
       });
     }
-    _cloudToast('Backup saved ✓');
+    if(!silent) _cloudToast('Backup saved ✓');
   }catch(e){
-    _cloudToast('Backup failed: '+(e.message||e),true);
+    if(!silent) _cloudToast('Backup failed: '+(e.message||e),true);
   }finally{
     if(btn){ btn.disabled=false; btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-8.9"/></svg>Back up now'; }
   }
@@ -47565,6 +47570,8 @@ async function _conflictApply(){
   const btn=document.getElementById('conflict-use-btn');
   if(btn){ btn.disabled=true; btn.textContent='Loading…'; }
   if(window._conflictChoice==='cloud'){
+    // Silently snapshot local state before overwriting — recoverable from View Backups
+    await _backupNow(null,true);
     await cloudLoadClick(true); // silent=true
   }
   _conflictDismiss();
