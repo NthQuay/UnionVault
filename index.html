@@ -9321,7 +9321,7 @@ function _longDate(iso){
 // The public RSVP link (same as the tracker's Copy/Preview link).
 // Stage 5: uses couple_uid so the RSVP form can look up wedding details + save to rsvp_responses.
 function _rsvpLink(){
-  const uid = _sbSession&&_sbSession.user&&_sbSession.user.id;
+  const uid = _wbPublicOwnerUid || (_sbSession&&_sbSession.user&&_sbSession.user.id);
   if(uid) return window.location.origin+window.location.pathname+'?rsvp='+uid;
   return window.location.origin+window.location.pathname+'?rsvp=true'; // fallback if not signed in
 }
@@ -29427,7 +29427,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v292';
+const APP_BUILD='v293';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
