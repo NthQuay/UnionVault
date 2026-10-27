@@ -29427,7 +29427,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v293';
+const APP_BUILD='v294';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -48748,6 +48748,7 @@ async function _showPublicWeddingSite(slug){
       }),
       _publicWeddingExtras(uid)
     ]);
+    const _fullGuests = STATE.guests; // preserve full guest data before public RPC overwrites it
     if(Array.isArray(_ex.guests)) STATE.guests=_ex.guests;
     if(_ex.wishingwell && typeof _ex.wishingwell==='object') STATE.wishingwell=_ex.wishingwell;
     if(r2.ok){
@@ -48801,6 +48802,7 @@ async function _showPublicWeddingSite(slug){
 
   const html=_wbBuildSite();
   _wbPublicOwnerUid = null;
+  STATE.guests = _fullGuests; // restore before document.open() can trigger beforeunload auto-sync
   document.open();
   document.write(html);
   document.close();
