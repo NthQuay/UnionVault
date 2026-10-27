@@ -3256,12 +3256,12 @@ textarea.contact-input{resize:vertical;min-height:110px}
         <div class="price-cycle">forever</div>
         <div class="price-divider"></div>
         <div class="price-features">
-          <div class="price-feat"><span class="price-check">✓</span><span>Dashboard<span class="price-sub">Your whole wedding at a glance — counts, upcoming tasks &amp; quick actions</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Dashboard<span class="price-sub">Your whole wedding at a glance — budget overview, RSVP counts, upcoming tasks &amp; quick actions</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Up to 50 guests<span class="price-sub">Guest list, dietary requirements &amp; live RSVP updates</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Budget &amp; vendor management<span class="price-sub">Track costs, bookings &amp; appointments</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Day-of timeline<span class="price-sub">Build a shareable run sheet with music links for special moments — aisle walk, first dance &amp; more</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Wedding checklist<span class="price-sub">A personalised task list so nothing slips through the cracks</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Wedding website builder<span class="price-sub">Your RSVP site, live in minutes</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Wedding website builder<span class="price-sub">Customise your very own website to share wedding details, timeline, FAQ, gallery and more with your guests. Here they can also submit their RSVP</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span> Cloud sync &amp; backup</div>
           <div class="price-feat price-muted"><span style="color:var(--muted)">–</span> Priority support</div>
         </div>
@@ -3276,13 +3276,13 @@ textarea.contact-input{resize:vertical;min-height:110px}
         <div class="price-divider"></div>
         <div class="price-features">
           <div class="price-feat"><span class="price-check">✓</span> Everything in Free Tier</div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Unlimited guests<span class="price-sub">Dietary requirements, meal choices &amp; live RSVP updates</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Multi-event planning<span class="price-sub">Manage your bridal shower, bucks &amp; bachelorette, rehearsal dinner &amp; more alongside your wedding day</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Calendar<span class="price-sub">See all appointments, events &amp; deadlines in one view</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Unlimited guests<span class="price-sub">Dietary requirements, meal choices &amp; live RSVP updates. Add individuals, by couple and group families. Or you can import guests with ease by pasting a CSV (excel) file</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Multi-event planning<span class="price-sub">Manage guest lists for your bridal shower, bucks &amp; bachelorette, rehearsal dinner &amp; more alongside your wedding day</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Calendar<span class="price-sub">See all appointments, events, tasks &amp; payments due in one view</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Floorplan builder<span class="price-sub">Design your layout, seat guests, then print or export to share</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Shareable vendor brief<span class="price-sub">Send vendors a personalised brief page with everything they need to know</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Wishing well &amp; gift registry<span class="price-sub">Share a wish list and track contributions from your guests</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Save-the-dates &amp; invite sending<span class="price-sub">Email &amp; share to your full guest list</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Save-the-dates &amp; invite sending<span class="price-sub">Upload your digital invite image and link and track invite method for each guest/couple/family as well as RSVP reminders.</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Vision board &amp; inspo tools<span class="price-sub">Save styles, colours &amp; ideas in one place to share with vendors</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span> Priority support</div>
         </div>
@@ -12594,15 +12594,15 @@ function _orsvpRender(){
         </div>`;
       }).join('');
       const c=grp.contact;
-      const ci=[c.email?`<span style="font-size:11.5px;color:var(--ink)">${c.email}</span>`:'',c.phone?`<span style="font-size:11.5px;color:var(--ink)">${c.phone}</span>`:'',c.address?`<span style="font-size:11.5px;color:var(--ink)">${c.address}</span>`:''].filter(Boolean);
-      const contactHtml=ci.length?`<div style="background:var(--surface);border-top:1px solid var(--border);padding:9px 14px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center"><span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px">Contact</span>${ci.join('<span style="color:var(--border)">·</span>')}</div>`:'';
+      const ci=[c.email?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.email}</span>`:'',c.phone?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0">${c.phone}</span>`:'',c.address?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.address}</span>`:''].filter(Boolean);
+      const contactHtml=ci.length?`<div style="background:var(--surface);border-top:1px solid var(--border);padding:9px 14px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0"><span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span>${ci.join('<span style="color:var(--border);flex-shrink:0">·</span>')}</div>`:'';
       const msgHtml=grp.message?`<div style="border-top:1px solid var(--border);padding:9px 14px;font-size:12px;color:var(--muted);font-style:italic">“${grp.message}”</div>`:'';
       const histSection=grp.hasHistory?`<div id="${histId}" hidden style="border-top:1px solid var(--border);padding:10px 14px"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Submission history</div>${histRowsHtml}</div>`:'';
       html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
         <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)">
           <div style="width:32px;height:32px;border-radius:50%;background:var(--surface);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;letter-spacing:-.02em">${grp.initials}</div>
-          <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:var(--ink)">${grp.householdName}</div><div style="font-size:11.5px;color:var(--muted);margin-top:1px">${summaryLine}</div></div>
-          <div style="font-size:11px;color:var(--muted);flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px">${_fmt(grp.submittedDate)}${histBtn}</div>
+          <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${grp.householdName}</div><div style="font-size:11.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${summaryLine}</div></div>
+          <div style="font-size:11px;color:var(--muted);flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;white-space:nowrap">${_fmt(grp.submittedDate)}${histBtn}</div>
         </div>
         ${memberRows}${contactHtml}${msgHtml}${histSection}
       </div>`;
@@ -15644,7 +15644,7 @@ function _collectVendorPayments(){
       const sRemain=Math.max(0, sAmt - (s.depositPaid?Number(s.deposit||0):0));
       if(s.balanceDueDate || s.paid || sRemain>0){
         push({ kind:'balance', scope:'sub', bid:b.id, sid:s.id, label:`${b.name}: ${s.name}`,
-          vendor:vSub, amount:s.paid?sAmt:sRemain, date:s.balanceDueDate||'',
+          vendor:vSub, amount:s.paid?sAmt:sRemain, date:s.balanceDueDate||b.balanceDueDate||'',
           paid:!!s.paid, paidDate:s.paidDate||'' });
       }
     });
@@ -15670,9 +15670,11 @@ function _calCollectEvents(){
     ev._eid=eid;
     (byDay[iso]=byDay[iso]||[]).push(ev);
   };
-  // Tasks
+  // Tasks — skip if the task has a linked appointment on the same date (avoids double-up)
   (STATE.checklist||[]).forEach(t=>{
     if(!t || !t.dueDate) return;
+    const apptDates=new Set((_taskApptList(t)||[]).map(a=>a&&a.date).filter(Boolean));
+    if(apptDates.has(t.dueDate)) return;
     add(t.dueDate, {
       type:'tasks',
       title:t.text||'Task',
@@ -15865,12 +15867,10 @@ function _renderCalendarWeek(c, actions){
   else if(sameYear) rangeLabel=`${days[0].getDate()} ${_mon(days[0])} – ${last.getDate()} ${_mon(last)} ${last.getFullYear()}`;
   else rangeLabel=`${days[0].getDate()} ${_mon(days[0])} ${days[0].getFullYear()} – ${last.getDate()} ${_mon(last)} ${last.getFullYear()}`;
 
-  // Extract a leading time from an appointment's sub line ("9:30am · Virtual") for the
-  // left time column; tasks/budget have no time.
+  // Return the formatted time for an appointment (stored in e.time); tasks/budget have no time.
   const _timeOf=(e)=>{
     if(e.type!=='appts') return '';
-    const m=(e.sub||'').match(/^(\d{1,2}(?::\d{2})?(?:am|pm))/i);
-    return m?m[1]:'';
+    return e.time||'';
   };
   const _mins=(t)=>{ if(!t) return 9999; const m=t.match(/(\d{1,2})(?::(\d{2}))?(am|pm)/i); if(!m) return 9999; let h=+m[1]%12; if(/pm/i.test(m[3])) h+=12; return h*60+(+(m[2]||0)); };
 
@@ -28591,11 +28591,11 @@ function renderSeating(c,actions){
     <div id="seating-btn-group" class="gbtn-group${_seatIconsOnly?' icons-only':''}" style="display:inline-flex;align-items:center;justify-content:flex-end;gap:5px">
     <button class="btn btn-outline btn-sm gbtn" onclick="openAddTable()" title="Add Table" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      <span class="gbtn-label">Add Table</span>
+      <span class="gbtn-label gbtn-label-long">Add Table</span><span class="gbtn-label gbtn-label-short">+ Table</span>
     </button>
     <button class="btn btn-outline btn-sm gbtn" onclick="openSeatingPrintPreview()" title="Export or print the seating plan — PDF, PNG image, CSV spreadsheet, or send to a printer" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span class="gbtn-label">Export</span>
+        <span class="gbtn-label gbtn-label-long">Export</span>
     </button>
       <span id="seat-cog-wrap" style="position:relative;display:inline-flex;align-items:center">
         <button class="btn-icon" onclick="_seatToggleCog(event)" aria-label="Seating display options" title="Display options, arrange &amp; reset">${_seatCogIcon()}</button>
@@ -28700,17 +28700,31 @@ function _fitSeatingBtns(){
   // full→icon snap on every re-render at narrow widths. Instead, measure on an offscreen
   // clone that is always label-shown, leaving the live group untouched.
   const wasIcons=group.classList.contains('icons-only');
+  const wasShort=group.classList.contains('short-labels');
   const cs=getComputedStyle(group);
   const gap=parseFloat(cs.columnGap||cs.gap)||8;
-  const clone=group.cloneNode(true);
-  clone.classList.remove('icons-only');
-  clone.removeAttribute('id');
-  clone.style.cssText += ';position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;display:inline-flex';
-  group.parentElement.appendChild(clone);
-  let natural=0; const btns=Array.from(clone.children);
-  btns.forEach(b=>natural+=b.scrollWidth);
-  natural+=gap*Math.max(0,btns.length-1);
-  clone.remove();
+  // Measure full-label width
+  const cloneFull=group.cloneNode(true);
+  cloneFull.classList.remove('icons-only','short-labels');
+  cloneFull.removeAttribute('id');
+  cloneFull.style.cssText += ';position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;display:inline-flex';
+  group.parentElement.appendChild(cloneFull);
+  let naturalFull=0; const btnsFull=Array.from(cloneFull.children);
+  btnsFull.forEach(b=>naturalFull+=b.scrollWidth);
+  naturalFull+=gap*Math.max(0,btnsFull.length-1);
+  // Measure short-label width (if any short-label spans exist)
+  let naturalShort=naturalFull;
+  if(cloneFull.querySelector('.gbtn-label-short')){
+    const cloneShort=cloneFull.cloneNode(true);
+    cloneShort.classList.add('short-labels');
+    group.parentElement.appendChild(cloneShort);
+    let sw=0; const bS=Array.from(cloneShort.children);
+    bS.forEach(b=>sw+=b.scrollWidth);
+    sw+=gap*Math.max(0,bS.length-1);
+    naturalShort=sw;
+    cloneShort.remove();
+  }
+  cloneFull.remove();
   // Available width = header inner width minus the toggle button, the title's MINIMUM
   // width (it's flex:1 with min-width:150 and will shrink to give the actions room), and
   // the header gaps/padding. Using min-width (not the title's content width) is what makes
@@ -28727,17 +28741,21 @@ function _fitSeatingBtns(){
     used+= mw>0 ? mw : ch.getBoundingClientRect().width;
   });
   const free=header.clientWidth - padX - used - hGap*Math.max(0,kids.length-1);
-  // Hysteresis: once collapsed, require clearly more room (10px) before re-expanding,
-  // so a width sitting on the threshold can't flip-flop between full and icon-only
-  // every frame (the visible flicker). Matches the guest/budget fitters.
-  let want;
-  if(wasIcons){
-    want = natural > free - 10 + 1;   // need 10px clear room to re-expand
+  // 3-tier with hysteresis: full → short-labels → icons-only.
+  // Re-expanding from a collapsed state requires 10px more room to avoid flicker.
+  const expandMargin=(wasIcons||wasShort)?10:0;
+  if(naturalFull<=free-expandMargin+1){
+    group.classList.remove('short-labels','icons-only');
+    _seatIconsOnly=false;
+  } else if(naturalShort<=free+1){
+    group.classList.add('short-labels');
+    group.classList.remove('icons-only');
+    _seatIconsOnly=false;
   } else {
-    want = natural > free + 1;        // collapse when it no longer fits
+    group.classList.add('icons-only');
+    group.classList.remove('short-labels');
+    _seatIconsOnly=true;
   }
-  group.classList.toggle('icons-only', want);
-  _seatIconsOnly = want; // remember for the next render's pre-paint stamp
 }
 let _seatingBtnRO=null;
 let _seatingRoLastW=new WeakMap();
@@ -29422,7 +29440,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v310';
+const APP_BUILD='v311';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32475,11 +32493,11 @@ function renderSeatingFloor(c,actions){
   actions.innerHTML=`<div id="seating-btn-group" class="gbtn-group${_seatIconsOnly?' icons-only':''}" style="display:inline-flex;align-items:center;justify-content:flex-end;gap:5px">
       <button class="btn btn-outline btn-sm gbtn" onclick="openAddTable()" title="Add Table" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        <span class="gbtn-label">Add Table</span>
+        <span class="gbtn-label gbtn-label-long">Add Table</span><span class="gbtn-label gbtn-label-short">+ Table</span>
       </button>
       <button class="btn btn-outline btn-sm gbtn" onclick="openSeatingPrintPreview()" title="Export or print the seating plan — PDF, PNG image, CSV spreadsheet, or send to a printer" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span class="gbtn-label">Export</span>
+        <span class="gbtn-label gbtn-label-long">Export</span>
       </button>
         <span id="seat-cog-wrap" style="position:relative;display:inline-flex;align-items:center">
           <button class="btn-icon" onclick="_seatToggleCog(event)" aria-label="Seating display options" title="Display options, arrange &amp; reset">${_seatCogIcon()}</button>
@@ -40019,7 +40037,8 @@ function _invitationSectionHtml(which){
       const ftrun=inv.file.name.length>40?inv.file.name.slice(0,38)+'…':inv.file.name;
       const _invSrc2=_mediaUrl(inv.file.mediaId||inv.file.dataUrl||'');
       const _invIsImg2=/^image\//.test(inv.file.type||'')||/^data:image/.test(inv.file.dataUrl||'')||/\.(png|jpe?g|gif|webp)$/i.test(inv.file.name||'');
-      const _fileThumb=_invSrc2&&_invIsImg2?`<div style="width:48px;height:48px;border-radius:6px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;background:var(--surface)"><img src="${_escHtml(_invSrc2)}" style="width:100%;height:100%;object-fit:cover" alt=""/></div>`:`<div style="width:28px;height:28px;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`;
+      const _fext2=(inv.file.name.match(/\.(\w+)$/)||['','file'])[1].toUpperCase();
+      const _fileThumb=_invSrc2&&_invIsImg2?`<div style="width:48px;height:48px;border-radius:6px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;background:var(--surface)"><img src="${_escHtml(_invSrc2)}" style="width:100%;height:100%;object-fit:cover" alt=""/></div>`:`<div style="width:48px;height:48px;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex-shrink:0"><svg width="18" height="22" viewBox="0 0 40 48" fill="none" opacity=".35"><path d="M4 4C4 1.79 5.79 0 8 0H28L40 12V44C40 46.21 38.21 48 36 48H8C5.79 48 4 46.21 4 44V4Z" fill="var(--muted)"/><path d="M28 0L40 12H32C29.79 12 28 10.21 28 8V0Z" fill="rgba(0,0,0,.15)"/></svg><span style="font-size:7.5px;font-weight:700;letter-spacing:.06em;color:var(--muted)">${_escHtml(_fext2)}</span></div>`;
       content=`${_fileInput}
       <div style="display:flex;flex-direction:column;gap:10px">
         <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px 13px">
@@ -40034,7 +40053,7 @@ function _invitationSectionHtml(which){
           <div style="display:flex;align-items:center;gap:8px">
             ${_fileThumb}
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(ftrun)}</div><div style="font-size:11.5px;color:var(--muted)">${_escHtml(inv.file.sizeLabel||'')}</div></div>
-            ${_invSrc2?`<button type="button" onclick="_invPreviewFile()" class="btn btn-outline btn-sm" style="flex-shrink:0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview</button>`:''}
+            <button type="button" onclick="_invPreviewFile()" class="btn btn-outline btn-sm" style="flex-shrink:0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview</button>
             <button class="btn btn-sm" onclick="_invRemoveFile()" style="flex-shrink:0;background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Remove file"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
         </div>
