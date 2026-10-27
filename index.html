@@ -12514,6 +12514,147 @@ function _rsvpSortValue(g, key, grp){
 }
 function _rsvpSortClick(colKey){ _cycleSort('rsvpSort', colKey); rsvpRerenderList(); }
 
+// ── Online RSVPs: helpers for grouped household display ──────────────────────
+let _orsvpGroups=null;
+function _orsvpBuildGroups(rows){
+  const rowsByName={};
+  rows.forEach(r=>{if(!r.guest_name)return;const k=r.guest_name.trim().toLowerCase();if(!rowsByName[k])rowsByName[k]=[];rowsByName[k].push(r);});
+  const allG=STATE.guests||[];
+  const matched=allG.filter(g=>g&&g.name&&rowsByName[g.name.trim().toLowerCase()]);
+  const inList=new Set(matched.map(g=>g.id));
+  const byId=Object.fromEntries(matched.map(g=>[g.id,g]));
+  const used=new Set();const groups=[];
+  matched.forEach(g=>{
+    if(used.has(g.id))return;
+    const fam=(STATE.families||[]).find(f=>f.memberIds.includes(g.id));
+    if(fam){const mem=fam.memberIds.filter(id=>inList.has(id)).map(id=>byId[id]);if(mem.length>1){mem.forEach(x=>used.add(x.id));groups.push({kind:fam.kind==='household'?'household':'family',members:mem});return;}}
+    if(g.coupleId&&inList.has(g.coupleId)&&!used.has(g.coupleId)){const p=byId[g.coupleId];used.add(g.id);used.add(p.id);groups.push({kind:'couple',members:[g,p]});return;}
+    if(g.plusOneId&&inList.has(g.plusOneId)&&!used.has(g.plusOneId)){const p=byId[g.plusOneId];used.add(g.id);used.add(p.id);groups.push({kind:'plusone',members:[g,p]});return;}
+    used.add(g.id);groups.push({kind:'single',members:[g]});
+  });
+  // Unrecognised names not in STATE.guests
+  Object.keys(rowsByName).forEach(k=>{
+    if(!matched.some(g=>g.name.trim().toLowerCase()===k)){const r=rowsByName[k][0];groups.push({kind:'single',members:[{id:'anon-'+k,name:r.guest_name}]});}
+  });
+  // Attach row data
+  groups.forEach(grp=>{
+    grp.members=grp.members.map(m=>{const rws=(rowsByName[(m.name||'').trim().toLowerCase()]||[]);return Object.assign({},m,{_rows:rws});});
+    const all=grp.members.flatMap(m=>m._rows).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    grp.contact={email:null,phone:null,address:null};
+    ['email','phone','address'].forEach(f=>{const m=grp.members.find(m=>m._rows[0]&&m._rows[0][f]);if(m)grp.contact[f]=m._rows[0][f];});
+    grp.message=all[0]?all[0].message:'';
+    grp.submittedDate=all[0]?all[0].created_at:null;
+    const fn=grp.members.map(m=>(m.name||'').split(' ')[0]);
+    grp.householdName=fn.length===1?grp.members[0].name:fn.length===2?fn[0]+' & '+fn[1]:fn.slice(0,-1).join(', ')+' & '+fn[fn.length-1];
+    grp.initials=fn.map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
+    grp.hasHistory=grp.members.some(m=>m._rows.length>1);
+    grp.attendingAll=grp.members.filter(m=>m._rows[0]&&m._rows[0].attending==='yes').length;
+    grp.totalAll=grp.members.length;
+  });
+  return groups;
+}
+function _orsvpRender(){
+  const filter=window._orsvpFilter||'all';
+  const view=window._orsvpView||'card';
+  const groups=_orsvpGroups||[];
+  const toolbar=document.getElementById('orsvp-toolbar');
+  const listEl=document.getElementById('orsvp-list');
+  if(!listEl)return;
+  // Toolbar
+  if(toolbar){
+    const pill=(f,label)=>`<button onclick="_orsvpSetFilter('${f}')" style="padding:4px 11px;border-radius:20px;border:1.5px solid ${filter===f?'var(--gold-deep)':'var(--border)'};background:${filter===f?'var(--gold-deep)':'transparent'};color:${filter===f?'#fff':'var(--muted)'};font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">${label}</button>`;
+    const vBtn=(v,svg)=>`<button onclick="_orsvpSetView('${v}')" title="${v==='card'?'Card view':'List view'}" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid ${view===v?'var(--gold-deep)':'var(--border)'};background:${view===v?'var(--gold-deep)':'transparent'};color:${view===v?'#fff':'var(--muted)'};cursor:pointer;flex-shrink:0">${svg}</button>`;
+    toolbar.innerHTML=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      ${pill('all','All')}${pill('yes','Attending')}${pill('no','Declined')}
+      <div style="margin-left:auto;display:flex;gap:4px">
+        ${vBtn('card','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>')}
+        ${vBtn('list','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>')}
+      </div>
+    </div>`;
+  }
+  const _pdi=function(d){if(d&&d.startsWith('other:'))return'Other'+(d.slice(6)?' ('+d.slice(6)+')':'');if(d&&d.startsWith('allergy:'))return'Allergy'+(d.slice(8)?': '+d.slice(8):'');const m={vegetarian:'Vegetarian',pescatarian:'Pescatarian',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose int.',gluten:'Gluten int.',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut allergy'};return m[d]||d;};
+  const _fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
+  const _badge=st=>st==='yes'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(74,124,89,.1);color:var(--green);font-size:11px;font-weight:600;white-space:nowrap">✓ Attending</span>`:st==='no'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(192,57,43,.07);color:var(--red);font-size:11px;font-weight:600;white-space:nowrap">✗ Declined</span>`:'';
+
+  let html='';let shown=0;
+  groups.forEach(grp=>{
+    let vis=grp.members;
+    if(filter==='yes') vis=vis.filter(m=>m._rows[0]&&m._rows[0].attending==='yes');
+    else if(filter==='no') vis=vis.filter(m=>m._rows[0]&&m._rows[0].attending==='no');
+    if(!vis.length)return;
+    shown++;
+    const summaryLine=`${grp.attendingAll} of ${grp.totalAll} attending`;
+    const histBtn=grp.hasHistory?`<button onclick="_orsvpToggleHistory(this)" data-grp-id="${grp.initials+grp.members[0].id.replace(/[^a-z0-9]/gi,'')}" title="View RSVP history" style="display:inline-flex;align-items:center;gap:3px;background:none;border:none;padding:2px 4px;font:inherit;font-size:11px;color:var(--muted);cursor:pointer;border-radius:4px;vertical-align:middle"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> History</button>`:'';
+    // History rows for this group
+    const histId='orhist-'+grp.initials+(grp.members[0].id||'').replace(/[^a-z0-9]/gi,'');
+    const histRowsHtml=grp.members.flatMap(m=>m._rows.map((r,i)=>({name:m.name,r,i,len:m._rows.length}))).filter(x=>x.len>1||grp.hasHistory).sort((a,b)=>new Date(a.r.created_at)-new Date(b.r.created_at)).map((x,idx,arr)=>{
+      const prev=arr[idx-1];const st=x.r.attending==='yes'?'attending':x.r.attending==='no'?'declined':'—';
+      const prevSt=prev&&prev.name===x.name?(prev.r.attending==='yes'?'attending':prev.r.attending==='no'?'declined':'—'):null;
+      const isChange=prevSt&&prevSt!==st;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11.5px;color:var(--muted)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg><span style="color:var(--ink);font-weight:500">${x.name}</span> <span style="${isChange?'color:var(--red)':''}">${isChange?'changed to ':''}${st}</span> <span style="margin-left:auto">${_fmt(x.r.created_at)}</span></div>`;
+    }).join('');
+
+    if(view==='card'){
+      const memberRows=vis.map(m=>{
+        const row=m._rows[0]||{};
+        const dietItems=Array.isArray(row.dietary)?row.dietary:[];
+        const dietHtml=dietItems.length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('')}</div>`:'';
+        const mealHtml=row.meal?`<span style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink);margin-top:4px">${row.meal}</span>`:'';
+        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">
+          <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink)">${m.name}</div>${mealHtml}${dietHtml}</div>
+          <div style="flex-shrink:0;padding-top:1px">${_badge(row.attending)}</div>
+        </div>`;
+      }).join('');
+      const c=grp.contact;
+      const ci=[c.email?`<span style="font-size:11.5px;color:var(--ink)">${c.email}</span>`:'',c.phone?`<span style="font-size:11.5px;color:var(--ink)">${c.phone}</span>`:'',c.address?`<span style="font-size:11.5px;color:var(--ink)">${c.address}</span>`:''].filter(Boolean);
+      const contactHtml=ci.length?`<div style="background:var(--surface);border-top:1px solid var(--border);padding:9px 14px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center"><span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px">Contact</span>${ci.join('<span style="color:var(--border)">·</span>')}</div>`:'';
+      const msgHtml=grp.message?`<div style="border-top:1px solid var(--border);padding:9px 14px;font-size:12px;color:var(--muted);font-style:italic">“${grp.message}”</div>`:'';
+      const histSection=grp.hasHistory?`<div id="${histId}" hidden style="border-top:1px solid var(--border);padding:10px 14px"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Submission history</div>${histRowsHtml}</div>`:'';
+      html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--surface);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;letter-spacing:-.02em">${grp.initials}</div>
+          <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:var(--ink)">${grp.householdName}</div><div style="font-size:11.5px;color:var(--muted);margin-top:1px">${summaryLine}</div></div>
+          <div style="font-size:11px;color:var(--muted);flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px">${_fmt(grp.submittedDate)}${histBtn}</div>
+        </div>
+        ${memberRows}${contactHtml}${msgHtml}${histSection}
+      </div>`;
+    } else {
+      // List view
+      const memberRows=vis.map(m=>{
+        const row=m._rows[0]||{};
+        const dietItems=Array.isArray(row.dietary)?row.dietary:[];
+        const chips=dietItems.length?dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 6px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join(''):'';
+        const meal=row.meal?`<span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 14px 7px 46px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+          <span style="font-size:12.5px;font-weight:500;color:var(--ink);flex-shrink:0">${m.name}</span>
+          ${_badge(row.attending)}
+          ${meal}
+          ${chips}
+        </div>`;
+      }).join('');
+      const c=grp.contact;const ci=[c.email,c.phone,c.address].filter(Boolean);
+      const contactLine=ci.length?`<span style="font-size:11px;color:var(--muted)">${ci.join(' · ')}</span>`:'';
+      const histSection=grp.hasHistory?`<div id="${histId}" hidden style="padding:6px 14px 8px 46px;border-bottom:1px solid var(--border)"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">History</div>${histRowsHtml}</div>`:'';
+      html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:0">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--surface)">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--cream);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${grp.initials}</div>
+          <div style="flex:1;min-width:0"><span style="font-size:13px;font-weight:600;color:var(--ink)">${grp.householdName}</span> <span style="font-size:11.5px;color:var(--muted)">— ${summaryLine}</span></div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${contactLine}<span style="font-size:11px;color:var(--muted)">${_fmt(grp.submittedDate)}</span>${histBtn}</div>
+        </div>
+        ${memberRows}${histSection}
+      </div>`;
+    }
+  });
+  listEl.innerHTML=shown?html:`<div style="padding:32px 0;text-align:center;font-size:13px;color:var(--muted);font-style:italic">No responses match this filter.</div>`;
+}
+function _orsvpSetFilter(f){window._orsvpFilter=f;_orsvpRender();}
+function _orsvpSetView(v){window._orsvpView=v;try{localStorage.setItem('uv_orsvp_view',v);}catch(e){}  _orsvpRender();}
+function _orsvpToggleHistory(btn){
+  const id=btn.dataset.grpId?'orhist-'+btn.dataset.grpId:null;
+  const panel=btn.closest('[style]').querySelector('[id^="orhist-"]');
+  if(panel){panel.hidden=!panel.hidden;btn.style.color=panel.hidden?'var(--muted)':'var(--gold-deep)';}
+}
+
 // ── Online RSVPs: fetch submitted responses from Supabase ────────────────────
 async function _loadOnlineRsvps(){
   const body   = document.getElementById('online-rsvps-body');
@@ -12523,7 +12664,7 @@ async function _loadOnlineRsvps(){
     body.innerHTML='<span style="color:var(--red)">Please sign in to view responses.</span>';
     return;
   }
-  if(btn){ btn.disabled=true; btn.innerHTML=btn.innerHTML.replace('Load','Loading…'); }
+  if(btn){ btn.disabled=true; btn.innerHTML=btn.innerHTML.replace('Refresh','Refreshing…'); }
   try{
     const uid = _sbSession.user.id;
     const url = `${_SB_URL}/rest/v1/rsvp_responses?couple_id=eq.${encodeURIComponent(uid)}&order=created_at.desc&limit=200`;
@@ -12535,7 +12676,7 @@ async function _loadOnlineRsvps(){
 
     if(!rows.length){
       body.innerHTML='<span style="color:var(--muted);font-style:italic">No responses yet — share your RSVP link to get started.</span>';
-      if(btn){ btn.disabled=false; btn.innerHTML=btn.innerHTML.replace('Loading…','Refresh'); }
+      if(btn){ btn.disabled=false; btn.innerHTML=btn.innerHTML.replace('Refreshing…','Refresh'); }
       return;
     }
 
@@ -12555,35 +12696,11 @@ async function _loadOnlineRsvps(){
     // Format date helper
     const fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
 
-    // Build table
-    const rowsHtml = rows.map(r=>{
-      const _parseDietItem=function(d){
-        if(d&&d.startsWith('other:')){const n=d.slice(6);return n?'Other ('+n+')':'Other';}
-        if(d&&d.startsWith('allergy:')){const n=d.slice(8);return n?'Allergy ('+n+')':'Allergy';}
-        return dietLabels[d]||d;
-      };
-      const dietStr = Array.isArray(r.dietary)&&r.dietary.length
-        ? r.dietary.map(_parseDietItem).join(', ')
-        : '—';
-      const attendBadge = r.attending==='yes'
-        ? `<span style="color:var(--green);font-weight:600">✓ Yes</span>`
-        : r.attending==='no'
-          ? `<span style="color:var(--red)">✗ No</span>`
-          : `<span style="color:var(--muted)">—</span>`;
-      const mealStr=r.meal||'—';
-      return `<tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:8px 10px;font-size:12.5px;color:var(--ink);font-weight:500">${r.guest_name||'—'}</td>
-        <td style="padding:8px 10px;font-size:12.5px">${attendBadge}</td>
-        <td style="padding:8px 10px;font-size:12px;color:var(--muted)">${dietStr}</td>
-        <td style="padding:8px 10px;font-size:12px;color:var(--muted)">${mealStr}</td>
-        <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.email||'—'}</td>
-        <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.phone||'—'}</td>
-        <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${r.address||'—'}</td>
-        <td style="padding:8px 10px;font-size:11.5px;color:var(--muted)">${fmt(r.created_at)}</td>
-      </tr>`;
-    }).join('');
-
-    body.innerHTML=`
+    // Build grouped households + render
+    window._orsvpFilter = window._orsvpFilter || 'all';
+    try { window._orsvpView = localStorage.getItem('uv_orsvp_view') || 'card'; } catch(e) { window._orsvpView = 'card'; }
+    _orsvpGroups = _orsvpBuildGroups(rows);
+    body.innerHTML = `
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
         <div style="flex:1;min-width:90px;padding:10px 14px;background:rgba(74,124,89,.08);border:1px solid rgba(74,124,89,.25);border-radius:9px;text-align:center">
           <div style="font-size:22px;font-weight:700;color:var(--green)">${yes}</div>
@@ -12601,23 +12718,9 @@ async function _loadOnlineRsvps(){
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">
         <strong style="color:var(--ink)">Dietary (attending):</strong> ${dietSummary}
       </div>
-      <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border)">
-        <table style="width:100%;border-collapse:collapse;font-family:inherit">
-          <thead>
-            <tr style="background:var(--surface);border-bottom:1px solid var(--border)">
-              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Guest</th>
-              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Attending</th>
-              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Dietary</th>
-              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Meal</th>
-              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Email</th>
-              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Phone</th>
-              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Address</th>
-              <th style="padding:8px 10px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left">Submitted</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-      </div>`;
+      <div id="orsvp-toolbar" style="margin-bottom:10px"></div>
+      <div id="orsvp-list" style="display:flex;flex-direction:column;gap:10px"></div>`;
+    _orsvpRender();
     // ── Sync online RSVPs into guest list ──
     if(Array.isArray(STATE.guests) && STATE.guests.length){
       // Always base the merge on the cloud's guest data so that a sparse local
@@ -12693,7 +12796,7 @@ async function _loadOnlineRsvps(){
     console.warn('_loadOnlineRsvps error',err);
     body.innerHTML=`<span style="color:var(--red)">Could not load responses — ${err.message||'network error'}. Try again.</span>`;
   } finally {
-    if(btn){ btn.disabled=false; btn.innerHTML=btn.innerHTML.replace('Loading…','Refresh'); }
+    if(btn){ btn.disabled=false; btn.innerHTML=btn.innerHTML.replace('Refreshing…','Refresh'); }
   }
 }
 
@@ -12857,7 +12960,7 @@ function renderRsvpMgr(c, actions){
           <span>Online RSVPs</span>
           <button class="btn btn-sm btn-outline" style="font-size:11.5px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px" onclick="_loadOnlineRsvps()" id="load-rsvps-btn">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
-            Load
+            Refresh
           </button>
         </div>
         <div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:6px 0">
@@ -29323,8 +29426,8 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v288';
-const APP_BUILD_DATE='2026-10-26';
+const APP_BUILD='v289';
+const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
   const p1=_escHtml(ev.partner1||'Partner'), p2=_escHtml(ev.partner2||'Partner');
