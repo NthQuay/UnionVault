@@ -29396,7 +29396,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v304';
+const APP_BUILD='v305';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47233,8 +47233,20 @@ async function _backupNow(btn){
   if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
   try{
     const uid=_sbSession.user.id;
-    const r=await _sb.rpc('create_user_backup',{p_user_id:uid});
-    if(r.error) throw r.error;
+    // Fetch all sections then bundle into one snapshot object
+    const rd=await _sb.from('planner_data').select('section,data').eq('user_id',uid);
+    if(rd.error) throw rd.error;
+    if(!rd.data||!rd.data.length) throw new Error('No data to back up');
+    const snapshot={};
+    rd.data.forEach(row=>{ snapshot[row.section]=row.data; });
+    const ins=await _sb.from('planner_backups').insert({user_id:uid,data:snapshot});
+    if(ins.error) throw ins.error;
+    // Prune to 48 most recent — fetch all ids sorted newest-first then delete the tail
+    const ids=await _sb.from('planner_backups').select('id').eq('user_id',uid).order('created_at',{ascending:false});
+    if(!ids.error && ids.data && ids.data.length>48){
+      const toDelete=ids.data.slice(48).map(r=>r.id);
+      await _sb.from('planner_backups').delete().in('id',toDelete);
+    }
     _cloudToast('Backup saved ✓');
   }catch(e){
     _cloudToast('Backup failed: '+(e.message||e),true);
