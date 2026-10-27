@@ -3045,13 +3045,8 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* ══ FEATURES ══ */
 #features{background:var(--cream);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:40px}
-@media(max-width:900px){.feat-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:500px){.feat-grid{grid-template-columns:1fr}}
-.feat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:12px}
-.feat-icon{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,rgba(184,150,90,.12),rgba(184,150,90,.05));border:1px solid rgba(184,150,90,.2);display:flex;align-items:center;justify-content:center;color:var(--gold);flex-shrink:0}
-.feat-name{font-family:var(--font-display);font-size:20px;font-weight:400;color:var(--ink)}
-.feat-desc{font-size:13px;color:var(--muted);line-height:1.65;font-weight:300}
+.feat-img{margin-top:40px;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(74,63,53,.10);border:1px solid var(--border)}
+.feat-img img{display:block;width:100%;height:auto}
 
 /* ══ PRICING ══ */
 #pricing{background:var(--cream-mid);border-bottom:1px solid var(--border)}
@@ -3239,37 +3234,8 @@ textarea.contact-input{resize:vertical;min-height:110px}
     <div class="section-eyebrow">Features</div>
     <div class="section-title">Everything for your <em>big day</em></div>
     <div class="section-body">From your first guest invite to your last dance, Union Vault keeps every detail in one beautiful place.</div>
-    <div class="feat-grid">
-      <div class="feat-card">
-        <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-        <div class="feat-name">Guest List &amp; RSVP</div>
-        <div class="feat-desc">Track every guest, dietary requirement, RSVP status, and plus-one. Filter and export at any time.</div>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-        <div class="feat-name">Budget Planner</div>
-        <div class="feat-desc">Set a total budget, track spending per category, log payments, and see exactly where you stand.</div>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
-        <div class="feat-name">Seating Planner</div>
-        <div class="feat-desc">Build your floorplan, drag-and-drop guests into seats, then print or export to share.</div>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
-        <div class="feat-name">Vendor Manager</div>
-        <div class="feat-desc">Store vendor contacts, quotes, contracts, and payment status all in one place.</div>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
-        <div class="feat-name">Wishing Well</div>
-        <div class="feat-desc">Track gifts and monetary contributions, send thank-you notes, and manage gift acknowledgements.</div>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div>
-        <div class="feat-name">Cloud Sync</div>
-        <div class="feat-desc">Your planner saves to the cloud automatically. Access from any device, any time — nothing is ever lost.</div>
-      </div>
+    <div class="feat-img">
+      <img src="assets/union-vault-planning-hub.png" alt="Union Vault planning hub — guest list, budget, seating, vendors and more in one place" loading="lazy">
     </div>
   </div>
 </section>
@@ -29427,7 +29393,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v294';
+const APP_BUILD='v295';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
