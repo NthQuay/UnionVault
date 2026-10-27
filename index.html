@@ -25650,7 +25650,7 @@ function budgetItemHtml(b){
     // Due text now sits INLINE (left of the calendar/amount), matching PAID and the
     // sub-item Due text — same 9px uppercase .02em treatment — instead of a 2nd line.
     const dueCls = dueVal ? dueDateClass(dueVal, paid) : '';
-    const dueInlineLabel = (!paid && !autoCalc && dueVal)
+    const dueInlineLabel = (!paid && dueVal)
       ? `<span class="${dueCls}" style="font-size:9px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;flex-shrink:0;margin-right:4px;${dueCls?'':'color:var(--muted)'}">${dueCls==='date-overdue'?'Overdue ':'Due '}${fmtBudgetDate(dueVal)}</span>`
       : '';
     const midDate = '';
@@ -27009,6 +27009,7 @@ function _budgetAttachOptionsCloser(){
 function openBudgetHidePopup(e){
   // Now a cog-style popover toggled in place (was a modal).
   if(e) e.stopPropagation();
+  closeBudgetReportsMenu(); // mutual exclusion
   const m=document.getElementById('budget-options-menu');
   if(!m) return;
   const showing=m.style.display!=='none' && m.style.display!=='';
@@ -29395,7 +29396,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v303';
+const APP_BUILD='v304';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -45272,6 +45273,9 @@ function _budgetReportsMenuHtml(){
 }
 function toggleBudgetReportsMenu(ev){
   if(ev) ev.stopPropagation();
+  // mutual exclusion: close cog menu if open
+  const cogMenu=document.getElementById('budget-options-menu');
+  if(cogMenu && cogMenu.style.display==='block'){ cogMenu.style.display='none'; _budgetOptionsMenuOpen=false; }
   const m=document.getElementById('budget-reports-menu');
   if(!m) return;
   const willOpen=m.classList.contains('hidden');
@@ -47213,7 +47217,83 @@ function _cloudAccountHtml(){
     +`<div style="display:flex;gap:10px">`
     +`<button class="btn btn-primary btn-sm" id="cloud-save-btn" onclick="cloudSaveClick()" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:1">${_csvBtnHtml()}</button>`
     +`<button class="btn btn-primary btn-sm" id="cloud-load-btn" onclick="cloudLoadClick()" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:1">${_cldBtnHtml()}</button></div>`
-    +`<p style="font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.4"><b>Save to cloud</b> — uploads your current planner.<br><b>Load from cloud</b> — replaces this device&#39;s data with the cloud version.</p>`;
+    +`<p style="font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.4"><b>Save to cloud</b> — uploads your current planner.<br><b>Load from cloud</b> — replaces this device&#39;s data with the cloud version.</p>`
+    +`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">`
+    +`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">`
+    +`<div><div style="font-size:12px;font-weight:500">Automatic backups</div><div style="font-size:11px;color:var(--muted)">Hourly snapshots, last 48 hours</div></div>`
+    +`<div style="display:flex;gap:8px">`
+    +`<button class="btn btn-outline btn-sm" onclick="_backupNow(this)" style="font-size:11px;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-8.9"/></svg>Back up now</button>`
+    +`<button class="btn btn-outline btn-sm" onclick="_openBackupModal()" style="font-size:11px;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>View backups</button>`
+    +`</div></div></div>`;
+}
+
+// ── CLOUD BACKUPS ────────────────────────────────────────────────────────────
+async function _backupNow(btn){
+  if(!_sbSession){ _cloudToast('Not signed in',true); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
+  try{
+    const uid=_sbSession.user.id;
+    const r=await _sb.rpc('create_user_backup',{p_user_id:uid});
+    if(r.error) throw r.error;
+    _cloudToast('Backup saved ✓');
+  }catch(e){
+    _cloudToast('Backup failed: '+(e.message||e),true);
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-8.9"/></svg>Back up now'; }
+  }
+}
+
+async function _openBackupModal(){
+  if(!_sbSession){ _cloudToast('Not signed in',true); return; }
+  openModal('Backups','<div style="text-align:center;padding:20px;color:var(--muted)">Loading…</div>','<button class="btn btn-primary" onclick="closeModalDirect()">Close</button>');
+  try{
+    const r=await _sb.from('planner_backups').select('id,created_at').order('created_at',{ascending:false}).limit(48);
+    if(r.error) throw r.error;
+    const rows=r.data||[];
+    const body=document.getElementById('modal-body');
+    if(!body) return;
+    if(!rows.length){
+      body.innerHTML='<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0">No backups yet. Click "Back up now" to create your first snapshot.</p>';
+      return;
+    }
+    body.innerHTML=`<p style="font-size:12px;color:var(--muted);margin:0 0 12px">Select a backup to restore. Your current data will be replaced.</p>`
+      +`<div style="display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto">`
+      +rows.map((row,i)=>{
+        const d=new Date(row.created_at);
+        const label=d.toLocaleDateString([],{day:'numeric',month:'short',year:'numeric'})+' · '+d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+        const badge=i===0?`<span style="font-size:10px;background:rgba(201,168,100,.2);color:var(--gold-deep);border-radius:9px;padding:2px 7px;font-weight:600;letter-spacing:.03em;flex-shrink:0">Latest</span>`:'';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px">`
+          +`<div style="flex:1;min-width:0"><span style="font-size:12.5px;font-weight:500">${label}</span>${badge?(' '+badge):''}</div>`
+          +`<button class="btn btn-outline btn-sm" onclick="_restoreFromBackup('${row.id}',this)" style="font-size:11px;white-space:nowrap">Restore</button>`
+          +`</div>`;
+      }).join('')
+      +`</div>`;
+  }catch(e){
+    const body=document.getElementById('modal-body');
+    if(body) body.innerHTML=`<p style="color:var(--red);font-size:13px">${e.message||'Failed to load backups'}</p>`;
+  }
+}
+
+async function _restoreFromBackup(backupId, btn){
+  if(!confirm('Restore this backup? Your current data will be replaced.')) return;
+  if(btn){ btn.disabled=true; btn.textContent='Restoring…'; }
+  try{
+    const r=await _sb.from('planner_backups').select('data').eq('id',backupId).single();
+    if(r.error) throw r.error;
+    const snap=r.data.data;
+    // Write each section back into planner_data
+    const uid=_sbSession.user.id;
+    const upserts=Object.entries(snap).map(([section,data])=>({user_id:uid,section,data,updated_at:new Date().toISOString()}));
+    const wr=await _sb.from('planner_data').upsert(upserts,{onConflict:'user_id,section'});
+    if(wr.error) throw wr.error;
+    // Reload from cloud to update STATE
+    await cloudLoadClick(true);
+    closeModalDirect();
+    _cloudToast('Backup restored ✓');
+  }catch(e){
+    if(btn){ btn.disabled=false; btn.textContent='Restore'; }
+    _cloudToast('Restore failed: '+(e.message||e),true);
+  }
 }
 
 function _syncStatusHtml(){
