@@ -29426,7 +29426,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v290';
+const APP_BUILD='v291';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -34242,7 +34242,7 @@ function renderWebsite(c, actions){
             <button type="button" id="wb-view-mobile"  class="${_wbLiveViewMode==='mobile' ?'active':''}" onclick="_wbViewSet('mobile')">Mobile</button>
           </span>
         </div>
-        <div class="wb-pane-frame" style="${_wbLiveViewMode==='mobile'?'max-width:390px;margin:0 auto;border-radius:20px':''}"><iframe id="wb-live" title="Live preview of your website" sandbox="allow-same-origin"></iframe></div>
+        <div class="wb-pane-frame" style="${_wbLiveViewMode==='mobile'?'max-width:390px;margin:0 auto;border-radius:20px':''}"><iframe id="wb-live" title="Live preview of your website" sandbox="allow-same-origin allow-scripts"></iframe></div>
         <div class="wb-pane-cap">Live · updates as you edit</div>
       </div>
     </div>
@@ -37499,7 +37499,7 @@ function _wbPreviewPaint(){
   // sides. Before, it was full-width and the side gaps were leftovers.
   wrap.innerHTML=`<div style="background:var(--surface);border-radius:10px;padding:${PAD}px;width:max-content;max-width:100%">
       <div style="width:${fw}px;height:${fh}px;overflow:hidden;border-radius:${phone?'18px':'8px'};border:1px solid var(--border);background:#fff">
-        <iframe id="wb-pv-frame" style="width:${w}px;height:${h}px;border:0;transform:scale(${scale});transform-origin:top left;display:block" sandbox="allow-same-origin"></iframe>
+        <iframe id="wb-pv-frame" style="width:${w}px;height:${h}px;border:0;transform:scale(${scale});transform-origin:top left;display:block" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
     </div>`;
   const f=document.getElementById('wb-pv-frame');
