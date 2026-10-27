@@ -789,8 +789,8 @@ body.dark .wb-custom-badge{background:rgba(196,168,130,.15);color:#C3B69E}
 .toggle-switch input:checked+.toggle-track::after{transform:translateX(22px)}
 body.dark .toggle-track{background:#48464F;box-shadow:inset 0 0 0 .5px #5A5862}
 body.dark .toggle-switch input:checked+.toggle-track{background:var(--gold);box-shadow:none}
-html,body{height:100%;background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
-.app{display:flex;height:100vh;overflow:hidden}
+html,body{height:100%;overflow:hidden;background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
+.app{display:flex;height:100vh;height:100dvh;overflow:hidden}
 
 /* SIDEBAR */
 .sidebar{width:var(--sidebar-w);background:#fff;border-right:1px solid rgba(224,216,207,.45);display:flex;flex-direction:column;transition:width .3s cubic-bezier(.4,0,.2,1);overflow:hidden;flex-shrink:0;z-index:100}
@@ -29393,7 +29393,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v295';
+const APP_BUILD='v296';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
