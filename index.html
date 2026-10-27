@@ -438,7 +438,7 @@ body.dark .rsvp-style-btn:hover{color:#CBBBA0;border-color:#A2957A;background:#2
 body.dark .vb-layout-trigger{border-color:#2E2D33;color:#D2CEC6}
 body.dark .vb-layout-trigger:hover{border-color:#B0A085}
 body.dark .vb-layout-item.active{background:#2C2C32}
-@media(max-width:560px){.vb-tb-label{display:none!important}.vb-layout-trigger{gap:4px;padding:6px 8px}}
+@media(max-width:560px){.vb-tb-label{display:none!important}.vb-layout-trigger{gap:4px;padding:6px 8px}.vb-toolbar{gap:5px!important}}
 /* Custom colour picker */
 body.dark .hex-input-wrap{background:#24242B;border-color:#3A3940}
 body.dark .hex-text-input{background:#24242B;color:#D2CEC6}
@@ -29393,7 +29393,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v298';
+const APP_BUILD='v299';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -39856,9 +39856,9 @@ function renderVisionboard(c,actions){
 
   c.innerHTML=`
   <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:10px">
-    <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+    <div class="vb-toolbar" style="display:flex;align-items:center;gap:10px;margin-left:auto">
       <div style="display:inline-flex;border:.5px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)">
-        ${[['captions','Captions',false],['images','Images',true]].map(([k,lbl,val],i)=>{
+        ${[['captions','Cap.',false],['images','Img.',true]].map(([k,lbl,val],i)=>{
           const active=vbPageImagesOnly===val;
           return `<button type="button" onclick="setVbPageImagesOnly(${val})" title="${val?'Show images only':'Show captions and frames'}" style="${i>0?'border-left:.5px solid var(--border);':''}border:none;${active?'background:var(--gold-deep);color:#fff;font-weight:600;':'background:transparent;color:var(--muted);font-weight:500;'}padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit">${lbl}</button>`;
         }).join('')}
