@@ -439,6 +439,8 @@ body.dark .vb-layout-trigger{border-color:#2E2D33;color:#D2CEC6}
 body.dark .vb-layout-trigger:hover{border-color:#B0A085}
 body.dark .vb-layout-item.active{background:#2C2C32}
 @media(max-width:560px){.vb-tb-label{display:none!important}.vb-layout-trigger{gap:4px;padding:6px 8px}.vb-toolbar{gap:5px!important}}
+.inspo-btn-short{display:none}
+@media(max-width:600px){.inspo-btn-long{display:none}.inspo-btn-short{display:inline}.inspo-vb-btn,.inspo-add-btn{padding-left:10px!important;padding-right:10px!important}}
 /* Custom colour picker */
 body.dark .hex-input-wrap{background:#24242B;border-color:#3A3940}
 body.dark .hex-text-input{background:#24242B;color:#D2CEC6}
@@ -29393,7 +29395,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v299';
+const APP_BUILD='v300';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -32735,7 +32737,7 @@ function brushSwatchHtml(hex, name, idx){
 }
 
 function renderInspo(c,actions){
-  actions.innerHTML=`<button class="btn btn-outline btn-sm" onclick="navigate('visionboard')" style="display:inline-flex;align-items:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Vision Board</button><button class="btn btn-primary btn-sm" onclick="openAddInspo()" style="display:inline-flex;align-items:center;gap:5px">${_plusIcon()}Add Idea</button>`;
+  actions.innerHTML=`<button class="btn btn-outline btn-sm inspo-vb-btn" onclick="navigate('visionboard')" style="display:inline-flex;align-items:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span class="inspo-btn-long">Vision Board</span><span class="inspo-btn-short">Board</span></button><button class="btn btn-primary btn-sm inspo-add-btn" onclick="openAddInspo()" style="display:inline-flex;align-items:center;gap:5px">${_plusIcon()}<span class="inspo-btn-long">Add Idea</span><span class="inspo-btn-short">Add</span></button>`;
 
   const _inspoCollapsed=(()=>{try{return new Set(JSON.parse(localStorage.getItem('uv_inspo_collapsed')||'[]'));}catch(_){return new Set();}})();
 
