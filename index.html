@@ -3525,7 +3525,14 @@ async function _lpSignIn() {
   errEl.style.display = 'none';
   if(!email || !pw){ errEl.textContent = 'Please enter your email and password.'; errEl.style.display = ''; return; }
   btn.disabled = true; btn.textContent = 'Signing in…';
-  var r = await _sbSignIn(email, pw);
+  var r;
+  try { r = await _sbSignIn(email, pw); }
+  catch(e) {
+    btn.disabled = false; btn.textContent = 'Sign in';
+    errEl.style.color='#c0392b';
+    errEl.textContent = 'Connection error — please check your connection and try again.';
+    errEl.style.display = ''; return;
+  }
   btn.disabled = false; btn.textContent = 'Sign in';
   if(!r.ok){ errEl.style.color='#c0392b'; errEl.textContent = r.error; errEl.style.display = ''; return; }
   // Success — guard against cross-account data contamination.
@@ -29500,7 +29507,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v329';
+const APP_BUILD='v330';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
