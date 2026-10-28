@@ -3530,7 +3530,7 @@ async function _lpSignIn() {
   catch(e) {
     btn.disabled = false; btn.textContent = 'Sign in';
     errEl.style.color='#c0392b';
-    errEl.textContent = 'Error: '+(e&&(e.message||e.name||String(e))||'unknown');
+    errEl.textContent = 'Connection error — please check your connection and try again.';
     errEl.style.display = ''; return;
   }
   btn.disabled = false; btn.textContent = 'Sign in';
@@ -29507,7 +29507,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v331';
+const APP_BUILD='v332';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -50066,13 +50066,13 @@ async function _rfSubmit(coupleId){
           }).catch(function(){});
         }
       }catch(e2){}
-      const rwDone=document.getElementById(‘rw-p-done’);
+      const rwDone=document.getElementById('rw-p-done');
       if(rwDone){
-        const dn=document.getElementById(‘rw-done-name’);
-        if(dn){const first=name.split(‘ ‘)[0];dn.textContent=first;}
-        if(typeof _rfWizShowPage===’function’)_rfWizShowPage(‘rw-p-done’);
+        const dn=document.getElementById('rw-done-name');
+        if(dn){const first=name.split(' ')[0];dn.textContent=first;}
+        if(typeof _rfWizShowPage==='function')_rfWizShowPage('rw-p-done');
       } else {
-        const formBody=document.getElementById(‘rsvp-form-body’);
+        const formBody=document.getElementById('rsvp-form-body');
         if(formBody){
           formBody.innerHTML=`<div class="rf-msg-box">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;margin:0 auto 12px"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
