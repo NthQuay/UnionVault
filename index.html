@@ -29179,6 +29179,9 @@ async function _cloudSave(silent,keepalive){
     dashWidgetOrder:STATE.dashWidgetOrder,
     dashLayout:STATE.dashLayout, dashHiddenWidgets:STATE.dashHiddenWidgets
   };
+  // Ensure all locally-available images have been uploaded to Storage before
+  // persisting the media IDs to the database (runs once per session).
+  if(!keepalive) await _mediaEnsureUploaded();
   const rows=_CS.map(s=>({user_id:uid,section:s,data:pay[s]??{},updated_at:STATE.settings._lastCloudSave}));
   const ok=await _sbUpsert('planner_data',rows,'user_id,section',keepalive);
   if(ok){
@@ -29445,7 +29448,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v315';
+const APP_BUILD='v316';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47870,7 +47873,7 @@ async function _mediaPut(dataUrl, name, type){
   MEDIA[id]      = URL.createObjectURL(blob);
   MEDIA_META[id] = { size:blob.size, type:type||blob.type, name:name||'' };
   // Stage 4: upload to Supabase Storage in background (non-blocking)
-  if(_sbSession) _sbPhotoUpload(id, blob).catch(e=>console.warn('Photo upload failed',id,e));
+  if(_sbSession) _sbPhotoUpload(id, blob).then(ok=>{ if(ok) _MEDIA_UPLOADED.add(id); }).catch(e=>console.warn('Photo upload failed',id,e));
   return id;
 }
 
@@ -47937,6 +47940,10 @@ function _mediaUrl(ref){
 const _SB_BUCKET = 'photos';
 // Signed URL cache: id → { url, expires }
 const _sbSignedCache = {};
+// Media IDs confirmed uploaded to Storage this session
+const _MEDIA_UPLOADED = new Set();
+// Guard so _mediaEnsureUploaded() only does the bulk re-check once per session
+let _mediaEnsureRan = false;
 
 async function _sbPhotoUpload(id, blob){
   if(!_sbSession) return false;
@@ -48007,6 +48014,27 @@ async function _sbPhotoFetch(id){
     MEDIA_META[id] = { size:blob.size, type:blob.type, name:'' };
     return true;
   }catch(e){ console.warn('_sbPhotoFetch failed',id,e); return false; }
+}
+
+// Before a cloud save, ensure all locally-available images are in Storage.
+// Runs once per session (guarded by _mediaEnsureRan). Re-uploads any blobs
+// present in the local MEDIA cache that weren't confirmed uploaded this session.
+// Uses fetch(blobUrl) to recover the raw Blob from the blob: URL stored in MEDIA[].
+async function _mediaEnsureUploaded(){
+  if(!_sbSession || _mediaEnsureRan) return;
+  _mediaEnsureRan = true;
+  const refs = new Set();
+  _mediaRefs(STATE,'id').forEach(h=>{ const v=h.get(); if(v) refs.add(v); });
+  const toSync = [...refs].filter(id => MEDIA[id] && !_MEDIA_UPLOADED.has(id));
+  if(!toSync.length) return;
+  console.log(`[Stage4] Ensuring ${toSync.length} image(s) are in cloud storage…`);
+  for(const id of toSync){
+    try{
+      const blob = await fetch(MEDIA[id]).then(r=>r.blob());
+      const ok = await _sbPhotoUpload(id, blob);
+      if(ok) _MEDIA_UPLOADED.add(id);
+    }catch(e){ console.warn('[Stage4] re-upload failed',id,e); }
+  }
 }
 
 // After a cloud data load, queue background fetch for any media IDs missing locally
