@@ -4590,7 +4590,8 @@ function buildDashVisionHtml(){
   }
   const _hasPinned = !!(_pinnedIds && _pinnedIds.length);
   const layout=STATE.settings.vbLayout||'scrapbook';
-  let vbSize=STATE.settings.vbSize;
+  let vbSize;try{vbSize=localStorage.getItem('uv-vb-size');}catch(e){}
+  if(!vbSize)vbSize=STATE.settings.vbSize;
   if(!vbSize){ vbSize = STATE.settings.vbDensity==='2' ? 'medium' : (STATE.settings.vbDensity==='3' ? 'small' : 'small'); }
   if(!['xsmall','small','medium','large'].includes(vbSize)) vbSize='small';
   // Desktop per-row card minimum width by size (mobile counts come from CSS classes).
@@ -29507,7 +29508,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v333';
+const APP_BUILD='v334';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -33512,7 +33513,7 @@ let vbDragId = null;
 function setVbLayout(l){ vbLayout=l; STATE.settings.vbLayout=l; saveToStorage(); navigate('visionboard'); }
 function setVbBackground(bg){ if(!STATE.settings)STATE.settings={}; STATE.settings.vbBackground=bg; saveToStorage(); navigate(_currentPage||'visionboard'); }
 function setVbDensity(d){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbDensity=d; saveToStorage(); navigate('visionboard'); }
-function setVbSize(sz){ if(!STATE.settings) STATE.settings={}; if(!['xsmall','small','medium','large'].includes(sz)) sz='small'; STATE.settings.vbSize=sz; delete STATE.settings.vbDensity; saveToStorage(); navigate(_currentPage||'visionboard'); }
+function setVbSize(sz){ if(!['xsmall','small','medium','large'].includes(sz)) sz='small'; try{localStorage.setItem('uv-vb-size',sz);}catch(e){} navigate(_currentPage||'visionboard'); }
 function setVbImagesOnly(v){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbDashImagesOnly=!!v; saveToStorage(); navigate(_currentPage||'dashboard'); }
 function setVbPageImagesOnly(v){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbPageImagesOnly=!!v; saveToStorage(); navigate('visionboard'); }
 function setVbGrouped(v){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbGrouped=!!v; saveToStorage(); navigate('visionboard'); }
@@ -39820,9 +39821,10 @@ function renderVisionboard(c,actions){
   vbLayout = STATE.settings.vbLayout || 'scrapbook';
   // Page-level Captions/Images toggle (independent of the dashboard widget's toggle).
   const vbPageImagesOnly = !!STATE.settings.vbPageImagesOnly;
-  // Card size (Small / Medium / Large). Migrate the old ×2/×3 density values:
-  // old '3' (denser) → small, old '2' → medium.
-  let vbSize = STATE.settings.vbSize;
+  // Card size (Small / Medium / Large). Per-device: stored in localStorage, not synced.
+  // Migrate the old ×2/×3 density values: old '3' (denser) → small, old '2' → medium.
+  let vbSize;try{vbSize=localStorage.getItem('uv-vb-size');}catch(e){}
+  if(!vbSize)vbSize=STATE.settings.vbSize;
   if(!vbSize){ vbSize = STATE.settings.vbDensity==='2' ? 'medium' : (STATE.settings.vbDensity==='3' ? 'small' : 'small'); }
   if(!['xsmall','small','medium','large'].includes(vbSize)) vbSize='small';
   // Per-row card minimum width by size. Smaller = more per row.
