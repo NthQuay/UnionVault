@@ -29471,7 +29471,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v320';
+const APP_BUILD='v321';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38380,7 +38380,7 @@ dl{text-align:left}
 dl div{display:flex;gap:18px;padding:${sp(12)}px 0;border-bottom:1px solid ${t2.heading}12}
 dl div:last-child{border-bottom:none}
 dt{font-size:${scb(11)}px;letter-spacing:.14em;text-transform:uppercase;color:${t2.accent};width:100px;flex-shrink:0;padding-top:4px}
-dd{flex:1}
+dd{flex:1;font-size:${scs(15)}px}
 /* Centring a structured row means STACKING it. A plain text-align:center on a flex row
    leaves the label and the value side by side and drifts both — the column is gone and
    nothing is actually centred. The row has to become a column first. */
@@ -38389,7 +38389,7 @@ section.b-center dt{width:auto;padding-top:0}
 .ed-details{text-align:center;padding:${sp(8)}px 0}
 .ed-date{font-family:${t2.headFont};font-size:${sch(22)}px;font-weight:600;color:${t2.item};margin:0 0 ${sp(4)}px}
 .ed-venue{font-family:${t2.headFont};font-size:${sch(19)}px;font-weight:600;color:${t2.item};margin:${sp(16)}px 0 ${sp(4)}px}
-.ed-sub{font-size:${scb(14)}px;color:${t2.text};opacity:.7;margin:0 0 ${sp(2)}px}
+.ed-sub{font-size:${scs(14)}px;color:${t2.text};opacity:.7;margin:0 0 ${sp(2)}px}
 .sched{list-style:none}
 section.lft .sched{text-align:left}
 /* When section heading is centred (no .lft), constrain the timeline list width and
@@ -38398,12 +38398,12 @@ section:not(.lft) .sched{max-width:520px;margin-left:auto;margin-right:auto}
 .sched li{display:flex;gap:18px;padding:${sp(14)}px 0;border-bottom:1px solid ${t2.heading}12}
 .sched li:last-child{border-bottom:none}
 .sched .t{width:82px;flex-shrink:0;font-size:${scb(13)}px;letter-spacing:.06em;color:${t2.accent};padding-top:3px}
-.sched .d{flex:1}
+.sched .d{flex:1;font-size:${scs(15)}px}
 section.b-center .sched{text-align:center}
 section.b-center .sched li{flex-direction:column;gap:2px;text-align:center}
 section.b-center .sched .t{width:auto;padding-top:0}
 .sched .d b{display:block;font-family:${t2.headFont};font-size:${sch(20)}px;font-weight:500;color:${t2.item}}
-.sched .d i{display:block;font-style:normal;font-size:${scb(14)}px;color:${t2.text};opacity:.75;margin-top:1px}
+.sched .d i{display:block;font-style:normal;font-size:${scs(13)}px;color:${t2.text};opacity:.75;margin-top:1px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .grid img{width:100%;aspect-ratio:1;object-fit:cover;display:block;border-radius:${imgRad}}
 /* v148 gallery grid layouts. Centre: fixed-width tiles that keep their size and sit centred
@@ -38492,7 +38492,7 @@ section.b-center .stays{text-align:center}
 .stays li{padding:${sp(14)}px 0;border-bottom:1px solid ${t2.heading}12}
 .stays li:last-child{border-bottom:none}
 .stays b{font-family:${t2.headFont};font-size:${sch(20)}px;font-weight:500;display:block;color:${t2.item}}
-.stays i{font-style:normal;font-size:${scb(14)}px;color:${t2.text};opacity:.75;display:block;margin-top:2px}
+.stays i{font-style:normal;font-size:${scs(13)}px;color:${t2.text};opacity:.75;display:block;margin-top:2px}
 .stays a{color:${t2.accent};font-size:${scb(13)}px;text-decoration:none;border-bottom:1px solid ${t2.accent}66;display:inline-block;margin-top:6px}
 .faq{text-align:left}
 section.b-center .faq{text-align:center}
