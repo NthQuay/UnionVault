@@ -29462,7 +29462,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v317';
+const APP_BUILD='v318';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -33879,6 +33879,8 @@ function _wbSite(){
   }
   if(t.gap<0||t.gap>100) t.gap=0;
   if(typeof t.secpad!=='number') t.secpad=52;
+  if(typeof t.secpadH!=='number') t.secpadH=24;
+  if(typeof t.secBodyScale!=='number') t.secBodyScale=100;
   if(!t.background||String(t.background).indexOf('#')!==0) t.background=t.page;
   if(typeof t.maxWidth!=='number') t.maxWidth=720;
   t.maxWidth=Math.max(600,Math.min(1400,t.maxWidth));
@@ -34602,7 +34604,10 @@ function _wbThemeBody(){
   }
 
   if(_wbThemeTab==='type'){
-    body = `<div class="form-group" style="margin-bottom:11px">
+    body = `<div style="margin-bottom:6px">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:4px;text-align:center">FONT</div>
+      </div>
+      <div class="form-group" style="margin-bottom:11px">
         <label class="form-label">Heading font</label>
         <select class="form-input" onchange="_wbFont('headFont',this.value)" style="font-family:${t.headFont}">
           ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.headFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
@@ -34613,40 +34618,6 @@ function _wbThemeBody(){
         <select class="form-input" onchange="_wbFont('bodyFont',this.value)" style="font-family:${t.bodyFont}">
           ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.bodyFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
         </select>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Body size · ${t.bodyScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
-        <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap} px</div>
-        <input type="range" min="0" max="100" step="4" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad!=null?t.secpad:52} px</div>
-        <input type="range" min="0" max="200" step="4" value="${t.secpad!=null?t.secpad:52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section width · ${t.maxWidth||720} px</div>
-        <input type="range" min="600" max="1400" step="50" value="${t.maxWidth||720}" oninput="_wbNum('maxWidth',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Narrow · 600</span><span>1400 · Wide</span></div>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${t.globalWidth!==false?'checked':''} onchange="_wbSetGlobal('globalWidth')"/>
-          <div class="toggle-track"></div>
-        </label>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
@@ -34670,8 +34641,54 @@ function _wbThemeBody(){
           <div class="toggle-track"></div>
         </label>
       </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
+        <input type="range" min="85" max="125" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Menu text size · ${t.bodyScale}%</div>
+        <input type="range" min="85" max="125" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section text size · ${t.secBodyScale}%</div>
+        <input type="range" min="85" max="125" step="5" value="${t.secBodyScale}" oninput="_wbNum('secBodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
+        <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
       <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">BUTTONS</div>
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px;text-align:center">SECTION FORMATTING</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap} px</div>
+        <input type="range" min="0" max="100" step="4" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - vertical · ${t.secpad!=null?t.secpad:52} px</div>
+        <input type="range" min="0" max="200" step="4" value="${t.secpad!=null?t.secpad:52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - horizontal · ${t.secpadH!=null?t.secpadH:24} px</div>
+        <input type="range" min="0" max="100" step="4" value="${t.secpadH!=null?t.secpadH:24}" oninput="_wbNum('secpadH',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>100 px</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section width · ${t.maxWidth||720} px</div>
+        <input type="range" min="600" max="1400" step="50" value="${t.maxWidth||720}" oninput="_wbNum('maxWidth',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Narrow · 600</span><span>1400 · Wide</span></div>
+      </div>
+      <div class="dark-toggle-row" style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${t.globalWidth!==false?'checked':''} onchange="_wbSetGlobal('globalWidth')"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+      <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px;text-align:center">BUTTONS</div>
         <div style="margin-bottom:14px">
           <div class="wb-slot-lbl" style="margin-bottom:6px">Button shape</div>
           <span class="inv-seg">
@@ -34847,7 +34864,7 @@ function _wbNum(field, v){
   // The two text scales have a real range (85–125). Clamp INTO it rather than resetting to
   // 100 on anything unexpected — a slider that jumps to the middle when it disagrees with
   // you is worse than one that stops at its own edge.
-  _wbSite().theme[field] = (field==='headScale'||field==='bodyScale')
+  _wbSite().theme[field] = (field==='headScale'||field==='bodyScale'||field==='secBodyScale')
     ? Math.max(85, Math.min(125, n)) : n;
   saveToStorage();
   _wbLiveSoon();
@@ -34856,10 +34873,12 @@ function _wbNum(field, v){
   const labs=document.querySelectorAll('#modal-body .wb-slot-lbl, #wb-ec-body .wb-slot-lbl');
   labs.forEach(l=>{
     if(l.textContent.indexOf('Heading size')===0) l.textContent='Heading size · '+t.headScale+'%';
-    if(l.textContent.indexOf('Body size')===0)    l.textContent='Body size · '+t.bodyScale+'%';
+    if(l.textContent.indexOf('Menu text size')===0) l.textContent='Menu text size · '+t.bodyScale+'%';
+    if(l.textContent.indexOf('Section text size')===0) l.textContent='Section text size · '+t.secBodyScale+'%';
     if(l.textContent.indexOf('Spacing')===0)      l.textContent='Spacing · '+(t.space<95?'Snug':(t.space>105?'Airy':'Normal'));
     if(l.textContent.indexOf('Section gap')===0)  l.textContent='Section gap · '+t.gap+' px';
-    if(l.textContent.indexOf('Section padding')===0) l.textContent='Section padding · '+(t.secpad!=null?t.secpad:52)+' px';
+    if(l.textContent.indexOf('Section padding - vertical')===0) l.textContent='Section padding - vertical · '+(t.secpad!=null?t.secpad:52)+' px';
+    if(l.textContent.indexOf('Section padding - horizontal')===0) l.textContent='Section padding - horizontal · '+(t.secpadH!=null?t.secpadH:24)+' px';
     if(l.textContent.indexOf('Section width')===0) l.textContent='Section width · '+(t.maxWidth||720)+' px';
     if(l.textContent.indexOf('Section shadow')===0) l.textContent='Section shadow · '+(t.shadow||0);
     if(l.textContent.indexOf('Card edge')===0) l.textContent='Card edge · '+(t.cardStyle||0);
@@ -34980,7 +34999,10 @@ function _wbRepaintTheme(){
       <div>${ROLES.map(r=>roleRow(r[0],r[1])).join('')}</div>`;
     }
     if(_wbThemeTab==='type'){
-      body=`<div class="form-group" style="margin-bottom:11px">
+      body=`<div style="margin-bottom:6px">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:4px;text-align:center">FONT</div>
+      </div>
+      <div class="form-group" style="margin-bottom:11px">
         <label class="form-label">Heading font</label>
         <select class="form-input" onchange="_wbFont('headFont',this.value)" style="font-family:${t.headFont}">
           ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.headFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
@@ -34991,40 +35013,6 @@ function _wbRepaintTheme(){
         <select class="form-input" onchange="_wbFont('bodyFont',this.value)" style="font-family:${t.bodyFont}">
           ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.bodyFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
         </select>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Body size · ${t.bodyScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
-        <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap} px</div>
-        <input type="range" min="0" max="100" step="4" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding · ${t.secpad!=null?t.secpad:52} px</div>
-        <input type="range" min="0" max="200" step="4" value="${t.secpad!=null?t.secpad:52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section width · ${t.maxWidth||720} px</div>
-        <input type="range" min="600" max="1400" step="50" value="${t.maxWidth||720}" oninput="_wbNum('maxWidth',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Narrow · 600</span><span>1400 · Wide</span></div>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${t.globalWidth!==false?'checked':''} onchange="_wbSetGlobal('globalWidth')"/>
-          <div class="toggle-track"></div>
-        </label>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
@@ -35048,8 +35036,54 @@ function _wbRepaintTheme(){
           <div class="toggle-track"></div>
         </label>
       </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
+        <input type="range" min="85" max="125" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Menu text size · ${t.bodyScale}%</div>
+        <input type="range" min="85" max="125" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section text size · ${t.secBodyScale}%</div>
+        <input type="range" min="85" max="125" step="5" value="${t.secBodyScale}" oninput="_wbNum('secBodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
+        <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      </div>
       <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">BUTTONS</div>
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px;text-align:center">SECTION FORMATTING</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap} px</div>
+        <input type="range" min="0" max="100" step="4" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - vertical · ${t.secpad!=null?t.secpad:52} px</div>
+        <input type="range" min="0" max="200" step="4" value="${t.secpad!=null?t.secpad:52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - horizontal · ${t.secpadH!=null?t.secpadH:24} px</div>
+        <input type="range" min="0" max="100" step="4" value="${t.secpadH!=null?t.secpadH:24}" oninput="_wbNum('secpadH',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>100 px</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Section width · ${t.maxWidth||720} px</div>
+        <input type="range" min="600" max="1400" step="50" value="${t.maxWidth||720}" oninput="_wbNum('maxWidth',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Narrow · 600</span><span>1400 · Wide</span></div>
+      </div>
+      <div class="dark-toggle-row" style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${t.globalWidth!==false?'checked':''} onchange="_wbSetGlobal('globalWidth')"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+      <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
+        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px;text-align:center">BUTTONS</div>
         <div style="margin-bottom:14px">
           <div class="wb-slot-lbl" style="margin-bottom:6px">Button shape</div>
           <span class="inv-seg">
@@ -38038,10 +38072,12 @@ function _wbBuildSite(forDownload){
   // nav, footer — is body, which is what it all scaled with before, so nothing moves.
   const sch = (n)=>Math.round(n*(Number(t2.headScale)||100)/100);   // headings
   const scb = (n)=>Math.round(n*(Number(t2.bodyScale)||100)/100);   // body + furniture
+  const scs = (n)=>Math.round(n*(Number(t2.secBodyScale)||100)/100); // section body text
   const sc  = scb;   // legacy alias — every call site below is re-pointed explicitly
   const sp = (n)=>Math.round(n*(Number(t2.space)||100)/100);
   const secGap = Math.max(0, Number(t2.gap)||0);
   const secPad = t2.secpad!=null ? Math.max(0, Number(t2.secpad)) : 52;
+  const secPadH = t2.secpadH!=null ? Math.max(0, Number(t2.secpadH)) : 24;
   const rad = WB_CORNERS[t2.corners]||'10px';
   // imgRad caps at 10px — pill (999px) is for buttons only, not images or cards
   const imgRad = t2.corners==='sharp'?'0px':'10px';
@@ -38315,17 +38351,17 @@ header.hero .ics{box-shadow:0 2px 14px rgba(0,0,0,.22)}
 h1{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,${sch(60)}px);line-height:1.1;margin-bottom:10px;color:${t2.heading}}
 .eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading}}
-.sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scb(15)}px}
-section{max-width:${t2.maxWidth||720}px;margin:0 auto;padding:${secPad}px 24px;background:${t2.page};border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
+.sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scs(15)}px}
+section{max-width:${t2.maxWidth||720}px;margin:0 auto;padding:${secPad}px ${secPadH}px;background:${t2.page};border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
 section+section{margin-top:${secGap}px}
 section.lft{text-align:left}
 section.band{max-width:none;background:${t2.band};border-top:none}
 section.band>*{max-width:${t2.maxWidth||720}px;margin-left:auto;margin-right:auto}
 h2{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(24)}px,4vw,${sch(32)}px);margin-bottom:${sp(12)}px;color:${t2.heading}}
-.intro{max-width:52ch;margin:0 auto ${sp(24)}px;color:${t2.text};font-size:${scb(15)}px}
+.intro{max-width:52ch;margin:0 auto ${sp(24)}px;color:${t2.text};font-size:${scs(15)}px}
 section.lft .intro{margin-left:0}
 h2+.imgs-grid,h2+.imgs-rows,.intro+.imgs-grid,.intro+.imgs-rows{margin-top:${sp(18)}px}
-.para{max-width:60ch;margin:0 auto ${sp(16)}px;text-align:${(['left','center','justify'].includes(t2.bodyAlign)?t2.bodyAlign:'left')};${t2.bodyAlign==='justify'?'hyphens:auto;-webkit-hyphens:auto;':''}color:${t2.text}}
+.para{max-width:60ch;margin:0 auto ${sp(16)}px;font-size:${scs(16)}px;text-align:${(['left','center','justify'].includes(t2.bodyAlign)?t2.bodyAlign:'left')};${t2.bodyAlign==='justify'?'hyphens:auto;-webkit-hyphens:auto;':''}color:${t2.text}}
 section.lft .para{margin-left:0}
 section.b-center .para{text-align:center}
 section.b-justify .para{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
@@ -38463,7 +38499,7 @@ section.b-center .faq summary{justify-content:center}
 section.b-center .faq summary::after{position:absolute;right:0}
 section.b-center .faq details{position:relative}
 .faq b{font-family:${t2.headFont};font-size:${sch(19)}px;font-weight:500;display:block;color:${t2.item}}
-.faq p{color:${t2.text};opacity:.85;font-size:${scb(15)}px;margin:0 0 ${sp(14)}px}
+.faq p{color:${t2.text};opacity:.85;font-size:${scs(15)}px;margin:0 0 ${sp(14)}px}
 .faq-static .faq-i{border-bottom:1px solid ${t2.heading}12;padding:${sp(14)}px 0}
 .faq-static .faq-i:last-child{border-bottom:none}
 .faq-static .faq-i b{font-family:${t2.headFont};font-size:${sch(19)}px;font-weight:500;display:block;color:${t2.item};margin-bottom:4px}
