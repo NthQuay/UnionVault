@@ -358,6 +358,7 @@ body.dark .backup-pill-stale{background:rgba(176,160,133,.18);color:#d8c3a0}
 body.dark .backup-pill-never{background:rgba(194,112,112,.18);color:#E08080}
 body.dark .curr-fmt-opt:not(.sel){border-color:#4A4852!important}
 body.dark .curr-fmt-opt.sel .curr-fmt-name{color:var(--gold)}
+body.dark .s-opt-btn:not(.sel){border-color:#45434B!important}
 /* Badge picker icon cells */
 .badge-pick-cell{transition:background .15s,color .15s}
 .badge-cell-bal{background:rgba(192,57,43,.16);color:var(--red)}
@@ -29499,7 +29500,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v325';
+const APP_BUILD='v326';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -42111,14 +42112,14 @@ function renderSettings(c, actions){
         <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Navigation Style</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Choose how the sidebar menu behaves.</div>
         <div style="display:flex;gap:10px">
-          <button type="button" onclick="setSidebarMode('hamburger')"
+          <button type="button" class="s-opt-btn${sidebarMode==='hamburger'?' sel':''}" onclick="setSidebarMode('hamburger')"
             style="flex:1;min-width:90px;padding:10px 12px;border-radius:10px;border:2px solid ${sidebarMode==='hamburger'?'var(--gold)':'var(--border)'};background:${sidebarMode==='hamburger'?'var(--parchment)':'transparent'};cursor:pointer;text-align:left;transition:all .15s">
             <div style="display:flex;align-items:center;gap:8px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${sidebarMode==='hamburger'?'var(--gold-deep)':'var(--muted)'}" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               <span style="font-size:13px;font-weight:500;color:${sidebarMode==='hamburger'?'var(--gold-deep)':'var(--ink)'}">Hamburger Menu</span>
             </div>
           </button>
-          <button type="button" onclick="setSidebarMode('icon')"
+          <button type="button" class="s-opt-btn${sidebarMode==='icon'?' sel':''}" onclick="setSidebarMode('icon')"
             style="flex:1;min-width:90px;padding:10px 12px;border-radius:10px;border:2px solid ${sidebarMode==='icon'?'var(--gold)':'var(--border)'};background:${sidebarMode==='icon'?'var(--parchment)':'transparent'};cursor:pointer;text-align:left;transition:all .15s">
             <div style="display:flex;align-items:center;gap:8px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${sidebarMode==='icon'?'var(--gold-deep)':'var(--muted)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
@@ -42154,12 +42155,12 @@ function renderSettings(c, actions){
         <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Countdown Format</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px">How the wedding countdown displays on the dashboard.</div>
         <div style="display:flex;gap:10px">
-          <button type="button" onclick="setCountdownUnit('days')"
+          <button type="button" class="s-opt-btn${(STATE.settings.countdownUnit||'days')==='days'?' sel':''}" onclick="setCountdownUnit('days')"
             style="flex:1;min-width:90px;padding:10px 12px;border-radius:10px;border:2px solid ${(STATE.settings.countdownUnit||'days')==='days'?'var(--gold)':'var(--border)'};background:${(STATE.settings.countdownUnit||'days')==='days'?'var(--parchment)':'transparent'};cursor:pointer;text-align:left;transition:all .15s">
             <div style="font-size:13px;font-weight:500;color:${(STATE.settings.countdownUnit||'days')==='days'?'var(--gold-deep)':'var(--ink)'};margin-bottom:4px">Days</div>
             <div style="font-size:11.5px;color:var(--muted)">e.g. 247 days to go</div>
           </button>
-          <button type="button" onclick="setCountdownUnit('monthsdays')"
+          <button type="button" class="s-opt-btn${STATE.settings.countdownUnit==='monthsdays'?' sel':''}" onclick="setCountdownUnit('monthsdays')"
             style="flex:1;min-width:90px;padding:10px 12px;border-radius:10px;border:2px solid ${STATE.settings.countdownUnit==='monthsdays'?'var(--gold)':'var(--border)'};background:${STATE.settings.countdownUnit==='monthsdays'?'var(--parchment)':'transparent'};cursor:pointer;text-align:left;transition:all .15s">
             <div style="font-size:13px;font-weight:500;color:${STATE.settings.countdownUnit==='monthsdays'?'var(--gold-deep)':'var(--ink)'};margin-bottom:4px">Months &amp; Days</div>
             <div style="font-size:11.5px;color:var(--muted)">e.g. 8 months 7 days to go</div>
