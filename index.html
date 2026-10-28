@@ -29471,8 +29471,8 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v319';
-const APP_BUILD_DATE='2026-10-27';
+const APP_BUILD='v320';
+const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
   const p1=_escHtml(ev.partner1||'Partner'), p2=_escHtml(ev.partner2||'Partner');
@@ -42014,7 +42014,7 @@ async function _describeAppSource(){
       el.innerHTML=''; return;
     }
     const keys=await caches.keys();
-    const uv=keys.filter(k=>k.indexOf('uv-')===0);
+    const uv=keys.filter(k=>k.indexOf('union-vault-')===0);
     el.innerHTML='<span style="color:var(--muted)">Served from the installed offline copy</span>'
       + (uv.length?' &nbsp;<b>'+_escHtml(uv.join(', '))+'</b>':'');
   }catch(e){ el.innerHTML='<span style="color:var(--muted)">Loaded directly.</span>'; }
@@ -42407,6 +42407,16 @@ function renderSettings(c, actions){
     </div>
     <div class="settings-sect" data-sect="data export json import backup transfer fix guest data start from scratch reset all data storage space full photos files quota backups automatic snapshots restore">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Data</div>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
+        <div>
+          <div style="font-size:13.5px;font-weight:500">Hide version mismatch alerts</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Don't show the conflict dialog when your cloud data is newer than this device.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${STATE.settings.suppressVersionMismatch?'checked':''} onchange="STATE.settings.suppressVersionMismatch=this.checked;saveToStorage()"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
       <div style="display:flex;flex-direction:column;gap:16px">
         <div style="background:var(--surface);border-radius:12px;padding:18px 20px;border:1px solid var(--border)">
           <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px">About this build</div>
@@ -47590,6 +47600,7 @@ async function _autoSyncCheckOnBoot(){
 setInterval(function(){ if(_sbSession) _autoSyncCheckOnBoot(); }, 5*60*1000);
 
 function _showConflictDialog(cloudTs,localTs){
+  if(STATE.settings?.suppressVersionMismatch) return;
   const fmt=ts=>ts?new Date(ts).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'Unknown';
   const overlay=document.createElement('div');
   overlay.id='conflict-overlay';
