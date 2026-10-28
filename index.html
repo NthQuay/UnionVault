@@ -15696,7 +15696,7 @@ function _calCollectEvents(){
       add(a.date, {
         type:'appts',
         title:typeLbl,
-        sub:bizLbl?(bizLbl+(a.virtual?' · Virtual':' · In person')):(a.virtual?'Virtual':'In person'),
+        sub:[time, bizLbl, typeLbl, (a.virtual?'Virtual':'In person')].filter(Boolean).join(' · '),
         time:time,
         done:false,
         taskId:t.id, apptId:a.id
@@ -15899,7 +15899,7 @@ function _renderCalendarWeek(c, actions){
       const mta=_CAL_TYPE_META[e.type];
       const doneStyle=e.done?'text-decoration:line-through;opacity:.6':'';
       const tm=_timeOf(e);
-      const subRest=e.sub ? (tm? e.sub.replace(tm,'').replace(/^\s*·\s*/,'').trim() : e.sub) : '';
+      const subRest=e.sub||'';
       return `<div class="cal-list-row" onclick="_calCellEvClick(${e._eid},'${iso}')">
           <span class="cal-list-time">${tm||'<span style=\"opacity:.4\">—</span>'}</span>
           <span class="cal-list-dot" style="background:${mta.sw}"></span>
@@ -20742,7 +20742,9 @@ function _tpEnsureOutsideCloser(){
 // Each task holds task.appointments = [ {id, type, date, time, endTime, virtual,
 //   address, link, pass, contact, phone, email, fee, notes, emailMe, recipients[]} ]
 // ══════════════════════════════════════════════
-const APPT_TYPES = ['Appointment','Fitting','Booking','Trial','Rehearsal','Consultation','Tasting'];
+const APPT_TYPES = ['Appointment','Fitting','Booking','Rehearsal','Tasting','Tour','Meeting'];
+const APPT_TYPES_MORE = ['Consultation','Trial','Showcase'];
+let _apptTypeShowMore = false;
 // ══════════════════════════════════════════════
 // Vendors — business-card list, sourced from appointments or added manually.
 // vendor = {id, business, category, status, contact, phone, email, address, website,
@@ -22498,6 +22500,17 @@ function _migrateAppointments(){
   });
 }
 function _apptNewId(){ return 'ap'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function _apptTypeChipsHtml(){
+  const chip=(t)=>`<button type="button" class="appt-type-chip ${_apptFormType===t?'on':'off'}" onclick="_apptFormSetType('${t}')">${t}</button>`;
+  const moreBtn=`<button type="button" class="appt-type-chip off" onclick="_apptToggleMore()" style="opacity:.7">${_apptTypeShowMore?'Less ▲':'More ▾'}</button>`;
+  const more=_apptTypeShowMore?APPT_TYPES_MORE.map(chip).join(''):'';
+  return APPT_TYPES.map(chip).join('')+moreBtn+more;
+}
+function _apptToggleMore(){
+  _apptTypeShowMore=!_apptTypeShowMore;
+  const wrap=document.querySelector('.appt-type-wrap');
+  if(wrap) wrap.innerHTML=_apptTypeChipsHtml();
+}
 function _fmtApptTime(hhmm){
   if(!hhmm||hhmm.indexOf(':')<0) return hhmm||'';
   let [h,m]=hhmm.split(':').map(Number);
@@ -22601,7 +22614,8 @@ function _apptOpenForm(ctx, existing){
   _apptVendorMode=(a.business||a.contact||a.phone||a.email)?'new':null;
   const seedEmail=(STATE.settings && STATE.settings.userEmail||'').trim();
   _apptFormRecips=(a.recipients&&a.recipients.length)?a.recipients.slice():(a.emailMe&&seedEmail?[seedEmail]:(seedEmail?[]:[]));
-  const typeChips=APPT_TYPES.map(t=>`<button type="button" class="appt-type-chip ${_apptFormType===t?'on':'off'}" onclick="_apptFormSetType('${t}')">${t}</button>`).join('');
+  _apptTypeShowMore=APPT_TYPES_MORE.includes(_apptFormType);
+  const typeChips=_apptTypeChipsHtml();
   const taskDate=_apptFormTaskDate();
   const body=`<div style="display:flex;flex-direction:column;gap:11px">
     <div><label class="form-label" style="margin-bottom:5px">Type</label><div class="appt-type-wrap" style="display:flex;flex-wrap:wrap;gap:6px">${typeChips}</div></div>
@@ -29448,7 +29462,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v316';
+const APP_BUILD='v317';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -37954,7 +37968,21 @@ function _wbBuildSite(forDownload){
     }
     if(k==='countdown'){
       const d=_wbDaysLeft();
-      const txt = d===null?'' : (d>1?(d+' days to go') : (d===1?'One day to go' : (d===0?'Today':'With love, always')));
+      let txt='';
+      if(d!==null){
+        if(d<0) txt='With love, always';
+        else if(d===0) txt='Today';
+        else if(d===1) txt='One day to go';
+        else if((STATE.settings.countdownUnit||'days')==='monthsdays'){
+          const months=Math.floor(d/30.4375);
+          const days=Math.round(d-months*30.4375);
+          if(months>0&&days>0) txt=`${months} month${months!==1?'s':''} and ${days} day${days!==1?'s':''} to go`;
+          else if(months>0) txt=`${months} month${months!==1?'s':''} to go`;
+          else txt=`${days} day${days!==1?'s':''} to go`;
+        } else {
+          txt=d+' days to go';
+        }
+      }
       // The countdown now goes through wrap() like every other section, so its images can
       // move and its heading has an eye like everything else. `count` is threaded in as
       // an extra class rather than hand-building a second <section> here — a second
