@@ -20779,6 +20779,15 @@ function addVendorCategory(name){
   saveToStorage();
   return n;
 }
+function _deleteVendorCategory(btn){
+  const name=btn.dataset.cat;
+  if(!Array.isArray(STATE.vendorCustomCats)) return;
+  STATE.vendorCustomCats=STATE.vendorCustomCats.filter(c=>c!==name);
+  saveToStorage();
+  btn.closest('.ven-custom-cat-chip')?.remove();
+  const sel=document.getElementById('ven-f-category');
+  if(sel) Array.from(sel.options).forEach(o=>{if(o.value===name)o.remove();});
+}
 const RELIGION_OPTIONS = ['Atheist','Buddhism','Christianity','Hinduism','Islam','Jewish','Non-Religious Ceremony','Sikhism'];
 const OFFICIANT_OPTIONS = ['Cantor','Celebrant','Granthi','Imam','Islamic Scholar','Minister','Monk','Pandit','Pastor','Priest','Purohit','Qadi','Rabbi','Vicar'];
 const CEREMONY_VENUE_OPTIONS = ['Banquet Hall','Beach','Chapel','Church','Garden','Generic Venue','Hall','Mosque','Synagogue','Temple'];
@@ -21150,9 +21159,10 @@ function _openVendorBriefModal(vendorName){
     {id:'contacts', label:'Contact details'},
     {id:'notes', label:'Notes / brief'}
   ];
-  // Default: all selected
+  // Default: unselected; restore last session's selections if saved
+  const _lastSecs = (STATE.settings&&STATE.settings.vendorBriefLastSections)||[];
   const chipsHtml = sections.map(s =>
-    `<button type="button" class="vbm-chip sel" data-section="${esc(s.id)}" onclick="this.classList.toggle('sel')">${esc(s.label)}</button>`
+    `<button type="button" class="vbm-chip${_lastSecs.includes(s.id)?' sel':''}" data-section="${esc(s.id)}" onclick="this.classList.toggle('sel')">${esc(s.label)}</button>`
   ).join('');
 
   // Default expiry: 30 days from today
@@ -21209,6 +21219,10 @@ async function _generateVendorToken(){
   // Collect selected sections
   const chips = document.querySelectorAll('#vbm-overlay .vbm-chip.sel');
   const sections = Array.from(chips).map(c => c.dataset.section).filter(Boolean);
+  // Remember for next brief
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.vendorBriefLastSections = sections;
+  saveToStorage();
 
   // Expiry
   const useExpiry = document.getElementById('vbm-use-expiry');
@@ -21244,6 +21258,17 @@ async function _generateVendorToken(){
     // Show success state in modal
     const baseUrl = window.location.origin + window.location.pathname;
     const fullLink = `${baseUrl}?vendor=${token}`;
+    const expiryDisplay = expiresAt ? (()=>{
+      const d=new Date(expiresAt); return isNaN(d)?expiresAt:d.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+    })() : null;
+    // Find vendor email for mailto pre-fill
+    const _vobj=(STATE.vendors||[]).find(v=>v.business===name||v.contact===name);
+    const _vemail=_vobj?.email||'';
+    const _ev=STATE.event||{};
+    const _couple=[_ev.partner1,_ev.partner2].filter(Boolean).join(' & ')||'us';
+    const _emailSubj=encodeURIComponent(`Vendor brief — ${name}`);
+    const _emailBody=encodeURIComponent(`Hi ${name},\n\nPlease find your vendor brief for our wedding below.\n\nBrief link: ${fullLink}${expiryDisplay?`\nExpiry: ${expiryDisplay}`:''}\n\nLet us know if you have any questions.\n\nWarm regards,\n${_couple}`);
+    const _mailto=`mailto:${_vemail}?subject=${_emailSubj}&body=${_emailBody}`;
     const body = document.getElementById('vbm-body');
     if(body) body.innerHTML = `
       <div class="vbm-title">Link created ✓</div>
@@ -21251,8 +21276,10 @@ async function _generateVendorToken(){
       <div class="vbm-success">
         <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Vendor brief link</div>
         <div class="vbm-link-display" id="vbm-result-link">${_escHtml(fullLink)}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${expiryDisplay?`<div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:2px">Expires: <strong style="color:var(--ink)">${_escHtml(expiryDisplay)}</strong></div>`:''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
           <button class="btn btn-primary btn-sm" onclick="_copyVendorLink('${token}',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy link</button>
+          <a class="btn btn-outline btn-sm" href="${_mailto}" style="text-decoration:none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg> Email vendor</a>
           <button class="btn btn-outline btn-sm" onclick="document.getElementById('vbm-overlay').remove();_openVendorBriefModal(null)">Create another</button>
         </div>
       </div>
@@ -21939,7 +21966,7 @@ function _vendorOpenForm(id, opts){
   _adoptPopupBack();
   const v = id ? STATE.vendors.find(x=>x.id===id) : null;
   const isEdit=!!v;
-  const d=v||{business:'',category:opts.category||'',status:'possible',contact:'',phone:'',email:'',address:'',website:'',notes:'',fee:0,hours:'',abn:'',bsb:'',acctNumber:'',acctName:'',rating:'',reviewCount:''};
+  const d=v||{business:'',category:opts.category||'',status:'possible',contact:'',phone:'',email:'',address:'',website:'',notes:'',fee:0,hours:'',setupTime:'',abn:'',bsb:'',acctNumber:'',acctName:'',rating:'',reviewCount:''};
   _vendorFormLinkRole = opts.linkRole || '';
   _vendorFormBudgetLink = opts.budgetLink || null;
   const statusBtns=VENDOR_STATUSES.map(s=>{ const sm=_vendorStatusMeta(s); const on=(d.status||'possible')===s; return `<button type="button" class="ven-status-chip" data-s="${s}" onclick="_vendorFormSetStatus('${s}')" style="flex:1;font-size:12px;padding:7px;border-radius:8px;border:.5px solid ${on?sm.fg:'var(--border)'};background:${on?sm.bg:'var(--surface)'};color:${sm.fg};font-weight:500;cursor:pointer">${sm.label}</button>`; }).join('');
@@ -21951,7 +21978,7 @@ function _vendorOpenForm(id, opts){
       <div id="ven-f-paste-msg" style="font-size:10.5px;color:var(--green);margin-top:6px;display:none"></div>
     </div>
     <div><label class="form-label">Business name</label><input id="ven-f-business" class="form-input" placeholder="e.g. Rosewood Florals" value="${_escHtml(d.business)}" style="font-size:12.5px"/></div>
-    <div><label class="form-label">Category</label>${_otherSelectHtml('ven-f-category', vendorCats(), d.category)}</div>
+    <div><label class="form-label">Category</label>${_otherSelectHtml('ven-f-category', vendorCats(), d.category)}${(STATE.vendorCustomCats||[]).length?`<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">${(STATE.vendorCustomCats||[]).map(c=>`<span class="ven-custom-cat-chip" style="display:inline-flex;align-items:center;gap:3px;background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:2px 6px 2px 8px;font-size:10.5px;color:var(--muted)">${_escHtml(c)}<button type="button" onclick="_deleteVendorCategory(this)" data-cat="${_escHtml(c)}" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;line-height:1;padding:0 2px" title="Remove category">✕</button></span>`).join('')}</div>`:''}</div>
     <div><label class="form-label">Status</label><div style="display:flex;gap:6px;flex-wrap:wrap">${statusBtns}</div></div>
     <div class="form-row" style="gap:10px">
       <div style="flex:1"><label class="form-label">Contact name</label><input id="ven-f-contact" class="form-input" value="${_escHtml(d.contact)}" style="font-size:12.5px"/></div>
@@ -21965,6 +21992,7 @@ function _vendorOpenForm(id, opts){
       <div style="flex:1"><label class="form-label">Reviews</label><input id="ven-f-reviewcount" class="form-input" inputmode="numeric" placeholder="e.g. 120" value="${_escHtml(d.reviewCount||'')}" style="font-size:12.5px"/></div>
     </div>
     <div><label class="form-label">Opening hours</label><textarea id="ven-f-hours" class="form-input" rows="2" placeholder="e.g. Mon–Fri 9 am–5 pm" style="font-size:12.5px;resize:vertical">${_escHtml(d.hours||'')}</textarea></div>
+    <div><label class="form-label">Setup time</label><input id="ven-f-setuptime" class="form-input" type="text" placeholder="e.g. 2 hours before ceremony" value="${_escHtml(d.setupTime||'')}" style="font-size:12.5px"/></div>
     <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--gold-deep);font-weight:600;border-top:.5px solid var(--border);padding-top:11px">Billing &amp; payment</div>
     <div><label class="form-label">ABN</label><input id="ven-f-abn" class="form-input" inputmode="numeric" placeholder="e.g. 12 345 678 901" value="${_escHtml(d.abn||'')}" style="font-size:12.5px"/></div>
     <div class="form-row" style="gap:10px">
@@ -22063,7 +22091,7 @@ function _vendorSaveForm(id){
     status:_vendorFormStatus||'possible',
     contact:get('ven-f-contact'), phone:get('ven-f-phone'), email:get('ven-f-email'),
     address:get('ven-f-address'), website:get('ven-f-website'), notes:get('ven-f-notes'),
-    hours:get('ven-f-hours'), abn:get('ven-f-abn'), bsb:get('ven-f-bsb'),
+    hours:get('ven-f-hours'), setupTime:get('ven-f-setuptime'), abn:get('ven-f-abn'), bsb:get('ven-f-bsb'),
     acctNumber:get('ven-f-acctnumber'), acctName:get('ven-f-acctname'),
     rating:get('ven-f-rating'), reviewCount:get('ven-f-reviewcount')
   };
@@ -29471,7 +29499,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v321';
+const APP_BUILD='v322';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -44697,12 +44725,12 @@ function _doRenderPdf(fileUrl, fileId, area){
       pdf.getPage(num).then(page=>{
         const containerW = area.clientWidth || 680;
         const baseVp = page.getViewport({scale:1});
-        const scale = Math.min(2, containerW / baseVp.width);
+        const scale = Math.min(3, containerW / baseVp.width);
         const vp = page.getViewport({scale: scale * (window.devicePixelRatio||1)});
         const canvas = document.createElement('canvas');
         canvas.width = vp.width; canvas.height = vp.height;
         canvas.style.width = (vp.width/(window.devicePixelRatio||1)) + 'px';
-        canvas.style.height = 'auto';
+        canvas.style.height = (vp.height/(window.devicePixelRatio||1)) + 'px';
         canvas.style.maxWidth = '100%';
         canvas.style.borderRadius = '6px';
         canvas.style.boxShadow = '0 1px 6px rgba(0,0,0,.12)';
@@ -49871,15 +49899,38 @@ async function _showVendorPortal(token){
       <div>
         <div style="font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--pub-accent);padding-bottom:8px;border-bottom:1px solid var(--pub-border);margin-bottom:10px">Contact</div>
         <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--pub-surface);border:1px solid var(--pub-border);border-radius:10px">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--pub-accent);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Cormorant Garamond',serif;font-size:17px;flex-shrink:0">${(p1||'?')[0]}</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--pub-accent);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Cormorant Garamond',serif;font-size:17px;flex-shrink:0">${(matchedVendor.contact||'?')[0]}</div>
           <div>
-            <div style="font-size:13px;font-weight:500;color:var(--pub-ink)">${p1||coupleName||'The couple'}</div>
+            <div style="font-size:13px;font-weight:500;color:var(--pub-ink)">${matchedVendor.contact||'—'}</div>
             ${matchedVendor.email?`<div style="font-size:11.5px;color:var(--pub-text);margin-top:1px">${matchedVendor.email}</div>`:''}
           </div>
         </div>
       </div>
     </div>
-    <div class="pub-footer" style="padding:16px 24px 24px;text-align:center;font-size:11px">Powered by <strong>Union Vault</strong></div>
+    <style>
+      .vb-footer{padding:16px 24px 24px;display:flex;flex-direction:column;align-items:center;gap:4px}
+      .vb-ft-lbl{font-size:9px;letter-spacing:.1em;color:var(--pub-text);opacity:.5;text-transform:uppercase;line-height:1}
+      .vb-ft-lock a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;opacity:.5;transition:opacity .15s}
+      .vb-ft-lock a:hover{opacity:.85}
+      .vb-ft-crest{height:20px;width:auto;display:block;flex-shrink:0}
+      .vb-ft-crest-light{display:block}.vb-ft-crest-dark{display:none}
+      .vb-ft-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;font-family:'Cinzel',serif;font-weight:400}
+      .vb-ft-txt b{font-size:11px;letter-spacing:.1em;font-weight:400;color:var(--pub-ink)}
+      .vb-ft-txt i{font-size:7.5px;letter-spacing:.18em;font-style:normal;color:var(--pub-text)}
+      @media(prefers-color-scheme:dark){.vb-footer:not([data-scheme="light"]) .vb-ft-crest-light{display:none}.vb-footer:not([data-scheme="light"]) .vb-ft-crest-dark{display:block}}
+      [data-theme="dark"] .vb-ft-crest-light{display:none}[data-theme="dark"] .vb-ft-crest-dark{display:block}
+      [data-theme="light"] .vb-ft-crest-dark{display:none}[data-theme="light"] .vb-ft-crest-light{display:block}
+    </style>
+    <div class="vb-footer">
+      <span class="vb-ft-lbl">Powered by</span>
+      <div class="vb-ft-lock">
+        <a href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault">
+          <img class="vb-ft-crest vb-ft-crest-light" src="${window.location.origin}/logos/Black%20full%20(Light%20mode).png" alt="Union Vault" height="20">
+          <img class="vb-ft-crest vb-ft-crest-dark" src="${window.location.origin}/logos/White%20full%20(Dark%20mode).png" alt="Union Vault" height="20">
+          <span class="vb-ft-txt"><b>UNION</b><i>VAULT</i></span>
+        </a>
+      </div>
+    </div>
   `);
 }
 
