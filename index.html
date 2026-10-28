@@ -21152,6 +21152,11 @@ function _openVendorBriefModal(vendorName){
 
   const esc = _escHtml;
   const prefill = vendorName || '';
+  const vendorOpts = (STATE.vendors||[])
+    .filter(v=>v.business&&v.business.trim())
+    .sort((a,b)=>(a.business||'').localeCompare(b.business||''))
+    .map(v=>`<option value="${esc(v.business.trim())}">`)
+    .join('');
   const sections = [
     {id:'timeline', label:'Day timeline'},
     {id:'budget', label:'Budget summary'},
@@ -21178,7 +21183,9 @@ function _openVendorBriefModal(vendorName){
         <div class="vbm-sub">Generate a secure, shareable link for your vendor — no account needed.</div>
         <div class="vbm-label">Vendor name</div>
         <input id="vbm-vendor-name" type="text" class="input" placeholder="e.g. Bloom &amp; Co." value="${esc(prefill)}"
+          list="vbm-vendor-list" autocomplete="off"
           style="width:100%;box-sizing:border-box;margin-bottom:16px;font-size:13px;padding:9px 11px;border:.5px solid var(--border);border-radius:8px;background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif">
+        <datalist id="vbm-vendor-list">${vendorOpts}</datalist>
         <div class="vbm-label">Sections to share</div>
         <div class="vbm-chips">${chipsHtml}</div>
         <div class="vbm-label">Expiry (optional)</div>
@@ -29499,7 +29506,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v323';
+const APP_BUILD='v324';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
