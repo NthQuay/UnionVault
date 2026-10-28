@@ -29508,7 +29508,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v335';
+const APP_BUILD='v336';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -35681,7 +35681,9 @@ function _wbRsvpSetStyle(s){
   _wbRsvpRefreshPreview();
 }
 function _wbRsvpSetPalette(id){
-  _wbSite().rsvp.palette=id; saveToStorage(); _wbLiveSoon();
+  const _r=_wbSite().rsvp;
+  if(id!=='custom' && _r.palette!=='custom') _r._prevPalette=_r.palette||'sage';
+  _r.palette=id; saveToStorage(); _wbLiveSoon();
   document.querySelectorAll('#rsvp-pal-grid button').forEach(b=>{
     const on=b.dataset.pal===id;
     b.style.borderColor=on?'var(--gold)':'var(--border)';
@@ -35692,7 +35694,16 @@ function _wbRsvpSetPalette(id){
   const cc=document.getElementById('rsvp-custom-colors');
   if(cc){
     cc.style.display=id==='custom'?'flex':'none';
-    if(id==='custom'){const rows=document.getElementById('rsvp-custom-rows');if(rows&&!rows.children.length)_wbRsvpBuildCustomEditor();}
+    if(id==='custom'){
+      // Seed customColors from the previous palette so the preview starts with real colours
+      const r=_wbSite().rsvp;
+      if(!r.customColors||!Object.keys(r.customColors).length){
+        const prev=r._prevPalette||'sage';
+        r.customColors=Object.assign({},_RSVP_PALS[prev]||_RSVP_PALS.sage);
+        saveToStorage();
+      }
+      const rows=document.getElementById('rsvp-custom-rows');if(rows&&!rows.children.length)_wbRsvpBuildCustomEditor();
+    }
   }
   _wbRsvpRefreshPreview();
 }
@@ -35721,6 +35732,7 @@ function _wbRsvpSetColor(role, hex, rowEl){
     const lbl=rowEl.querySelector('label.wb-pal-sw');
     if(lbl){lbl.style.background=hex;const inp=lbl.querySelector('input[type=color]');if(inp)inp.value=hex;}
   }
+  _wbRsvpRefreshPreview();
 }
 function _wbRsvpToggleField(field, on){
   const r=_wbSite().rsvp; if(!r.fields) r.fields={};
