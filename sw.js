@@ -13,6 +13,15 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (e.request.cache === 'reload') {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        if (resp.ok) caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
+        return resp;
+      })
+    );
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
