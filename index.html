@@ -29499,7 +29499,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v323';
+const APP_BUILD='v324';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -47334,6 +47334,65 @@ async function cloudSignOut(){
   location.href=location.pathname;
 }
 
+function _openDeleteAccountModal(){
+  if(!_sbSession){ _cloudToast('Sign in to delete your account',true); return; }
+  openModal(
+    'Delete Account',
+    `<div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:18px;padding:12px 14px;background:color-mix(in srgb,var(--red,#c0392b) 8%,transparent 92%);border:1px solid color-mix(in srgb,var(--red,#c0392b) 25%,transparent 75%);border-radius:10px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red,#c0392b)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div style="font-size:12.5px;color:var(--ink);line-height:1.5"><strong>This cannot be undone.</strong> Your account, all planning data, guest lists, photos and backups will be permanently deleted.</div>
+      </div>
+      <div>
+        <label class="form-label">Enter your password to confirm</label>
+        <input type="password" id="del-acct-pw" class="form-input" placeholder="Your current password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){var b=document.getElementById('del-acct-confirm-btn');if(b&&!b.disabled)_confirmDeleteAccount(b);}">
+        <div id="del-acct-err" style="display:none;font-size:12px;color:var(--red,#c0392b);margin-top:6px"></div>
+      </div>
+    </div>`,
+    `<button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
+     <button class="btn btn-danger" id="del-acct-confirm-btn" onclick="_confirmDeleteAccount(this)">Delete my account</button>`
+  );
+  setTimeout(()=>{ const el=document.getElementById('del-acct-pw'); if(el) el.focus(); },120);
+}
+
+async function _confirmDeleteAccount(btn){
+  if(!_sbSession){ closeModalDirect(); _cloudToast('Not signed in',true); return; }
+  const pw=(document.getElementById('del-acct-pw')||{}).value||'';
+  const errEl=document.getElementById('del-acct-err');
+  if(!pw){
+    if(errEl){ errEl.textContent='Please enter your password.'; errEl.style.display=''; }
+    return;
+  }
+  btn.disabled=true; btn.textContent='Deleting…';
+  if(errEl) errEl.style.display='none';
+  try{
+    const email=_sbSession.user.email;
+    // Re-verify password before deletion
+    const check=await _sbSignIn(email,pw);
+    if(check.error){
+      if(errEl){ errEl.textContent='Incorrect password. Please try again.'; errEl.style.display=''; }
+      btn.disabled=false; btn.textContent='Delete my account';
+      return;
+    }
+    await _sbEnsureFreshToken();
+    const r=await fetch(`${_SB_URL}/rest/v1/rpc/delete_own_account`,{
+      method:'POST',
+      headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Content-Type':'application/json'},
+      body:'{}'
+    });
+    if(!r.ok){
+      const eb=await r.json().catch(()=>({}));
+      throw new Error(eb.message||eb.hint||eb.error||'Account deletion failed');
+    }
+    await _sbSignOut();
+    closeModalDirect();
+    location.href=location.pathname;
+  }catch(e){
+    if(errEl){ errEl.textContent=e.message||'Something went wrong. Please try again.'; errEl.style.display=''; }
+    btn.disabled=false; btn.textContent='Delete my account';
+  }
+}
+
 function _cloudAccountHtml(){
   const user=_sbSession?_sbSession.user:null;
   if(!user) return `<p style="font-size:13px;color:var(--muted);margin:0 0 14px;line-height:1.5">Create an account or sign in to save your planner to the cloud and access it from any device.</p>`
@@ -47347,7 +47406,8 @@ function _cloudAccountHtml(){
     +`<button class="btn btn-ghost btn-sm" onclick="cloudSignOut()" style="color:var(--muted);font-size:12px;white-space:nowrap">Sign out</button></div>`
     +`<div id="auto-sync-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 14px;background:var(--surface);border:.5px solid var(--border);border-radius:10px">`
     +`<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:500">Auto-sync</span><span style="font-size:11px;color:var(--muted)">Automatically save & load from cloud</span><div id="sync-status-strip" style="margin-top:4px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px">${_syncStatusHtml()}</div></div>`
-    +`<label style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0"><input type="checkbox" id="auto-sync-toggle" onchange="_autoSyncToggleChange(this.checked)" style="opacity:0;width:0;height:0;position:absolute"><span onclick="" style="position:absolute;cursor:pointer;inset:0;background:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'var(--muted)':'var(--gold,#c9a84c)'};border-radius:11px;transition:.2s;display:block" id="auto-sync-track"></span><span id="auto-sync-thumb" style="position:absolute;left:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'3px':'19px'};top:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;pointer-events:none"></span></label></div>`;
+    +`<label style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0"><input type="checkbox" id="auto-sync-toggle" onchange="_autoSyncToggleChange(this.checked)" style="opacity:0;width:0;height:0;position:absolute"><span onclick="" style="position:absolute;cursor:pointer;inset:0;background:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'var(--muted)':'var(--gold,#c9a84c)'};border-radius:11px;transition:.2s;display:block" id="auto-sync-track"></span><span id="auto-sync-thumb" style="position:absolute;left:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'3px':'19px'};top:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;pointer-events:none"></span></label></div>`
+    +`<div style="margin-top:12px;padding:11px 14px;background:color-mix(in srgb,var(--red,#c0392b) 7%,transparent 93%);border:1px solid color-mix(in srgb,var(--red,#c0392b) 22%,transparent 78%);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="min-width:0"><div style="font-size:12.5px;font-weight:500;color:var(--ink)">Delete account</div><div style="font-size:11.5px;color:var(--muted);margin-top:2px">Permanently removes your account and all cloud data.</div></div><button class="btn btn-danger btn-sm" onclick="_openDeleteAccountModal()" style="white-space:nowrap;flex-shrink:0">Delete</button></div>`;
 }
 
 // ── CLOUD BACKUPS ────────────────────────────────────────────────────────────
