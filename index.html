@@ -29499,7 +29499,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v324';
+const APP_BUILD='v325';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -42497,6 +42497,7 @@ function renderSettings(c, actions){
               Start from scratch
             </button>
             <button class="btn btn-danger btn-sm" onclick="confirmResetData()">Reset All Data</button>
+            ${_sbSession?`<button class="btn btn-danger btn-sm" onclick="_openDeleteAccountModal()" style="display:inline-flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Delete account</button>`:''}
           </div>
         </div>
       </div>
@@ -47406,8 +47407,7 @@ function _cloudAccountHtml(){
     +`<button class="btn btn-ghost btn-sm" onclick="cloudSignOut()" style="color:var(--muted);font-size:12px;white-space:nowrap">Sign out</button></div>`
     +`<div id="auto-sync-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 14px;background:var(--surface);border:.5px solid var(--border);border-radius:10px">`
     +`<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:500">Auto-sync</span><span style="font-size:11px;color:var(--muted)">Automatically save & load from cloud</span><div id="sync-status-strip" style="margin-top:4px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px">${_syncStatusHtml()}</div></div>`
-    +`<label style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0"><input type="checkbox" id="auto-sync-toggle" onchange="_autoSyncToggleChange(this.checked)" style="opacity:0;width:0;height:0;position:absolute"><span onclick="" style="position:absolute;cursor:pointer;inset:0;background:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'var(--muted)':'var(--gold,#c9a84c)'};border-radius:11px;transition:.2s;display:block" id="auto-sync-track"></span><span id="auto-sync-thumb" style="position:absolute;left:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'3px':'19px'};top:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;pointer-events:none"></span></label></div>`
-    +`<div style="margin-top:12px;padding:11px 14px;background:color-mix(in srgb,var(--red,#c0392b) 7%,transparent 93%);border:1px solid color-mix(in srgb,var(--red,#c0392b) 22%,transparent 78%);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="min-width:0"><div style="font-size:12.5px;font-weight:500;color:var(--ink)">Delete account</div><div style="font-size:11.5px;color:var(--muted);margin-top:2px">Permanently removes your account and all cloud data.</div></div><button class="btn btn-danger btn-sm" onclick="_openDeleteAccountModal()" style="white-space:nowrap;flex-shrink:0">Delete</button></div>`;
+    +`<label style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0"><input type="checkbox" id="auto-sync-toggle" onchange="_autoSyncToggleChange(this.checked)" style="opacity:0;width:0;height:0;position:absolute"><span onclick="" style="position:absolute;cursor:pointer;inset:0;background:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'var(--muted)':'var(--gold,#c9a84c)'};border-radius:11px;transition:.2s;display:block" id="auto-sync-track"></span><span id="auto-sync-thumb" style="position:absolute;left:${(typeof STATE!=='undefined'&&STATE.settings&&STATE.settings.autoSync===false)?'3px':'19px'};top:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s;pointer-events:none"></span></label></div>`;
 }
 
 // ── CLOUD BACKUPS ────────────────────────────────────────────────────────────
