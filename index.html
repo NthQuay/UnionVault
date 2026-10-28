@@ -42014,7 +42014,7 @@ async function _describeAppSource(){
       el.innerHTML=''; return;
     }
     const keys=await caches.keys();
-    const uv=keys.filter(k=>k.indexOf('uv-')===0);
+    const uv=keys.filter(k=>k.indexOf('union-vault-')===0);
     el.innerHTML='<span style="color:var(--muted)">Served from the installed offline copy</span>'
       + (uv.length?' &nbsp;<b>'+_escHtml(uv.join(', '))+'</b>':'');
   }catch(e){ el.innerHTML='<span style="color:var(--muted)">Loaded directly.</span>'; }
