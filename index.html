@@ -29508,7 +29508,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v334';
+const APP_BUILD='v335';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -42512,7 +42512,7 @@ function renderSettings(c, actions){
           <div style="font-size:12px;color:var(--muted);margin-top:2px">Don't show the conflict dialog when your cloud data is newer than this device.</div>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" ${STATE.settings.suppressVersionMismatch?'checked':''} onchange="STATE.settings.suppressVersionMismatch=this.checked;saveToStorage()"/>
+          <input type="checkbox" ${(function(){try{return localStorage.getItem('uv-suppress-conflict')==='1';}catch(e){return !!STATE.settings.suppressVersionMismatch;}})()?'checked':''} onchange="STATE.settings.suppressVersionMismatch=this.checked;try{this.checked?localStorage.setItem('uv-suppress-conflict','1'):localStorage.removeItem('uv-suppress-conflict');}catch(e){}saveToStorage()"/>
           <div class="toggle-track"></div>
         </label>
       </div>
@@ -47759,6 +47759,7 @@ async function _autoSyncCheckOnBoot(){
 setInterval(function(){ if(_sbSession) _autoSyncCheckOnBoot(); }, 5*60*1000);
 
 function _showConflictDialog(cloudTs,localTs){
+  try{if(localStorage.getItem('uv-suppress-conflict')==='1') return;}catch(e){}
   if(STATE.settings?.suppressVersionMismatch) return;
   const fmt=ts=>ts?new Date(ts).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'Unknown';
   const overlay=document.createElement('div');
