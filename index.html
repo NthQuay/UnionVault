@@ -29500,7 +29500,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v326';
+const APP_BUILD='v327';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -35480,6 +35480,59 @@ function _wbSetCtaMode(mode){
   if(hint) hint.textContent=mode==='ics'?'Adds a Save the date calendar download.':mode==='rsvp'?'Links guests to your RSVP form.':'';
 }
 
+function _wbRsvpPreviewHtml(){
+  const w=_wbSite(), r=w.rsvp||{}, t=w.theme||{};
+  const p1=(STATE.event&&STATE.event.partner1)||'Partner 1';
+  const p2=(STATE.event&&STATE.event.partner2)||'Partner 2';
+  const dateStr=(STATE.event&&STATE.event.date)?fmtDate(STATE.event.date):'';
+  const venue=(STATE.event&&STATE.event.venue)||'';
+  const meta=[dateStr,venue].filter(Boolean).join(' · ');
+  const pal=r.palette||'sage';
+  const palC=(pal==='custom'?(r.customColors||{}):(_RSVP_PALS[pal]||_RSVP_PALS.sage));
+  const bg=palC.bg||'#F5F0E8', surf=palC.surf||'#EDE6D8', accent=palC.accent||'#A08050', ink=palC.ink||'#3A3020';
+  const hf=((t.headFont)||"'Cormorant Garamond',serif").replace(/"/g,"'");
+  const style=r.headerStyle||'classic';
+  const btnFg=_isDarkHex(accent)?'#fff':'#1a1a1a';
+  const n1=p1.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const n2=p2.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const metaE=meta.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const btnYes=(r.btnYes||'Joyfully accepts').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const btnNo=(r.btnNo||'Regretfully declines').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+  let headerHtml;
+  if(style==='banner'){
+    headerHtml=`<div style="background:${surf};padding:22px 20px 18px;text-align:center">
+      <div style="font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:${ink};opacity:.65;margin-bottom:7px">You are invited to celebrate</div>
+      <div style="font-family:${hf};font-size:20px;color:${ink};line-height:1.15;margin-bottom:5px">${n1} &amp; ${n2}</div>
+      ${metaE?`<div style="font-size:9px;color:${ink};opacity:.65">${metaE}</div>`:''}
+    </div>`;
+  } else if(style==='minimal'){
+    headerHtml=`<div style="padding:22px 20px 18px;text-align:center">
+      <div style="font-family:${hf};font-size:22px;color:${ink};line-height:1.15;margin-bottom:5px">${n1} &amp; ${n2}</div>
+      ${metaE?`<div style="font-size:9px;color:${ink};opacity:.6">${metaE}</div>`:''}
+    </div>`;
+  } else {
+    headerHtml=`<div style="padding:22px 20px 18px;text-align:center">
+      <div style="font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:${accent};margin-bottom:8px">RSVP</div>
+      <div style="font-family:${hf};font-size:20px;color:${ink};line-height:1.15;margin-bottom:6px">${n1} &amp; ${n2}</div>
+      <div style="width:28px;height:1px;background:${accent};margin:0 auto 6px;opacity:.5"></div>
+      ${metaE?`<div style="font-size:9px;color:${ink};opacity:.65">${metaE}</div>`:''}
+    </div>`;
+  }
+
+  return`<!doctype html><html><head><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box}html,body{background:${bg};font-family:'Inter',sans-serif;min-height:100%}</style></head><body>
+${headerHtml}
+<div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:8px">
+  <div style="font-size:9px;color:${ink};opacity:.5;text-align:center;margin-bottom:2px">Will you be attending?</div>
+  <button style="padding:9px;border-radius:7px;background:${accent};color:${btnFg};border:none;font-size:11px;font-family:'Inter',sans-serif">${btnYes}</button>
+  <button style="padding:9px;border-radius:7px;background:transparent;color:${accent};border:1.5px solid ${accent};font-size:11px;font-family:'Inter',sans-serif">${btnNo}</button>
+</div>
+</body></html>`;
+}
+function _wbRsvpRefreshPreview(){
+  const f=document.getElementById('rsvp-prev-frame');
+  if(f) f.srcdoc=_wbRsvpPreviewHtml();
+}
 function openWbRsvp(){
   const url = _rsvpLink();
   const hasUid = !url.endsWith('?rsvp=true');
@@ -35528,6 +35581,11 @@ function openWbRsvp(){
   };
 
   _wbPanel('RSVP', `<div style="display:flex;flex-direction:column;gap:16px">
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Preview</div>
+      <iframe id="rsvp-prev-frame" scrolling="no" sandbox="allow-same-origin"
+        style="width:100%;height:220px;border:1px solid var(--border);border-radius:10px;display:block"></iframe>
+    </div>
     <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Share this link with your guests. When they open it they'll see a form to submit their RSVP — no login needed.</div>
     ${hasUid
       ? `<div style="display:flex;gap:8px;align-items:stretch">
@@ -35593,6 +35651,7 @@ function openWbRsvp(){
   `<button class="btn btn-outline" onclick="_wbNavGuard('guests')" style="margin-right:auto">View responses</button>
    <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
    <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
+  setTimeout(_wbRsvpRefreshPreview, 0);
 }
 function _copyRsvpLink(){
   const inp = document.getElementById('rsvp-link-inp');
@@ -35611,6 +35670,7 @@ function _wbRsvpSetStyle(s){
     const lbl=b.querySelector('div:last-child');
     if(lbl){lbl.style.fontWeight=on?'600':'400';lbl.style.color=on?'var(--gold)':'var(--fg)';}
   });
+  _wbRsvpRefreshPreview();
 }
 function _wbRsvpSetPalette(id){
   _wbSite().rsvp.palette=id; saveToStorage(); _wbLiveSoon();
@@ -35626,6 +35686,7 @@ function _wbRsvpSetPalette(id){
     cc.style.display=id==='custom'?'flex':'none';
     if(id==='custom'){const rows=document.getElementById('rsvp-custom-rows');if(rows&&!rows.children.length)_wbRsvpBuildCustomEditor();}
   }
+  _wbRsvpRefreshPreview();
 }
 function _wbRsvpBuildCustomEditor(){
   const rows=document.getElementById('rsvp-custom-rows'); if(!rows) return;
@@ -49032,8 +49093,11 @@ try{ if(_autoCheckPassedInstallments()) saveToStorage(); }catch(e){}
 // ── Helpers shared by public pages ──────────────────────────────────────────
 
 function _publicPageShell(innerHtml){
-  // Replaces the entire body with a clean public-page shell (no nav, no sidebar).
   document.body.innerHTML = innerHtml;
+  document.documentElement.style.overflow = 'auto';
+  document.documentElement.style.height = 'auto';
+  document.body.style.overflow = 'auto';
+  document.body.style.height = 'auto';
 }
 
 // ── _showPublicWeddingSite: full wedding website rendered from a slug ──────────
