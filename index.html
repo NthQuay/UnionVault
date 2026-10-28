@@ -17,7 +17,7 @@
 <meta name="twitter:description" content="Plan your wedding in one place — guests, seating, budget, timeline and more."/>
 <meta name="twitter:image" content="https://unionvault.app/og-image.png"/>
 <title>Union Vault</title>
-<script>(function(){var h=location.hash.slice(1);if(h&&/^[a-z0-9][a-z0-9-]{0,59}$/.test(h)&&['auth','faq','contact','signup','login','register','pricing','features','hero','about'].indexOf(h)<0){document.documentElement.style.visibility='hidden';}}());</script>
+<script>(function(){var h=location.hash.slice(1);if((h&&/^[a-z0-9][a-z0-9-]{0,59}$/.test(h)&&['auth','faq','contact','signup','login','register','pricing','features','hero','about'].indexOf(h)<0)||location.search.indexOf('rsvp=')>=0){document.documentElement.style.visibility='hidden';}}());</script>
 <!-- ── PWA (Stage 1) ─────────────────────────────────────────────────────────────
      Installable + offline app shell. Purely additive: with no network, no service
      worker support, or opened straight from disk as a file://, every tag below is
@@ -29507,7 +29507,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v332';
+const APP_BUILD='v333';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -49811,48 +49811,6 @@ function _rfSetAttend(val){
   const sb=document.getElementById('rf-submit');
   if(cg)cg.hidden=(val!=='yes');
   if(sb){sb.hidden=false;setTimeout(()=>sb.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
-  const pd=document.getElementById('rf-per-diet');
-  const tmpl=document.getElementById('rf-diet-template');
-  if(pd&&tmpl){
-    if(val==='yes'&&!document.getElementById('rf-diet-s0')){
-      const card=document.createElement('div');card.className='rf-card';
-      const grid=document.createElement('div');grid.className='rf-diet-grid';grid.id='rf-diet-s0';grid.hidden=true;
-      grid.appendChild(tmpl.content.cloneNode(true));
-      const tog=document.createElement('button');tog.type='button';tog.className='rf-diet-toggle';
-      tog.innerHTML='Note dietary requirements<svg class="rf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,9 12,15 18,9"/></svg>';
-      tog.onclick=function(){const open=card.classList.toggle('diet-open');grid.hidden=!open;};
-      card.appendChild(tog);card.appendChild(grid);pd.innerHTML='';pd.appendChild(card);
-    }else if(val!=='yes'){pd.innerHTML='';}
-  }
-  const mealTmpl=document.getElementById('rf-meal-template');
-  const pm=document.getElementById('rf-per-meal');
-  if(pm){
-    if(val==='yes'&&!document.getElementById('rf-meal-s0')){
-      const band=window._rfCurrentGuestBand||'adult';
-      if(band==='infant'){
-        const wrap=document.createElement('div');wrap.className='rf-card';wrap.id='rf-meal-card-s0';
-        wrap.innerHTML='<div class="rf-lbl">Meal</div><div style="font-size:13px;opacity:.65;font-style:italic">No meal provided for infants</div>';
-        pm.innerHTML='';pm.appendChild(wrap);
-      } else if(band==='child'){
-        const wrap=document.createElement('div');wrap.className='rf-card';wrap.id='rf-meal-card-s0';
-        if(mealTmpl){
-          wrap.innerHTML='<div class="rf-lbl">Children’s meal</div>';
-          const chips=document.createElement('div');chips.id='rf-meal-s0';
-          chips.appendChild(mealTmpl.content.cloneNode(true));
-          wrap.appendChild(chips);
-        } else {
-          wrap.innerHTML='<div class="rf-lbl">Meal</div><div style="font-size:13px;opacity:.65;font-style:italic">A children’s meal will be provided</div>';
-        }
-        pm.innerHTML='';pm.appendChild(wrap);
-      } else if(mealTmpl){
-        const wrap=document.createElement('div');wrap.className='rf-card';wrap.id='rf-meal-card-s0';
-        wrap.innerHTML='<div class="rf-lbl">Meal choice</div>';
-        const chips=document.createElement('div');chips.id='rf-meal-s0';
-        chips.appendChild(mealTmpl.content.cloneNode(true));
-        wrap.appendChild(chips);pm.innerHTML='';pm.appendChild(wrap);
-      }
-    }else if(val!=='yes'){pm.innerHTML='';}
-  }
   // Anonymous plus-one prompt
   const g=window._rfCurrentGuest;
   const ac=document.getElementById('rf-attend-card');
@@ -49878,74 +49836,6 @@ function _rfSetMemberAttend(memberId,val){
   const sb=document.getElementById('rf-submit');
   if(cg)cg.hidden=!anyYes;
   if(sb){sb.hidden=!allSet;if(allSet)setTimeout(()=>sb.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
-  const pd=document.getElementById('rf-per-diet');
-  const tmpl=document.getElementById('rf-diet-template');
-  if(tmpl){
-    const dietTarget=window._rfIsGroup?document.getElementById('rfex-'+eid):pd;
-    if(dietTarget){
-      if(val==='yes'&&!document.getElementById('rf-diet-'+eid)){
-        const mrow=document.querySelector('#rf-group-rows [data-mid="'+memberId+'"] .rf-member-name');
-        const mname=mrow?mrow.textContent:'Guest';
-        const card=document.createElement('div');
-        card.className=window._rfIsGroup?'rf-diet-wrap':'rf-card';
-        card.id='rf-diet-card-'+eid;
-        const grid=document.createElement('div');grid.className='rf-diet-grid';grid.id='rf-diet-'+eid;grid.hidden=true;
-        grid.appendChild(tmpl.content.cloneNode(true));
-        const tog=document.createElement('button');tog.type='button';tog.className='rf-diet-toggle';
-        tog.innerHTML='Note '+mname+'\u2019s dietary requirements<svg class="rf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,9 12,15 18,9"/></svg>';
-        tog.onclick=function(){const open=card.classList.toggle('diet-open');grid.hidden=!open;};
-        card.appendChild(tog);card.appendChild(grid);dietTarget.appendChild(card);
-      }else if(val!=='yes'){
-        const dietCard=document.getElementById('rf-diet-card-'+eid);
-        if(dietCard)dietCard.remove();
-      }
-    }
-  }
-  const mealTmpl2=document.getElementById('rf-meal-template');
-  const pm2=document.getElementById('rf-per-meal');
-  {
-    const mealTarget=window._rfIsGroup?document.getElementById('rfex-'+eid):pm2;
-    if(mealTarget){
-      if(val==='yes'&&!document.getElementById('rf-meal-card-'+eid)){
-        const mrow2=document.querySelector('#rf-group-rows [data-mid="'+memberId+'"] .rf-member-name');
-        const mname2=mrow2?mrow2.textContent:'Guest';
-        const gd2=document.getElementById('rf-guest-data');
-        const objs2=gd2?JSON.parse(gd2.dataset.guestObjs||'[]'):[];
-        const gobj2=objs2.find(g=>g.id===memberId);
-        const band2=gobj2?gobj2.ageBand||'adult':'adult';
-        if(band2==='infant'){
-          const wrap=document.createElement('div');
-          wrap.className=window._rfIsGroup?'rf-meal-wrap':'rf-card';
-          wrap.id='rf-meal-card-'+eid;
-          wrap.innerHTML='<div class="rf-lbl">Meal</div><div style="font-size:13px;opacity:.65;font-style:italic">No meal provided for infants</div>';
-          mealTarget.appendChild(wrap);
-        } else if(band2==='child'){
-          const wrap=document.createElement('div');
-          wrap.className=window._rfIsGroup?'rf-meal-wrap':'rf-card';
-          wrap.id='rf-meal-card-'+eid;
-          if(mealTmpl2){
-            wrap.innerHTML='<div class="rf-lbl">'+mname2+'\u2019s children\u2019s meal</div>';
-            const chips=document.createElement('div');chips.id='rf-meal-'+eid;
-            chips.appendChild(mealTmpl2.content.cloneNode(true));
-            wrap.appendChild(chips);
-          } else {
-            wrap.innerHTML='<div class="rf-lbl">Meal</div><div style="font-size:13px;opacity:.65;font-style:italic">A children\u2019s meal will be provided for '+mname2+'</div>';
-          }
-          mealTarget.appendChild(wrap);
-        } else if(mealTmpl2){
-          const wrap=document.createElement('div');
-          wrap.className=window._rfIsGroup?'rf-meal-wrap':'rf-card';
-          wrap.id='rf-meal-card-'+eid;
-          wrap.innerHTML='<div class="rf-lbl">'+mname2+'\u2019s meal choice</div>';
-          const chips=document.createElement('div');chips.id='rf-meal-'+eid;
-          chips.appendChild(mealTmpl2.content.cloneNode(true));
-          wrap.appendChild(chips);mealTarget.appendChild(wrap);
-        }
-      }else if(val!=='yes'){
-        const mc=document.getElementById('rf-meal-card-'+eid);if(mc)mc.remove();
-      }
-    }
-  }
   // Anonymous plus-one prompt for this member
   const extrasEl=document.getElementById('rfex-'+eid);
   if(extrasEl){
@@ -50515,6 +50405,7 @@ function _showVendorError(type){
       // Valid UID-based link
       await _showRsvpForm(_rsvpParam);
     }
+    document.documentElement.style.visibility='';
     document.body.style.visibility='visible';
     return; // do NOT boot the planner app
   }
