@@ -29499,7 +29499,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v322';
+const APP_BUILD='v323';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -49100,6 +49100,13 @@ function _publicCss(accentHex, pageHex, bandHex, inkHex, textHex, headFont, body
       --pub-btn:#B0A085;--pub-btn-fg:#1C1C22;
       color-scheme:dark;
     }
+    :root[data-theme="light"]{
+      --pub-page:#E8DDD0;--pub-band:#DDD3C4;--pub-accent:${a};
+      --pub-ink:#4A3F35;--pub-text:#5A5148;
+      --pub-surface:color-mix(in srgb,#E8DDD0 60%,#fff 40%);
+      --pub-border:color-mix(in srgb,${a} 25%,#ccc 75%);
+      color-scheme:light;
+    }
     body{margin:0;background:var(--pub-page);color:var(--pub-ink);font-family:${bf};font-size:14px;min-height:100vh}
     .pub-theme-btn{position:fixed;top:14px;right:14px;z-index:999;display:inline-flex;align-items:center;gap:5px;padding:6px 11px;font-size:11.5px;font-weight:500;font-family:${bf};border:1px solid var(--pub-border);border-radius:8px;background:var(--pub-surface);color:var(--pub-text);cursor:pointer;transition:all .15s}
     .pub-theme-btn:hover{color:var(--pub-ink);border-color:var(--pub-accent)}
@@ -49840,6 +49847,7 @@ async function _showVendorPortal(token){
       couple = { event:b.event||{}, guestCount:b.guestCount||0,
                  vendors:[Object.assign({business:vendor.vendor_name}, vc)] };
       theme = b.theme||{};
+      const sectionData = b.sectionData||{};
     } else { _showVendorError('not-found'); return; }
   }catch(e){ console.warn('Vendor portal error',e); _showVendorError('error'); return; }
 
@@ -49855,15 +49863,48 @@ async function _showVendorPortal(token){
 
   // Build booking rows from vendors list matching this token's vendor_name
   const matchedVendor = (couple.vendors||[]).find(v=>v.business===vendor.vendor_name||v.contact===vendor.vendor_name)||{};
-  const bookingRows = [
+  const _gc=couple.guestCount;
+  const _gcVal=(_gc&&typeof _gc==='object')?_gc.total:_gc;
+  const bookingRows=[
     ['Event date', dateStr||'TBC'],
     ['Venue', ev.venue||'TBC'],
     ['Service', matchedVendor.category||vendor.vendor_name||'—'],
-    ['Setup time', matchedVendor.setupTime||matchedVendor.notes||'TBC'],
-    ['Guest count', couple.guestCount||'TBC']
-  ].filter(([,v])=>v&&v!=='TBC'||true);
+    ['Setup time', matchedVendor.setupTime||'TBC'],
+    ['Guest count', _gcVal||'TBC']
+  ].filter(([,v])=>v);
 
   const sections = Array.isArray(vendor.sections)&&vendor.sections.length ? vendor.sections : [];
+  const _sectionLabels={timeline:'Day-of Timeline',checklist:'Checklist',contacts:'Other Contacts',budget:'Budget',notes:'Notes'};
+  const _chev='<svg class="vpb-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  const sectionAccordions=sections.map(key=>{
+    const label=_sectionLabels[key]||key;
+    const data=sectionData[key];
+    if(!data) return '';
+    let rows='';
+    if(key==='timeline'){
+      const arr=Array.isArray(data)?data:[];
+      if(!arr.length) return '';
+      rows=arr.slice().sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(r=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--pub-border)"><span style="font-size:12px;color:var(--pub-accent);min-width:52px;flex-shrink:0;font-weight:500">${_escHtml(r.time||'')}</span><div><div style="font-size:12.5px;font-weight:500;color:var(--pub-ink)">${_escHtml(r.title||'')}${r.location?`<span style="font-weight:400;color:var(--pub-text)"> · ${_escHtml(r.location)}</span>`:''}</div>${r.notes?`<div style="font-size:11.5px;color:var(--pub-text);margin-top:2px">${_escHtml(r.notes)}</div>`:''}</div></div>`).join('');
+    } else if(key==='checklist'){
+      const arr=Array.isArray(data)?data:[];
+      if(!arr.length) return '';
+      rows=arr.map(r=>{const done=r.done||r.completed;return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--pub-border)"><span style="font-size:14px;color:${done?'var(--pub-accent)':'var(--pub-border)'};line-height:1.3">${done?'✓':'○'}</span><span style="font-size:12.5px;color:var(--pub-ink)${done?';text-decoration:line-through;opacity:.6':''}">${_escHtml(r.task||r.title||r.name||'')}</span></div>`;}).join('');
+    } else if(key==='contacts'){
+      const arr=Array.isArray(data)?data:[];
+      if(!arr.length) return '';
+      rows=arr.map(r=>`<div style="padding:9px 0;border-bottom:1px solid var(--pub-border)"><div style="font-size:12.5px;font-weight:500;color:var(--pub-ink)">${_escHtml(r.business||r.contact||'')}</div>${r.contact&&r.business?`<div style="font-size:11.5px;color:var(--pub-text)">${_escHtml(r.contact)}</div>`:''}${r.phone?`<div style="font-size:11.5px;color:var(--pub-text)">${_escHtml(r.phone)}</div>`:''}${r.email?`<div style="font-size:11.5px;color:var(--pub-text)">${_escHtml(r.email)}</div>`:''}</div>`).join('');
+    } else if(key==='budget'){
+      const arr=Array.isArray(data)?data:[];
+      if(!arr.length) return '';
+      rows=arr.map(r=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--pub-border)"><span style="font-size:12.5px;color:var(--pub-ink)">${_escHtml(r.item||r.description||r.name||'')}</span><span style="font-size:12.5px;font-weight:500;color:var(--pub-ink)">${r.amount!=null?'$'+Number(r.amount).toLocaleString('en-AU'):''}</span></div>`).join('');
+    } else if(key==='notes'){
+      const text=((data.brief||'')+(data.brief&&data.notes?'\n\n':'')+(data.notes||'')).trim();
+      if(!text) return '';
+      rows=`<pre style="white-space:pre-wrap;font-size:12.5px;color:var(--pub-ink);margin:0;font-family:inherit;line-height:1.5">${_escHtml(text)}</pre>`;
+    }
+    if(!rows) return '';
+    return `<details class="vpb-acc"><summary>${label}${_chev}</summary><div class="vpb-body">${rows}</div></details>`;
+  }).filter(Boolean).join('');
 
   _publicPageShell(`
     ${_publicCss(theme.accent,theme.page,theme.band,theme.heading,theme.text,theme.headFont,theme.bodyFont)}
@@ -49892,9 +49933,10 @@ async function _showVendorPortal(token){
           <span style="font-size:13px;color:var(--pub-ink);font-weight:500;text-align:right">${k==='Guest count'?`<span style="font-size:17px;font-family:'Cormorant Garamond',serif">${v}</span>`:v}</span>
         </div>`).join('')}
       </div>
-      ${sections.length?`<div>
+      ${sectionAccordions?`<div>
+        <style>.vpb-acc{background:var(--pub-surface);border:1px solid var(--pub-border);border-radius:12px;overflow:hidden;margin-bottom:0}.vpb-acc summary{list-style:none;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;color:var(--pub-ink)}.vpb-acc summary::-webkit-details-marker{display:none}.vpb-chev{transition:transform .2s;flex-shrink:0}.vpb-acc[open] .vpb-chev{transform:rotate(180deg)}.vpb-body{padding:0 16px 14px;border-top:1px solid var(--pub-border)}</style>
         <div style="font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--pub-accent);padding-bottom:8px;border-bottom:1px solid var(--pub-border);margin-bottom:10px">Also shared with you</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">${sections.map(s=>`<div style="font-size:11.5px;font-weight:500;padding:5px 11px;border-radius:16px;background:var(--pub-surface);border:1px solid var(--pub-border);color:var(--pub-text)">${s}</div>`).join('')}</div>
+        <div style="display:flex;flex-direction:column;gap:8px">${sectionAccordions}</div>
       </div>`:''}
       <div>
         <div style="font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--pub-accent);padding-bottom:8px;border-bottom:1px solid var(--pub-border);margin-bottom:10px">Contact</div>
@@ -49925,8 +49967,8 @@ async function _showVendorPortal(token){
       <span class="vb-ft-lbl">Powered by</span>
       <div class="vb-ft-lock">
         <a href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault">
-          <img class="vb-ft-crest vb-ft-crest-light" src="${window.location.origin}/logos/Black%20full%20(Light%20mode).png" alt="Union Vault" height="20">
-          <img class="vb-ft-crest vb-ft-crest-dark" src="${window.location.origin}/logos/White%20full%20(Dark%20mode).png" alt="Union Vault" height="20">
+          <img class="vb-ft-crest vb-ft-crest-light" src="${window.location.origin}/logos/Black%20logo%20(Light%20mode).png" alt="Union Vault" height="20">
+          <img class="vb-ft-crest vb-ft-crest-dark" src="${window.location.origin}/logos/White%20logo%20(Dark%20mode).png" alt="Union Vault" height="20">
           <span class="vb-ft-txt"><b>UNION</b><i>VAULT</i></span>
         </a>
       </div>
