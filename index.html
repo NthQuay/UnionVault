@@ -29500,7 +29500,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v327';
+const APP_BUILD='v328';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -49348,7 +49348,7 @@ async function _showRsvpForm(coupleId,mode){
         .map(g=>{
           const fam=_famData.find(f=>f.memberIds&&f.memberIds.includes(g.id));
           const groupIds=fam?fam.memberIds.filter(id=>id!==g.id):[];
-          return {id:g.id,name:g.name.trim(),coupleId:g.coupleId||null,plusOneId:g.plusOneId||null,groupIds,ageBand:g.ageBand||'adult'};
+          return {id:g.id,name:g.name.trim(),coupleId:g.coupleId||null,plusOneId:g.plusOneId||null,plusOne:!!g.plusOne,groupIds,ageBand:g.ageBand||'adult'};
         });
     }
   }catch(e){console.warn('RSVP data fetch failed',e);}
@@ -49595,6 +49595,7 @@ function _rfPickName(name){
 
   const guest=objs.find(g=>g.name===name);
   window._rfCurrentGuestBand=guest?guest.ageBand||'adult':'adult';
+  window._rfCurrentGuest=guest||null;
   let members=[];
   if(guest){
     const byId=Object.fromEntries(objs.map(g=>[g.id,g]));
@@ -49694,7 +49695,35 @@ function _rfNameKey(e){
 
 let _rfAttending=null;
 let _rfMemberAttend={};
+let _rfPlusOneAttend={};
+let _rfPlusOneName={};
 
+function _rfRenderPlusOneSection(hostId,containerEl,inGroup){
+  const eid=hostId.replace(/[^a-z0-9]/gi,'');
+  const wrap=document.createElement('div');
+  wrap.className=(inGroup?'rf-diet-wrap':'rf-card')+' rf-plus-one-section';
+  wrap.id='rf-po-wrap-'+eid;
+  wrap.innerHTML='<div class="rf-lbl">Plus one</div>'
+    +'<div class="rf-pills">'
+    +'<div class="rf-pill" id="rfpoy-'+eid+'" onclick="_rfSetPlusOneAttend(\''+hostId+'\',\'yes\')">✓ Attending</div>'
+    +'<div class="rf-pill" id="rfpon-'+eid+'" onclick="_rfSetPlusOneAttend(\''+hostId+'\',\'no\')">Not attending</div>'
+    +'</div>'
+    +'<div id="rf-po-name-wrap-'+eid+'" style="display:none;margin-top:10px">'
+    +'<input class="rf-inp" id="rf-po-name-'+eid+'" type="text" placeholder="Plus one\'s name" autocomplete="off"/>'
+    +'</div>';
+  containerEl.appendChild(wrap);
+}
+function _rfSetPlusOneAttend(hostId,val){
+  _rfPlusOneAttend[hostId]=val;
+  const eid=hostId.replace(/[^a-z0-9]/gi,'');
+  const yes=document.getElementById('rfpoy-'+eid);
+  const no=document.getElementById('rfpon-'+eid);
+  if(yes){yes.classList.toggle('yes',val==='yes');yes.classList.remove('no');}
+  if(no){no.classList.toggle('no',val==='no');no.classList.remove('yes');}
+  const nw=document.getElementById('rf-po-name-wrap-'+eid);
+  if(nw)nw.style.display=val==='yes'?'block':'none';
+  if(val!=='yes')delete _rfPlusOneName[hostId];
+}
 function _rfSetAttend(val){
   _rfAttending=val;
   const yes=document.getElementById('rf-yes');
@@ -49746,6 +49775,14 @@ function _rfSetAttend(val){
         wrap.appendChild(chips);pm.innerHTML='';pm.appendChild(wrap);
       }
     }else if(val!=='yes'){pm.innerHTML='';}
+  }
+  // Anonymous plus-one prompt
+  const g=window._rfCurrentGuest;
+  const ac=document.getElementById('rf-attend-card');
+  if(ac && g && g.plusOne && !g.plusOneId){
+    const existing=document.getElementById('rf-po-wrap-'+g.id.replace(/[^a-z0-9]/gi,''));
+    if(val==='yes' && !existing) _rfRenderPlusOneSection(g.id, ac, false);
+    if(val!=='yes' && existing){ existing.remove(); delete _rfPlusOneAttend[g.id]; delete _rfPlusOneName[g.id]; }
   }
 }
 function _rfSetMemberAttend(memberId,val){
@@ -49831,6 +49868,18 @@ function _rfSetMemberAttend(memberId,val){
       }
     }
   }
+  // Anonymous plus-one prompt for this member
+  const extrasEl=document.getElementById('rfex-'+eid);
+  if(extrasEl){
+    const _gd3=document.getElementById('rf-guest-data');
+    const _objs3=_gd3?JSON.parse(_gd3.dataset.guestObjs||'[]'):[];
+    const mobj=_objs3.find(g=>g.id===memberId);
+    if(mobj && mobj.plusOne && !mobj.plusOneId){
+      const existing=extrasEl.querySelector('.rf-plus-one-section');
+      if(val==='yes' && !existing) _rfRenderPlusOneSection(memberId, extrasEl, true);
+      if(val!=='yes' && existing){ existing.remove(); delete _rfPlusOneAttend[memberId]; delete _rfPlusOneName[memberId]; }
+    }
+  }
 }
 
 function _rfNoteToggle(chip){
@@ -49873,6 +49922,20 @@ async function _rfSubmit(coupleId){
   const phone=(document.getElementById('rf-phone')||{}).value||null;
   const message=(document.getElementById('rf-message')||{}).value||null;
 
+  // Validate anonymous plus-one names before locking the button
+  for(const [poHostId, poAttend] of Object.entries(_rfPlusOneAttend)){
+    if(poAttend==='yes'){
+      const poEid=poHostId.replace(/[^a-z0-9]/gi,'');
+      const poNameEl=document.getElementById('rf-po-name-'+poEid);
+      const poNameVal=(poNameEl||{}).value||'';
+      if(!poNameVal.trim()){
+        if(poNameEl){poNameEl.style.borderColor='#C0392B';poNameEl.focus();}
+        return;
+      }
+      _rfPlusOneName[poHostId]=poNameVal.trim();
+    }
+  }
+
   submitEl.disabled=true;submitEl.textContent='Sending…';
 
   const _gd=document.getElementById('rf-guest-data');
@@ -49894,6 +49957,12 @@ async function _rfSubmit(coupleId){
     } else {
       const mealEl=document.querySelector('#rf-meal-s0 .rf-meal-chip.on');
       payloads=[{couple_id:coupleId,guest_name:name,email,phone,address,message,attending:_rfAttending,dietary:dietFinal.length?dietFinal:null,meal:mealEl?mealEl.dataset.meal:null}];
+    }
+    // Append anonymous plus-one RSVPs
+    for(const [poHostId2, poAttend2] of Object.entries(_rfPlusOneAttend)){
+      if(poAttend2==='yes' && _rfPlusOneName[poHostId2]){
+        payloads.push({couple_id:coupleId,guest_name:_rfPlusOneName[poHostId2],email:null,phone:null,address:null,message:null,attending:'yes',dietary:null,meal:null});
+      }
     }
 
     const results=await Promise.all(payloads.map(body=>
