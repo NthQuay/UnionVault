@@ -15692,10 +15692,11 @@ function _calCollectEvents(){
       if(!a || !a.date) return;
       const time=a.time?_fmtCalTime(a.time):'';
       const typeLbl=a.type||'Appointment';
+      const bizLbl=a.business||'';
       add(a.date, {
         type:'appts',
         title:typeLbl,
-        sub:a.virtual?'Virtual':'In person',
+        sub:bizLbl?(bizLbl+(a.virtual?' · Virtual':' · In person')):(a.virtual?'Virtual':'In person'),
         time:time,
         done:false,
         taskId:t.id, apptId:a.id
@@ -16144,7 +16145,6 @@ function _calPopupWrap(iconSvg, eyebrow, title, sub, rows, editLabel, editAction
       <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap;align-items:center">
         ${deleteBtn}
         ${backBtn}
-        <button class="btn btn-outline btn-sm" style="justify-content:center;white-space:nowrap" onclick="_calPopupClose()">Close</button>
         ${goToBtn}
         <button class="btn btn-primary btn-sm" style="justify-content:center;gap:5px;white-space:nowrap" onclick="_calPopupClose();${editAction}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>
       </div>
@@ -16162,7 +16162,7 @@ function _calPopupWrap(iconSvg, eyebrow, title, sub, rows, editLabel, editAction
       xbtn.onclick=(e)=>{ e.stopPropagation(); _calPopupBack(fromIso); };
       xbtn.title='Back to day';
     } else {
-      xbtn.onclick=null; // restore default confirm2 close behaviour
+      xbtn.onclick=_confirm2CloseX; // restore default confirm2 close behaviour
       xbtn.title='';
     }
   }
@@ -29445,7 +29445,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v313';
+const APP_BUILD='v315';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -35634,7 +35634,7 @@ function _wbGalleryBody(){
         const on=picked.indexOf(it.id)>=0;
         const url=_mediaUrl(it.image);
         const gone=_mediaMissing(it.image);
-        if(gone) return `<div style="aspect-ratio:1;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;text-align:center;font-size:10.5px;color:var(--red);padding:6px">Image not saved</div>`;
+        if(gone){const _goneAct=it.src==='upload'?`_wbGalleryDeleteUpload('${it.id}')`:`_wbGalleryPick('${it.id}')`;return `<div style="position:relative;aspect-ratio:1;border-radius:8px;border:1px dashed var(--red);display:flex;align-items:center;justify-content:center;text-align:center;font-size:10.5px;color:var(--red);padding:6px;cursor:pointer" onclick="${_goneAct}">Image not saved<button onclick="event.stopPropagation();${_goneAct}" style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">×</button></div>`;}
         // The "+ Inspiration" tag shows only on UPLOADS that aren't already in Inspiration.
         const inspoTag=(it.src==='upload' && !it.inInspo)
           ? `<span onclick="event.stopPropagation();_wbGalleryToInspo('${it.id}')" title="Also add to Inspiration"
@@ -37636,7 +37636,7 @@ function _wbBuildSite(forDownload){
         const hd=_wbHeading(k);
         if(!hd) return '';
         if(t.format==='editorial'){
-          const _ewMap={details:'The Big Day',timeline:'The Day',rsvp:'Attend',gallery:'Moments',accommodation:'Stay',wishing:'With Gratitude',countdown:'Countdown',faq:'Questions',registry:'Registry'};
+          const _ewMap={details:'The Big Day',timeline:'The Day',rsvp:'Attend',gallery:'Moments',accommodation:'Stay',wishing:'With Gratitude',countdown:'Save the Date',schedule:'Order of the Day',faq:'Questions',registry:'Registry'};
           const ew=_wbIsCustom(k)?'':(_ewMap[k]||'');
           return (ew?`<p class="edit-eyebrow">${_escHtml(ew.toUpperCase())}</p>`:'')+`<h2>${_escHtml(hd)}</h2>`;
         }
@@ -38409,7 +38409,7 @@ header .imgs-grid,header .imgs-rows{max-width:560px;margin-left:auto;margin-righ
   .beside{grid-template-columns:1fr;gap:${sp(14)}px}
   .beside .imgs-grid{grid-template-columns:1fr}
 }
-.count p:not(.intro){font-family:${t2.headFont};font-size:clamp(${sch(26)}px,5vw,${sch(38)}px);color:${t2.accent}}
+.count p:not(.intro):not(.edit-eyebrow){font-family:${t2.headFont};font-size:clamp(${sch(26)}px,5vw,${sch(38)}px);color:${t2.accent}}
 .stays{list-style:none;text-align:left}
 section.b-center .stays{text-align:center}
 .stays li{padding:${sp(14)}px 0;border-bottom:1px solid ${t2.heading}12}
@@ -42062,44 +42062,44 @@ function renderSettings(c, actions){
         </div>
       </div>
 
-      <div class=”dark-toggle-row” style=”margin-bottom:16px”>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
-          <div style=”font-size:13.5px;font-weight:600”>Category Jump Bar</div>
-          <div style=”font-size:12px;color:var(--muted);margin-top:2px”>Show a strip of category names at the top of the budget page for quick navigation.</div>
+          <div style="font-size:13.5px;font-weight:600">Category Jump Bar</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show a strip of category names at the top of the budget page for quick navigation.</div>
         </div>
-        <label class=”toggle-switch”>
-          <input type=”checkbox” ${(STATE.settings.budgetJumpBar==='a'||STATE.settings.budgetJumpBar==='b')?'checked':''} onchange=”_setBudgetJumpBar(this.checked?'a':'off')”/>
-          <div class=”toggle-track”></div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${(STATE.settings.budgetJumpBar==='a'||STATE.settings.budgetJumpBar==='b')?'checked':''} onchange="_setBudgetJumpBar(this.checked?'a':'off')"/>
+          <div class="toggle-track"></div>
         </label>
       </div>
-      <div class=”dark-toggle-row” style=”margin-bottom:16px”>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
-          <div style=”font-size:13.5px;font-weight:600”>Calmer Category Cards</div>
-          <div style=”font-size:12px;color:var(--muted);margin-top:2px”>Softer category headers, tighter rows, and paid items dimmed.</div>
+          <div style="font-size:13.5px;font-weight:600">Calmer Category Cards</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Softer category headers, tighter rows, and paid items dimmed.</div>
         </div>
-        <label class=”toggle-switch”>
-          <input type=”checkbox” ${(STATE.settings.budgetDensity==='gentle')?'checked':''} onchange=”STATE.settings.budgetDensity=this.checked?'gentle':'current';saveToStorage();if(_currentPage==='budget')navigate('budget')”/>
-          <div class=”toggle-track”></div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${(STATE.settings.budgetDensity==='gentle')?'checked':''} onchange="STATE.settings.budgetDensity=this.checked?'gentle':'current';saveToStorage();if(_currentPage==='budget')navigate('budget')"/>
+          <div class="toggle-track"></div>
         </label>
       </div>
-      <div class=”dark-toggle-row” style=”margin-bottom:16px”>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
-          <div style=”font-size:13.5px;font-weight:600”>Show Year on Budget Dates</div>
-          <div style=”font-size:12px;color:var(--muted);margin-top:2px”>Include the year in budget due, overdue &amp; paid dates.</div>
+          <div style="font-size:13.5px;font-weight:600">Show Year on Budget Dates</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Include the year in budget due, overdue &amp; paid dates.</div>
         </div>
-        <label class=”toggle-switch”>
-          <input type=”checkbox” ${!STATE.settings.budgetHideYear?'checked':''} onchange=”STATE.settings.budgetHideYear=!this.checked;saveToStorage()”/>
-          <div class=”toggle-track”></div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${!STATE.settings.budgetHideYear?'checked':''} onchange="STATE.settings.budgetHideYear=!this.checked;saveToStorage()"/>
+          <div class="toggle-track"></div>
         </label>
       </div>
-      <div class=”dark-toggle-row” style=”margin-bottom:16px”>
+      <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
-          <div style=”font-size:13.5px;font-weight:500”>Show Paid / Left to pay on Budget Categories</div>
-          <div style=”font-size:12px;color:var(--muted);margin-top:2px”>Show how much of each category is paid and how much is left to pay.</div>
+          <div style="font-size:13.5px;font-weight:500">Show Paid / Left to pay on Budget Categories</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show how much of each category is paid and how much is left to pay.</div>
         </div>
-        <label class=”toggle-switch”>
-          <input type=”checkbox” ${!STATE.settings.hideBudgetPaidOwing?'checked':''} onchange=”STATE.settings.hideBudgetPaidOwing=!this.checked;saveToStorage();if(_currentPage==='budget')navigate('budget')”/>
-          <div class=”toggle-track”></div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${!STATE.settings.hideBudgetPaidOwing?'checked':''} onchange="STATE.settings.hideBudgetPaidOwing=!this.checked;saveToStorage();if(_currentPage==='budget')navigate('budget')"/>
+          <div class="toggle-track"></div>
         </label>
       </div>
       <div class="dark-toggle-row" style="margin-bottom:16px">
