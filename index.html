@@ -660,6 +660,7 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
 .wb-ec-title{font-size:14px;font-weight:600;color:var(--ink)}
 .wb-ec-close{border:1px solid var(--border);background:var(--cream);border-radius:8px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--muted);line-height:1;flex-shrink:0;font-family:inherit}
 .wb-ec-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:14px 16px;display:flex;flex-direction:column;gap:16px}
+.wb-ec-body input[type=range],#modal-body input[type=range]{touch-action:none}
 .wb-ec-footer{flex-shrink:0;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
 .wb-row.wb-selected,.wb-theme-row.wb-selected{background:rgba(160,132,92,.08)!important}
 /* ── The phone strip (v144) ──────────────────────────────────────────────────────────
@@ -29470,7 +29471,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v318';
+const APP_BUILD='v319';
 const APP_BUILD_DATE='2026-10-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -34513,6 +34514,7 @@ function _wbTogglePublish(){
   navigate('website');
 }
 function openWbTheme(){
+  _wbLiveFocusOff();
   document.querySelectorAll('.wb-row.wb-selected,.wb-theme-row.wb-selected').forEach(r=>r.classList.remove('wb-selected'));
   document.querySelector('.wb-theme-row')?.classList.add('wb-selected');
   _wbThemeSnapshot = JSON.stringify(_wbSite().theme);
@@ -42009,7 +42011,7 @@ async function _describeAppSource(){
   const el=document.getElementById('about-sw'); if(!el) return;
   try{
     if(!('serviceWorker' in navigator) || !navigator.serviceWorker.controller){
-      el.innerHTML='<span style="color:var(--muted)">Loaded directly — no offline copy in use.</span>'; return;
+      el.innerHTML=''; return;
     }
     const keys=await caches.keys();
     const uv=keys.filter(k=>k.indexOf('uv-')===0);
