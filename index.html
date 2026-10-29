@@ -3035,8 +3035,8 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 .auth-links{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .auth-links a{font-size:13px;color:var(--gold);text-decoration:none}
 @keyframes lp-spin{to{transform:rotate(360deg)}}
-.auth-legal{font-size:11px;color:var(--muted);text-align:center;line-height:1.6}
-.auth-legal a{color:var(--gold);text-decoration:none}
+.auth-legal{font-size:11px;color:var(--muted);text-align:center;line-height:1.6;margin-top:16px}
+.auth-legal a{color:var(--gold);text-decoration:none;font-size:11px}
 
 /* ══ FULL-WIDTH SECTION BASE ══ */
 .section{padding:88px max(48px,6vw)}
@@ -3192,7 +3192,7 @@ textarea.contact-input{resize:vertical;min-height:110px}
           <button class="btn-gold" id="lp-in-btn" onclick="_lpSignIn()">Sign in</button>
           <div class="auth-links">
             <button id="lp-forgot-btn" onclick="_lpForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--gold-deep,#b8923a);cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;margin-top:6px">Forgot password?</button>
-            <div class="auth-legal">By continuing you agree to our<br><a href="#" onclick="event.preventDefault();_openTermsModal()">Terms &amp; Privacy</a></div>
+            <div class="auth-legal">By continuing you agree to our <a href="#" onclick="event.preventDefault();_openTermsModal()">Terms &amp; Privacy</a></div>
           </div>
         </div>
 
@@ -3222,11 +3222,11 @@ textarea.contact-input{resize:vertical;min-height:110px}
           <div id="lp-up-err" style="display:none;font-size:12px;color:#c0392b;margin-bottom:8px;padding:8px 10px;background:rgba(192,57,43,0.08);border-radius:6px"></div>
           <button class="btn-gold" id="lp-up-btn" onclick="_lpSignUp()">Create free account</button>
           <div class="auth-links">
-            <div class="auth-legal">By creating an account you agree to our<br><a href="#" onclick="event.preventDefault();_openTermsModal()">Terms &amp; Privacy</a></div>
+            <div class="auth-legal">By creating an account you agree to our <a href="#" onclick="event.preventDefault();_openTermsModal()">Terms &amp; Privacy</a></div>
           </div>
         </div>
       </div>
-      <div style="text-align:center;padding:12px 0 0;font-size:12px;color:rgba(120,113,108,0.8)"><button onclick="_lpContinueOffline()" style="background:none;border:none;color:rgba(120,113,108,0.8);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">Continue without an account →</button></div>
+      <div style="display:none"><button onclick="_lpContinueOffline()" style="background:none;border:none;color:rgba(120,113,108,0.8);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">Continue without an account →</button></div>
     </div>
   </div>
 
@@ -29536,8 +29536,8 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v338';
-const APP_BUILD_DATE='2026-10-28';
+const APP_BUILD='v339';
+const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
   const p1=_escHtml(ev.partner1||'Partner'), p2=_escHtml(ev.partner2||'Partner');
