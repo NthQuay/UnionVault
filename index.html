@@ -29572,7 +29572,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v351';
+const APP_BUILD='v352';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -36364,12 +36364,6 @@ function _wbLayoutHtml(key){
       <input class="form-input" value="${_escHtml(l.heading||'')}" placeholder="${_escHtml(m.name||'')}"
              oninput="_wbLaySet('${key}','heading',this.value)" style="font-size:12.5px"/>
     </div>
-    <div class="form-group" style="margin-bottom:9px">
-      <label class="form-label">Intro text <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-      <textarea class="form-input" rows="2" placeholder="A line under the heading…"
-                oninput="_wbLaySet('${key}','intro',this.value)" style="font-size:12.5px;resize:vertical">${_escHtml(l.intro||'')}</textarea>
-      ${key==='wishingwell'?`<div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5">This sits <b>above</b> your welcome message (“Your presence is the greatest gift…”). To change that message, <a href="javascript:void(0)" onclick="closeModalDirect();navigate('wishingwell');openWwSettings()" style="color:var(--gold-deep);text-decoration:underline;cursor:pointer">edit it in Wishing Well</a>.</div>`:''}
-    </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:9px">
       ${t.alignGlobal!==false?'':`<div>
         <div class="wb-slot-lbl" style="margin-bottom:5px">Heading and intro</div>
@@ -37218,7 +37212,7 @@ function _wbBlockListHtml(key){
   const opts=[['img','Images'],
     ..._wbWantsText(key)?[['text','Text']]:[],
     ['links','Links'],['btns','Buttons'],['video','Video'],['divider','Divider'],
-    ...hasIntro?[]:[['intro','Intro']]];
+    ...hasIntro?[]:[['intro','Text']]];
   const item=(t,label)=>`<button type="button" role="menuitem" class="wb-add-item" onclick="_wbAddPick('${key}','${t}')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${WB_BLK_ICON[t]||''}</svg>${label}</button>`;
   return arr.map(b=>_wbBlockHtml(key,b)).join('') + `<div class="wb-blk-add">
@@ -37297,7 +37291,7 @@ const WB_EYE_OFF = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" 
 
 function _wbBlockHtml(key,b){
   const name = b.type==='head'  ? 'Heading'
-             : b.type==='intro' ? 'Intro'
+             : b.type==='intro' ? 'Text'
              : b.type==='text'  ? 'Text'
              : b.type==='img'   ? ('Images'+(b.ids.length?' · '+b.ids.length:''))
              : b.type==='links' ? ('Links'+(b.items.length?' · '+b.items.length:''))
@@ -37329,11 +37323,15 @@ function _wbBlockHtml(key,b){
   </div>`;
 }
 
-// The head, intro and body blocks have NO body of their own in the editor. The heading
-// text and intro text live in the Layout block below, where they have always lived.
-// Duplicating them here would be a second editor for the same field — which is exactly
-// how Home ended up with five controls that did nothing (v125). One field, one editor.
 function _wbBlockBody(key,b){
+  if(b.type==='intro'){
+    const val=b.body!==undefined?b.body:((_wbLayout(key)||{}).intro||'');
+    return `<div class="wb-blk-body">
+      <textarea class="form-input" rows="2" placeholder="A short line under the heading…"
+        oninput="_wbBlockSet('${key}','${b.id}','body',this.value)"
+        style="font-size:12.5px;resize:vertical;line-height:1.55">${_escHtml(val)}</textarea>
+    </div>`;
+  }
   if(b.type==='text'){
     return `<div class="wb-blk-body">
       <textarea class="form-input" rows="4" placeholder="Write anything you'd like your guests to read…"
@@ -37839,7 +37837,8 @@ function _wbBuildSite(forDownload){
         }
         return `<h2>${_escHtml(hd)}</h2>`;
       }
-      if(b.type==='intro') return l.intro ? `<p class="intro">${_escHtml(l.intro)}</p>` : '';
+      if(b.type==='intro'){const t2=b.body!==undefined?b.body:(l.intro||'');return t2?`<p class="intro">${_escHtml(t2)}</p>`:'';}
+
       if(b.type==='body')  return content || '';
       if(b.type==='img')   return imgHtml(b);
       if(b.type==='text'){
