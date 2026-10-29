@@ -29536,7 +29536,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v340';
+const APP_BUILD='v341';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -49461,19 +49461,19 @@ async function _showRsvpForm(coupleId,mode){
     <style>
       *,*::before,*::after{box-sizing:border-box}
       html,body{margin:0;padding:0}
-      html{background:#1C1610}
-      body{background:#1C1610;min-height:100vh;font-family:'DM Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+      html{background:var(--pub-page,#F5F0E8)}
+      body{background:var(--pub-page,#F5F0E8);min-height:100vh;font-family:'DM Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
       :root{
-        --rw-hdr:#1C1610;--rw-hdr-ink:#EDE5D8;--rw-hdr-muted:#857A6A;--rw-hdr-rule:#2E2820;
-        --rw-step-done:#B08040;--rw-step-active-bg:#B08040;--rw-step-active-fg:#1C1610;
+        --rw-hdr:var(--pub-surface,#FAF7F2);--rw-hdr-ink:var(--pub-ink,#2E2418);--rw-hdr-muted:var(--pub-text,#7A6E5E);--rw-hdr-rule:var(--pub-border,#C8BFB0);
+        --rw-step-done:#9B6F42;--rw-step-active-bg:#9B6F42;--rw-step-active-fg:#fff;
         --rw-bg:var(--pub-page,#F5F0E8);--rw-card:var(--pub-surface,#FAF7F2);
         --rw-ink:var(--pub-ink,#2E2418);--rw-muted:var(--pub-text,#7A6E5E);
         --rw-border:var(--pub-border,#C8BFB0);--rw-accent:var(--pub-accent,#9B6F42);
         --rw-btn:var(--pub-btn,var(--pub-accent,#9B6F42));--rw-btn-fg:var(--pub-btn-fg,#fff);
       }
-      .rw-hdr{background:var(--rw-hdr);padding:36px max(16px,env(safe-area-inset-left,0px)) 28px;text-align:center}
+      .rw-hdr{background:var(--rw-hdr);padding:36px max(16px,env(safe-area-inset-left,0px)) 28px;text-align:center;border-bottom:1px solid var(--rw-hdr-rule)}
       .rw-body{background:var(--rw-bg);min-height:60vh;padding:28px max(16px,env(safe-area-inset-left,0px)) 96px;max-width:480px;margin:0 auto}
-      .rw-eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--rw-hdr-muted);margin:0 0 10px;font-weight:400}
+      .rw-eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--rw-hdr-muted);margin:0 0 10px;font-weight:400;font-family:'Cormorant Garamond',Georgia,serif}
       .rw-couple{font-family:'Cormorant Garamond','${_hf}',Georgia,serif;font-size:clamp(28px,7vw,42px);font-weight:500;color:var(--rw-hdr-ink);margin:0 0 8px;line-height:1.2;text-wrap:balance}
       .rw-meta{font-size:12.5px;color:var(--rw-hdr-muted);margin:0;letter-spacing:.02em}
       .rw-step-bar{display:flex;align-items:center;justify-content:center;gap:0;margin-top:24px}
