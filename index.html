@@ -29571,7 +29571,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v348';
+const APP_BUILD='v349';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38298,6 +38298,7 @@ function _wbBuildSite(forDownload){
   const _uvMealOpts=_uvMealOn?(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()):[];
   const _uvMealHtml=_uvMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="_rfPickMeal(this)">${_escHtml(o)}</div>`).join('');
   const _uvChildMealOn=_uvMealOn&&STATE.settings.childrenMealOn!==false&&(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()).length>0;
+  const _uvChildMealEnabled=_uvMealOn&&STATE.settings.childrenMealOn!==false;
   const _uvChildMealOpts=_uvChildMealOn?(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()):[];
   const _uvChildMealHtml=_uvChildMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="_rfPickMeal(this)">${_escHtml(o)}</div>`).join('');
   const _uvGuestJson=JSON.stringify((STATE.guests||[]).filter(g=>(g.listType||'A')!=='B'&&g.name).map(g=>({n:String(g.name).trim(),a:g.ageBand||'adult'})).filter(g=>g.n).sort((a,b)=>a.n.localeCompare(b.n))).replace(/'/g,'&#39;');
@@ -38372,7 +38373,7 @@ function _wbBuildSite(forDownload){
 </div>
 <script>
 (function(){
-  var _su='${_SB_URL}',_sk='${_SB_KEY}',_sa=null,_sab='adult';
+  var _su='${_SB_URL}',_sk='${_SB_KEY}',_sa=null,_sab='adult',_childMealEnabled=${_uvChildMealEnabled?'true':'false'};
   window._uvOpenRsvp=function(){var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.add('open');document.body.style.overflow='hidden';}};
   window._uvCloseRsvp=function(){
     var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.remove('open');document.body.style.overflow='';}
@@ -38444,14 +38445,17 @@ function _wbBuildSite(forDownload){
       if(_sab==='infant'){
         mCard.innerHTML='<div class="rf-lbl">Meal</div><div class="rf-meal-info">No meal provided for infants</div>';
         cg.insertBefore(mCard,cg.firstChild);
-      } else if(_sab==='child'){
-        var cUseTmpl=ctmpl||tmpl;
-        if(cUseTmpl){
-          mCard.innerHTML='<div class="rf-lbl">Children’s meal</div>';
-          mCard.appendChild(cUseTmpl.content.cloneNode(true));
+      } else if(_sab===’child’){
+        if(ctmpl){
+          mCard.innerHTML=’<div class="rf-lbl">Children’s meal</div>’;
+          mCard.appendChild(ctmpl.content.cloneNode(true));
           cg.insertBefore(mCard,cg.firstChild);
-        } else {
-          mCard.innerHTML='<div class="rf-lbl">Meal</div><div class="rf-meal-info">A children’s meal will be provided</div>';
+        } else if(_childMealEnabled){
+          mCard.innerHTML=’<div class="rf-lbl">Meal</div><div class="rf-meal-info">A children’s meal will be provided</div>’;
+          cg.insertBefore(mCard,cg.firstChild);
+        } else if(tmpl){
+          mCard.innerHTML=’<div class="rf-lbl">Meal choice</div>’;
+          mCard.appendChild(tmpl.content.cloneNode(true));
           cg.insertBefore(mCard,cg.firstChild);
         }
       } else if(tmpl){
@@ -49470,6 +49474,7 @@ async function _showRsvpForm(coupleId,mode){
   const rfEmailNotif=!((sec.settings&&sec.settings.rsvpEmailOn===false));
   const mealHtml=mealOpts.map(o=>`<button type="button" class="rf-meal-chip" onclick="_rfPickMeal(this)" data-meal="${o.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}">${o.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</button>`).join('');
   const childMealOn=mealOn&&sec.settings.childrenMealOn!==false&&(sec.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()).length>0;
+  const childrenMealEnabled=mealOn&&sec.settings.childrenMealOn!==false;
   const childMealOpts=childMealOn?(sec.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()):[];
   const childMealHtml=childMealOpts.map(o=>`<button type="button" class="rf-meal-chip" onclick="_rfPickMeal(this)" data-meal="${o.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}">${o.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</button>`).join('');
 
@@ -49713,6 +49718,7 @@ async function _showRsvpForm(coupleId,mode){
       data-email-notif='${rfEmailNotif?'1':'0'}'
       data-meal-on='${mealOn?'1':'0'}'
       data-children-meal-on='${childMealOn?'1':'0'}'
+      data-children-meal-enabled='${childrenMealEnabled?'1':'0'}'
       data-dietary-on='${rfields.dietary===false?'0':'1'}'
       data-has-contact='${(rfields.email!==false||rfields.phone!==false||rfields.address!==false||rfields.message!==false)?'1':'0'}'>
     </div>
@@ -50139,6 +50145,7 @@ function _rfWizRenderPage2(){
   const gd=document.getElementById('rf-guest-data');
   const mealOn=(gd&&gd.dataset.mealOn==='1');
   const childMealOn2=(gd&&gd.dataset.childrenMealOn==='1');
+  const childrenMealEnabled2=(gd&&gd.dataset.childrenMealEnabled==='1');
   const dietOn=(gd&&gd.dataset.dietaryOn==='1');
   const dr=document.getElementById('rw-details-rows');
   if(!dr) return;
@@ -50180,8 +50187,12 @@ function _rfWizRenderPage2(){
         lbl.textContent=band==='child'?(attending.length>1?g.name+'’s children’s meal':'Children’s meal'):(attending.length>1?g.name+'’s meal choice':'Meal choice');
         const mealCont=document.createElement('div');mealCont.id='rf-meal-'+eid;
         mealCont.className='rw-meal-row';
-        const tmplToUse=(band==='child'&&childTmpl)?childTmpl:mealTmpl;
-        if(tmplToUse){mealCont.appendChild(tmplToUse.content.cloneNode(true));}
+        if(band==='child'){
+          if(childTmpl){mealCont.appendChild(childTmpl.content.cloneNode(true));}
+          else if(!childrenMealEnabled2&&mealTmpl){mealCont.appendChild(mealTmpl.content.cloneNode(true));}
+        } else {
+          if(mealTmpl){mealCont.appendChild(mealTmpl.content.cloneNode(true));}
+        }
         fg.appendChild(lbl);fg.appendChild(mealCont);
       }
       block.appendChild(fg);
