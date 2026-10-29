@@ -12945,7 +12945,7 @@ function renderRsvpMgr(c, actions){
     const cardHtml={
       invitation:!hidden.has('invitation')?_invitationSectionHtml('invitation'):'',
       sendguests:!hidden.has('sendguests')?_invitationSectionHtml('sendguests'):'',
-      meal:!hidden.has('meal')?`<div class="card" style="padding:22px 20px 20px">${_mealSetupHtml()}</div>`:'',
+      meal:!hidden.has('meal')?`<div class="card" id="rsvp-meal-card" style="padding:22px 20px 20px">${_mealSetupHtml()}</div>`:'',
       link:!hidden.has('link')?`<div class="card">
         <div class="section-eyebrow" style="margin-bottom:12px">Your RSVP Link</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -13480,7 +13480,7 @@ function _mealSetupHtml(){
       <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 10px"/>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:${childrenOn?'10px':'0'}">
         <input type="checkbox" ${childrenOn?'checked':''} onchange="_childMealSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
-        Offer children's meal choices
+        Child allocated children's meal
       </label>
       ${childrenOn?`
         <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
@@ -13494,6 +13494,7 @@ function _mealSetupHtml(){
       `:''}
     `:''}`;
 }
+function _rsvpRerenderMealCard(){const el=document.getElementById('rsvp-meal-card');if(el)el.innerHTML=_mealSetupHtml();}
 function _mealSetOn(on){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.mealChoiceOn=!!on;
@@ -13513,15 +13514,15 @@ function _mealOptsArr(){
   return STATE.settings.mealOptions;
 }
 function _mealSetOpt(i,v){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a[i]=String(v||'').trim(); saveToStorage(); rsvpRerenderList(); }
-function _mealAddOpt(){ _mealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); _rsvpReopenColMenu(); }
-function _mealDelOpt(i){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); _rsvpReopenColMenu(); }
+function _mealAddOpt(){ _mealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); _rsvpRerenderMealCard(); _rsvpReopenColMenu(); }
+function _mealDelOpt(i){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); _rsvpRerenderMealCard(); _rsvpReopenColMenu(); }
 function _childMealOptsArr(){ if(!STATE.settings) STATE.settings={}; if(!Array.isArray(STATE.settings.childrenMealOptions)) STATE.settings.childrenMealOptions=[]; return STATE.settings.childrenMealOptions; }
 function _childMealOpts(){ return _childMealOptsArr().filter(x=>String(x||'').trim()); }
 function _childMealOn(){ return !!(STATE.settings&&STATE.settings.mealChoiceOn)&&STATE.settings.childrenMealOn!==false&&_childMealOpts().length>0; }
-function _childMealSetOn(on){ if(!STATE.settings) STATE.settings={}; STATE.settings.childrenMealOn=!!on; if(on&&!_childMealOpts().length) STATE.settings.childrenMealOptions=["Children's meal"]; saveToStorage(); rsvpRerenderList(); }
+function _childMealSetOn(on){ if(!STATE.settings) STATE.settings={}; STATE.settings.childrenMealOn=!!on; if(on&&!_childMealOpts().length) STATE.settings.childrenMealOptions=["Children's meal"]; saveToStorage(); rsvpRerenderList(); _rsvpRerenderMealCard(); }
 function _childMealSetOpt(i,v){ const a=_childMealOptsArr(); if(i<0||i>=a.length) return; a[i]=String(v||'').trim(); saveToStorage(); rsvpRerenderList(); }
-function _childMealAddOpt(){ _childMealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); }
-function _childMealDelOpt(i){ const a=_childMealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); }
+function _childMealAddOpt(){ _childMealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); _rsvpRerenderMealCard(); }
+function _childMealDelOpt(i){ const a=_childMealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); _rsvpRerenderMealCard(); }
 function _rsvpSetEmailNotif(on){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpEmailOn=!!on;
@@ -29571,7 +29572,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v349';
+const APP_BUILD='v350';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
