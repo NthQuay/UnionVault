@@ -29536,7 +29536,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v337';
+const APP_BUILD='v338';
 const APP_BUILD_DATE='2026-10-28';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -42548,8 +42548,8 @@ function renderSettings(c, actions){
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Data</div>
       <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
-          <div style="font-size:13.5px;font-weight:500">Hide version mismatch alerts</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Don't show the conflict dialog when your cloud data is newer than this device.</div>
+          <div style="font-size:13.5px;font-weight:500">Auto-update from cloud (skip prompt)</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">When cloud data is newer, silently update this device without showing a prompt.</div>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" ${(function(){try{return localStorage.getItem('uv-suppress-conflict')==='1';}catch(e){return !!STATE.settings.suppressVersionMismatch;}})()?'checked':''} onchange="STATE.settings.suppressVersionMismatch=this.checked;try{this.checked?localStorage.setItem('uv-suppress-conflict','1'):localStorage.removeItem('uv-suppress-conflict');}catch(e){}saveToStorage()"/>
@@ -47780,7 +47780,12 @@ async function _autoSyncCheckOnBoot(){
       // Never cloud-synced on this device
       // If there's existing local data, ask first — don't silently overwrite it
       const hasLocal=!!(STATE.guests&&STATE.guests.length)||!!(STATE.event&&(STATE.event.names||STATE.event.date));
-      if(hasLocal){ _showConflictDialog(cloudTs,0); return; }
+      if(hasLocal){
+        const _sup=(function(){try{return localStorage.getItem('uv-suppress-conflict')==='1';}catch(e){}return !!STATE.settings?.suppressVersionMismatch;})();
+        if(_sup){ await cloudLoadClick(true); return; }
+        _showConflictDialog(cloudTs,0);
+        return;
+      }
       // No local data — safe to restore silently
       cloudLoadClick(false);
       return;
@@ -47788,6 +47793,8 @@ async function _autoSyncCheckOnBoot(){
     const localTs=new Date(localTsRaw).getTime();
     if(cloudTs-localTs>5000){
       // Cloud is newer — show dialog so user can choose to keep local changes
+      const _sup=(function(){try{return localStorage.getItem('uv-suppress-conflict')==='1';}catch(e){}return !!STATE.settings?.suppressVersionMismatch;})();
+      if(_sup){ await cloudLoadClick(true); return; }
       _showConflictDialog(cloudTs,localTs);
     } else {
       // Cloud is same age or older — push local up if auto-sync is on
