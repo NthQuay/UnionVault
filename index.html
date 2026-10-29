@@ -11872,6 +11872,7 @@ const _RSVP_SECTIONS=[
   ['sendguests','Send to guests'],
   ['tracker','Guest response tracker'],
   ['link','RSVP link & QR'],
+  ['meal','Meal choice'],
   ['summary','Response summary'],
   ['dietary','Dietary requirements'],
   ['plusones','Plus-ones'],
@@ -12943,6 +12944,7 @@ function renderRsvpMgr(c, actions){
     const cardHtml={
       invitation:!hidden.has('invitation')?_invitationSectionHtml('invitation'):'',
       sendguests:!hidden.has('sendguests')?_invitationSectionHtml('sendguests'):'',
+      meal:!hidden.has('meal')?`<div class="card" style="padding:22px 20px 20px">${_mealSetupHtml()}</div>`:'',
       link:!hidden.has('link')?`<div class="card">
         <div class="section-eyebrow" style="margin-bottom:12px">Your RSVP Link</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -12959,7 +12961,15 @@ function renderRsvpMgr(c, actions){
               Download QR Code
             </button>
           </div>
-        </div></div>`:'',
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px">
+        <div class="section-eyebrow" style="margin-bottom:10px">When a guest RSVPs</div>
+        <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
+          <input type="checkbox" ${(STATE.settings&&STATE.settings.rsvpEmailOn!==false)?'checked':''} onchange="_rsvpSetEmailNotif(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+          Email me
+        </label>
+        <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Notifications are sent to your account email.</div>
+      </div>`:'',
       summary:!hidden.has('summary')?`<div class="card" style="position:relative">
         <div class="rsvp-style-switch">
           <button class="rsvp-style-btn" onclick="toggleRsvpStyleMenu(event)" title="Change layout" aria-label="Change response summary layout" aria-haspopup="true">
@@ -13427,12 +13437,10 @@ function _rsvpColMenuHtml(){
     <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:3px">Columns</div>
     <div style="font-size:9.5px;color:var(--muted);margin-bottom:8px">Tick to show · drag to reorder · ❄ to freeze Name</div>
     ${rows}
-    ${_mealSetupHtml()}
   </div>`;
 }
 
-/* Meal choice setup + the RSVP alerts. Lives with the columns because that is where the
-   Meal column is switched on, and a control should sit next to the thing it controls. */
+/* Meal choice setup. Renders as a standalone card body on the RSVP & Invites page. */
 function _mealSetupHtml(){
   const on=!!(STATE.settings && STATE.settings.mealChoiceOn);
   // Use the raw array (including empty in-progress entries) so a just-added blank
@@ -13440,32 +13448,22 @@ function _mealSetupHtml(){
   // elsewhere but would swallow the new row before the user can type into it.
   const opts=on ? _mealOptsArr() : _mealOpts();
   return `
-    <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px">
-      <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:6px">Meal choice</div>
-      <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer">
-        <input type="checkbox" ${on?'checked':''} onchange="_mealSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold-deep);cursor:pointer;flex-shrink:0"/>
-        <span>Offer guests a meal choice</span>
-      </label>
-      ${on?`
-        <div style="font-size:9.5px;color:var(--muted);margin:7px 0 5px">The options guests will choose from.</div>
-        <div style="display:flex;flex-direction:column;gap:5px">
-          ${opts.map((o,i)=>`<div style="display:flex;gap:5px;align-items:center">
-            <input type="text" value="${_escAttr(o)}" onchange="_mealSetOpt(${i},this.value)" placeholder="e.g. Beef"
-              style="flex:1;min-width:0;font-size:11.5px;padding:4px 7px;border:1px solid var(--border);border-radius:6px;background:var(--cream);color:var(--ink)"/>
-            <button onclick="_mealDelOpt(${i})" title="Remove" style="border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px">✕</button>
-          </div>`).join('')}
-        </div>
-        <button onclick="_mealAddOpt()" style="margin-top:6px;font-size:11px;border:1px solid var(--border);background:var(--cream);color:var(--ink);border-radius:6px;padding:4px 9px;cursor:pointer">+ Add an option</button>
-        ${!opts.length?`<div style="font-size:10px;color:var(--red);margin-top:6px">Add at least one option — the Meal column stays hidden until you do.</div>`:''}
-      `:''}
-
-      <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);margin:12px 0 6px">When a guest RSVPs</div>
-      <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer;margin-bottom:7px">
-        <input type="checkbox" ${(STATE.settings&&STATE.settings.rsvpEmailOn!==false)?'checked':''} onchange="_rsvpSetEmailNotif(this.checked)" style="width:15px;height:15px;accent-color:var(--gold-deep);cursor:pointer;flex-shrink:0"/>
-        <span>Email me</span>
-      </label>
-      <div class="needs-host-note" style="margin-top:0">Notifications are sent to your account email. Uncheck to turn off.</div>
-    </div>`;
+    <div class="section-eyebrow" style="margin-bottom:12px">Meal Choice</div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:${on?'14px':'0'}">
+      <input type="checkbox" ${on?'checked':''} onchange="_mealSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+      Offer guests a meal choice
+    </label>
+    ${on?`
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+        ${opts.map((o,i)=>`<div style="display:flex;gap:8px;align-items:center">
+          <input type="text" value="${_escAttr(o)}" onchange="_mealSetOpt(${i},this.value)" placeholder="e.g. Beef"
+            style="flex:1;min-width:0;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--cream);color:var(--ink)"/>
+          <button onclick="_mealDelOpt(${i})" title="Remove" style="width:26px;height:26px;border-radius:50%;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>
+        </div>`).join('')}
+      </div>
+      <button onclick="_mealAddOpt()" style="border:1px dashed var(--border);border-radius:7px;background:none;color:var(--gold);padding:7px 10px;width:100%;text-align:left;cursor:pointer;font-size:13px;font-family:inherit">+ Add an option</button>
+      ${!opts.length?`<div style="font-size:11px;color:var(--red);margin-top:8px">Add at least one option — the Meal column stays hidden until you do.</div>`:''}
+    `:''}`;
 }
 function _mealSetOn(on){
   if(!STATE.settings) STATE.settings={};
@@ -29536,7 +29534,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v341';
+const APP_BUILD='v342';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
