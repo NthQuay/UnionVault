@@ -4015,7 +4015,7 @@ const STATE = {
   },
   invites: [],
   inviteMeta: {},
-  settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current', partnerEmail:'' },
+  settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], childrenMealOn:true, childrenMealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current', partnerEmail:'' },
   // Guest-facing website. Content is NOT duplicated here — sections read from the
   // planner (details, timeline, inspo, wishingwell) so there is one source of truth.
   // This object holds only what the planner has no opinion about: which sections are
@@ -12638,8 +12638,9 @@ function _orsvpRender(){
         const dietItems=Array.isArray(row.dietary)?row.dietary:[];
         const dietHtml=dietItems.length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('')}</div>`:'';
         const mealHtml=row.meal?`<span style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink);margin-top:4px">${row.meal}</span>`:'';
+        const hcHtml=row.high_chair?`<span style="display:inline-block;font-size:10.5px;color:var(--muted);margin-top:4px">🪑 High chair</span>`:'';
         return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">
-          <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink)">${m.name}</div>${mealHtml}${dietHtml}</div>
+          <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink)">${m.name}</div>${mealHtml}${hcHtml}${dietHtml}</div>
           <div style="flex-shrink:0;padding-top:1px">${_badge(row.attending)}</div>
         </div>`;
       }).join('');
@@ -13458,6 +13459,8 @@ function _mealSetupHtml(){
   // input is visible. _mealOpts() filters empties, which is correct for display
   // elsewhere but would swallow the new row before the user can type into it.
   const opts=on ? _mealOptsArr() : _mealOpts();
+  const childrenOn=on&&STATE.settings.childrenMealOn!==false;
+  const cOpts=childrenOn ? _childMealOptsArr() : _childMealOpts();
   return `
     <div class="section-eyebrow" style="margin-bottom:12px">Meal Choice</div>
     <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:${on?'14px':'0'}">
@@ -13474,6 +13477,21 @@ function _mealSetupHtml(){
       </div>
       <button onclick="_mealAddOpt()" style="border:1px dashed var(--border);border-radius:7px;background:none;color:var(--gold);padding:7px 10px;width:100%;text-align:left;cursor:pointer;font-size:13px;font-family:inherit">+ Add an option</button>
       ${!opts.length?`<div style="font-size:11px;color:var(--red);margin-top:8px">Add at least one option — the Meal column stays hidden until you do.</div>`:''}
+      <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 10px"/>
+      <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:${childrenOn?'10px':'0'}">
+        <input type="checkbox" ${childrenOn?'checked':''} onchange="_childMealSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+        Offer children's meal choices
+      </label>
+      ${childrenOn?`
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+          ${cOpts.map((o,i)=>`<div style="display:flex;gap:8px;align-items:center">
+            <input type="text" value="${_escAttr(o)}" onchange="_childMealSetOpt(${i},this.value)" placeholder="e.g. Children's meal"
+              style="flex:1;min-width:0;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--cream);color:var(--ink)"/>
+            <button onclick="_childMealDelOpt(${i})" title="Remove" style="width:26px;height:26px;border-radius:50%;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>
+          </div>`).join('')}
+        </div>
+        <button onclick="_childMealAddOpt()" style="border:1px dashed var(--border);border-radius:7px;background:none;color:var(--gold);padding:7px 10px;width:100%;text-align:left;cursor:pointer;font-size:13px;font-family:inherit">+ Add an option for children</button>
+      `:''}
     `:''}`;
 }
 function _mealSetOn(on){
@@ -13483,6 +13501,7 @@ function _mealSetOn(on){
   // she has to build from nothing. Turning it OFF keeps them — so switching back on does
   // not lose her list, and no guest's ANSWER is ever discarded by a display toggle.
   if(on && !_mealOpts().length) STATE.settings.mealOptions=['Beef','Fish','Vegetarian'];
+  if(on && !(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()).length){ STATE.settings.childrenMealOn=true; STATE.settings.childrenMealOptions=["Children's meal"]; }
   if(on){ if(!STATE.settings.rsvpCols) STATE.settings.rsvpCols={}; STATE.settings.rsvpCols.meal=true; }
   saveToStorage();
   rsvpRerenderList();
@@ -13496,6 +13515,13 @@ function _mealOptsArr(){
 function _mealSetOpt(i,v){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a[i]=String(v||'').trim(); saveToStorage(); rsvpRerenderList(); }
 function _mealAddOpt(){ _mealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); _rsvpReopenColMenu(); }
 function _mealDelOpt(i){ const a=_mealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); _rsvpReopenColMenu(); }
+function _childMealOptsArr(){ if(!STATE.settings) STATE.settings={}; if(!Array.isArray(STATE.settings.childrenMealOptions)) STATE.settings.childrenMealOptions=[]; return STATE.settings.childrenMealOptions; }
+function _childMealOpts(){ return _childMealOptsArr().filter(x=>String(x||'').trim()); }
+function _childMealOn(){ return !!(STATE.settings&&STATE.settings.mealChoiceOn)&&STATE.settings.childrenMealOn!==false&&_childMealOpts().length>0; }
+function _childMealSetOn(on){ if(!STATE.settings) STATE.settings={}; STATE.settings.childrenMealOn=!!on; if(on&&!_childMealOpts().length) STATE.settings.childrenMealOptions=["Children's meal"]; saveToStorage(); rsvpRerenderList(); }
+function _childMealSetOpt(i,v){ const a=_childMealOptsArr(); if(i<0||i>=a.length) return; a[i]=String(v||'').trim(); saveToStorage(); rsvpRerenderList(); }
+function _childMealAddOpt(){ _childMealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); }
+function _childMealDelOpt(i){ const a=_childMealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); }
 function _rsvpSetEmailNotif(on){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpEmailOn=!!on;
@@ -29545,7 +29571,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v347';
+const APP_BUILD='v348';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38271,6 +38297,9 @@ function _wbBuildSite(forDownload){
   const _uvMealOn=!!(STATE.settings&&STATE.settings.mealChoiceOn)&&Array.isArray(STATE.settings.mealOptions)&&(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()).length>0;
   const _uvMealOpts=_uvMealOn?(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()):[];
   const _uvMealHtml=_uvMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="_rfPickMeal(this)">${_escHtml(o)}</div>`).join('');
+  const _uvChildMealOn=_uvMealOn&&STATE.settings.childrenMealOn!==false&&(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()).length>0;
+  const _uvChildMealOpts=_uvChildMealOn?(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()):[];
+  const _uvChildMealHtml=_uvChildMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="_rfPickMeal(this)">${_escHtml(o)}</div>`).join('');
   const _uvGuestJson=JSON.stringify((STATE.guests||[]).filter(g=>(g.listType||'A')!=='B'&&g.name).map(g=>({n:String(g.name).trim(),a:g.ageBand||'adult'})).filter(g=>g.n).sort((a,b)=>a.n.localeCompare(b.n))).replace(/'/g,'&#39;');
   const _uvBtnYes=_escHtml(_uvRsvp.btnYes||'Joyfully accepts');
   const _uvBtnNo=_escHtml(_uvRsvp.btnNo||'Regretfully declines');
@@ -38338,6 +38367,7 @@ function _wbBuildSite(forDownload){
     </div>
     <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-couple="${_uvCoupleId}"></div>
     ${_uvMealHtml?`<template id="uv-rf-meal-tmpl"><div class="rf-chips">${_uvMealHtml}</div></template>`:''}
+    ${_uvChildMealHtml?`<template id="uv-rf-children-meal-tmpl"><div class="rf-chips">${_uvChildMealHtml}</div></template>`:''}
   </div>
 </div>
 <script>
@@ -38348,6 +38378,7 @@ function _wbBuildSite(forDownload){
     var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.remove('open');document.body.style.overflow='';}
     _sa=null;_sab='adult';
     var mc=document.getElementById('rf-meal-band-card');if(mc)mc.remove();
+    var hcc=document.getElementById('rf-highchair-card');if(hcc)hcc.remove();
     var ni=document.getElementById('rf-name'),ll=document.getElementById('rf-ac-list'),
         ac=document.getElementById('rf-attend-card'),cg=document.getElementById('rf-contact-group'),
         sb=document.getElementById('rf-submit'),yp=document.getElementById('rf-yes'),np=document.getElementById('rf-no');
@@ -38383,6 +38414,7 @@ function _wbBuildSite(forDownload){
     var cg=document.getElementById('rf-contact-group'),sb=document.getElementById('rf-submit');
     if(cg)cg.hidden=true;if(sb)sb.hidden=true;
     var mc=document.getElementById('rf-meal-band-card');if(mc)mc.remove();
+    var hcc2=document.getElementById('rf-highchair-card');if(hcc2)hcc2.remove();
     var ac=document.getElementById('rf-attend-card');
     if(ac){ac.hidden=false;ac.scrollIntoView({behavior:'smooth',block:'nearest'});}
   };
@@ -38404,16 +38436,19 @@ function _wbBuildSite(forDownload){
     if(cg)cg.hidden=val!=='yes';
     if(sb){sb.hidden=false;setTimeout(function(){sb.scrollIntoView({behavior:'smooth',block:'nearest'});},50);}
     var mc=document.getElementById('rf-meal-band-card');if(mc)mc.remove();
+    var hcc3=document.getElementById('rf-highchair-card');if(hcc3)hcc3.remove();
     if(val==='yes'&&cg){
       var tmpl=document.getElementById('uv-rf-meal-tmpl');
+      var ctmpl=document.getElementById('uv-rf-children-meal-tmpl');
       var mCard=document.createElement('div');mCard.className='rf-card';mCard.id='rf-meal-band-card';
       if(_sab==='infant'){
         mCard.innerHTML='<div class="rf-lbl">Meal</div><div class="rf-meal-info">No meal provided for infants</div>';
         cg.insertBefore(mCard,cg.firstChild);
       } else if(_sab==='child'){
-        if(tmpl){
+        var cUseTmpl=ctmpl||tmpl;
+        if(cUseTmpl){
           mCard.innerHTML='<div class="rf-lbl">Children’s meal</div>';
-          mCard.appendChild(tmpl.content.cloneNode(true));
+          mCard.appendChild(cUseTmpl.content.cloneNode(true));
           cg.insertBefore(mCard,cg.firstChild);
         } else {
           mCard.innerHTML='<div class="rf-lbl">Meal</div><div class="rf-meal-info">A children’s meal will be provided</div>';
@@ -38423,6 +38458,11 @@ function _wbBuildSite(forDownload){
         mCard.innerHTML='<div class="rf-lbl">Meal choice</div>';
         mCard.appendChild(tmpl.content.cloneNode(true));
         cg.insertBefore(mCard,cg.firstChild);
+      }
+      if(_sab==='child'||_sab==='infant'){
+        var hcCard=document.createElement('div');hcCard.className='rf-card';hcCard.id='rf-highchair-card';
+        hcCard.innerHTML='<label style="display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="rf-highchair-cb" style="width:16px;height:16px;accent-color:${t2.accent};cursor:pointer;flex-shrink:0"> High chair required</label>';
+        cg.insertBefore(hcCard,cg.children[1]||null);
       }
     }
   };
@@ -38443,7 +38483,8 @@ function _wbBuildSite(forDownload){
     try{
       var mealEl=document.querySelector('#rf-meal-band-card .rf-meal-chip.on');
       var meal=mealEl?mealEl.dataset.meal||mealEl.textContent.trim():null;
-      var r=await fetch(_su+'/rest/v1/rsvp_responses',{method:'POST',headers:{'apikey':_sk,'Authorization':'Bearer '+_sk,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({couple_id:cid,guest_name:name,email:(document.getElementById('rf-email')||{}).value||null,phone:(document.getElementById('rf-phone')||{}).value||null,address:addr,attending:_sa,meal:meal,dietary:diet.length?diet:null,message:(document.getElementById('rf-message')||{}).value||null})});
+      var hcCb=document.getElementById('rf-highchair-cb');
+      var r=await fetch(_su+'/rest/v1/rsvp_responses',{method:'POST',headers:{'apikey':_sk,'Authorization':'Bearer '+_sk,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({couple_id:cid,guest_name:name,email:(document.getElementById('rf-email')||{}).value||null,phone:(document.getElementById('rf-phone')||{}).value||null,address:addr,attending:_sa,meal:meal,dietary:diet.length?diet:null,message:(document.getElementById('rf-message')||{}).value||null,high_chair:!!(hcCb&&hcCb.checked)})});
       if(r.ok||r.status===201){var fb=document.getElementById('rsvp-form-body');if(fb)fb.innerHTML='<div class="rf-msg-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${t2.accent}" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><div style="font-size:17px;font-weight:600;margin-bottom:6px;color:${t2.heading}">RSVP received!</div><div style="font-size:13.5px;opacity:.8">'+(_sa==='yes'?"We can\'t wait to celebrate with you":"Thank you for letting us know")+'</div></div>';}
       else{sb.disabled=false;sb.textContent='Send my RSVP';}
     }catch(e2){sb.disabled=false;sb.textContent='Send my RSVP';}
@@ -49428,6 +49469,9 @@ async function _showRsvpForm(coupleId,mode){
   const mealOpts=mealOn?(sec.settings.mealOptions||[]).filter(x=>String(x||'').trim()):[];
   const rfEmailNotif=!((sec.settings&&sec.settings.rsvpEmailOn===false));
   const mealHtml=mealOpts.map(o=>`<button type="button" class="rf-meal-chip" onclick="_rfPickMeal(this)" data-meal="${o.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}">${o.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</button>`).join('');
+  const childMealOn=mealOn&&sec.settings.childrenMealOn!==false&&(sec.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()).length>0;
+  const childMealOpts=childMealOn?(sec.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()):[];
+  const childMealHtml=childMealOpts.map(o=>`<button type="button" class="rf-meal-chip" onclick="_rfPickMeal(this)" data-meal="${o.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}">${o.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</button>`).join('');
 
   const guestNames=[...guestObjs].map(g=>g.name).sort((a,b)=>a.localeCompare(b));
   const guestNamesJson=JSON.stringify(guestNames);
@@ -49668,11 +49712,13 @@ async function _showRsvpForm(coupleId,mode){
       data-btn-no='${btnNo.replace(/'/g,"&#39;")}'
       data-email-notif='${rfEmailNotif?'1':'0'}'
       data-meal-on='${mealOn?'1':'0'}'
+      data-children-meal-on='${childMealOn?'1':'0'}'
       data-dietary-on='${rfields.dietary===false?'0':'1'}'
       data-has-contact='${(rfields.email!==false||rfields.phone!==false||rfields.address!==false||rfields.message!==false)?'1':'0'}'>
     </div>
     ${rfields.dietary===false?'':`<template id="rf-diet-template">${dietHtml}</template>`}
     ${mealOn?`<template id="rf-meal-template"><div class="rf-meal-chips">${mealHtml}</div></template>`:''}
+    ${childMealOn?`<template id="rf-children-meal-template"><div class="rf-meal-chips">${childMealHtml}</div></template>`:''}
   `;
 
   if(isModal){
@@ -49980,11 +50026,13 @@ async function _rfSubmit(coupleId){
         const mDiet=Array.from(document.querySelectorAll('#rf-diet-'+eid2+' .rf-diet-chip.on')).map(el=>el.dataset.diet);
         const mDietFinal=_encDiet(mDiet,'rf-diet-'+eid2);
         const mMealEl=document.querySelector('#rf-meal-'+eid2+' .rf-meal-chip.on');
-        return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:mDietFinal.length?mDietFinal:null,meal:mMealEl?mMealEl.dataset.meal:null};
+        const hcEl2=document.getElementById('rf-highchair-'+eid2);
+        return {couple_id:coupleId,guest_name:g.name,email,phone,address,message,attending:_rfMemberAttend[id],dietary:mDietFinal.length?mDietFinal:null,meal:mMealEl?mMealEl.dataset.meal:null,high_chair:!!(hcEl2&&hcEl2.checked)};
       });
     } else {
       const mealEl=document.querySelector('#rf-meal-s0 .rf-meal-chip.on');
-      payloads=[{couple_id:coupleId,guest_name:name,email,phone,address,message,attending:_rfAttending,dietary:dietFinal.length?dietFinal:null,meal:mealEl?mealEl.dataset.meal:null}];
+      const hcElS=document.getElementById('rf-highchair-s0');
+      payloads=[{couple_id:coupleId,guest_name:name,email,phone,address,message,attending:_rfAttending,dietary:dietFinal.length?dietFinal:null,meal:mealEl?mealEl.dataset.meal:null,high_chair:!!(hcElS&&hcElS.checked)}];
     }
     // Append anonymous plus-one RSVPs
     for(const [poHostId2, poAttend2] of Object.entries(_rfPlusOneAttend)){
@@ -50090,6 +50138,7 @@ function _rfWizResetName(){
 function _rfWizRenderPage2(){
   const gd=document.getElementById('rf-guest-data');
   const mealOn=(gd&&gd.dataset.mealOn==='1');
+  const childMealOn2=(gd&&gd.dataset.childrenMealOn==='1');
   const dietOn=(gd&&gd.dataset.dietaryOn==='1');
   const dr=document.getElementById('rw-details-rows');
   if(!dr) return;
@@ -50110,6 +50159,7 @@ function _rfWizRenderPage2(){
   }
   if(!attending.length){dr.innerHTML='<p style="font-size:14px;color:var(--rw-muted,#7A6E5E);padding:12px 0">No meal details required.</p>';return;}
   const mealTmpl=document.getElementById('rf-meal-template');
+  const childTmpl=childMealOn2?document.getElementById('rf-children-meal-template'):null;
   const dietOptions=[['vegetarian','Vegetarian'],['pescatarian','Pescatarian'],['vegan','Vegan'],
     ['halal','Halal'],['kosher','Kosher'],['lactose','Lactose intolerant'],
     ['gluten','Gluten intolerant'],['allergy','Allergy'],['other','Other']];
@@ -50130,7 +50180,8 @@ function _rfWizRenderPage2(){
         lbl.textContent=band==='child'?(attending.length>1?g.name+'’s children’s meal':'Children’s meal'):(attending.length>1?g.name+'’s meal choice':'Meal choice');
         const mealCont=document.createElement('div');mealCont.id='rf-meal-'+eid;
         mealCont.className='rw-meal-row';
-        if(mealTmpl){mealCont.appendChild(mealTmpl.content.cloneNode(true));}
+        const tmplToUse=(band==='child'&&childTmpl)?childTmpl:mealTmpl;
+        if(tmplToUse){mealCont.appendChild(tmplToUse.content.cloneNode(true));}
         fg.appendChild(lbl);fg.appendChild(mealCont);
       }
       block.appendChild(fg);
@@ -50157,6 +50208,13 @@ function _rfWizRenderPage2(){
       dietBody.appendChild(dietGrid);acc.appendChild(togBtn);acc.appendChild(dietBody);
       fg2.appendChild(acc);block.appendChild(fg2);
     }
+    if(band==='child'||band==='infant'){
+      const hcFg=document.createElement('div');hcFg.className='rw-field-group';
+      const hcLbl=document.createElement('label');
+      hcLbl.style.cssText='display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--rw-ink,#2a2518);cursor:pointer';
+      hcLbl.innerHTML='<input type="checkbox" id="rf-highchair-'+eid+'" class="rf-highchair-cb" style="width:15px;height:15px;accent-color:var(--rw-gold,#B8985A);cursor:pointer;flex-shrink:0"> High chair required';
+      hcFg.appendChild(hcLbl);block.appendChild(hcFg);
+    }
     dr.appendChild(block);
   });
 }
@@ -50177,9 +50235,13 @@ function _rfWizNext(coupleId){
   const mealOn=(gd&&gd.dataset.mealOn==='1');
   const dietOn=(gd&&gd.dataset.dietaryOn==='1');
   const hasContact=(gd&&gd.dataset.hasContact==='1');
-  const hasMealOrDiet=mealOn||dietOn;
   const rows=document.querySelectorAll('#rf-group-rows .rf-member-row');
   const isGroup=rows.length>1;
+  const objs2=gd?JSON.parse(gd.dataset.guestObjs||'[]'):[];
+  let hasHC=false;
+  if(isGroup){[...rows].forEach(r=>{if(_rfMemberAttend[r.dataset.mid]==='yes'){const o2=objs2.find(g=>g.id===r.dataset.mid);if(o2&&(o2.ageBand==='child'||o2.ageBand==='infant'))hasHC=true;}});}
+  else if(_rfAttending==='yes'){const cur2=window._rfCurrentGuest;if(cur2&&(cur2.ageBand==='child'||cur2.ageBand==='infant'))hasHC=true;}
+  const hasMealOrDiet=mealOn||dietOn||hasHC;
   const anyYes=isGroup?[...rows].some(r=>_rfMemberAttend[r.dataset.mid]==='yes'):_rfAttending==='yes';
   const cur=document.querySelector('.rw-page.rw-active');
   const curId=cur?cur.id:'rw-p1';
@@ -50200,7 +50262,13 @@ function _rfWizBack(){
   const gd=document.getElementById('rf-guest-data');
   const mealOn=(gd&&gd.dataset.mealOn==='1');
   const dietOn=(gd&&gd.dataset.dietaryOn==='1');
-  const hasMealOrDiet=mealOn||dietOn;
+  const rows2=document.querySelectorAll('#rf-group-rows .rf-member-row');
+  const isGroup2=rows2.length>1;
+  const objs3=gd?JSON.parse(gd.dataset.guestObjs||'[]'):[];
+  let hasHC2=false;
+  if(isGroup2){[...rows2].forEach(r=>{if(_rfMemberAttend[r.dataset.mid]==='yes'){const o3=objs3.find(g=>g.id===r.dataset.mid);if(o3&&(o3.ageBand==='child'||o3.ageBand==='infant'))hasHC2=true;}});}
+  else if(_rfAttending==='yes'){const cur3=window._rfCurrentGuest;if(cur3&&(cur3.ageBand==='child'||cur3.ageBand==='infant'))hasHC2=true;}
+  const hasMealOrDiet=mealOn||dietOn||hasHC2;
   const cur=document.querySelector('.rw-page.rw-active');
   const curId=cur?cur.id:'rw-p1';
   if(curId==='rw-p2'){_rfWizSetStep(1);_rfWizShowPage('rw-p1');}
