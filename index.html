@@ -5769,7 +5769,7 @@ function renderDetails(c, actions){
 
 function _detOptsMenuHtml(){
   const checked=!STATE.settings.hideCeremonyDetails;
-  return `<div id="det-opts-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:220px;box-shadow:0 4px 18px rgba(0,0,0,.13)"><div class="dark-toggle-row" style="gap:14px;margin:0"><div style="font-size:13px;font-weight:500">Ceremony Details</div><label class="toggle-switch"><input type="checkbox" ${checked?'checked':''} onchange="STATE.settings.hideCeremonyDetails=!this.checked;saveToStorage();navigate('details')"/><div class="toggle-track"></div></label></div></div>`;
+  return `<div id="det-opts-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:220px;box-shadow:0 4px 18px rgba(0,0,0,.13)"><div class="dark-toggle-row" style="gap:14px;margin:0"><div style="font-size:13px;font-weight:500">Ceremony Details</div><label class="toggle-switch"><input type="checkbox" ${checked?'checked':''} onchange="STATE.settings.hideCeremonyDetails=!this.checked;saveToStorage();navigate('details')"/><div class="toggle-track"></div></label></div></div>`;
 }
 let _detOptOpen=false;
 function _openDetOptsMenu(e){
@@ -10193,9 +10193,9 @@ function _inviteChanMenuHtml(){
   const tip=(text)=>{ const t=_escAttr(text); return `<button type="button" class="lbl-tip" aria-label="${t}" title="${t}" data-tip="${t}" onclick="_lblToggleTip(event,this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>`; };
   const closeMenuJs=`(function(){var m=document.getElementById('invite-chan-menu');if(m){m.style.display='none';_inviteChanMenuOpen=false;}})();`;
   // Shared cog-button style (matches templates button).
-  const btnStyle=`width:100%;display:flex;align-items:center;gap:9px;background:var(--sw-bg,#FBF8F3);border:.5px solid var(--sw-border,#E3D7C4);border-radius:8px;padding:9px 11px;cursor:pointer;text-align:left;font-family:inherit`;
+  const btnStyle=`width:100%;display:flex;align-items:center;gap:9px;background:var(--cream);border:.5px solid var(--border);border-radius:8px;padding:9px 11px;cursor:pointer;text-align:left;font-family:inherit`;
   // Zoom segmented control.
-  const zBtn=(val,lbl)=>{const on=_z===val;return `<button type="button" onclick="event.stopPropagation();_rsvpSetZoom(${val})" style="flex:1;font-size:11px;padding:5px 0;border-radius:6px;cursor:pointer;text-align:center;font-family:inherit;${on?'background:var(--gold);color:#fff;border:.5px solid var(--gold)':'background:var(--sw-bg,#FBF8F3);border:.5px solid var(--sw-border,#E3D7C4);color:var(--gold-deep)'}">${lbl}</button>`;};
+  const zBtn=(val,lbl)=>{const on=_z===val;return `<button type="button" onclick="event.stopPropagation();_rsvpSetZoom(${val})" style="flex:1;font-size:11px;padding:5px 0;border-radius:6px;cursor:pointer;text-align:center;font-family:inherit;${on?'background:var(--gold);color:#fff;border:.5px solid var(--gold)':'background:var(--cream);border:.5px solid var(--border);color:var(--gold-deep)'}">${lbl}</button>`;};
   return `
   <div id="invite-chan-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:50;width:248px;background:var(--cream);border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 24px rgba(26,26,24,.12);padding:12px 14px">
     <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:9px;cursor:pointer">
@@ -29534,7 +29534,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v343';
+const APP_BUILD='v344';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -50007,7 +50007,7 @@ async function _rfSubmit(coupleId){
       const rwDone=document.getElementById('rw-p-done');
       if(rwDone){
         const dn=document.getElementById('rw-done-name');
-        if(dn){const first=name.split(' ')[0];dn.textContent=first;}
+        if(dn){const firsts=payloads.map(p=>p.guest_name.split(' ')[0]);const nameStr=firsts.length<=2?firsts.join(' & '):firsts.slice(0,-1).join(', ')+' & '+firsts[firsts.length-1];dn.textContent=nameStr;}
         if(typeof _rfWizShowPage==='function')_rfWizShowPage('rw-p-done');
       } else {
         const formBody=document.getElementById('rsvp-form-body');
