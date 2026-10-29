@@ -12738,26 +12738,25 @@ async function _loadOnlineRsvps(){
     window._orsvpFilter = window._orsvpFilter || 'all';
     try { window._orsvpView = localStorage.getItem('uv_orsvp_view') || 'card'; } catch(e) { window._orsvpView = 'card'; }
     _orsvpGroups = _orsvpBuildGroups(rows);
-    body.innerHTML = `
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
-        <div style="flex:1;min-width:90px;padding:10px 14px;background:rgba(74,124,89,.08);border:1px solid rgba(74,124,89,.25);border-radius:9px;text-align:center">
-          <div style="font-size:22px;font-weight:700;color:var(--green)">${yes}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Attending</div>
-        </div>
-        <div style="flex:1;min-width:90px;padding:10px 14px;background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.2);border-radius:9px;text-align:center">
-          <div style="font-size:22px;font-weight:700;color:var(--red)">${no}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Declining</div>
-        </div>
-        <div style="flex:1;min-width:90px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;text-align:center">
-          <div style="font-size:22px;font-weight:700;color:var(--ink)">${total}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Total</div>
-        </div>
-      </div>
-      <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">
-        <strong style="color:var(--ink)">Dietary (attending):</strong> ${dietSummary}
-      </div>
-      <div id="orsvp-toolbar" style="margin-bottom:10px"></div>
-      <div id="orsvp-list" style="display:flex;flex-direction:column;gap:10px"></div>`;
+    // Update stat tiles and diet line in-place — avoids wiping the body div
+    // (a full innerHTML replacement collapses the max-height container and causes layout shift)
+    const statsEl=document.getElementById('orsvp-stats');
+    if(statsEl){
+      const yEl=document.getElementById('orsvp-stat-yes');
+      const nEl=document.getElementById('orsvp-stat-no');
+      const tEl=document.getElementById('orsvp-stat-total');
+      if(yEl) yEl.textContent=yes;
+      if(nEl) nEl.textContent=no;
+      if(tEl) tEl.textContent=total;
+      statsEl.style.display='flex';
+    }
+    const dietEl=document.getElementById('orsvp-diet-line');
+    if(dietEl){
+      dietEl.innerHTML=`<strong style="color:var(--ink)">Dietary (attending):</strong> ${dietSummary}`;
+      dietEl.style.display='';
+    }
+    const msgEl=document.getElementById('orsvp-msg');
+    if(msgEl) msgEl.style.display='none';
     _orsvpRender();
     // ── Sync online RSVPs into guest list ──
     if(Array.isArray(STATE.guests) && STATE.guests.length){
@@ -12826,6 +12825,7 @@ async function _loadOnlineRsvps(){
         // Re-render the page so all stat cards (Response Summary, Final Numbers, etc.)
         // reflect the newly synced data. The auto-reload will fire again but changed
         // will be 0 on that second pass, breaking the cycle.
+        window._orsvpSkipNextLoad=true; // suppress the redundant second fetch from renderRsvpMgr's setTimeout
         navigate('rsvp-mgr');
         return;
       }
@@ -13010,8 +13010,16 @@ function renderRsvpMgr(c, actions){
             Refresh
           </button>
         </div>
-        <div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:6px 0;max-height:480px;overflow-y:auto">
-          Responses submitted via your public RSVP link will appear here. Hit <strong>Load</strong> to fetch the latest.
+        <div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:6px 0">
+          <div id="orsvp-stats" style="display:none;gap:16px;flex-wrap:wrap;margin-bottom:14px">
+            <div id="orsvp-stat-yes-wrap" style="flex:1;min-width:90px;padding:10px 14px;background:rgba(74,124,89,.08);border:1px solid rgba(74,124,89,.25);border-radius:9px;text-align:center"><div id="orsvp-stat-yes" style="font-size:22px;font-weight:700;color:var(--green)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Attending</div></div>
+            <div id="orsvp-stat-no-wrap" style="flex:1;min-width:90px;padding:10px 14px;background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.2);border-radius:9px;text-align:center"><div id="orsvp-stat-no" style="font-size:22px;font-weight:700;color:var(--red)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Declining</div></div>
+            <div style="flex:1;min-width:90px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;text-align:center"><div id="orsvp-stat-total" style="font-size:22px;font-weight:700;color:var(--ink)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Total</div></div>
+          </div>
+          <div id="orsvp-diet-line" style="display:none;font-size:11.5px;color:var(--muted);margin-bottom:12px"></div>
+          <div id="orsvp-toolbar" style="margin-bottom:10px"></div>
+          <div id="orsvp-list" style="display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto"></div>
+          <span id="orsvp-msg" style="color:var(--muted)">Responses submitted via your public RSVP link will appear here. Hit <strong>Refresh</strong> to fetch the latest.</span>
         </div>
       </div>`
     };
@@ -13099,7 +13107,8 @@ function renderRsvpMgr(c, actions){
     const el=document.getElementById('qrcode-wrap');
     if(el&&typeof QRCode!=='undefined'){ el.innerHTML=''; new QRCode(el,{text:url,width:160,height:160,colorDark:'#1A1A18',colorLight:'#ffffff'}); }
     if(typeof _rsvpAttachPan==='function') _rsvpAttachPan();
-    _loadOnlineRsvps();
+    if(!window._orsvpSkipNextLoad) _loadOnlineRsvps();
+    window._orsvpSkipNextLoad=false;
   },80);
 }
 
@@ -29534,7 +29543,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v344';
+const APP_BUILD='v345';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
