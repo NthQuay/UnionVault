@@ -13011,14 +13011,16 @@ function renderRsvpMgr(c, actions){
           </button>
         </div>
         <div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:6px 0">
-          <div id="orsvp-stats" style="display:none;gap:16px;flex-wrap:wrap;margin-bottom:14px">
-            <div id="orsvp-stat-yes-wrap" style="flex:1;min-width:90px;padding:10px 14px;background:rgba(74,124,89,.08);border:1px solid rgba(74,124,89,.25);border-radius:9px;text-align:center"><div id="orsvp-stat-yes" style="font-size:22px;font-weight:700;color:var(--green)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Attending</div></div>
-            <div id="orsvp-stat-no-wrap" style="flex:1;min-width:90px;padding:10px 14px;background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.2);border-radius:9px;text-align:center"><div id="orsvp-stat-no" style="font-size:22px;font-weight:700;color:var(--red)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Declining</div></div>
+          <div id="orsvp-stats" style="display:none;flex-direction:row;gap:16px;flex-wrap:wrap;margin-bottom:14px">
+            <div style="flex:1;min-width:90px;padding:10px 14px;background:rgba(74,124,89,.08);border:1px solid rgba(74,124,89,.25);border-radius:9px;text-align:center"><div id="orsvp-stat-yes" style="font-size:22px;font-weight:700;color:var(--green)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Attending</div></div>
+            <div style="flex:1;min-width:90px;padding:10px 14px;background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.2);border-radius:9px;text-align:center"><div id="orsvp-stat-no" style="font-size:22px;font-weight:700;color:var(--red)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Declining</div></div>
             <div style="flex:1;min-width:90px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;text-align:center"><div id="orsvp-stat-total" style="font-size:22px;font-weight:700;color:var(--ink)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Total</div></div>
           </div>
           <div id="orsvp-diet-line" style="display:none;font-size:11.5px;color:var(--muted);margin-bottom:12px"></div>
           <div id="orsvp-toolbar" style="margin-bottom:10px"></div>
-          <div id="orsvp-list" style="display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto"></div>
+          <div style="max-height:480px;overflow-y:auto">
+            <div id="orsvp-list" style="display:flex;flex-direction:column;gap:10px"></div>
+          </div>
           <span id="orsvp-msg" style="color:var(--muted)">Responses submitted via your public RSVP link will appear here. Hit <strong>Refresh</strong> to fetch the latest.</span>
         </div>
       </div>`
@@ -29543,7 +29545,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v345';
+const APP_BUILD='v346';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
