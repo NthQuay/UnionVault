@@ -12594,7 +12594,7 @@ function _orsvpBuildGroups(rows){
 function _orsvpRender(){
   const filter=window._orsvpFilter||'all';
   const view=window._orsvpView||'card';
-  const groups=_orsvpGroups||[];
+  const groups=(_orsvpGroups||[]).slice().sort((a,b)=>new Date(b.submittedDate||0)-new Date(a.submittedDate||0));
   const toolbar=document.getElementById('orsvp-toolbar');
   const listEl=document.getElementById('orsvp-list');
   if(!listEl)return;
@@ -13010,7 +13010,7 @@ function renderRsvpMgr(c, actions){
             Refresh
           </button>
         </div>
-        <div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:6px 0">
+        <div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:6px 0;max-height:480px;overflow-y:auto">
           Responses submitted via your public RSVP link will appear here. Hit <strong>Load</strong> to fetch the latest.
         </div>
       </div>`
@@ -29534,7 +29534,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v342';
+const APP_BUILD='v343';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
