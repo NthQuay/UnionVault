@@ -7218,7 +7218,7 @@ function renderGuests(c,actions){
             return allTags.map(t=>{
               const cnt=_base.filter(g=>(g.tags||[]).includes(t)).length;
               const active=sf.tags.includes(t);
-              return _tagChipHtml(t, {active:active, count:cnt, click:`toggleTagFilter('${_escAttr(t)}')`});
+              return _tagChipHtml(t, {active:active, count:cnt, click:`toggleTagFilter('${_escSQ(t)}')`});
             }).join('');
           })()}
         </div>`:''}
@@ -8459,7 +8459,7 @@ function _gtEditTags(td){
   const curKeys=cur.map(t=>t.toLowerCase());
   const chips=names.length?names.map(name=>{
     const on=curKeys.includes(name.toLowerCase());
-    return _tagChipHtml(name,{active:on,click:`_gtTagToggle('${_escAttr(name)}')`});
+    return _tagChipHtml(name,{active:on,click:`_gtTagToggle('${_escSQ(name)}')`});
   }).join(''):'<span style="font-size:11.5px;color:var(--muted)">No tags yet — create some in Manage tags.</span>';
   const pop=document.createElement('div');
   pop.id='gt-tag-pop';
@@ -8510,7 +8510,7 @@ function _gtRefreshTagChips(g){
   const curKeys=(g.tags||[]).map(t=>t.toLowerCase());
   wrap.innerHTML=names.length?names.map(name=>{
     const on=curKeys.includes(name.toLowerCase());
-    return _tagChipHtml(name,{active:on,click:`_gtTagToggle('${_escAttr(name)}')`});
+    return _tagChipHtml(name,{active:on,click:`_gtTagToggle('${_escSQ(name)}')`});
   }).join(''):'<span style="font-size:11.5px;color:var(--muted)">No tags yet.</span>';
 }
 function _gtCloseTagPop(rerender){
@@ -11017,7 +11017,7 @@ function _gfLinkSearch(query){
   const curId=document.getElementById('gf-link')?.value||'';
   wrap.innerHTML=items.map((x,i)=>{
     const active=x.id===curId;
-    return `<div onclick="_gfLinkSelect('${x.id}','${_escAttr(x.name)}')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;${i<items.length-1?'border-bottom:.5px solid var(--border);':''}cursor:pointer;${active?'background:var(--surface)':''}">
+    return `<div onclick="_gfLinkSelect('${x.id}','${_escSQ(x.name)}')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;${i<items.length-1?'border-bottom:.5px solid var(--border);':''}cursor:pointer;${active?'background:var(--surface)':''}">
       <span style="font-size:13px;color:var(--ink);flex:1">${_escHtml(x.name||'Guest')}</span>
       ${active?'<span style="font-size:11px;color:var(--gold-deep);font-weight:600">✓ linked</span>':''}
     </div>`;
@@ -11056,7 +11056,7 @@ function _egLinkSearch(query){
   if(!items.length){ wrap.innerHTML=`<div style="font-size:12.5px;color:var(--muted);padding:10px 12px">No matches.</div>`; wrap.style.display='block'; return; }
   wrap.innerHTML=items.map((x,i)=>{
     const active=x.id===_egLinkId;
-    return `<div onclick="_egLinkSelect('${x.id}','${_escAttr(x.name)}')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;${i<items.length-1?'border-bottom:.5px solid var(--border);':''}cursor:pointer;${active?'background:var(--surface)':''}">
+    return `<div onclick="_egLinkSelect('${x.id}','${_escSQ(x.name)}')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;${i<items.length-1?'border-bottom:.5px solid var(--border);':''}cursor:pointer;${active?'background:var(--surface)':''}">
       <span style="font-size:13px;color:var(--ink);flex:1">${_escHtml(x.name||'Guest')}</span>
       ${active?'<span style="font-size:11px;color:var(--gold-deep);font-weight:600">✓ linked</span>':''}
     </div>`;
@@ -29572,7 +29572,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v356';
+const APP_BUILD='v357';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -30609,7 +30609,7 @@ function _openSeatEvictPicker(tid, newSeats, over, onDone){
     const seatNo = _seatArr(tid).indexOf(gid)+1;
     const side = (g.tags||[]).find(x=>/side$/i.test(x)) || '';
     const sub = 'Seat '+seatNo + (side?(' · '+side):'');
-    return `<button type="button" class="seat-evict-row" data-gid="${_escAttr(gid)}" onclick="_seatEvictToggle('${_escAttr(tid)}','${_escAttr(gid)}')" style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px;cursor:pointer;background:var(--cream);font-family:inherit">
+    return `<button type="button" class="seat-evict-row" data-gid="${_escAttr(gid)}" onclick="_seatEvictToggle('${_escSQ(tid)}','${_escSQ(gid)}')" style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px;cursor:pointer;background:var(--cream);font-family:inherit">
       <span class="seat-evict-chk" style="width:19px;height:19px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center"></span>
       <span style="width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gold-deep);flex-shrink:0">${_escHtml(initials(g.name||''))}</span>
       <span style="flex:1;min-width:0"><span style="display:block;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(g.name||'(guest)')}</span><span style="display:block;font-size:11px;color:var(--muted);margin-top:1px">${_escHtml(sub)}</span></span>
@@ -30621,7 +30621,7 @@ function _openSeatEvictPicker(tid, newSeats, over, onDone){
   </div>`;
   const footer=`<span id="seat-evict-count" style="margin-right:auto;font-size:11.5px;font-weight:600;color:var(--red)">0 of ${over} chosen</span>
     <button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
-    <button class="btn btn-primary" id="seat-evict-go" disabled onclick="_seatEvictConfirm('${_escAttr(tid)}',${newSeats},${over})">Unseat ${over} guest${over!==1?'s':''}</button>`;
+    <button class="btn btn-primary" id="seat-evict-go" disabled onclick="_seatEvictConfirm('${_escSQ(tid)}',${newSeats},${over})">Unseat ${over} guest${over!==1?'s':''}</button>`;
   // Stash the caller's return so confirm can use it.
   _seatEvictOnDone = onDone;
   openModal('Too many guests for '+newSeats+' seat'+(newSeats!==1?'s':''), body, footer);
@@ -46201,7 +46201,7 @@ function _tagDropdownAppliedHtml(inputId){
     const fg=def&&def.color?_tagInkColor(def.color):'#7A6230';
     return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;font-size:11.5px;font-weight:500;background:${bg};color:${fg};border:1px solid ${fg}33">
       ${_escHtml(name)}
-      <span onclick="_tagDropdownRemove('${_escAttr(inputId)}','${_escAttr(name)}')" style="cursor:pointer;font-weight:700;font-size:10px;opacity:.7">×</span>
+      <span onclick="_tagDropdownRemove('${_escSQ(inputId)}','${_escSQ(name)}')" style="cursor:pointer;font-weight:700;font-size:10px;opacity:.7">×</span>
     </span>`;
   }).join('');
 }
@@ -46215,12 +46215,12 @@ function _tagDropdownListHtml(inputId, query){
     const dot=def&&def.color?`<span style="width:8px;height:8px;border-radius:50%;background:${def.color};flex-shrink:0;display:inline-block"></span>`:'<span style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block"></span>';
     const active=cur.includes(name.toLowerCase());
     const tick=active?`<span style="font-size:11px;color:var(--gold-deep);font-weight:600;margin-left:auto">✓</span>`:'';
-    return `<div onclick="_tagDropdownToggle('${_escAttr(inputId)}','${_escAttr(name)}')" style="display:flex;align-items:center;gap:9px;padding:8px 12px;cursor:pointer;border-bottom:.5px solid var(--border);${active?'background:var(--surface)':''}">
+    return `<div onclick="_tagDropdownToggle('${_escSQ(inputId)}','${_escSQ(name)}')" style="display:flex;align-items:center;gap:9px;padding:8px 12px;cursor:pointer;border-bottom:.5px solid var(--border);${active?'background:var(--surface)':''}">
       ${dot}<span style="font-size:13px;color:${active?'var(--gold-deep)':'var(--ink)'};font-weight:${active?600:400};flex:1">${_escHtml(name)}</span>${tick}
     </div>`;
   });
   const newTagRow=q&&!all.some(n=>n.toLowerCase()===q)
-    ?`<div onclick="_tagDropdownCreate('${_escAttr(inputId)}','${_escAttr(query)}')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;color:var(--gold-deep);font-weight:600;font-size:12.5px;border-top:.5px solid var(--border)"><svg width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg>Create "${_escHtml(query)}"</div>`
+    ?`<div onclick="_tagDropdownCreate('${_escSQ(inputId)}','${_escSQ(query)}')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;color:var(--gold-deep);font-weight:600;font-size:12.5px;border-top:.5px solid var(--border)"><svg width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg>Create "${_escHtml(query)}"</div>`
     :'';
   const manageRow=`<div onclick="openManageTags()" style="display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;color:var(--muted);font-size:11.5px;border-top:.5px solid var(--border)"><svg width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='12'/><line x1='12' y1='16' x2='12.01' y2='16'/></svg>Manage tags…</div>`;
   if(!rows.length&&!newTagRow) return `<div style="font-size:12.5px;color:var(--muted);padding:10px 12px">No tags yet. Type a name to create one.</div>`+manageRow;
@@ -46312,7 +46312,7 @@ function _tagPickerChips(inputId, names){
   const cur = _tagPickerCurrent(inputId).map(t=>t.toLowerCase());
   return names.map(name=>{
     const on = cur.includes(name.toLowerCase());
-    return _tagChipHtml(name, {active:on, click:`_tagPickerToggle('${_escAttr(inputId)}','${_escAttr(name)}')`});
+    return _tagChipHtml(name, {active:on, click:`_tagPickerToggle('${_escSQ(inputId)}','${_escSQ(name)}')`});
   }).join('');
 }
 // Toggle a tag in/out of the field, then re-render the chips to reflect state.
@@ -46340,10 +46340,10 @@ function _renderManageTagsList(){
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
       ${_tagChipHtml(name)}
       <span style="margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap">${cnt} guest${cnt===1?'':'s'}</span>
-      <button class="btn-icon" title="Edit tag" onclick="_openTagEditor('${_escAttr(name)}')" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:inline-flex">
+      <button class="btn-icon" title="Edit tag" onclick="_openTagEditor('${_escSQ(name)}')" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:inline-flex">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
       </button>
-      <button class="btn-icon" title="Delete tag" onclick="_deleteTag('${_escAttr(name)}')" style="background:none;border:none;cursor:pointer;color:var(--red);padding:4px;display:inline-flex">
+      <button class="btn-icon" title="Delete tag" onclick="_deleteTag('${_escSQ(name)}')" style="background:none;border:none;cursor:pointer;color:var(--red);padding:4px;display:inline-flex">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button>
     </div>`;
@@ -46449,8 +46449,8 @@ function _deleteTag(name){
   if(_currentPage==='guests') renderGuestList();
 }
 
-// Escape a value for safe use inside a single-quoted HTML attribute / inline JS string.
-function _escAttr(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+// Escape a value for safe use inside a single-quoted JS string argument (e.g. onclick="fn('${_escSQ(v)}')" ).
+function _escSQ(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
 function openModal(title,body,footer){
   // Any modal that isn't the just-armed confirm popup invalidates a pending revert.
