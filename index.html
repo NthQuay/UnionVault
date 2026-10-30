@@ -29572,7 +29572,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v359';
+const APP_BUILD='v360';
 const APP_BUILD_DATE='2026-10-30';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -37843,7 +37843,7 @@ function _wbBuildSite(forDownload){
       if(b.type==='img')   return imgHtml(b);
       if(b.type==='text'){
         const paras=String(b.body||'').split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
-        return paras.map(x=>`<p class="para">${_escHtml(x)}</p>`).join('');
+        return paras.map(x=>`<p class="para">${_escHtml(x).replace(/\n/g,'<br>')}</p>`).join('');
       }
 
       // ── Links. A row with no LABEL renders nothing — a bare URL is not a link a guest
