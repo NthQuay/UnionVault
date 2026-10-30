@@ -29572,7 +29572,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v361';
+const APP_BUILD='v362';
 const APP_BUILD_DATE='2026-10-30';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38270,10 +38270,11 @@ function _wbBuildSite(forDownload){
   const _uvHasStep2=_uvMealOn||_uvRfields.dietary!==false;
   const _uvHasStep3=_uvRfields.email!==false||_uvRfields.phone!==false||_uvRfields.address!==false||_uvRfields.message!==false;
   const _uvNumSteps=1+(_uvHasStep2?1:0)+(_uvHasStep3?1:0);
+  const _uvPal=(()=>{const p=_uvRsvp.palette||'sage';const ps={sage:{accent:'#5C7D6B',ink:'#2D3D35'},ivory:{accent:'#A08050',ink:'#3A3020'},blush:{accent:'#C0745A',ink:'#3D2820'},midnight:{accent:'#7B95C8',ink:'#D0D8E8'},slate:{accent:'#8AA4A8',ink:'#CAD3D6'}};if(p==='custom'){const cc=_uvRsvp.customColors||{};return {accent:cc.accent||'#5C7D6B',ink:cc.ink||_wbInk(cc.accent||'#5C7D6B')};}return ps[p]||ps.sage;})();
   const _uvModal=_uvCoupleId?`<style>
 #uv-rsvp-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px;overscroll-behavior:none}
 #uv-rsvp-overlay.open{display:flex}
-#uv-rsvp-sheet{background:${t2.background||t2.page};color:${t2.text};border-radius:18px;max-height:88dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:520px;box-shadow:0 8px 48px rgba(0,0,0,.32)}
+#uv-rsvp-sheet{background:${t2.background||t2.page};color:${t2.text};border-radius:18px;max-height:calc(100dvh - 32px);overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:520px;box-shadow:0 8px 48px rgba(0,0,0,.32)}
 .rfm-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 4px;position:sticky;top:0;background:${t2.background||t2.page};z-index:1}
 .rfm-title{font-family:${t2.headFont};font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:${t2.heading};font-weight:600}
 .rfm-close{background:none;border:none;cursor:pointer;color:${t2.text};opacity:.55;font-size:24px;line-height:1;padding:2px 8px;border-radius:4px;transition:opacity .15s}
@@ -38282,10 +38283,10 @@ function _wbBuildSite(forDownload){
 .rfm-si{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0}
 .rfm-sn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:background .2s,color .2s;flex-shrink:0}
 .rfm-sn.pending{background:transparent;border:1.5px solid ${t2.heading}28;color:${t2.heading};opacity:.35}
-.rfm-sn.active{background:${t2.accent};color:${_wbInk(t2.accent)};border:none}
+.rfm-sn.active{background:${_uvPal.accent};color:${_uvPal.ink};border:none}
 .rfm-sn.done{background:${t2.heading}18;color:${t2.heading};border:none;opacity:.7}
 .rfm-sl{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:${t2.heading};opacity:.4;white-space:nowrap}
-.rfm-sl.active{opacity:.9;font-weight:600;color:${t2.accent}}
+.rfm-sl.active{opacity:.9;font-weight:600;color:${_uvPal.accent}}
 .rfm-sl.done{opacity:.5}
 .rfm-sline{flex:1;height:1.5px;background:${t2.heading}18;margin:0 8px;margin-top:13px}
 .rfm-sline.done{background:${t2.heading}45}
@@ -38294,20 +38295,20 @@ function _wbBuildSite(forDownload){
 #uv-rsvp-sheet .rf-card{border:1px solid ${t2.heading}18;border-radius:12px;padding:20px;margin-bottom:14px;position:relative}
 #uv-rsvp-sheet .rf-lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:${t2.heading};opacity:.65;margin-bottom:8px;font-weight:600}
 #uv-rsvp-sheet .rf-inp{width:100%;border:1.5px solid ${t2.heading}28;border-radius:8px;padding:12px 14px;font-size:15.5px;background:${t2.background||t2.page};color:${t2.text};outline:none;box-sizing:border-box;font-family:inherit}
-#uv-rsvp-sheet .rf-inp:focus{border-color:${t2.accent};box-shadow:0 0 0 3px ${t2.accent}33}
+#uv-rsvp-sheet .rf-inp:focus{border-color:${_uvPal.accent};box-shadow:0 0 0 3px ${_uvPal.accent}33}
 #uv-rsvp-sheet .pub-ac-list{list-style:none;margin:4px 0 0;padding:0;background:${t2.background||t2.page};border:1px solid ${t2.heading}22;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.14);overflow:hidden;position:absolute;left:16px;right:16px;z-index:10;display:none}
 #uv-rsvp-sheet .pub-ac-item{padding:11px 14px;cursor:pointer;font-size:15px;color:${t2.text}}
-#uv-rsvp-sheet .pub-ac-item.focused{background:${t2.accent}16}
+#uv-rsvp-sheet .pub-ac-item.focused{background:${_uvPal.accent}16}
 #uv-rsvp-sheet .pub-ac-none{padding:11px 14px;font-size:13px;color:${t2.text};opacity:.55;pointer-events:none;font-style:italic}
 #uv-rsvp-sheet .rf-pills{display:flex;gap:10px}
-#uv-rsvp-sheet .rf-pill{flex:1;border:1.5px solid ${t2.accent};border-radius:9px;padding:11px 0;text-align:center;cursor:pointer;font-size:13.5px;color:${t2.accent};transition:background .2s,color .2s;user-select:none}
-#uv-rsvp-sheet .rf-pill.yes{background:${t2.accent};color:${_wbInk(t2.accent)}}
+#uv-rsvp-sheet .rf-pill{flex:1;border:1.5px solid ${_uvPal.accent};border-radius:9px;padding:11px 0;text-align:center;cursor:pointer;font-size:13.5px;color:${_uvPal.accent};transition:background .2s,color .2s;user-select:none}
+#uv-rsvp-sheet .rf-pill.yes{background:${_uvPal.accent};color:${_uvPal.ink}}
 #uv-rsvp-sheet .rf-pill.no{background:${t2.heading}14;color:${t2.heading};border-color:${t2.heading}30}
 #uv-rsvp-sheet .rf-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
 #uv-rsvp-sheet .rf-diet-chip{padding:6px 12px;border-radius:20px;border:1px solid ${t2.heading}28;font-size:12.5px;cursor:pointer;color:${t2.text};transition:background .15s,color .15s;user-select:none}
-#uv-rsvp-sheet .rf-diet-chip.on{background:${t2.accent};color:${_wbInk(t2.accent)};border-color:${t2.accent}}
+#uv-rsvp-sheet .rf-diet-chip.on{background:${_uvPal.accent};color:${_uvPal.ink};border-color:${_uvPal.accent}}
 #uv-rsvp-sheet .rf-meal-chip{padding:6px 12px;border-radius:20px;border:1px solid ${t2.heading}28;font-size:12.5px;cursor:pointer;color:${t2.text};transition:background .15s,color .15s;user-select:none}
-#uv-rsvp-sheet .rf-meal-chip.on{background:${t2.accent};color:${_wbInk(t2.accent)};border-color:${t2.accent}}
+#uv-rsvp-sheet .rf-meal-chip.on{background:${_uvPal.accent};color:${_uvPal.ink};border-color:${_uvPal.accent}}
 #uv-rsvp-sheet .rf-meal-info{font-size:13px;opacity:.65;font-style:italic;margin-top:2px}
 #uv-rsvp-sheet .rf-msg-box{text-align:center;padding:40px 16px}
 .rf-nav{display:flex;gap:10px;padding:12px 24px 20px;position:sticky;bottom:0;background:${t2.background||t2.page};border-top:1px solid ${t2.heading}12;z-index:2}
@@ -38355,8 +38356,8 @@ function _wbBuildSite(forDownload){
       <div class="rf-step-panel" id="rf-step-done"></div>
     </div>
     <div class="rf-nav" id="rf-nav">
-      <button class="rf-nav-back" id="rf-back" onclick="_rfWizBack()" hidden>&#8592; Back</button>
-      <button class="rf-nav-next" id="rf-next" onclick="_rfWizNext()" disabled>Next &#8594;</button>
+      <button class="rf-nav-back" id="rf-back" onclick="_uvRsvpBack()" hidden>&#8592; Back</button>
+      <button class="rf-nav-next" id="rf-next" onclick="_uvRsvpNext()" disabled>Next &#8594;</button>
     </div>
     <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-couple="${_uvCoupleId}"></div>
     ${_uvMealHtml?`<template id="uv-rf-meal-tmpl"><div class="rf-chips">${_uvMealHtml}</div></template>`:''}
@@ -38393,7 +38394,7 @@ function _wbBuildSite(forDownload){
     var bk=document.getElementById('rf-back');if(bk)bk.hidden=n<=1;
     _rfUpdateNext();
   }
-  function _rfWizNext(){
+  window._uvRsvpNext=function(){
     var panelId=_rfWizPanels[_rfStep-1];
     if(panelId==='step1'){
       var nm=((document.getElementById('rf-name')||{value:''}).value||'').trim();
@@ -38404,8 +38405,8 @@ function _wbBuildSite(forDownload){
     if(nextPanel==='step2')_rfWizRenderStep2();
     if(_rfStep<_rfTotalSteps){_rfWizSetStep(_rfStep+1);}
     else{_uvRsvpSubmit();}
-  }
-  function _rfWizBack(){if(_rfStep>1)_rfWizSetStep(_rfStep-1);}
+  };
+  window._uvRsvpBack=function(){if(_rfStep>1)_rfWizSetStep(_rfStep-1);};
   function _rfWizRenderStep2(){
     var mCard=document.getElementById('rf-meal-band-card');if(!mCard)return;
     mCard.innerHTML='';
@@ -38431,7 +38432,7 @@ function _wbBuildSite(forDownload){
     var hcc=document.getElementById('rf-highchair-card');if(hcc)hcc.remove();
     if((_sab==='child'||_sab==='infant')&&step2){
       var hcCard=document.createElement('div');hcCard.className='rf-card';hcCard.id='rf-highchair-card';
-      hcCard.innerHTML='<label style="display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="rf-highchair-cb" style="width:16px;height:16px;accent-color:${t2.accent};cursor:pointer;flex-shrink:0"> High chair required</label>';
+      hcCard.innerHTML='<label style="display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="rf-highchair-cb" style="width:16px;height:16px;accent-color:${_uvPal.accent};cursor:pointer;flex-shrink:0"> High chair required</label>';
       step2.appendChild(hcCard);
     }
   }
@@ -38474,7 +38475,7 @@ function _wbBuildSite(forDownload){
   };
   window._rfPickName=function(name){
     var ni=document.getElementById('rf-name'),ll=document.getElementById('rf-ac-list');
-    if(ni){ni.value=name;ni.style.borderColor='${t2.accent}';ni.style.boxShadow='0 0 0 3px ${t2.accent}33';}
+    if(ni){ni.value=name;ni.style.borderColor='${_uvPal.accent}';ni.style.boxShadow='0 0 0 3px ${_uvPal.accent}33';}
     if(ll)ll.style.display='none';
     var gd=document.getElementById('uv-rf-data');
     var gs=gd?JSON.parse(gd.dataset.guests||'[]'):[];
@@ -38527,7 +38528,7 @@ function _wbBuildSite(forDownload){
         var nav=document.getElementById('rf-nav');if(nav)nav.style.display='none';
         var stEl=document.querySelector('.rfm-steps');if(stEl)stEl.style.display='none';
         var sd=document.getElementById('rf-step-done');
-        if(sd){sd.innerHTML='<div class="rf-msg-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${t2.accent}" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><div style="font-size:17px;font-weight:600;margin:10px 0 6px;color:${t2.heading}">RSVP received!</div><div style="font-size:13.5px;opacity:.8">'+(_sa==='yes'?'We can\\'t wait to celebrate with you':'Thank you for letting us know')+'</div></div>';sd.classList.add('active');}
+        if(sd){sd.innerHTML='<div class="rf-msg-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${_uvPal.accent}" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><div style="font-size:17px;font-weight:600;margin:10px 0 6px;color:${t2.heading}">RSVP received!</div><div style="font-size:13.5px;opacity:.8">'+(_sa==='yes'?'We can\\'t wait to celebrate with you':'Thank you for letting us know')+'</div></div>';sd.classList.add('active');}
       }else{if(nx){nx.disabled=false;nx.textContent='Send my RSVP';}}
     }catch(e2){if(nx){nx.disabled=false;nx.textContent='Send my RSVP';}}
   };
