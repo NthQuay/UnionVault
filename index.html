@@ -11784,6 +11784,44 @@ function _rsvpWidgetContactable(){
     <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>Missing both</span><span style="font-weight:600;color:${st.missingBoth>0?'var(--red)':'var(--muted)'}">${st.missingBoth}</span></div>
   </div>`;
 }
+function _rsvpSetField(key,prop,val){
+  const w=_wbSite();
+  if(!w.rsvp) w.rsvp={};
+  if(!w.rsvp.fields) w.rsvp.fields={};
+  if(!w.rsvp.fields[key]) w.rsvp.fields[key]={};
+  w.rsvp.fields[key][prop]=val;
+  saveToStorage();
+  navigate('rsvp-mgr');
+}
+function _rsvpFormFieldsCardHtml(){
+  const flds=(_wbSite().rsvp||{}).fields||{};
+  function fGet(key,defaults){const f=flds[key];if(!f)return defaults;return{show:f.show!==undefined?f.show:defaults.show,required:f.required!==undefined?f.required:defaults.required};}
+  const ph=fGet('phone',{show:true,required:true});
+  const em=fGet('email',{show:true,required:false});
+  const ad=fGet('address',{show:false,required:false});
+  const so=fGet('songRequest',{show:false,required:false});
+  const no=fGet('notes',{show:false,required:false});
+  function tog(checked,onclick){return `<button type="button" onclick="${onclick}" style="position:relative;display:inline-flex;align-items:center;width:34px;height:20px;border-radius:10px;border:none;cursor:pointer;transition:background .2s;background:${checked?'var(--green)':'var(--border)'};padding:0;flex-shrink:0"><span style="position:absolute;left:${checked?'16px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span></button>`;}
+  function row(label,key,hasSh,showOn,hasReq,reqOn){
+    const reqDisabled=!showOn;
+    return `<div style="display:grid;grid-template-columns:1fr 60px 60px;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span>${label}</span>
+      ${hasSh?tog(showOn,`_rsvpSetField('${key}','show',${!showOn})`):``}
+      ${hasReq?`<span style="opacity:${reqDisabled?.35:1}">${tog(reqOn&&!reqDisabled,`if(!${reqDisabled})_rsvpSetField('${key}','required',${!(reqOn&&!reqDisabled)})`)}</span>`:`<span></span>`}
+    </div>`;}
+  return `<div class="card">
+    <div class="section-eyebrow" style="margin-bottom:4px">RSVP form fields</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">Choose which fields guests fill in when they RSVP online.</div>
+    <div style="display:grid;grid-template-columns:1fr 60px 60px;align-items:center;gap:8px;padding:0 0 6px;border-bottom:2px solid var(--border);font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase">
+      <span>Field</span><span style="text-align:center">Show</span><span style="text-align:center">Required</span>
+    </div>
+    ${row('Phone number','phone',true,ph.show,true,ph.required)}
+    ${row('Email address','email',true,em.show,true,em.required)}
+    ${row('Home address','address',true,ad.show,true,ad.required)}
+    ${row('Song request','songRequest',true,so.show,false,false)}
+    ${row('Comments / notes','notes',true,no.show,false,false)}
+    <div style="font-size:11px;color:var(--muted);margin-top:10px">Required fields must be filled before submitting. If all fields are hidden, the contact step is skipped.</div>
+  </div>`;}
 function _rsvpWidgetSeating(){
   const st=_rsvpGuestStats();
   const row=(lbl,n,col)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${lbl}</span><span style="font-weight:600;color:${col}">${n}</span></div>`;
@@ -11882,7 +11920,8 @@ const _RSVP_SECTIONS=[
   ['inviteprogress','Invite progress'],
   ['contactable','Contactable'],
   ['seatingstatus','Seating status'],
-  ['onlinersvps','Online RSVPs']
+  ['onlinersvps','Online RSVPs'],
+  ['formfields','RSVP form fields']
 ];
 // Default order = array index order of _RSVP_SECTIONS keys
 const _RSVP_SECTION_KEYS=_RSVP_SECTIONS.map(s=>s[0]);
@@ -13024,7 +13063,8 @@ function renderRsvpMgr(c, actions){
           </div>
           <span id="orsvp-msg" style="color:var(--muted)">Responses submitted via your public RSVP link will appear here. Hit <strong>Refresh</strong> to fetch the latest.</span>
         </div>
-      </div>`
+      </div>`,
+      formfields:!hidden.has('formfields')?_rsvpFormFieldsCardHtml():''
     };
     // ── Placement-driven assembly: dock stack beside tracker + row-broken grid ──
     const _placements=_rsvpPlacements();
@@ -29572,7 +29612,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v362';
+const APP_BUILD='v363';
 const APP_BUILD_DATE='2026-10-30';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38263,13 +38303,23 @@ function _wbBuildSite(forDownload){
   const _uvChildMealEnabled=_uvMealOn&&STATE.settings.childrenMealOn!==false;
   const _uvChildMealOpts=_uvChildMealOn?(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()):[];
   const _uvChildMealHtml=_uvChildMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="_rfPickMeal(this)">${_escHtml(o)}</div>`).join('');
-  const _uvGuestJson=JSON.stringify((STATE.guests||[]).filter(g=>(g.listType||'A')!=='B'&&g.name).map(g=>({n:String(g.name).trim(),a:g.ageBand||'adult'})).filter(g=>g.n).sort((a,b)=>a.n.localeCompare(b.n))).replace(/'/g,'&#39;');
+  const _uvGuests2=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B'&&g.name);
+  const _uvPlus1Ids=new Set(_uvGuests2.filter(g=>g.plusOneId).map(g=>g.plusOneId));
+  const _uvAllFams=STATE.families||[];
+  const _uvGuestJson=JSON.stringify(_uvGuests2.map(g=>{const o={id:g.id,n:String(g.name).trim(),a:g.ageBand||'adult'};if(g.coupleId)o.ci=g.coupleId;if(g.plusOneId)o.p1=g.plusOneId;const fam=_uvAllFams.find(f=>f.memberIds&&f.memberIds.includes(g.id));if(fam){const fm=fam.memberIds.filter(mid=>mid!==g.id&&mid!==g.coupleId);if(fm.length)o.grp=fm;}return o;}).filter(g=>g.n).sort((a,b)=>a.n.localeCompare(b.n))).replace(/'/g,'&#39;');
+  const _uvGuestSearchJson=JSON.stringify(_uvGuests2.filter(g=>g.name&&!_uvPlus1Ids.has(g.id)).map(g=>({id:g.id,n:String(g.name).trim()})).filter(g=>g.n).sort((a,b)=>a.n.localeCompare(b.n))).replace(/'/g,'&#39;');
   const _uvBtnYes=_escHtml(_uvRsvp.btnYes||'Joyfully accepts');
   const _uvBtnNo=_escHtml(_uvRsvp.btnNo||'Regretfully declines');
-  const _uvDietHtml=[['vegetarian','Vegetarian'],['vegan','Vegan'],['glutenfree','Gluten intolerant'],['dairyfree','Lactose intolerant'],['nutfree','Nut free'],['halal','Halal'],['kosher','Kosher'],['other','Other']].map(([v,l])=>`<div class="rf-diet-chip" data-diet="${v}" onclick="this.classList.toggle('on')">${l}</div>`).join('');
-  const _uvHasStep2=_uvMealOn||_uvRfields.dietary!==false;
-  const _uvHasStep3=_uvRfields.email!==false||_uvRfields.phone!==false||_uvRfields.address!==false||_uvRfields.message!==false;
+  const _flds=_uvRsvp.fields||{};
+  const _fPhone=(f=>{if(f===false)return{show:false,required:false};if(!f)return{show:true,required:true};return{show:f.show!==false,required:!!f.required};})(_flds.phone);
+  const _fEmail=(f=>{if(f===false)return{show:false,required:false};if(!f)return{show:true,required:false};return{show:f.show!==false,required:!!f.required};})(_flds.email);
+  const _fAddr=(f=>{if(f===false)return{show:false,required:false};if(!f)return{show:false,required:false};return{show:f.show!==false,required:!!f.required};})(_flds.address);
+  const _fSong=(f=>{if(!f)return{show:false};return{show:!!f.show};})(_flds.songRequest);
+  const _fNotes=(f=>{if(!f)return{show:false};return{show:!!f.show};})(_flds.notes);
+  const _uvHasStep2=true;
+  const _uvHasStep3=_fPhone.show||_fEmail.show||_fAddr.show||_fSong.show||_fNotes.show;
   const _uvNumSteps=1+(_uvHasStep2?1:0)+(_uvHasStep3?1:0);
+  const _uvWeddingDate=_escHtml((STATE.settings&&STATE.settings.weddingDate)||_uvRsvp.date||'');
   const _uvPal=(()=>{const p=_uvRsvp.palette||'sage';const ps={sage:{accent:'#5C7D6B',ink:'#2D3D35'},ivory:{accent:'#A08050',ink:'#3A3020'},blush:{accent:'#C0745A',ink:'#3D2820'},midnight:{accent:'#7B95C8',ink:'#D0D8E8'},slate:{accent:'#8AA4A8',ink:'#CAD3D6'}};if(p==='custom'){const cc=_uvRsvp.customColors||{};return {accent:cc.accent||'#5C7D6B',ink:cc.ink||_wbInk(cc.accent||'#5C7D6B')};}return ps[p]||ps.sage;})();
   const _uvModal=_uvCoupleId?`<style>
 #uv-rsvp-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px;overscroll-behavior:none}
@@ -38296,14 +38346,15 @@ function _wbBuildSite(forDownload){
 #uv-rsvp-sheet .rf-lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:${t2.heading};opacity:.65;margin-bottom:8px;font-weight:600}
 #uv-rsvp-sheet .rf-inp{width:100%;border:1.5px solid ${t2.heading}28;border-radius:8px;padding:12px 14px;font-size:15.5px;background:${t2.background||t2.page};color:${t2.text};outline:none;box-sizing:border-box;font-family:inherit}
 #uv-rsvp-sheet .rf-inp:focus{border-color:${_uvPal.accent};box-shadow:0 0 0 3px ${_uvPal.accent}33}
-#uv-rsvp-sheet .pub-ac-list{list-style:none;margin:4px 0 0;padding:0;background:${t2.background||t2.page};border:1px solid ${t2.heading}22;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.14);overflow:hidden;position:absolute;left:16px;right:16px;z-index:10;display:none}
-#uv-rsvp-sheet .pub-ac-item{padding:11px 14px;cursor:pointer;font-size:15px;color:${t2.text}}
-#uv-rsvp-sheet .pub-ac-item.focused{background:${_uvPal.accent}16}
-#uv-rsvp-sheet .pub-ac-none{padding:11px 14px;font-size:13px;color:${t2.text};opacity:.55;pointer-events:none;font-style:italic}
+#rf-ac{background:${t2.background||t2.page};border:1px solid ${t2.heading}22;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.14);overflow:hidden;position:fixed;z-index:10001;display:none;max-height:220px;overflow-y:auto}
+#rf-ac .pub-ac-item{padding:11px 14px;cursor:pointer;font-size:15px;color:${t2.text}}
+#rf-ac .pub-ac-item.focused{background:${_uvPal.accent}16}
+#rf-ac .pub-ac-none{padding:11px 14px;font-size:13px;color:${t2.text};opacity:.55;pointer-events:none;font-style:italic}
 #uv-rsvp-sheet .rf-pills{display:flex;gap:10px}
-#uv-rsvp-sheet .rf-pill{flex:1;border:1.5px solid ${_uvPal.accent};border-radius:9px;padding:11px 0;text-align:center;cursor:pointer;font-size:13.5px;color:${_uvPal.accent};transition:background .2s,color .2s;user-select:none}
+#uv-rsvp-sheet .rf-pill{flex:1;border:1.5px solid ${_uvPal.accent};border-radius:9px;padding:10px 0;text-align:center;cursor:pointer;font-size:13px;color:${_uvPal.accent};transition:background .2s,color .2s;user-select:none;background:none}
 #uv-rsvp-sheet .rf-pill.yes{background:${_uvPal.accent};color:${_uvPal.ink}}
-#uv-rsvp-sheet .rf-pill.no{background:${t2.heading}14;color:${t2.heading};border-color:${t2.heading}30}
+#uv-rsvp-sheet .rf-pill.no{background:#FEE2E2;color:#DC2626;border-color:#FCA5A5}
+@media(prefers-color-scheme:dark){#uv-rsvp-sheet .rf-pill.no{background:#3B1212;color:#FCA5A5;border-color:#7F1D1D}}
 #uv-rsvp-sheet .rf-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
 #uv-rsvp-sheet .rf-diet-chip{padding:6px 12px;border-radius:20px;border:1px solid ${t2.heading}28;font-size:12.5px;cursor:pointer;color:${t2.text};transition:background .15s,color .15s;user-select:none}
 #uv-rsvp-sheet .rf-diet-chip.on{background:${_uvPal.accent};color:${_uvPal.ink};border-color:${_uvPal.accent}}
@@ -38314,8 +38365,28 @@ function _wbBuildSite(forDownload){
 .rf-nav{display:flex;gap:10px;padding:12px 24px 20px;position:sticky;bottom:0;background:${t2.background||t2.page};border-top:1px solid ${t2.heading}12;z-index:2}
 .rf-nav-back{flex:0 0 auto;background:none;border:1.5px solid ${t2.heading}22;color:${t2.heading};border-radius:10px;padding:11px 18px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:border-color .15s}
 .rf-nav-back:hover{border-color:${t2.heading}55}
-.rf-nav-next{flex:1;background:${t2.button};color:${btnInk};border:none;border-radius:10px;padding:13px;font-size:15px;letter-spacing:.05em;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.rf-nav-next{flex:1;background:${_uvPal.accent};color:${_uvPal.ink};border:none;border-radius:10px;padding:13px;font-size:15px;letter-spacing:.05em;cursor:pointer;font-family:inherit;transition:opacity .15s}
 .rf-nav-next:disabled{opacity:.35;cursor:not-allowed}
+.rf-inp.sm{width:100%;border:1.5px solid ${t2.heading}28;border-radius:8px;padding:8px 12px;font-size:14px;background:${t2.background||t2.page};color:${t2.text};outline:none;box-sizing:border-box;font-family:inherit;margin-top:6px}
+.rf-inp.sm:focus{border-color:${_uvPal.accent};box-shadow:0 0 0 3px ${_uvPal.accent}33}
+.member-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid ${t2.heading}10}
+.member-row:last-child{border-bottom:none}
+.member-row .rf-pills{flex:0 0 auto;gap:8px;display:flex}
+.member-row .rf-pill{padding:7px 14px;font-size:12.5px}
+.plus1-row{flex-direction:column;align-items:stretch}
+.plus1-row .member-body{display:flex;flex-direction:column;gap:6px;flex:1}
+.plus1-row .rf-pills{flex-direction:row}
+.member-badge{display:inline-flex;align-items:center;justify-content:center;background:${_uvPal.accent}20;color:${_uvPal.accent};border:1px solid ${_uvPal.accent}40;border-radius:4px;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.06em;white-space:nowrap;flex-shrink:0}
+.member-name{font-size:15px;color:${t2.text};flex:1}
+.member-name-lbl{font-size:13px;font-weight:600;color:${t2.heading};margin-bottom:8px;opacity:.8}
+.diet-details{border:1px solid ${t2.heading}15;border-radius:8px;margin-top:12px;overflow:hidden}
+.diet-details summary{padding:10px 14px;font-size:13px;color:${t2.heading};opacity:.8;cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:6px}
+.diet-details summary::before{content:'+';font-size:15px;font-weight:600;color:${_uvPal.accent}}
+.diet-details[open] summary::before{content:'−'}
+.diet-body{padding:10px 14px 14px;border-top:1px solid ${t2.heading}12}
+.rf-diet-chip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:20px;border:1px solid ${t2.heading}28;font-size:12.5px;cursor:pointer;color:${t2.text};transition:background .15s,color .15s,border-color .15s;user-select:none;margin:3px}
+.rf-diet-chip.on{background:${_uvPal.accent};color:${_uvPal.ink};border-color:${_uvPal.accent}}
+.rf-hc-label{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:10px;accent-color:${_uvPal.accent}}
 </style>
 <div id="uv-rsvp-overlay" onclick="if(event.target===this)_uvCloseRsvp()">
   <div id="uv-rsvp-sheet">
@@ -38325,33 +38396,29 @@ function _wbBuildSite(forDownload){
     </div>
     ${_uvNumSteps>1?`<div class="rfm-steps">
       <div class="rfm-si"><div class="rfm-sn active" id="rfm-sn-1">1</div><span class="rfm-sl active" id="rfm-sl-1">You</span></div>
-      ${_uvNumSteps>=2?`<div class="rfm-sline" id="rfm-sline-1"></div><div class="rfm-si"><div class="rfm-sn pending" id="rfm-sn-2">2</div><span class="rfm-sl" id="rfm-sl-2">${_uvHasStep2?'Dining':'Details'}</span></div>`:''}
+      ${_uvNumSteps>=2?`<div class="rfm-sline" id="rfm-sline-1"></div><div class="rfm-si"><div class="rfm-sn pending" id="rfm-sn-2">2</div><span class="rfm-sl" id="rfm-sl-2">Dining</span></div>`:''}
       ${_uvNumSteps>=3?`<div class="rfm-sline" id="rfm-sline-2"></div><div class="rfm-si"><div class="rfm-sn pending" id="rfm-sn-3">3</div><span class="rfm-sl" id="rfm-sl-3">Details</span></div>`:''}
     </div>`:''}
     <div class="rf-body">
       <div class="rf-step-panel active" id="rf-step1">
         <div class="rf-card">
           <div class="rf-lbl">Your name</div>
-          <input class="rf-inp" id="rf-name" type="text" placeholder="Search your name…" autocomplete="off" oninput="_rfNameSearch(this.value)" onkeydown="_rfNameKey(event)" onblur="setTimeout(function(){var l=document.getElementById('rf-ac-list');if(l)l.style.display='none'},200)">
-          <ul class="pub-ac-list" id="rf-ac-list" role="listbox"></ul>
+          <input class="rf-inp" id="rf-name" type="text" placeholder="Search your name\u2026" autocomplete="off" oninput="_rfNameSearch(this.value)" onkeydown="_rfNameKey(event)" onblur="setTimeout(function(){var a=document.getElementById('rf-ac');if(a)a.style.display='none'},220)">
         </div>
-        <div class="rf-card" id="rf-attend-card" hidden>
-          <div class="rf-lbl">Will you be attending?</div>
-          <div class="rf-pills">
-            <div class="rf-pill" id="rf-yes" onclick="_rfSetAttend('yes')">&#10003; ${_uvBtnYes}</div>
-            <div class="rf-pill" id="rf-no" onclick="_rfSetAttend('no')">${_uvBtnNo}</div>
-          </div>
+        <div class="rf-card" id="rf-group-card" style="display:none">
+          <div class="rf-lbl" id="rf-group-lbl">Attending?</div>
+          <div id="rf-group-list"></div>
         </div>
       </div>
-      ${_uvHasStep2?`<div class="rf-step-panel" id="rf-step2">
-        ${_uvMealOn?`<div class="rf-card" id="rf-meal-band-card"></div>`:''}
-        ${_uvRfields.dietary===false?'':`<div class="rf-card"><div class="rf-lbl">Dietary requirements</div><div class="rf-chips">${_uvDietHtml}</div></div>`}
-      </div>`:''}
+      <div class="rf-step-panel" id="rf-step2">
+        <div id="rf-dining-list"></div>
+      </div>
       ${_uvHasStep3?`<div class="rf-step-panel" id="rf-step3">
-        ${_uvRfields.email===false?'':`<div class="rf-card"><div class="rf-lbl">Email</div><input class="rf-inp" id="rf-email" type="email" placeholder="email@example.com" autocomplete="email"></div>`}
-        ${_uvRfields.phone===false?'':`<div class="rf-card"><div class="rf-lbl">Phone</div><input class="rf-inp" id="rf-phone" type="tel" placeholder="+61 400 000 000" autocomplete="tel"></div>`}
-        ${_uvRfields.address===false?'':`<div class="rf-card"><div class="rf-lbl">Mailing address</div><input class="rf-inp" id="rf-street" type="text" placeholder="Street address" style="margin-bottom:8px"><input class="rf-inp" id="rf-suburb" type="text" placeholder="Suburb / City" style="margin-bottom:8px"><div style="display:flex;gap:8px"><input class="rf-inp" id="rf-state" type="text" placeholder="State" style="flex:1"><input class="rf-inp" id="rf-post" type="text" placeholder="Postcode" style="flex:1"></div></div>`}
-        ${_uvRfields.message===false?'':`<div class="rf-card"><div class="rf-lbl">Message for the couple</div><textarea class="rf-inp" id="rf-message" rows="3" placeholder="A note, a wish…" style="resize:vertical"></textarea></div>`}
+        ${_fPhone.show?`<div class="rf-card"><div class="rf-lbl">Phone${_fPhone.required?' <span style="color:#DC2626">*</span>':''}</div><input class="rf-inp" id="f-phone" type="tel" placeholder="+61 400 000 000" autocomplete="tel" oninput="window._uvCheckStep3&&window._uvCheckStep3()"></div>`:''}
+        ${_fEmail.show?`<div class="rf-card"><div class="rf-lbl">Email${_fEmail.required?' <span style="color:#DC2626">*</span>':''}</div><input class="rf-inp" id="f-email" type="email" placeholder="email@example.com" autocomplete="email" oninput="window._uvCheckStep3&&window._uvCheckStep3()"></div>`:''}
+        ${_fAddr.show?`<div class="rf-card"><div class="rf-lbl">Mailing address${_fAddr.required?' <span style="color:#DC2626">*</span>':''}</div><input class="rf-inp" id="f-street" type="text" placeholder="Street address" style="margin-bottom:8px" oninput="window._uvCheckStep3&&window._uvCheckStep3()"><input class="rf-inp" id="f-suburb" type="text" placeholder="Suburb / City" style="margin-bottom:8px"><div style="display:flex;gap:8px"><input class="rf-inp" id="f-state" type="text" placeholder="State" style="flex:1"><input class="rf-inp" id="f-post" type="text" placeholder="Postcode" style="flex:1"></div></div>`:''}
+        ${_fSong.show?`<div class="rf-card"><div class="rf-lbl">Song request</div><input class="rf-inp" id="f-song" type="text" placeholder="Artist \u2014 Song title"></div>`:''}
+        ${_fNotes.show?`<div class="rf-card"><div class="rf-lbl">Message for the couple</div><textarea class="rf-inp" id="f-notes" rows="3" placeholder="A note, a wish\u2026" style="resize:vertical"></textarea></div>`:''}
       </div>`:''}
       <div class="rf-step-panel" id="rf-step-done"></div>
     </div>
@@ -38359,32 +38426,53 @@ function _wbBuildSite(forDownload){
       <button class="rf-nav-back" id="rf-back" onclick="_uvRsvpBack()" hidden>&#8592; Back</button>
       <button class="rf-nav-next" id="rf-next" onclick="_uvRsvpNext()" disabled>Next &#8594;</button>
     </div>
-    <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-couple="${_uvCoupleId}"></div>
+    <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-search='${_uvGuestSearchJson}' data-couple="${_uvCoupleId}" data-wdate="${_uvWeddingDate}"></div>
     ${_uvMealHtml?`<template id="uv-rf-meal-tmpl"><div class="rf-chips">${_uvMealHtml}</div></template>`:''}
     ${_uvChildMealHtml?`<template id="uv-rf-children-meal-tmpl"><div class="rf-chips">${_uvChildMealHtml}</div></template>`:''}
   </div>
+  <div id="rf-ac" role="listbox"></div>
 </div>
 <script>
 (function(){
-  var _su='${_SB_URL}',_sk='${_SB_KEY}',_sa=null,_sab='adult',_childMealEnabled=${_uvChildMealEnabled?'true':'false'};
+  var _su='${_SB_URL}',_sk='${_SB_KEY}';
   var _rfStep=1,_rfWizPanels=['step1'${_uvHasStep2?",'step2'":""}${_uvHasStep3?",'step3'":""}];
   var _rfTotalSteps=_rfWizPanels.length;
-  function _rfUpdateNext(){
+  var _mealOn=${_uvMealOn?'true':'false'},_childMealEnabled=${_uvChildMealEnabled?'true':'false'};
+  var _phoneReq=${_fPhone.show&&_fPhone.required?'true':'false'},_emailReq=${_fEmail.show&&_fEmail.required?'true':'false'},_addrReq=${_fAddr.show&&_fAddr.required?'true':'false'};
+  var group=[],plus1Names={},dietSel={},dietNotes={},mealPick={};
+  var _gd=document.getElementById('uv-rf-data');
+  var GG=_gd?JSON.parse(_gd.dataset.guests||'[]'):[];
+  var GSearch=_gd?JSON.parse(_gd.dataset.search||'[]'):[];
+  var byId={};GG.forEach(function(g){byId[g.id]=g;});
+  function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function _checkStep1(){
     var nx=document.getElementById('rf-next');if(!nx)return;
-    var panelId=_rfWizPanels[_rfStep-1];
-    var isLast=_rfStep===_rfTotalSteps;
-    var ready=panelId==='step1'?(!!((document.getElementById('rf-name')||{value:''}).value||'').trim()&&_sa!==null):true;
-    nx.disabled=!ready;
-    if(_sa==='no'&&panelId==='step1'){nx.textContent='Send my RSVP';}
-    else if(isLast){nx.textContent='Send my RSVP';}
-    else{nx.textContent='Next →';}
+    var allAnswered=group.length>0&&group.every(function(m){return m.att!==null;});
+    var p1Ok=group.every(function(m){if(!m.isPlus1||m.att!==true)return true;return(plus1Names[m.id]||'').trim().length>0;});
+    var anyYes=group.some(function(m){return m.att===true;});
+    nx.disabled=!(allAnswered&&p1Ok);
+    nx.textContent=(allAnswered&&!anyYes)?'Send my RSVP':'Next \u2192';
+  }
+  function _renderGroup(){
+    var gc=document.getElementById('rf-group-card'),gl=document.getElementById('rf-group-list');
+    if(!gc||!gl)return;
+    if(!group.length){gc.style.display='none';return;}
+    gc.style.display='';
+    var lbl=document.getElementById('rf-group-lbl');
+    if(lbl)lbl.textContent=group.length===1?'Will you be attending?':'Will you be attending?';
+    gl.innerHTML=group.map(function(m,i){
+      var yc='rf-pill'+(m.att===true?' yes':''),nc='rf-pill'+(m.att===false?' no':'');
+      if(m.isPlus1){
+        var p1n=_esc(plus1Names[m.id]||'');
+        return '<div class="member-row plus1-row"><span class="member-badge">+1</span><div class="member-body"><input class="rf-inp sm" type="text" placeholder="Guest name (required if attending)" value="'+p1n+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)"><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">\u2713 Yes</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">No</button></div></div></div>';
+      }
+      return '<div class="member-row"><span class="member-name">'+_esc(m.n)+'</span><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">\u2713 Yes</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">No</button></div></div>';
+    }).join('');
+    _checkStep1();
   }
   function _rfWizSetStep(n){
     _rfStep=n;
-    _rfWizPanels.forEach(function(pid,i){
-      var p=document.getElementById('rf-'+pid);
-      if(p)p.classList.toggle('active',i+1===n);
-    });
+    _rfWizPanels.forEach(function(pid,i){var p=document.getElementById('rf-'+pid);if(p)p.classList.toggle('active',i+1===n);});
     for(var i=1;i<=_rfTotalSteps;i++){
       var sn=document.getElementById('rfm-sn-'+i),sl=document.getElementById('rfm-sl-'+i),ln=document.getElementById('rfm-sline-'+i);
       if(sn)sn.className='rfm-sn '+(i<n?'done':i===n?'active':'pending');
@@ -38392,54 +38480,79 @@ function _wbBuildSite(forDownload){
       if(ln)ln.classList.toggle('done',i<n);
     }
     var bk=document.getElementById('rf-back');if(bk)bk.hidden=n<=1;
-    _rfUpdateNext();
+    var nx=document.getElementById('rf-next');
+    if(n===1)_checkStep1();
+    else if(n===2){_renderDining();_checkStep2();}
+    else if(n===3){window._uvCheckStep3&&window._uvCheckStep3();}
+    else if(nx){nx.disabled=false;nx.textContent='Send my RSVP';}
+  }
+  function _checkStep2(){
+    var nx=document.getElementById('rf-next');if(!nx)return;
+    if(!_mealOn){nx.disabled=false;nx.textContent='Next \u2192';return;}
+    var attending=group.filter(function(m){return m.att===true;});
+    var allMeal=attending.every(function(m){var g=byId[m.id]||{};return (g.a||'adult')==='infant'||!!mealPick[m.id];});
+    nx.disabled=!allMeal;
+    nx.textContent=_rfStep===_rfTotalSteps?'Send my RSVP':'Next \u2192';
+  }
+  function _renderDining(){
+    var dl=document.getElementById('rf-dining-list');if(!dl)return;
+    var attending=group.filter(function(m){return m.att===true;});
+    if(!attending.length){dl.innerHTML='';return;}
+    var DIET=['Vegetarian','Pescatarian','Vegan','Halal','Kosher','Lactose free','Gluten free','Allergy','Other'];
+    dl.innerHTML=attending.map(function(m){
+      var g=byId[m.id]||{a:'adult'};
+      var dispName=m.isPlus1?(plus1Names[m.id]||'Guest').trim():m.n;
+      var mealHtml='';
+      if(_mealOn){
+        var isInf=(g.a||'adult')==='infant',isCh=(g.a||'adult')==='child';
+        if(isInf){
+          mealHtml='<div class="rf-meal-info" style="font-size:13px;opacity:.65;font-style:italic">No meal provided for infants</div>';
+        } else {
+          var useCh=isCh&&_childMealEnabled;
+          var tmplId=useCh?'uv-rf-children-meal-tmpl':'uv-rf-meal-tmpl';
+          var lbl2=useCh?'Children\\'s meal':'Meal choice';
+          var tmpl=document.getElementById(tmplId);
+          if(tmpl){
+            var frag=tmpl.content.cloneNode(true);
+            var wrap=document.createElement('div');wrap.appendChild(frag);
+            wrap.querySelectorAll('.rf-meal-chip').forEach(function(btn){
+              btn.dataset.mid=m.id;
+              btn.onclick=function(){window._chooseMeal(this);};
+              if(mealPick[m.id]===btn.dataset.meal)btn.classList.add('on');
+            });
+            mealHtml='<div class="rf-lbl" style="margin-bottom:6px">'+lbl2+'</div><div class="rf-chips">'+wrap.innerHTML+'</div>';
+          } else if(useCh){
+            mealHtml='<div style="font-size:13px;opacity:.65;font-style:italic">A children\\'s meal will be provided</div>';
+          }
+        }
+        var isJunior=(isInf||(g.a||'adult')==='child');
+        if(isJunior){mealHtml+='<label class="rf-hc-label"><input type="checkbox" data-hcid="'+m.id+'" '+(mealPick[m.id+'-hc']?'checked':'')+' onchange="mealPick[this.dataset.hcid+\\'-hc\\']=this.checked;"> High chair required</label>';}
+      }
+      var dSel=dietSel[m.id]||new Set();
+      var chips=DIET.map(function(d){return '<label class="rf-diet-chip'+(dSel.has(d)?' on':'')+'" data-mid="'+m.id+'" data-diet="'+_esc(d)+'" onclick="window._dietClick(this)">'+_esc(d)+'</label>';}).join('');
+      var aDisp=dSel.has('Allergy')?'':'display:none';
+      var oDisp=dSel.has('Other')?'':'display:none';
+      return '<div class="rf-card">'+'<div class="member-name-lbl">'+_esc(dispName)+'</div>'+mealHtml+'<details class="diet-details"><summary class="diet-summary">Dietary requirements</summary><div class="diet-body"><div style="display:flex;flex-wrap:wrap;margin:-3px">'+chips+'</div><input class="rf-inp sm" type="text" data-mid="'+m.id+'" data-type="allergy" placeholder="Describe allergy" value="'+_esc(dietNotes[m.id+'-allergy']||'')+'" style="'+aDisp+'" oninput="dietNotes[this.dataset.mid+\\'-allergy\\']=this.value"><input class="rf-inp sm" type="text" data-mid="'+m.id+'" data-type="other" placeholder="Please specify" value="'+_esc(dietNotes[m.id+'-other']||'')+'" style="'+oDisp+'" oninput="dietNotes[this.dataset.mid+\\'-other\\']=this.value"></div></details></div>';
+    }).join('');
+    _checkStep2();
   }
   window._uvRsvpNext=function(){
     var panelId=_rfWizPanels[_rfStep-1];
     if(panelId==='step1'){
-      var nm=((document.getElementById('rf-name')||{value:''}).value||'').trim();
-      if(!nm||_sa===null)return;
-      if(_sa==='no'){_uvRsvpSubmit();return;}
+      var allAns=group.length>0&&group.every(function(m){return m.att!==null;});
+      var p1Ok=group.every(function(m){if(!m.isPlus1||m.att!==true)return true;return(plus1Names[m.id]||'').trim().length>0;});
+      if(!(allAns&&p1Ok))return;
+      var anyYes=group.some(function(m){return m.att===true;});
+      if(!anyYes){window._uvRsvpSubmit();return;}
     }
-    var nextPanel=_rfWizPanels[_rfStep];
-    if(nextPanel==='step2')_rfWizRenderStep2();
     if(_rfStep<_rfTotalSteps){_rfWizSetStep(_rfStep+1);}
-    else{_uvRsvpSubmit();}
+    else{window._uvRsvpSubmit();}
   };
   window._uvRsvpBack=function(){if(_rfStep>1)_rfWizSetStep(_rfStep-1);};
-  function _rfWizRenderStep2(){
-    var mCard=document.getElementById('rf-meal-band-card');if(!mCard)return;
-    mCard.innerHTML='';
-    var tmpl=document.getElementById('uv-rf-meal-tmpl');
-    var ctmpl=document.getElementById('uv-rf-children-meal-tmpl');
-    if(_sab==='infant'){
-      mCard.innerHTML='<div class="rf-lbl">Meal</div><div class="rf-meal-info">No meal provided for infants</div>';
-    } else if(_sab==='child'){
-      if(ctmpl){
-        mCard.innerHTML='<div class="rf-lbl">Children\\'s meal</div>';
-        mCard.appendChild(ctmpl.content.cloneNode(true));
-      } else if(_childMealEnabled){
-        mCard.innerHTML='<div class="rf-lbl">Meal</div><div class="rf-meal-info">A children\\'s meal will be provided</div>';
-      } else if(tmpl){
-        mCard.innerHTML='<div class="rf-lbl">Meal choice</div>';
-        mCard.appendChild(tmpl.content.cloneNode(true));
-      }
-    } else if(tmpl){
-      mCard.innerHTML='<div class="rf-lbl">Meal choice</div>';
-      mCard.appendChild(tmpl.content.cloneNode(true));
-    }
-    var step2=document.getElementById('rf-step2');
-    var hcc=document.getElementById('rf-highchair-card');if(hcc)hcc.remove();
-    if((_sab==='child'||_sab==='infant')&&step2){
-      var hcCard=document.createElement('div');hcCard.className='rf-card';hcCard.id='rf-highchair-card';
-      hcCard.innerHTML='<label style="display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="rf-highchair-cb" style="width:16px;height:16px;accent-color:${_uvPal.accent};cursor:pointer;flex-shrink:0"> High chair required</label>';
-      step2.appendChild(hcCard);
-    }
-  }
   window._uvOpenRsvp=function(){var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.add('open');document.body.style.overflow='hidden';}};
   window._uvCloseRsvp=function(){
     var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.remove('open');document.body.style.overflow='';}
-    _sa=null;_sab='adult';_rfStep=1;
+    group=[];plus1Names={};dietSel={};dietNotes={};mealPick={};_rfStep=1;
     _rfWizPanels.forEach(function(pid){var p=document.getElementById('rf-'+pid);if(p)p.classList.remove('active');});
     var s1=document.getElementById('rf-step1');if(s1)s1.classList.add('active');
     var sd=document.getElementById('rf-step-done');if(sd){sd.classList.remove('active');sd.innerHTML='';}
@@ -38450,88 +38563,117 @@ function _wbBuildSite(forDownload){
       if(lni)lni.classList.remove('done');
     }
     var bk=document.getElementById('rf-back');if(bk)bk.hidden=true;
-    var nx=document.getElementById('rf-next');if(nx){nx.disabled=true;nx.textContent='Next →';}
+    var nx=document.getElementById('rf-next');if(nx){nx.disabled=true;nx.textContent='Next \u2192';}
     var nav=document.getElementById('rf-nav');if(nav)nav.style.display='';
     var stEl=document.querySelector('.rfm-steps');if(stEl)stEl.style.display='';
-    var ni=document.getElementById('rf-name'),ll=document.getElementById('rf-ac-list');
+    var ni=document.getElementById('rf-name'),ac=document.getElementById('rf-ac');
     if(ni){ni.value='';ni.style.borderColor='';ni.style.boxShadow='';}
-    if(ll){ll.style.display='none';ll.innerHTML='';}
-    var ac=document.getElementById('rf-attend-card');if(ac)ac.hidden=true;
-    var yp=document.getElementById('rf-yes'),np=document.getElementById('rf-no');
-    if(yp){yp.classList.remove('yes','no');}if(np){np.classList.remove('yes','no');}
-    document.querySelectorAll('.rf-diet-chip.on,.rf-meal-chip.on').forEach(function(el){el.classList.remove('on');});
-    var mc=document.getElementById('rf-meal-band-card');if(mc)mc.innerHTML='';
-    var hcc2=document.getElementById('rf-highchair-card');if(hcc2)hcc2.remove();
+    if(ac)ac.style.display='none';
+    var gc=document.getElementById('rf-group-card');if(gc)gc.style.display='none';
+    var gl=document.getElementById('rf-group-list');if(gl)gl.innerHTML='';
     document.querySelectorAll('#rf-step3 input,#rf-step3 textarea').forEach(function(el){el.value='';});
   };
   window._rfNameSearch=function(q){
-    var ll=document.getElementById('rf-ac-list');if(!ll)return;
-    if(q.length<2){ll.style.display='none';return;}
-    var lq=q.toLowerCase(),gd=document.getElementById('uv-rf-data');
-    var gs=gd?JSON.parse(gd.dataset.guests||'[]'):[];
-    var hits=gs.filter(function(g){var p=g.n.toLowerCase().split(/[\s&,]+/);return p.some(function(x){return x.startsWith(lq);})||g.n.toLowerCase().indexOf(lq)>-1;}).slice(0,8);
-    ll.innerHTML=hits.length?hits.map(function(g,i){return '<li class="pub-ac-item" role="option" data-idx="'+i+'" onmouseenter="this.classList.add(\\'focused\\')" onmouseleave="this.classList.remove(\\'focused\\')" onmousedown="_rfPickName(this.textContent)">'+g.n+'</li>';}).join(''):'<li class="pub-ac-none">No match — try another spelling</li>';
-    ll.style.display='block';
+    var ac=document.getElementById('rf-ac');if(!ac)return;
+    if(q.length<2){ac.style.display='none';return;}
+    var lq=q.toLowerCase();
+    var hits=GSearch.filter(function(g){var pts=g.n.toLowerCase().split(/[\s&,]+/);return pts.some(function(x){return x.startsWith(lq);})||g.n.toLowerCase().indexOf(lq)>-1;}).slice(0,8);
+    ac.innerHTML=hits.length?hits.map(function(g){return '<div class="pub-ac-item" role="option" data-gid="'+g.id+'" onmouseenter="this.classList.add(\'focused\')" onmouseleave="this.classList.remove(\'focused\')" onmousedown="window._rfPickName(\''+g.id+'\',\''+g.n.replace(/\\/g,'\\\\').replace(/'/g,'\\'')+'\')" >'+_esc(g.n)+'</div>';}).join(''):'<div class="pub-ac-none">No match \u2014 try another spelling</div>';
+    var ni=document.getElementById('rf-name');if(ni){var r=ni.getBoundingClientRect();ac.style.cssText='position:fixed;top:'+(r.bottom+4)+'px;left:'+r.left+'px;width:'+r.width+'px;display:block';}
   };
-  window._rfPickName=function(name){
-    var ni=document.getElementById('rf-name'),ll=document.getElementById('rf-ac-list');
+  window._rfPickName=function(id,name){
+    var ni=document.getElementById('rf-name'),ac=document.getElementById('rf-ac');
     if(ni){ni.value=name;ni.style.borderColor='${_uvPal.accent}';ni.style.boxShadow='0 0 0 3px ${_uvPal.accent}33';}
-    if(ll)ll.style.display='none';
-    var gd=document.getElementById('uv-rf-data');
-    var gs=gd?JSON.parse(gd.dataset.guests||'[]'):[];
-    var gobj=gs.find(function(g){return g.n===name;});
-    _sab=gobj?gobj.a||'adult':'adult';
-    _sa=null;
-    var yp=document.getElementById('rf-yes'),np=document.getElementById('rf-no');
-    if(yp){yp.classList.remove('yes','no');}if(np){np.classList.remove('yes','no');}
-    var ac=document.getElementById('rf-attend-card');
-    if(ac){ac.hidden=false;ac.scrollIntoView({behavior:'smooth',block:'nearest'});}
-    _rfUpdateNext();
+    if(ac)ac.style.display='none';
+    var g=byId[id];group=[];
+    function add(gid,isP1){var m=byId[gid];if(!m||group.some(function(x){return x.id===gid;}))return;group.push({id:gid,n:m.n,a:m.a||'adult',isPlus1:isP1,att:null});}
+    if(g){add(g.id,false);if(g.ci)add(g.ci,false);if(g.p1)add(g.p1,true);(g.grp||[]).forEach(function(fid){var fm=byId[fid];if(!fm)return;add(fm.id,false);if(fm.p1)add(fm.p1,true);});}
+    _renderGroup();
+    var gc=document.getElementById('rf-group-card');if(gc)setTimeout(function(){gc.scrollIntoView({behavior:'smooth',block:'nearest'});},80);
   };
   window._rfNameKey=function(e){
-    var ll=document.getElementById('rf-ac-list');if(!ll||ll.style.display==='none')return;
-    var items=ll.querySelectorAll('.pub-ac-item'),cur=ll.querySelector('.pub-ac-item.focused');
-    var idx=cur?parseInt(cur.dataset.idx,10):-1;
+    var ac=document.getElementById('rf-ac');if(!ac||ac.style.display==='none')return;
+    var items=Array.from(ac.querySelectorAll('.pub-ac-item')),cur=ac.querySelector('.pub-ac-item.focused');
+    var idx=items.indexOf(cur);
     if(e.key==='ArrowDown'){e.preventDefault();items.forEach(function(el){el.classList.remove('focused');});idx=Math.min(idx+1,items.length-1);if(items[idx])items[idx].classList.add('focused');}
     else if(e.key==='ArrowUp'){e.preventDefault();items.forEach(function(el){el.classList.remove('focused');});idx=Math.max(idx-1,0);if(items[idx])items[idx].classList.add('focused');}
-    else if(e.key==='Enter'&&cur){e.preventDefault();_rfPickName(cur.textContent);}
-    else if(e.key==='Escape')ll.style.display='none';
+    else if(e.key==='Enter'&&cur){e.preventDefault();window._rfPickName(cur.dataset.gid,cur.textContent);}
+    else if(e.key==='Escape')ac.style.display='none';
   };
-  window._rfSetAttend=function(val){
-    _sa=val;
-    var yp=document.getElementById('rf-yes'),np=document.getElementById('rf-no');
-    if(yp){yp.classList.toggle('yes',val==='yes');yp.classList.toggle('no',false);}
-    if(np){np.classList.toggle('no',val==='no');np.classList.toggle('yes',false);}
-    _rfUpdateNext();
+  window._rfSetAtt=function(i,val){if(!group[i])return;group[i].att=val;_renderGroup();};
+  window._uvSetP1Name=function(inp){plus1Names[inp.dataset.pid]=inp.value;_checkStep1();};
+  window._chooseMeal=function(btn){
+    var id=btn.dataset.mid,ml=btn.dataset.meal;mealPick[id]=ml;
+    btn.closest('.rf-chips').querySelectorAll('.rf-meal-chip').forEach(function(c){c.classList.remove('on');});
+    btn.classList.add('on');_checkStep2();
   };
-  window._rfPickMeal=function(el){var cs=el.closest('.rf-chips');if(cs)cs.querySelectorAll('.rf-meal-chip').forEach(function(c){c.classList.remove('on');});el.classList.add('on');};
+  window._dietClick=function(lbl){
+    var mid=lbl.dataset.mid,diet=lbl.dataset.diet;
+    if(!dietSel[mid])dietSel[mid]=new Set();
+    lbl.classList.toggle('on');
+    if(lbl.classList.contains('on'))dietSel[mid].add(diet);else dietSel[mid].delete(diet);
+    var body=lbl.closest('.diet-body');if(!body)return;
+    var ai=body.querySelector('[data-type="allergy"]'),oi=body.querySelector('[data-type="other"]');
+    if(ai)ai.style.display=dietSel[mid].has('Allergy')?'':'none';
+    if(oi)oi.style.display=dietSel[mid].has('Other')?'':'none';
+  };
+  window._uvCheckStep3=function(){
+    var nx=document.getElementById('rf-next');if(!nx)return;
+    var pOk=!_phoneReq||((document.getElementById('f-phone')||{value:''}).value||'').trim().length>0;
+    var eOk=!_emailReq||((document.getElementById('f-email')||{value:''}).value||'').trim().length>0;
+    var aOk=!_addrReq||((document.getElementById('f-street')||{value:''}).value||'').trim().length>0;
+    nx.disabled=!(pOk&&eOk&&aOk);nx.textContent='Send my RSVP';
+  };
   window._uvRsvpSubmit=async function(){
-    var ni=document.getElementById('rf-name'),nx=document.getElementById('rf-next');
-    var name=ni?ni.value.trim():'';
-    if(!name){if(ni)ni.style.borderColor='#c0392b';return;}
-    if(!_sa)return;
-    if(nx){nx.disabled=true;nx.textContent='Sending…';}
-    var diet=Array.from(document.querySelectorAll('.rf-diet-chip.on')).map(function(el){return el.dataset.diet;});
-    var st=(document.getElementById('rf-street')||{}).value||'';
-    var su=(document.getElementById('rf-suburb')||{}).value||'';
-    var ss=(document.getElementById('rf-state')||{}).value||'';
-    var sp=(document.getElementById('rf-post')||{}).value||'';
-    var addr=[st,su,ss,sp].map(function(x){return x.trim();}).filter(Boolean).join(', ')||null;
-    var gd=document.getElementById('uv-rf-data'),cid=gd?gd.dataset.couple:'';
+    var nx=document.getElementById('rf-next');if(nx){nx.disabled=true;nx.textContent='Sending\u2026';}
+    var gd2=document.getElementById('uv-rf-data'),cid=gd2?gd2.dataset.couple:'';
+    var phone=((document.getElementById('f-phone')||{value:''}).value||'').trim();
+    var email=((document.getElementById('f-email')||{value:''}).value||'').trim();
+    var st=((document.getElementById('f-street')||{value:''}).value||'').trim();
+    var su=((document.getElementById('f-suburb')||{value:''}).value||'').trim();
+    var ss=((document.getElementById('f-state')||{value:''}).value||'').trim();
+    var sp=((document.getElementById('f-post')||{value:''}).value||'').trim();
+    var addr=[st,su,ss,sp].filter(Boolean).join(', ')||null;
+    var song=((document.getElementById('f-song')||{value:''}).value||'').trim();
+    var notes=((document.getElementById('f-notes')||{value:''}).value||'').trim();
+    var anyYes=group.some(function(m){return m.att===true;});
+    var primaryName=group.length>0?(group[0].isPlus1?(plus1Names[group[0].id]||'Guest').trim():group[0].n):'';
+    var guestData=group.map(function(m){
+      var n=m.isPlus1?(plus1Names[m.id]||'Guest').trim():m.n;
+      var ds=dietSel[m.id]?Array.from(dietSel[m.id]):[];
+      var an=(dietNotes[m.id+'-allergy']||'').trim();
+      var on2=(dietNotes[m.id+'-other']||'').trim();
+      if(an)ds.push('Allergy: '+an);if(on2)ds.push('Other: '+on2);
+      return {name:n,attending:m.att===true?'yes':'no',meal:mealPick[m.id]||null,dietary:ds.length?ds:null,highChair:!!(mealPick[m.id+'-hc'])};
+    });
     try{
-      var mealEl=document.querySelector('#rf-meal-band-card .rf-meal-chip.on');
-      var meal=mealEl?mealEl.dataset.meal||mealEl.textContent.trim():null;
-      var hcCb=document.getElementById('rf-highchair-cb');
-      var r=await fetch(_su+'/rest/v1/rsvp_responses',{method:'POST',headers:{'apikey':_sk,'Authorization':'Bearer '+_sk,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({couple_id:cid,guest_name:name,email:(document.getElementById('rf-email')||{}).value||null,phone:(document.getElementById('rf-phone')||{}).value||null,address:addr,attending:_sa,meal:meal,dietary:diet.length?diet:null,message:(document.getElementById('rf-message')||{}).value||null,high_chair:!!(hcCb&&hcCb.checked)})});
+      var r=await fetch(_su+'/rest/v1/rsvp_responses',{method:'POST',headers:{'apikey':_sk,'Authorization':'Bearer '+_sk,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({couple_id:cid,guest_name:primaryName,email:email||null,phone:phone||null,address:addr,attending:anyYes?'yes':'no',meal:guestData[0]?guestData[0].meal:null,dietary:guestData[0]?guestData[0].dietary:null,message:notes||null,song_request:song||null,group_data:guestData.length>1?JSON.stringify(guestData):null,high_chair:!!(mealPick[(group[0]&&group[0].id)+'-hc'])})});
       if(r.ok||r.status===201){
         _rfWizPanels.forEach(function(pid){var p=document.getElementById('rf-'+pid);if(p)p.classList.remove('active');});
         var nav=document.getElementById('rf-nav');if(nav)nav.style.display='none';
-        var stEl=document.querySelector('.rfm-steps');if(stEl)stEl.style.display='none';
+        var stEl2=document.querySelector('.rfm-steps');if(stEl2)stEl2.style.display='none';
         var sd=document.getElementById('rf-step-done');
-        if(sd){sd.innerHTML='<div class="rf-msg-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${_uvPal.accent}" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><div style="font-size:17px;font-weight:600;margin:10px 0 6px;color:${t2.heading}">RSVP received!</div><div style="font-size:13.5px;opacity:.8">'+(_sa==='yes'?'We can\\'t wait to celebrate with you':'Thank you for letting us know')+'</div></div>';sd.classList.add('active');}
+        if(sd){
+          function joinN(arr){if(!arr.length)return '';if(arr.length===1)return arr[0];return arr.slice(0,-1).join(', ')+' & '+arr[arr.length-1];}
+          var yNames=group.filter(function(m){return m.att===true;}).map(function(m){return m.isPlus1?(plus1Names[m.id]||'Guest').trim():m.n;});
+          var noNames=group.filter(function(m){return m.att===false&&!m.isPlus1;}).map(function(m){return m.n;});
+          var wDateStr=_gd?_gd.dataset.wdate||'':'';
+          var wDate=wDateStr?new Date(wDateStr):null;
+          function ord(n){var s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+          var dayMonth=wDate&&!isNaN(wDate.getTime())?'the '+ord(wDate.getDate())+' of '+wDate.toLocaleString('default',{month:'long'}):'the big day';
+          var heading=anyYes?'See you there!':'Thanks for letting us know.';
+          var msg='';
+          if(yNames.length)msg+='We\\'ll see '+joinN(yNames)+' on '+dayMonth+'!';
+          if(noNames.length)msg+=(msg?' ':'')+'\\'We\\'ll miss '+joinN(noNames)+'.';
+          sd.innerHTML='<div class="rf-msg-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${_uvPal.accent}" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><div style="font-size:17px;font-weight:600;margin:10px 0 6px;color:${t2.heading}">'+heading+'</div><div style="font-size:13.5px;line-height:1.5;opacity:.8">'+msg+'</div></div>';
+          sd.classList.add('active');
+        }
       }else{if(nx){nx.disabled=false;nx.textContent='Send my RSVP';}}
     }catch(e2){if(nx){nx.disabled=false;nx.textContent='Send my RSVP';}}
   };
+  window.plus1Names=plus1Names;window.mealPick=mealPick;window.dietSel=dietSel;window.dietNotes=dietNotes;
+  if(_rfTotalSteps===1){var nx2=document.getElementById('rf-next');if(nx2)nx2.textContent='Send my RSVP';}
+  document.getElementById('uv-rsvp-overlay')&&document.getElementById('uv-rsvp-overlay').addEventListener('scroll',function(){var ac=document.getElementById('rf-ac');if(ac)ac.style.display='none';},true);
 })();
 <\/script>
 `:'';
