@@ -1,5 +1,5 @@
-const CACHE = 'union-vault-v358';
-const SHELL = ['/UnionVault/', '/UnionVault/index.html'];
+const CACHE = 'union-vault-v359';
+const SHELL = ['/', '/index.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
