@@ -29612,7 +29612,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v364';
+const APP_BUILD='v365';
 const APP_BUILD_DATE='2026-10-30';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -36518,6 +36518,13 @@ function openWbCustom(id){
   // textarea would be two editors writing one field — which is precisely how Home ended
   // up with five controls that did nothing (v125). One field, one editor.
   _wbPanel(c.name||'Section', `<div style="display:flex;flex-direction:column;gap:0">
+      <div style="padding:14px 16px 0">
+        <label style="display:block;margin-bottom:14px">
+          <span style="font-size:12px;font-weight:600;color:var(--label);display:block;margin-bottom:4px">Section name</span>
+          <input type="text" value="${_esc(c.name||'')}" oninput="_wbCustomEdit('${id}','name',this.value)"
+            style="display:block;width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--fg);font-size:14px;box-sizing:border-box;outline:none">
+        </label>
+      </div>
       ${_wbLayoutHtml(id)}
       ${_wbBlocksHtml(id)}
     </div>`,
@@ -38348,7 +38355,7 @@ function _wbBuildSite(forDownload){
 #uv-rsvp-sheet .rf-inp:focus{border-color:${_uvPal.accent};box-shadow:0 0 0 3px ${_uvPal.accent}33}
 #rf-ac{background:${t2.background||t2.page};border:1px solid ${t2.heading}22;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.14);overflow:hidden;position:fixed;z-index:10001;display:none;max-height:220px;overflow-y:auto}
 #rf-ac .pub-ac-item{padding:11px 14px;cursor:pointer;font-size:15px;color:${t2.text}}
-#rf-ac .pub-ac-item.focused{background:${_uvPal.accent}16}
+#rf-ac .pub-ac-item.focused,#rf-ac .pub-ac-item:hover{background:${_uvPal.accent}16}
 #rf-ac .pub-ac-none{padding:11px 14px;font-size:13px;color:${t2.text};opacity:.55;pointer-events:none;font-style:italic}
 #uv-rsvp-sheet .rf-pills{display:flex;gap:10px}
 #uv-rsvp-sheet .rf-pill{flex:1;border:1.5px solid ${_uvPal.accent};border-radius:9px;padding:10px 0;text-align:center;cursor:pointer;font-size:13px;color:${_uvPal.accent};transition:background .2s,color .2s;user-select:none;background:none}
@@ -38578,10 +38585,11 @@ function _wbBuildSite(forDownload){
     if(q.length<2){ac.style.display='none';return;}
     var lq=q.toLowerCase();
     var hits=GSearch.filter(function(g){var pts=g.n.toLowerCase().split(/[\s&,]+/);return pts.some(function(x){return x.startsWith(lq);})||g.n.toLowerCase().indexOf(lq)>-1;}).slice(0,8);
-    ac.innerHTML=hits.length?hits.map(function(g){return '<div class="pub-ac-item" role="option" data-gid="'+g.id+'" onmouseenter="this.classList.add(\'focused\')" onmouseleave="this.classList.remove(\'focused\')" onmousedown="window._rfPickName(\''+g.id+'\',\''+g.n.replace(/\\/g,'\\\\').replace(/'/g,'\\'')+'\')" >'+_esc(g.n)+'</div>';}).join(''):'<div class="pub-ac-none">No match \u2014 try another spelling</div>';
+    ac.innerHTML=hits.length?hits.map(function(g){return '<div class="pub-ac-item" role="option" data-gid="'+g.id+'" onmousedown="window._rfPickName(this.dataset.gid)">'+_esc(g.n)+'</div>';}).join(''):'<div class="pub-ac-none">No match — try another spelling</div>';
     var ni=document.getElementById('rf-name');if(ni){var r=ni.getBoundingClientRect();ac.style.cssText='position:fixed;top:'+(r.bottom+4)+'px;left:'+r.left+'px;width:'+r.width+'px;display:block';}
   };
-  window._rfPickName=function(id,name){
+  window._rfPickName=function(id){
+    var g=byId[id];var name=g?g.n:'';
     var ni=document.getElementById('rf-name'),ac=document.getElementById('rf-ac');
     if(ni){ni.value=name;ni.style.borderColor='${_uvPal.accent}';ni.style.boxShadow='0 0 0 3px ${_uvPal.accent}33';}
     if(ac)ac.style.display='none';
@@ -38597,7 +38605,7 @@ function _wbBuildSite(forDownload){
     var idx=items.indexOf(cur);
     if(e.key==='ArrowDown'){e.preventDefault();items.forEach(function(el){el.classList.remove('focused');});idx=Math.min(idx+1,items.length-1);if(items[idx])items[idx].classList.add('focused');}
     else if(e.key==='ArrowUp'){e.preventDefault();items.forEach(function(el){el.classList.remove('focused');});idx=Math.max(idx-1,0);if(items[idx])items[idx].classList.add('focused');}
-    else if(e.key==='Enter'&&cur){e.preventDefault();window._rfPickName(cur.dataset.gid,cur.textContent);}
+    else if(e.key==='Enter'&&cur){e.preventDefault();window._rfPickName(cur.dataset.gid);}
     else if(e.key==='Escape')ac.style.display='none';
   };
   window._rfSetAtt=function(i,val){if(!group[i])return;group[i].att=val;_renderGroup();};
