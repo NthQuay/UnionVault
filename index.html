@@ -29612,7 +29612,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v365';
+const APP_BUILD='v366';
 const APP_BUILD_DATE='2026-10-30';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38592,7 +38592,7 @@ function _wbBuildSite(forDownload){
     var g=byId[id];var name=g?g.n:'';
     var ni=document.getElementById('rf-name'),ac=document.getElementById('rf-ac');
     if(ni){ni.value=name;ni.style.borderColor='${_uvPal.accent}';ni.style.boxShadow='0 0 0 3px ${_uvPal.accent}33';}
-    if(ac)ac.style.display='none';
+    if(ac)setTimeout(function(){ac.style.display='none';},0);
     var g=byId[id];group=[];
     function add(gid,isP1){var m=byId[gid];if(!m||group.some(function(x){return x.id===gid;}))return;group.push({id:gid,n:m.n,a:m.a||'adult',isPlus1:isP1,att:null});}
     if(g){add(g.id,false);if(g.ci)add(g.ci,false);if(g.p1)add(g.p1,true);(g.grp||[]).forEach(function(fid){var fm=byId[fid];if(!fm)return;add(fm.id,false);if(fm.p1)add(fm.p1,true);});}
