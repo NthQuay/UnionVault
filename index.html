@@ -29612,7 +29612,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v366';
+const APP_BUILD='v367';
 const APP_BUILD_DATE='2026-10-30';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38585,7 +38585,7 @@ function _wbBuildSite(forDownload){
     if(q.length<2){ac.style.display='none';return;}
     var lq=q.toLowerCase();
     var hits=GSearch.filter(function(g){var pts=g.n.toLowerCase().split(/[\s&,]+/);return pts.some(function(x){return x.startsWith(lq);})||g.n.toLowerCase().indexOf(lq)>-1;}).slice(0,8);
-    ac.innerHTML=hits.length?hits.map(function(g){return '<div class="pub-ac-item" role="option" data-gid="'+g.id+'" onmousedown="window._rfPickName(this.dataset.gid)">'+_esc(g.n)+'</div>';}).join(''):'<div class="pub-ac-none">No match — try another spelling</div>';
+    ac.innerHTML=hits.length?hits.map(function(g){return '<div class="pub-ac-item" role="option" data-gid="'+g.id+'" ontouchstart="event.preventDefault();window._rfPickName(this.dataset.gid)" onmousedown="window._rfPickName(this.dataset.gid)">'+_esc(g.n)+'</div>';}).join(''):'<div class="pub-ac-none">No match — try another spelling</div>';
     var ni=document.getElementById('rf-name');if(ni){var r=ni.getBoundingClientRect();ac.style.cssText='position:fixed;top:'+(r.bottom+4)+'px;left:'+r.left+'px;width:'+r.width+'px;display:block';}
   };
   window._rfPickName=function(id){
