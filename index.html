@@ -29572,7 +29572,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v355';
+const APP_BUILD='v356';
 const APP_BUILD_DATE='2026-10-29';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -38409,11 +38409,11 @@ function _wbBuildSite(forDownload){
         cg.insertBefore(mCard,cg.firstChild);
       } else if(_sab===’child’){
         if(ctmpl){
-          mCard.innerHTML=’<div class="rf-lbl">Children\’s meal</div>’;
+          mCard.innerHTML=’<div class="rf-lbl">Children\\’s meal</div>’;
           mCard.appendChild(ctmpl.content.cloneNode(true));
           cg.insertBefore(mCard,cg.firstChild);
         } else if(_childMealEnabled){
-          mCard.innerHTML=’<div class="rf-lbl">Meal</div><div class="rf-meal-info">A children\’s meal will be provided</div>’;
+          mCard.innerHTML=’<div class="rf-lbl">Meal</div><div class="rf-meal-info">A children\\’s meal will be provided</div>’;
           cg.insertBefore(mCard,cg.firstChild);
         } else if(tmpl){
           mCard.innerHTML=’<div class="rf-lbl">Meal choice</div>’;
