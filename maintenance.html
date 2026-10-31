@@ -473,7 +473,7 @@ footer {
 
   // ── Bypass mechanism ──
   // Add ?bypass=uvadmin to the URL to reveal the bypass banner.
-  // Clicking "Enter app" redirects to app.html (the real app during maintenance).
+  // Clicking "Enter app" redirects to the main app (index.html).
   var BYPASS_KEY = 'uv_bypass';
   var params = new URLSearchParams(location.search);
 
@@ -489,7 +489,7 @@ footer {
   }
 
   document.getElementById('bypass-go').addEventListener('click', function(){
-    window.location.href = '/app.html';
+    window.location.href = '/';
   });
 })();
 </script>
