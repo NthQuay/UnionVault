@@ -1,6 +1,6 @@
-const CACHE = 'union-vault-v371';
+const CACHE = 'union-vault-v372';
 const SHELL = [
-  '/', '/index.html', '/app.html',
+  '/', '/index.html',
   '/css/fonts.css', '/css/app.css', '/css/landing.css',
   '/js/wallpaper.js', '/js/state.js', '/js/utils.js', '/js/navigation.js',
   '/js/dashboard.js', '/js/details.js', '/js/guests.js', '/js/timeline.js',
