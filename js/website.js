@@ -4523,9 +4523,9 @@ function _wbBuildSite(forDownload){
 #rf-ac .pub-ac-none{padding:11px 14px;font-size:13px;color:${t2.text};opacity:.55;pointer-events:none;font-style:italic}
 #uv-rsvp-sheet .rf-pills{display:flex;gap:10px}
 #uv-rsvp-sheet .rf-pill{flex:1;border:1.5px solid ${_uvPal.accent};border-radius:9px;padding:10px 0;text-align:center;cursor:pointer;font-size:13px;color:${_uvPal.accent};transition:background .2s,color .2s;user-select:none;background:none}
-#uv-rsvp-sheet .rf-pill.yes{background:${_uvPal.accent};color:${_uvPal.ink}}
-#uv-rsvp-sheet .rf-pill.no{background:#FEE2E2;color:#DC2626;border-color:#FCA5A5}
-@media(prefers-color-scheme:dark){#uv-rsvp-sheet .rf-pill.no{background:#3B1212;color:#FCA5A5;border-color:#7F1D1D}}
+#uv-rsvp-sheet .rf-pill.yes{background:#EAF3EC;border-color:#3D9454;color:#1F6B38}
+#uv-rsvp-sheet .rf-pill.no{background:#F7EFED;border-color:#C05840;color:#8B3324}
+@media(prefers-color-scheme:dark){#uv-rsvp-sheet .rf-pill.yes{background:#1C3324;border-color:#3D9454;color:#7BC28A}#uv-rsvp-sheet .rf-pill.no{background:#3B1212;color:#FCA5A5;border-color:#7F1D1D}}
 #uv-rsvp-sheet .rf-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
 #uv-rsvp-sheet .rf-diet-chip{padding:6px 12px;border-radius:20px;border:1px solid ${t2.heading}28;font-size:12.5px;cursor:pointer;color:${t2.text};transition:background .15s,color .15s;user-select:none}
 #uv-rsvp-sheet .rf-diet-chip.on{background:${_uvPal.accent};color:${_uvPal.ink};border-color:${_uvPal.accent}}
@@ -4542,11 +4542,12 @@ function _wbBuildSite(forDownload){
 .rf-inp.sm:focus{border-color:${_uvPal.accent};box-shadow:0 0 0 3px ${_uvPal.accent}33}
 .member-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid ${t2.heading}10}
 .member-row:last-child{border-bottom:none}
-.member-row .rf-pills{flex:0 0 auto;gap:8px;display:flex}
-.member-row .rf-pill{padding:7px 14px;font-size:12.5px;white-space:nowrap}
-.plus1-row{flex-direction:column;align-items:stretch}
-.plus1-row .member-body{display:flex;flex-direction:column;gap:6px;flex:1}
-.plus1-row .rf-pills{flex-direction:row}
+.member-row .rf-pills{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:0 0 auto;min-width:140px}
+.member-row .rf-pill{padding:10px 6px;font-size:13px;white-space:nowrap;text-align:center;border-radius:8px;border-width:1.5px}
+.plus1-row{flex-direction:column;align-items:stretch;gap:4px}
+.plus1-row .member-body{display:flex;flex-direction:row;gap:10px;flex:1;align-items:center;flex-wrap:wrap}
+.plus1-row .member-body>.rf-inp.sm{flex:1;min-width:140px;margin-top:0}
+.plus1-row .rf-pills{min-width:140px}
 .member-badge{display:inline-flex;align-items:center;justify-content:center;background:${_uvPal.accent}20;color:${_uvPal.accent};border:1px solid ${_uvPal.accent}40;border-radius:4px;font-size:10px;font-weight:700;padding:2px 6px;letter-spacing:.06em;white-space:nowrap;flex-shrink:0}
 .member-name{font-size:15px;color:${t2.text};flex:1}
 .member-name-lbl{font-size:13px;font-weight:600;color:${t2.heading};margin-bottom:8px;opacity:.8}
