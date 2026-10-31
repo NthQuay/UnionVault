@@ -319,13 +319,16 @@
         <div class="price-divider"></div>
         <div class="price-features">
           <div class="price-feat"><span class="price-check">✓</span><span>Dashboard<span class="price-sub">Your whole wedding at a glance — budget overview, RSVP counts, upcoming tasks &amp; quick actions</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Up to 50 guests<span class="price-sub">Guest list, dietary requirements &amp; live RSVP updates</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Budget &amp; vendor management<span class="price-sub">Track costs, bookings &amp; appointments</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Day-of timeline<span class="price-sub">Build a shareable run sheet with music links for special moments — aisle walk, first dance &amp; more</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Up to 50 guests<span class="price-sub">Basic guest list with live RSVP updates</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Basic budget<span class="price-sub">Track costs and vendor bookings — no sub-items, documents or payment plans</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Vendor management<span class="price-sub">Track bookings &amp; appointments</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Day-of timeline<span class="price-sub">Build a shareable run sheet with music links for special moments</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Wedding checklist<span class="price-sub">A personalised task list so nothing slips through the cracks</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Wedding website builder<span class="price-sub">Customise your very own website to share wedding details, timeline, FAQ, gallery and more with your guests. Here they can also submit their RSVP</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Wedding website &amp; RSVP<span class="price-sub">Customise your website, share details and collect RSVPs</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span> Cloud sync &amp; backup</div>
-          <div class="price-feat price-muted"><span style="color:var(--muted)">–</span> Priority support</div>
+          <div class="price-feat price-muted"><span style="color:var(--muted)">–</span> No dietary/meal tracking</div>
+          <div class="price-feat price-muted"><span style="color:var(--muted)">–</span> No print or export</div>
+          <div class="price-feat price-muted"><span style="color:var(--muted)">–</span> Union Vault branding on guest communications</div>
         </div>
         <button class="btn-outline" onclick="var a=document.getElementById('auth');if(a){a.scrollIntoView({behavior:'smooth'});setTimeout(function(){document.querySelectorAll('.tab')[1].click();var e=document.getElementById('auth-up-email');if(e)e.focus();},400);}">Start planning free</button>
       </div>
@@ -333,22 +336,30 @@
         <div class="price-badge">Most popular</div>
         <div class="price-name">Full Access</div>
         <div class="price-tagline">Everything you need, for your whole journey</div>
-        <div class="price-amount" style="font-size:28px;padding-top:8px">Coming soon</div>
-        <div class="price-cycle">pricing to be announced</div>
+        <div class="price-amount" id="price-display"><span class="price-currency">$</span><span id="price-value">—</span></div>
+        <div class="price-cycle" id="price-cycle-label">per month</div>
+        <div class="price-duration-pills" id="price-pills">
+          <button class="price-pill active" data-months="1" onclick="_uvSelectPricePill(this)">1 mo</button>
+          <button class="price-pill" data-months="6" onclick="_uvSelectPricePill(this)">6 mo <small>save 5%</small></button>
+          <button class="price-pill" data-months="9" onclick="_uvSelectPricePill(this)">9 mo <small>save 10%</small></button>
+          <button class="price-pill" data-months="12" onclick="_uvSelectPricePill(this)">12 mo <small>save 15%</small></button>
+        </div>
         <div class="price-divider"></div>
         <div class="price-features">
           <div class="price-feat"><span class="price-check">✓</span> Everything in Free Tier</div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Unlimited guests<span class="price-sub">Dietary requirements, meal choices &amp; live RSVP updates. Add individuals, by couple and group families. Or you can import guests with ease by pasting a CSV (excel) file</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Multi-event planning<span class="price-sub">Manage guest lists for your bridal shower, bucks &amp; bachelorette, rehearsal dinner &amp; more alongside your wedding day</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Calendar<span class="price-sub">See all appointments, events, tasks &amp; payments due in one view</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Floorplan builder<span class="price-sub">Design your layout, seat guests, then print or export to share</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Shareable vendor brief<span class="price-sub">Send vendors a personalised brief page with everything they need to know</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Unlimited guests<span class="price-sub">Dietary requirements, meal choices, children's meals &amp; high-chair tracking</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Full budget<span class="price-sub">Sub-items, documents, payment plans, per-head &amp; per-item pricing</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Multi-event planning<span class="price-sub">Manage guest lists for your bridal shower, bucks &amp; bachelorette, rehearsal dinner &amp; more</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Seating plan &amp; floorplan builder<span class="price-sub">Design your layout, seat guests, then print or export to share</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Calendar, vision board &amp; inspiration<span class="price-sub">All appointments in one view, plus save styles &amp; ideas to share with vendors</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span><span>Wishing well &amp; gift registry<span class="price-sub">Share a wish list and track contributions from your guests</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Save-the-dates &amp; invite sending<span class="price-sub">Upload your digital invite image and link and track invite method for each guest/couple/family as well as RSVP reminders.</span></span></div>
-          <div class="price-feat"><span class="price-check">✓</span><span>Vision board &amp; inspo tools<span class="price-sub">Save styles, colours &amp; ideas in one place to share with vendors</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Print &amp; export everything<span class="price-sub">Guest lists, labels, seating charts, timelines and more</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Clean guest communications<span class="price-sub">No Union Vault branding on emails, SMS, WhatsApp or social messages</span></span></div>
+          <div class="price-feat"><span class="price-check">✓</span><span>Remove "Made with Union Vault" badge<span class="price-sub">Toggle off the website footer badge</span></span></div>
           <div class="price-feat"><span class="price-check">✓</span> Priority support</div>
         </div>
-        <button class="btn-gold" onclick="var a=document.getElementById('auth');if(a){a.scrollIntoView({behavior:'smooth'});setTimeout(function(){document.querySelectorAll('.tab')[1].click();var e=document.getElementById('auth-up-email');if(e)e.focus();},400);}">Get notified</button>
+        <button class="btn-gold" id="pricing-cta" onclick="_uvPricingCTA()">Start 14-day free trial</button>
+        <div class="price-trial-note">14-day free trial · cancel anytime</div>
       </div>
     </div>
   </div>
@@ -374,7 +385,7 @@
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">What happens after my trial ends?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-        <div class="faq-a">Your data is never deleted. When you're ready to unlock unlimited guests and premium features, upgrade to Full Access. Pricing details are coming soon.</div>
+        <div class="faq-a">Your data is never deleted. After your 14-day free trial, you can continue using the free tier with core features, or upgrade to Full Access for unlimited guests, seating plans, print &amp; export, and more. You can cancel anytime.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">Can I use it on my phone?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
@@ -721,6 +732,7 @@
 <script src="/js/budget.js"></script>
 <script src="/js/seating.js"></script>
 <script src="/js/supabase.js"></script>
+<script src="/js/subscription.js"></script>
 <script src="/js/autocomplete.js"></script>
 <script src="/js/floorplan.js"></script>
 <script src="/js/inspiration.js"></script>

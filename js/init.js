@@ -70,6 +70,10 @@ window.addEventListener('resize',(function(){
 // from the dashboard onward.
 try{ if(_autoCheckPassedInstallments()) saveToStorage(); }catch(e){}
 
+// Load subscription tier state and detect checkout return
+if(typeof _uvLoadSubscription==='function') _uvLoadSubscription();
+if(typeof _uvCheckReturn==='function') _uvCheckReturn();
+
 /* ══════════════════════════════════════════════════════════════════════════
    STAGE 5 — PUBLIC PAGES (RSVP form + Vendor portal)
    These functions render a full-page experience that replaces the normal

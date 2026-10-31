@@ -145,11 +145,9 @@ function _wbSite(){
   if(typeof w.hero.showNames!=='boolean') w.hero.showNames=true;
   if(typeof w.hero.showDate !=='boolean') w.hero.showDate =true;
   if(typeof w.hero.showIcs  !=='boolean') w.hero.showIcs  =true;
-  // v123: the attribution footer. Coerced to false, not merely defaulted — there is no
-  // paid tier yet, so a `true` in a hand-edited STATE is not a setting, it is a value
-  // nothing in the app is entitled to have written. When a subscription check exists, it
-  // replaces this line.
-  w.brandOff = false;
+  if(typeof w.brandOff!=='boolean') w.brandOff=false;
+  // Free-tier users cannot hide the badge — force it back on
+  if(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()) w.brandOff=false;
   const t = w.theme;
   if(!t.page) t.page='#E8DDD0';
   if(!t.band) t.band='#DDD3C4';
@@ -1670,6 +1668,15 @@ function openWbHome(){
         </span>
       </div>
       <div id="wb-cta-hint" style="font-size:12px;color:var(--muted);margin-top:-6px">${ctaMode==='ics'?'Adds a Save the date calendar download.':ctaMode==='rsvp'?'Links guests to your RSVP form.':''}</div>
+      <div style="margin-top:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <label class="tl-pub-row" for="wb-h-brandoff" style="padding:9px 10px${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?' ;opacity:.55':''}">
+          <span class="tl-pub-title" style="display:flex;flex-direction:column;gap:1px"><span>Show &ldquo;Made with Union Vault&rdquo; badge</span><span style="font-size:11px;color:var(--muted);font-weight:400">${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?'Upgrade to Full Access to remove':'Toggle the footer badge on your wedding website'}</span></span>
+          <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
+            <input type="checkbox" id="wb-h-brandoff" ${_wbSite().brandOff?'':'checked'} onchange="_wbToggleBrand(this.checked)"/>
+            <span class="toggle-track"></span>
+          </span>
+        </label>
+      </div>
     </div>`,
     `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbHomeCancel()">Cancel</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
@@ -1680,6 +1687,14 @@ function _wbSaveHome(){
   h.sub=(document.getElementById('wb-h-sub')||{}).value||'';
   _wbHomeSnapshot=null;
   saveToStorage();
+}
+function _wbToggleBrand(showBadge){
+  if(!showBadge && _sbSession && typeof _uvRequirePaid==='function' && !_uvRequirePaid('brandOff')){
+    const cb=document.getElementById('wb-h-brandoff'); if(cb) cb.checked=true;
+    return;
+  }
+  _wbSite().brandOff=!showBadge;
+  saveToStorage(); _wbLivePaint();
 }
 function _wbHomeCancel(){
   if(_wbHomeSnapshot){
