@@ -1704,6 +1704,7 @@ function _rsvpColOrder(){
   return ord;
 }
 function _rsvpSetCol(key,on){
+  if(on && (key==='dietary'||key==='meal') && _sbSession && typeof _uvRequirePaid==='function' && !_uvIsPaid()){ _uvRequirePaid(key==='dietary'?'dietary':'mealChoices'); return; }
   if(!STATE.settings.rsvpCols) STATE.settings.rsvpCols={};
   STATE.settings.rsvpCols[key]=!!on;
   saveToStorage();
