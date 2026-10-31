@@ -155,6 +155,8 @@ async function _showPublicWeddingSite(slug){
       _publicWeddingExtras(uid)
     ]);
     if(Array.isArray(_ex.guests)) STATE.guests=_ex.guests;
+    if(Array.isArray(_ex.families)) STATE.families=_ex.families;
+    if(_ex.settings && typeof _ex.settings==='object') STATE.settings=Object.assign(STATE.settings||{},_ex.settings);
     if(_ex.wishingwell && typeof _ex.wishingwell==='object') STATE.wishingwell=_ex.wishingwell;
     if(r2.ok){
       const rows=await r2.json();
