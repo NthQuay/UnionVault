@@ -4469,11 +4469,11 @@ function _wbBuildSite(forDownload){
   const _uvCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
   const _uvMealOn=!!(STATE.settings&&STATE.settings.mealChoiceOn)&&Array.isArray(STATE.settings.mealOptions)&&(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()).length>0;
   const _uvMealOpts=_uvMealOn?(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()):[];
-  const _uvMealHtml=_uvMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="_rfPickMeal(this)">${_escHtml(o)}</div>`).join('');
+  const _uvMealHtml=_uvMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="window._chooseMeal(this)">${_escHtml(o)}</div>`).join('');
   const _uvChildMealOn=_uvMealOn&&STATE.settings.childrenMealOn!==false&&(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()).length>0;
   const _uvChildMealEnabled=_uvMealOn&&STATE.settings.childrenMealOn!==false;
   const _uvChildMealOpts=_uvChildMealOn?(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()):[];
-  const _uvChildMealHtml=_uvChildMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="_rfPickMeal(this)">${_escHtml(o)}</div>`).join('');
+  const _uvChildMealHtml=_uvChildMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="window._chooseMeal(this)">${_escHtml(o)}</div>`).join('');
   const _uvGuests2=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B'&&g.name);
   const _uvPlus1Ids=new Set(_uvGuests2.filter(g=>g.plusOneId).map(g=>g.plusOneId));
   const _uvAllFams=STATE.families||[];
@@ -4543,7 +4543,7 @@ function _wbBuildSite(forDownload){
 .member-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid ${t2.heading}10}
 .member-row:last-child{border-bottom:none}
 .member-row .rf-pills{flex:0 0 auto;gap:8px;display:flex}
-.member-row .rf-pill{padding:7px 14px;font-size:12.5px}
+.member-row .rf-pill{padding:7px 14px;font-size:12.5px;white-space:nowrap}
 .plus1-row{flex-direction:column;align-items:stretch}
 .plus1-row .member-body{display:flex;flex-direction:column;gap:6px;flex:1}
 .plus1-row .rf-pills{flex-direction:row}
