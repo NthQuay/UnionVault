@@ -21,7 +21,7 @@ Read the latest `docs/sessions/HANDOFF_SESSION*.md` and `docs/CLAUDE_CODE_CONTEX
 
 ## Repo layout
 
-- Root: only what the live site / Supabase needs (`index.html`, `app.html`, `maintenance.html`, `sw.js`, `manifest.webmanifest`, `CNAME`, `.nojekyll`, `og-image.png`, `assets/`, `css/`, `js/`, `icons/`, `logos/`, `supabase/`). Keep it that way.
+- Root: only what the live site / Supabase needs (`index.html`, `app.html`, `maintenance.html`, `sw.js`, `robots.txt`, `sitemap.xml`, `manifest.webmanifest`, `CNAME`, `.nojekyll`, `og-image.png`, `assets/`, `css/`, `js/`, `icons/`, `logos/`, `supabase/`). Keep it that way.
 - `docs/` — reference docs (`CLAUDE_CODE_CONTEXT.md`, changelog, decisions).
 - `docs/sessions/` — per-session handoffs and new-session prompts. New handoffs go here, not at the root.
 - `scripts/` — helper scripts.
