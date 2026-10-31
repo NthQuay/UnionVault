@@ -4502,7 +4502,8 @@ function _wbBuildSite(forDownload){
   const _fAddr=(f=>{if(f===false)return{show:false,required:false};if(!f)return{show:false,required:false};return{show:f.show!==false,required:!!f.required};})(_flds.address);
   const _fSong=(f=>{if(!f)return{show:false};return{show:!!f.show};})(_flds.songRequest);
   const _fNotes=(f=>{if(!f)return{show:false};return{show:!!f.show};})(_flds.notes);
-  const _uvHasStep2=true;
+  const _uvDietaryOn=!(_uvRfields.dietary===false);
+  const _uvHasStep2=_uvMealOn||_uvDietaryOn;
   const _uvHasStep3=_fPhone.show||_fEmail.show||_fAddr.show||_fSong.show||_fNotes.show;
   const _uvNumSteps=1+(_uvHasStep2?1:0)+(_uvHasStep3?1:0);
   const _uvWeddingDate=_escHtml((STATE.settings&&STATE.settings.weddingDate)||_uvRsvp.date||'');
