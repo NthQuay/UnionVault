@@ -331,3 +331,20 @@ Free to start. Link in bio.
 - **Post consistently** — 3-4 times per week beats daily burnout. Batch-create a week of content in one session
 - **Use trending audio** — check Reels and TikTok "trending" tabs weekly. Even a 5-second clip of trending audio helps reach
 - **Repurpose across platforms** — same content works on Reels, TikTok and Facebook. Just re-export without watermarks for each
+
+### AI Video Ad Generators (URL-to-Ad)
+
+Paste your URL and the tool scrapes your page, writes a script and renders a video ad automatically.
+
+| Tool | How it works | Best for | Starting price |
+|------|-------------|----------|----------------|
+| **Creatify** | Paste URL, scrapes page, writes scripts, renders UGC-style ads with AI avatars. 5-10 variations per URL. | Most polished URL-to-ad tool. Batch variations. | ~$39/mo |
+| **Higgsfield** | Paste a website, product or social profile URL. 12-15 sec ad videos. | General websites, not just e-commerce | Free tier |
+| **JoggAI** | URL-to-video with editable output | Shopify/WooCommerce stores | Free trial |
+| **Pictory** | Link to script to video scenes | Blog/landing page to video | Free trial |
+| **HeyGen** | URL-to-video with AI avatars | Professional-looking avatar ads | Free tier (limited) |
+| **Zeely** | Pulls data and images from URL for video ads | Facebook/IG/TikTok ads | Free trial |
+
+**Recommendation for Union Vault:** Start with **Creatify** or **HeyGen** since they handle general websites (not just e-commerce product pages). Most tools are optimised for Shopify/Amazon product pages, but these two work with any URL.
+
+**Important:** Always review AI-generated drafts before publishing — the URL scraper can sometimes pull the wrong image, misread pricing, or grab the wrong content from your page.
