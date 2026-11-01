@@ -6,6 +6,7 @@
 // Curated icon set (key → SVG inner paths). Drawn to match the app's line style.
 const _TAG_ICONS={
   star:'<path d="M12 2l2.4 7.4H22l-6 4.3 2.3 7.3-6.3-4.6L5.7 21l2.3-7.3-6-4.3h7.6z"/>',
+  sparkle:'<path d="M12 2l2 7-7 3 7 3-2 7 2-7 7-3-7-3z"/>',
   heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/>',
   person:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
   people:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6"/><path d="M17 15.2c2.3.5 4 2 4 4.8"/>',

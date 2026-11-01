@@ -115,7 +115,8 @@ const STATE = {
     'Child':        {color:'#21b5a4', icon:''},
     "Groom's Side": {color:'#4A7C9E', icon:'people'},
     'Mutual':       {color:'#8E6BA8', icon:'people'},
-    '+1':           {color:'#5A5A57', icon:'people'}
+    '+1':           {color:'#5A5A57', icon:'people'},
+    "Guest's of Honour": {color:'#B8963E', icon:'sparkle'}
   },
   invites: [],
   inviteMeta: {},
