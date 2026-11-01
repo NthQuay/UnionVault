@@ -518,7 +518,7 @@ async function _showPublicRunSheet(coupleId){
           ${subLine?`<div class="prs-page-sub">${subLine}</div>`:''}
         </div>
         ${bodyHtml}
-        <div class="prs-page-brand"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Created with <strong>Union Vault</strong></a></div>
+        <div class="prs-page-brand"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Timeline created with <strong>Union Vault</strong></a></div>
       </div>
     </div>`;
   document.body.style.visibility='visible';
@@ -565,7 +565,7 @@ function printTimeline(mode){
     <h1>${_tlPrintNames()}</h1>
     <div class="sub">${_tlPrintSubLine()}</div>
     <table>${rows||'<tr><td style="padding:20px;text-align:center;color:#999">No moments added yet.</td></tr>'}</table>
-    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#999"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Created with <strong>Union Vault</strong></a></div>
+    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#999"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Timeline created with <strong>Union Vault</strong></a></div>
     </body></html>`);
   win.document.close();
   win.focus();
@@ -607,7 +607,7 @@ function printTimelineMusic(){
     <h1>${_tlPrintNames()}</h1>
     <div class="sub">${_tlPrintSubLine()}</div>
     <table>${rows||'<tr><td style="padding:20px;text-align:center;color:#999">No songs tagged yet.</td></tr>'}</table>
-    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#999"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Created with <strong>Union Vault</strong></a></div>
+    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#999"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Timeline created with <strong>Union Vault</strong></a></div>
     </body></html>`);
   win.document.close();
   win.focus();
