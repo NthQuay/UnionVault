@@ -327,7 +327,6 @@ const _RSVP_SECTIONS=[
   ['sendguests','Send to guests'],
   ['tracker','Guest response tracker'],
   ['link','RSVP link & QR'],
-  ['meal','Meal choice'],
   ['summary','Response summary'],
   ['dietary','Dietary requirements'],
   ['plusones','Plus-ones'],
@@ -1409,8 +1408,7 @@ function renderRsvpMgr(c, actions){
     const cardHtml={
       invitation:!hidden.has('invitation')?_invitationSectionHtml('invitation'):'',
       sendguests:!hidden.has('sendguests')?_invitationSectionHtml('sendguests'):'',
-      meal:!hidden.has('meal')?`<div class="card" id="rsvp-meal-card" style="padding:22px 20px 20px">${_mealSetupHtml()}</div>`:'',
-      mealcount:!hidden.has('mealcount')&&_mealOn()?`<div class="card" style="padding:22px 20px 20px">${_mealCountCardHtml()}</div>`:'',
+      mealcount:!hidden.has('mealcount')?`<div class="card" id="rsvp-mealcount-card" style="padding:22px 20px 20px">${_mealCountCardHtml()}</div>`:'',
       link:!hidden.has('link')?`<div class="card">
         <div class="section-eyebrow" style="margin-bottom:12px">Your RSVP Link</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1945,7 +1943,15 @@ function _rsvpColMenuHtml(){
 
 /* Meal count summary card — how many attending guests chose each option. */
 function _mealCountCardHtml(){
-  if(!_mealOn()) return '';
+  const cogSvg='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+  const header=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div class="section-eyebrow">Meal Counts</div><button onclick="_mealSettingsPopup()" title="Meal settings" style="width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">${cogSvg}</button></div>`;
+  if(!_mealOn()){
+    return header+`<div style="text-align:center;padding:18px 10px 10px">
+      <div style="margin-bottom:10px;opacity:.35"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18M5 11c0-3.87 3.13-7 7-7s7 3.13 7 7"/><path d="M4 17h16a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1z"/><line x1="8" y1="17" x2="8" y2="20"/><line x1="16" y1="17" x2="16" y2="20"/><line x1="6" y1="20" x2="18" y2="20"/></svg></div>
+      <div style="font-family:var(--ff-display,Cormorant Garamond,Georgia,serif);font-size:16px;font-weight:500;margin-bottom:4px">No meal tracking yet</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5">Tap the cog to offer guests a meal choice on the RSVP form.</div>
+    </div>`;
+  }
   const attending=STATE.guests.filter(g=>g.rsvp==='attending'&&(g.listType||'A')!=='B');
   const adultOpts=_mealOpts();
   const isChild=g=>_guestAgeBand(g)==='child'||_guestAgeBand(g)==='infant';
@@ -1965,8 +1971,7 @@ function _mealCountCardHtml(){
     return rows+noRow;
   }
   const totalMeals=adults.filter(g=>(g.meal||'').trim()).length+children.filter(g=>(g.meal||'').trim()).length;
-  let html=`<div class="section-eyebrow" style="margin-bottom:10px">Meal Counts</div>
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><div><span style="font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.1">${totalMeals}</span><span style="font-size:12px;color:var(--muted);margin-left:4px">total meals</span></div><span style="font-size:11px;color:var(--muted)">of ${attending.length} attending</span></div>`;
+  let html=header+`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><div><span style="font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.1">${totalMeals}</span><span style="font-size:12px;color:var(--muted);margin-left:4px">total meals</span></div><span style="font-size:11px;color:var(--muted)">of ${attending.length} attending</span></div>`;
   if(adultOpts.length){
     html+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Adult Meals</div>`;
     html+=countRows(adults,adultOpts,0);
@@ -1989,7 +1994,7 @@ function _mealSetupHtml(){
   const childrenOn=on&&STATE.settings.childrenMealOn!==false;
   const cOpts=childrenOn ? _childMealOptsArr() : _childMealOpts();
   return `
-    <div class="section-eyebrow" style="margin-bottom:12px">Meal Choice</div>
+    <div class="section-eyebrow" style="margin-bottom:12px">Meal Settings</div>
     <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:${on?'14px':'0'}">
       <input type="checkbox" ${on?'checked':''} onchange="_mealSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
       Offer guests a meal choice
@@ -2021,19 +2026,44 @@ function _mealSetupHtml(){
       `:''}
     `:''}`;
 }
-function _rsvpRerenderMealCard(){const el=document.getElementById('rsvp-meal-card');if(el)el.innerHTML=_mealSetupHtml();}
+function _rsvpRerenderMealCard(){
+  const el=document.getElementById('rsvp-meal-card');
+  if(el){
+    const isPopup=!!document.getElementById('meal-settings-overlay');
+    const closeBtn=isPopup?'<button onclick="_mealSettingsPopupClose()" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>':'';
+    el.innerHTML=closeBtn+_mealSetupHtml();
+  }
+  const cc=document.getElementById('rsvp-mealcount-card');if(cc)cc.innerHTML=_mealCountCardHtml();
+}
+function _mealSettingsPopup(){
+  let existing=document.getElementById('meal-settings-overlay');
+  if(existing)existing.remove();
+  const ov=document.createElement('div');
+  ov.id='meal-settings-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(26,26,24,.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;animation:mealPopFadeIn .15s ease';
+  ov.onclick=e=>{if(e.target===ov)_mealSettingsPopupClose();};
+  const inner=document.createElement('div');
+  inner.id='rsvp-meal-card';
+  inner.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 22px 22px;width:100%;max-width:380px;max-height:min(560px,80vh);overflow-y:auto;box-shadow:0 8px 40px rgba(26,26,24,.18);animation:mealPopUp .2s ease;position:relative';
+  inner.innerHTML=`<button onclick="_mealSettingsPopupClose()" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`+_mealSetupHtml();
+  ov.appendChild(inner);
+  if(!document.getElementById('meal-popup-keyframes')){const s=document.createElement('style');s.id='meal-popup-keyframes';s.textContent='@keyframes mealPopFadeIn{from{opacity:0}}@keyframes mealPopUp{from{transform:translateY(8px);opacity:0}}';document.head.appendChild(s);}
+  document.body.appendChild(ov);
+}
+function _mealSettingsPopupClose(){
+  const ov=document.getElementById('meal-settings-overlay');if(ov)ov.remove();
+  const cc=document.getElementById('rsvp-mealcount-card');if(cc)cc.innerHTML=_mealCountCardHtml();
+}
 function _mealSetOn(on){
   if(on && _sbSession && typeof _uvRequirePaid==='function' && !_uvIsPaid()){ _uvRequirePaid('mealChoices'); return; }
   if(!STATE.settings) STATE.settings={};
   STATE.settings.mealChoiceOn=!!on;
-  // Turning it ON with no options yet: seed the obvious three rather than an empty list
-  // she has to build from nothing. Turning it OFF keeps them — so switching back on does
-  // not lose her list, and no guest's ANSWER is ever discarded by a display toggle.
   if(on && !_mealOpts().length) STATE.settings.mealOptions=['Beef','Fish','Vegetarian'];
   if(on && !(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()).length){ STATE.settings.childrenMealOn=true; STATE.settings.childrenMealOptions=["Children's meal"]; }
   if(on){ if(!STATE.settings.rsvpCols) STATE.settings.rsvpCols={}; STATE.settings.rsvpCols.meal=true; }
   saveToStorage();
   rsvpRerenderList();
+  _rsvpRerenderMealCard();
   _rsvpReopenColMenu();
 }
 function _mealOptsArr(){
