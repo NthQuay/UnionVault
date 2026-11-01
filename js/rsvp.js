@@ -1551,42 +1551,48 @@ function renderRsvpMgr(c, actions){
     cardHtml.tracker=cardHtmlTracker;
     let html='';
     const rowBreaks=_rsvpRowBreaks();
-    // Grid cards = visible, placement 'grid', not the tracker, not docked. Split into rows
-    // at any key that carries a row break (a break sits BEFORE that key).
     const dockedSet=new Set(_dockedKeys);
-    const gridKeys=order.filter(k=>k!=='tracker' && !dockedSet.has(k) && _placements[k]==='grid' && !hidden.has(k) && !!cardHtml[k]);
     const flushRow=(buf)=>{ if(!buf.length) return ''; return `<div class="rsvp-card-grid" data-cols="${cols}" style="display:grid;grid-template-columns:${gridCols};gap:18px;margin-top:18px;align-items:stretch">${buf.map(k=>k==='onlinersvps'?`<div style="grid-column:1/-1">${cardHtml[k]}</div>`:cardHtml[k]).join('')}</div>`; };
-    // Build the grid rows (respecting row breaks) as a string we can place after the tracker.
-    let gridHtml='',rowBuf=[];
-    gridKeys.forEach((k,i)=>{ if(i>0 && rowBreaks.has(k)){ gridHtml+=flushRow(rowBuf); rowBuf=[]; } rowBuf.push(k); });
-    gridHtml+=flushRow(rowBuf);
-    // Emit sections in order. The tracker (with any docked stack beside it) sits where the
-    // tracker key falls in the order; all grid rows are emitted together right after it.
+    // Split grid cards into those before and after the tracker in the section order,
+    // so the tracker can sit anywhere in the layout rather than always at the top.
+    const trackerIdx=order.indexOf('tracker');
+    const gridKeysBefore=[],gridKeysAfter=[];
+    order.forEach((k,i)=>{
+      if(k==='tracker'||dockedSet.has(k)||_placements[k]!=='grid'||hidden.has(k)||!cardHtml[k]) return;
+      if(trackerIdx<0||i>trackerIdx) gridKeysAfter.push(k); else gridKeysBefore.push(k);
+    });
+    let gridHtmlBefore='',rowBuf=[];
+    gridKeysBefore.forEach((k,i)=>{ if(i>0&&rowBreaks.has(k)){gridHtmlBefore+=flushRow(rowBuf);rowBuf=[];} rowBuf.push(k); });
+    gridHtmlBefore+=flushRow(rowBuf);
+    let gridHtmlAfter=''; rowBuf=[];
+    gridKeysAfter.forEach((k,i)=>{ if(i>0&&rowBreaks.has(k)){gridHtmlAfter+=flushRow(rowBuf);rowBuf=[];} rowBuf.push(k); });
+    gridHtmlAfter+=flushRow(rowBuf);
+    // Emit: grid cards before the tracker, then the tracker (with any dock companions), then
+    // grid cards after it. When the tracker is hidden both groups still render.
     let trackerEmitted=false;
     order.forEach(key=>{
       if(key==='tracker'){
-        if(hidden.has('tracker')) return;
-        if(_dockActive){
-          // Large-dock widgets take only their natural height (flex:0 0 auto via CSS class)
-          // so they don't crowd out smaller companion widgets.
-          const companions=_dockedKeys.map(k=>{
-            const html=cardHtml[k];
-            if(_RSVP_LARGE_DOCK.includes(k)) return html.replace(/<div class="card"/, '<div class="card rsvp-dock-large-card"');
-            return html;
-          }).join('');
-          html+=`<div class="rsvp-tracker-row">
-            <div class="rsvp-tracker-pane">${cardHtml.tracker}</div>
-            <div class="rsvp-tracker-companion">${companions}</div>
-          </div>`;
-        } else {
-          html+=cardHtml.tracker;
+        html+=gridHtmlBefore;
+        if(!hidden.has('tracker')){
+          if(_dockActive){
+            const companions=_dockedKeys.map(k=>{
+              const html=cardHtml[k];
+              if(_RSVP_LARGE_DOCK.includes(k)) return html.replace(/<div class="card"/, '<div class="card rsvp-dock-large-card"');
+              return html;
+            }).join('');
+            html+=`<div class="rsvp-tracker-row">
+              <div class="rsvp-tracker-pane">${cardHtml.tracker}</div>
+              <div class="rsvp-tracker-companion">${companions}</div>
+            </div>`;
+          } else {
+            html+=cardHtml.tracker;
+          }
         }
-        html+=gridHtml;          // all grid rows flow immediately below the tracker zone
+        html+=gridHtmlAfter;
         trackerEmitted=true;
       }
     });
-    // If the tracker is hidden, still show the grid rows.
-    if(!trackerEmitted) html+=gridHtml;
+    if(!trackerEmitted) html+=gridHtmlBefore+gridHtmlAfter;
     return html;
   })()
 

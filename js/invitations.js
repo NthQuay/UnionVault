@@ -58,9 +58,10 @@ function _invitationSectionHtml(which){
             <button class="btn btn-sm" onclick="_invRemoveLink()" style="flex-shrink:0;background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Remove link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
         </div>
-        <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px 13px">
-          <div style="display:flex;align-items:center;gap:8px">
-            ${_fileThumb}
+        <div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
+          ${_invSrc2&&_invIsImg2?`<div style="background:var(--surface);display:flex;align-items:center;justify-content:center;padding:10px;border-bottom:1px solid var(--border)"><img src="${_escHtml(_invSrc2)}" style="max-width:100%;max-height:320px;border-radius:6px;object-fit:contain" alt=""/></div>`:''}
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 13px">
+            ${!(_invSrc2&&_invIsImg2)?_fileThumb:''}
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(ftrun)}</div><div style="font-size:11.5px;color:var(--muted)">${_escHtml(inv.file.sizeLabel||'')}</div></div>
             <button type="button" onclick="_invPreviewFile()" class="btn btn-outline btn-sm" style="flex-shrink:0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview</button>
             <button class="btn btn-sm" onclick="_invRemoveFile()" style="flex-shrink:0;background:transparent;border:1.5px solid var(--border);color:var(--muted)" title="Remove file"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -100,8 +101,8 @@ function _invitationSectionHtml(which){
       const hasPreview=!!_invSrc;
       content=`${_fileInput}
       <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden">
-        <div style="height:120px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid var(--border);gap:6px">
-          ${hasPreview&&_invIsImg?`<img src="${_escHtml(_invSrc)}" style="max-height:110px;max-width:100%;object-fit:contain" alt=""/>`:
+        <div style="${hasPreview&&_invIsImg?'min-height:120px;padding:10px':'height:120px'};background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid var(--border);gap:6px">
+          ${hasPreview&&_invIsImg?`<img src="${_escHtml(_invSrc)}" style="max-width:100%;max-height:320px;object-fit:contain;border-radius:6px" alt=""/>`:
           `<svg width="36" height="44" viewBox="0 0 40 48" fill="none" opacity=".3"><path d="M4 4C4 1.79 5.79 0 8 0H28L40 12V44C40 46.21 38.21 48 36 48H8C5.79 48 4 46.21 4 44V4Z" fill="var(--muted)"/><path d="M28 0L40 12H32C29.79 12 28 10.21 28 8V0Z" fill="rgba(0,0,0,.15)"/></svg>
           <span style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:var(--muted);padding:2px 8px;border-radius:4px">${_escHtml(fext)}</span>`}
         </div>
