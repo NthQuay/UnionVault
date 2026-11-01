@@ -7,6 +7,7 @@ let _uvTier = 'free';
 let _uvTrialDaysLeft = 0;
 let _uvSubLoaded = false;
 let _uvSubDetails = null;
+let _uvSelectedSettingsMonths = 1;
 
 // ── Feature map ─────────────────────────────────────────────────────────────
 const _UV_PAID_PAGES = new Set(['seating','calendar','events','inspo','visionboard','wishingwell']);
@@ -262,15 +263,17 @@ function _uvOpenSubPage(){
     const longer=_UV_PLANS.filter(p=>p.months>1);
     const _pc=function(p){
       const isCur=isFull&&currentMonths===p.months;
+      const isSel=!isFull&&_uvSelectedSettingsMonths===p.months;
       const isPopular=!isFull&&p.months===12;
-      const border=isCur||isPopular?'var(--gold)':'var(--border)';
-      const bg=isCur||isPopular?'rgba(196,168,130,.08)':'transparent';
+      const border=isCur||isSel?'var(--gold)':isPopular?'var(--gold)':'var(--border)';
+      const bg=isCur||isSel?'rgba(196,168,130,.12)':isPopular?'rgba(196,168,130,.05)':'transparent';
       const ms=p.monthly?_uvFormatMoney(p.monthly)+'/mo':'';
       const ts=p.monthly&&p.months>1?_uvFormatMoney(p.monthly*p.months):'';
-      return `<div style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCur?'default':'pointer'};transition:all .15s;position:relative"
-        ${isCur?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'"`}>
+      return `<div data-plan-months="${p.months}" style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCur?'default':'pointer'};transition:all .15s;position:relative"
+        ${isCur?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='${isSel?'var(--gold)':'var(--border)'}'" `}>
         ${isCur?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Current</div>':''}
-        ${isPopular&&!isCur?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Popular</div>':''}
+        ${isSel&&!isCur?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Selected</div>':''}
+        ${isPopular&&!isCur&&!isSel?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Popular</div>':''}
         ${p.discount?`<div style="font-size:10px;font-weight:700;color:var(--green,#3D9454);margin-bottom:4px">Save ${p.discount}%</div>`:''}
         <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${ms||'Price TBC'}</div>
@@ -295,7 +298,9 @@ function _uvOpenSubPage(){
       <div style="margin-top:12px"><button style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit" onclick="_uvConfirmCancel()">Cancel subscription</button></div>
     </div>`;
   } else if(isFree||isTrial){
-    actionsHtml=`<div style="margin-top:8px"><button class="btn btn-primary" onclick="_uvGoCheckout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;font-size:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Upgrade to Full Access</button></div>`;
+    var selPlan=_UV_PLANS.find(function(p){return p.months===_uvSelectedSettingsMonths;})||_UV_PLANS[0];
+    var selMs=selPlan&&selPlan.monthly?_uvFormatMoney(selPlan.monthly)+'/mo':'';
+    actionsHtml=`<div style="margin-top:8px"><button class="btn btn-primary" onclick="_uvGoCheckout((_UV_PLANS.find(function(p){return p.months===_uvSelectedSettingsMonths;})||_UV_PLANS[0]).priceId)" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;font-size:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Upgrade — ${_escH(selPlan.label)}${selMs?' ('+selMs+')':''}</button></div>`;
   }
 
   const te=document.getElementById('topbar-title');
@@ -322,14 +327,26 @@ function _uvOpenSubPage(){
 function _uvSelectSettingsPlan(months){
   const plan=_UV_PLANS.find(p=>p.months===months);
   if(!plan) return;
-  if(plan.priceId){
-    if(_uvTier==='full'){
-      _uvOpenPortal();
-    } else {
-      _uvGoCheckout(plan.priceId);
+  if(_uvTier==='full'){
+    if(plan.priceId) _uvOpenPortal();
+    return;
+  }
+  _uvSelectedSettingsMonths=months;
+  document.querySelectorAll('[data-plan-months]').forEach(function(el){
+    const m=parseInt(el.dataset.planMonths);
+    const sel=m===months;
+    el.style.borderColor=sel?'var(--gold)':'var(--border)';
+    el.style.background=sel?'rgba(196,168,130,.12)':'transparent';
+    var badge=el.querySelector('div[style*="position:absolute"]');
+    if(badge&&badge.textContent.trim()!=='Current'){
+      badge.textContent=sel?'Selected':(_UV_PLANS.find(function(p){return p.months===m&&!_uvTier.match(/full/)&&p.months===12;})?'Popular':'');
+      badge.style.display=sel||(m===12)?'block':'none';
     }
-  } else {
-    if(typeof showToast==='function') showToast('Pricing coming soon — check back shortly.','info');
+  });
+  var cta=document.querySelector('.btn-primary[onclick*="_uvGoCheckout"]');
+  if(cta){
+    var ms=plan.monthly?_uvFormatMoney(plan.monthly)+'/mo':'';
+    cta.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Upgrade — '+_escH(plan.label)+(ms?' ('+ms+')':'');
   }
 }
 
