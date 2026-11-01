@@ -165,9 +165,8 @@ async function _uvGoCheckout(priceId){
   // The real priceId will come from settings or the upgrade modal plan selector.
   const pid = priceId || _uvGetDefaultPriceId();
   if(!pid){
-    window.location.hash = 'pricing';
-    const el = document.getElementById('pricing');
-    if(el) el.scrollIntoView({behavior:'smooth'});
+    navigate('settings');
+    setTimeout(function(){ _uvOpenSubPage(); }, 50);
     return;
   }
 
@@ -426,3 +425,8 @@ function _uvCheckReturn(){
     _uvLoadSubscription();
   }
 }
+
+document.addEventListener('DOMContentLoaded', function(){
+  var pill = document.querySelector('.price-pill.active');
+  if(pill) _uvSelectPricePill(pill);
+});
