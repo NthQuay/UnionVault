@@ -216,9 +216,11 @@ function _uvFormatMoney(cents){
   return '$'+(cents/100).toFixed(cents%100?2:0);
 }
 
-// ── Settings subscription panel ────────────────────────────────────────────
+// ── Subscription page (opened from Account & Cloud button) ────────────────
 
-function _uvSubPanelHtml(){
+function _uvOpenSubPage(){
+  const c=document.getElementById('main-content');
+  if(!c) return;
   const d=_uvSubDetails;
   const plan=_uvCurrentPlan();
   const isFull=_uvTier==='full';
@@ -247,57 +249,75 @@ function _uvSubPanelHtml(){
     <div style="font-size:12px;color:var(--muted)">Upgrade for unlimited guests, seating plans, print &amp; more.</div>`;
   }
 
-  // Cancel-pending banner
   let cancelBanner='';
   if(d&&d.cancelAtPeriodEnd){
     const endDate=d.currentPeriodEnd?new Date(d.currentPeriodEnd).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'the end of your billing period';
-    cancelBanner=`<div style="font-size:12.5px;color:var(--red);padding:10px 14px;background:rgba(192,57,43,.06);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>Your subscription ends ${_escH(endDate)}.</span><button class="btn btn-sm btn-outline" onclick="_uvReactivateSub().then(function(){navigate('settings')})">Reactivate</button></div>`;
+    cancelBanner=`<div style="font-size:12.5px;color:var(--red);padding:10px 14px;background:rgba(192,57,43,.06);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px"><span>Your subscription ends ${_escH(endDate)}.</span><button class="btn btn-sm btn-outline" onclick="_uvReactivateSub().then(function(){_uvOpenSubPage()})">Reactivate</button></div>`;
   }
 
-  // Plan selector (for free/trial users upgrading, or full users switching)
   const showPlans=isFree||isTrial||(isFull&&!d?.cancelAtPeriodEnd);
   let plansHtml='';
   if(showPlans){
     const currentMonths=plan?plan.months:0;
+    const monthly=_UV_PLANS.find(p=>p.months===1);
+    const longer=_UV_PLANS.filter(p=>p.months>1);
+    const _pc=function(p){
+      const isCur=isFull&&currentMonths===p.months;
+      const isPopular=!isFull&&p.months===12;
+      const border=isCur||isPopular?'var(--gold)':'var(--border)';
+      const bg=isCur||isPopular?'rgba(196,168,130,.08)':'transparent';
+      const ms=p.monthly?_uvFormatMoney(p.monthly)+'/mo':'';
+      const ts=p.monthly&&p.months>1?_uvFormatMoney(p.monthly*p.months):'';
+      return `<div style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCur?'default':'pointer'};transition:all .15s;position:relative"
+        ${isCur?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'"`}>
+        ${isCur?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Current</div>':''}
+        ${isPopular&&!isCur?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Popular</div>':''}
+        ${p.discount?`<div style="font-size:10px;font-weight:700;color:var(--green,#3D9454);margin-bottom:4px">Save ${p.discount}%</div>`:''}
+        <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${ms||'Price TBC'}</div>
+        ${p.months>1&&ts?`<div style="font-size:11px;color:var(--muted);margin-top:1px">${ts} total</div>`:''}
+      </div>`;
+    };
     plansHtml=`<div style="margin-top:4px">
       <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">${isFull?'Change plan':'Choose a plan'}</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">
-        ${_UV_PLANS.map(p=>{
-          const isCurrent=isFull&&currentMonths===p.months;
-          const border=isCurrent?'var(--gold)':'var(--border)';
-          const bg=isCurrent?'rgba(196,168,130,.08)':'transparent';
-          const monthlyStr=p.monthly?_uvFormatMoney(p.monthly)+'/mo':'';
-          const totalStr=p.monthly?_uvFormatMoney(p.monthly*p.months):'';
-          return `<div style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCurrent?'default':'pointer'};transition:all .15s;position:relative"
-            ${isCurrent?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'"`}>
-            ${isCurrent?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Current</div>':''}
-            ${p.discount?`<div style="font-size:10px;font-weight:700;color:var(--green,#3D9454);margin-bottom:4px">Save ${p.discount}%</div>`:''}
-            <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${monthlyStr||'Price TBC'}</div>
-            ${p.months>1&&totalStr?`<div style="font-size:11px;color:var(--muted);margin-top:1px">${totalStr} total</div>`:''}
-          </div>`;
-        }).join('')}
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${monthly?_pc(monthly):''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${longer.map(_pc).join('')}
+        </div>
       </div>
     </div>`;
   }
 
-  // Action buttons
   let actionsHtml='';
   if(isFull&&!d?.cancelAtPeriodEnd){
-    actionsHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-      <button class="btn btn-sm btn-outline" onclick="_uvOpenPortal()">Manage billing</button>
-      <button class="btn btn-sm" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline" onclick="_uvConfirmCancel()">Cancel subscription</button>
+    actionsHtml=`<div style="display:flex;flex-direction:column;align-items:center;gap:0;margin-top:8px">
+      <button class="btn btn-sm btn-outline" onclick="_uvOpenPortal()" style="display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Manage billing</button>
+      <div style="margin-top:12px"><button style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit" onclick="_uvConfirmCancel()">Cancel subscription</button></div>
     </div>`;
   } else if(isFree||isTrial){
-    actionsHtml=`<div style="margin-top:4px"><button class="btn btn-sm btn-primary" onclick="_uvGoCheckout()">Upgrade to Full Access</button></div>`;
+    actionsHtml=`<div style="margin-top:8px"><button class="btn btn-primary" onclick="_uvGoCheckout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;font-size:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Upgrade to Full Access</button></div>`;
   }
 
-  return `<div style="display:flex;flex-direction:column;gap:14px">
-    <div>${statusHtml}</div>
+  const te=document.getElementById('topbar-title');
+  if(te) te.textContent='Subscription';
+  const eb=document.getElementById('topbar-eyebrow');
+  if(eb) eb.textContent='Account';
+  const actions=document.getElementById('topbar-actions');
+  if(actions) actions.innerHTML='';
+
+  c.innerHTML=`<div class="card settings-card layout-cards" style="display:flex;flex-direction:column;gap:8px;max-width:520px">
+    <button onclick="navigate('settings')" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--gold-deep);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:500;padding:0;margin-bottom:8px;align-self:flex-start">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to Settings
+    </button>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:8px;padding-bottom:10px;border-bottom:1px solid var(--border)">Subscription</div>
+    <div style="padding:16px;background:var(--surface);border:.5px solid var(--border);border-radius:12px;margin-bottom:8px">${statusHtml}</div>
     ${cancelBanner}
     ${plansHtml}
     ${actionsHtml}
   </div>`;
+  c.scrollTop=0;
 }
 
 function _uvSelectSettingsPlan(months){

@@ -65,10 +65,6 @@ function renderSettings(c, actions){
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Account &amp; Cloud</div>
       <div id="cloud-account-panel">${_cloudAccountHtml()}</div>
     </div>
-    ${_sbSession?`<div class="settings-sect" data-sect="subscription billing plan tier upgrade downgrade cancel payment stripe">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Subscription</div>
-      <div id="sub-panel">${typeof _uvSubPanelHtml==='function'?_uvSubPanelHtml():''}</div>
-    </div>`:''}
     <div class="settings-sect" data-sect="appearance dark mode vision board dashboard navigation sidebar hamburger icon theme">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Appearance</div>
       <div class="dark-toggle-row" style="margin-bottom:16px">
