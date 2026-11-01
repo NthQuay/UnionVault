@@ -4360,16 +4360,102 @@ function _wbBuildSite(forDownload){
     if(k==='wishingwell'){
       const ww=STATE.wishingwell||{};
       if(!ww.enabled) return '';
-      // Deliberately public-safe: no total, no goal, no progress bar, no contributor
-      // list. Guests see the message and how to give — nothing about what others gave.
+      const suggested=(ww.suggested||[]).filter(n=>Number(n)>0);
       const pay=[ ww.payId?['PayID', ww.payId]:null,
-                  (ww.bankBsb&&ww.bankAcc)?['Bank', ww.bankBsb+' · '+ww.bankAcc]:null,
+                  (ww.bankBsb&&ww.bankAcc)?['Bank', 'BSB '+ww.bankBsb+' · Acc '+ww.bankAcc]:null,
+                  ww.paypal?['PayPal', ww.paypal]:null,
                   ww.reference?['Reference', ww.reference]:null ].filter(Boolean);
+      const wwCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
+
+      const chips=suggested.length?`<div class="ww-chips" id="ww-chips">${suggested.map(n=>`<button class="ww-chip" data-amt="${n}" onclick="window._wwPick(this)">${fmt(Number(n))}</button>`).join('')}<button class="ww-chip" data-amt="other" onclick="window._wwPick(this)">Other</button></div>`:'';
+      const payHtml=pay.length?pay.map(r=>`<div class="ww-pay-row"><span class="ww-pay-label">${_escHtml(r[0])}</span> <span class="ww-pay-value">${_escHtml(r[1])}</span></div>`).join(''):'';
+
+      const regItems=(Array.isArray(ww.registry)?ww.registry:[]).filter(i=>!i.received);
+      const stores=(Array.isArray(ww.storeLinks)?ww.storeLinks:[]).filter(l=>l&&l.url);
+      let registryHtml='';
+      if(regItems.length||stores.length){
+        const storeBtns=stores.length?`<div style="text-align:center;margin-bottom:${regItems.length?'16px':'4px'}">
+          <p class="sub" style="margin-bottom:10px">${regItems.length?"We're also registered at":'Browse our registries'}</p>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">${stores.map(l=>`<a href="${_escHtml(l.url)}" target="_blank" rel="noopener" class="ww-store-btn">${_escHtml(l.name||'Store')} →</a>`).join('')}</div>
+        </div>`:'';
+        const cards=regItems.map(it=>{
+          const img=it.image?`<div style="aspect-ratio:16/10;overflow:hidden"><img src="${_mediaUrl(it.image)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy"/></div>`:'';
+          const priceNote=[it.price?fmt(Number(it.price)||0):'',it.note||''].filter(Boolean).join(' · ');
+          const link=it.link?`<a href="${_escHtml(it.link)}" target="_blank" rel="noopener" style="font-size:.85em;opacity:.7;text-decoration:none">View gift →</a>`:'';
+          return `<div class="ww-reg-card">${img}<div style="padding:10px 12px"><div style="font-weight:500">${_escHtml(it.name||'')}</div>${priceNote?`<div class="sub" style="font-size:.85em;margin:2px 0 4px">${_escHtml(priceNote)}</div>`:'<div style="height:4px"></div>'}${link}</div></div>`;
+        }).join('');
+        registryHtml=`<div class="ww-registry"><h3 style="text-align:center">Our Registry</h3>${regItems.length?`<p class="sub" style="text-align:center">A few things we'd love — no obligation at all.</p>`:''}${storeBtns}${regItems.length?`<div class="ww-reg-grid">${cards}</div>`:''}</div>`;
+      }
+
+      const formHtml=`<div id="ww-form">
+        ${chips}
+        <div id="ww-custom-wrap" style="display:none;margin:12px 0"><input type="number" id="ww-custom-amt" class="ww-input" placeholder="Enter amount" min="1" step="1"/></div>
+        <div style="margin:12px 0"><input type="text" id="ww-name" class="ww-input" placeholder="Your name (optional)"/></div>
+        <div style="margin:0 0 12px"><input type="text" id="ww-msg" class="ww-input" placeholder="Leave a message (optional)"/></div>
+        <button id="ww-submit" class="ww-btn" disabled onclick="window._wwSubmit()">Contribute</button>
+      </div>
+      <div id="ww-pay" style="display:none">
+        <div class="ww-pay-box">${payHtml}</div>
+        <p class="sub" style="text-align:center;margin-top:12px">Please transfer the amount above using the details shown.</p>
+      </div>
+      <div id="ww-thanks" style="display:none">
+        <div style="text-align:center;padding:20px 0">
+          <div style="font-size:28px;margin-bottom:8px">❤️</div>
+          <p class="lead">Thank you for your generous gift!</p>
+          <p class="sub">Your contribution has been recorded.</p>
+        </div>
+      </div>`;
+
+      const script=`<script>
+(function(){
+  var _su='${_SB_URL}',_sk='${_SB_KEY}',_cid='${wwCoupleId}';
+  var sel=null;
+  window._wwPick=function(el){
+    var chips=document.querySelectorAll('.ww-chip');
+    chips.forEach(function(c){c.classList.remove('active');});
+    el.classList.add('active');
+    sel=el.dataset.amt;
+    var cw=document.getElementById('ww-custom-wrap');
+    if(sel==='other'){if(cw)cw.style.display='block';sel=null;}
+    else{if(cw)cw.style.display='none';}
+    _wwCheck();
+  };
+  var ci=document.getElementById('ww-custom-amt');
+  if(ci)ci.addEventListener('input',function(){sel=parseFloat(ci.value)||null;_wwCheck();});
+  function _wwCheck(){
+    var btn=document.getElementById('ww-submit');
+    if(btn)btn.disabled=!sel||sel<=0;
+  }
+  window._wwSubmit=function(){
+    var amt=sel;if(!amt||amt<=0)return;
+    var name=(document.getElementById('ww-name')||{}).value||'';
+    var msg=(document.getElementById('ww-msg')||{}).value||'';
+    var btn=document.getElementById('ww-submit');
+    if(btn){btn.disabled=true;btn.textContent='Sending...';}
+    fetch(_su+'/functions/v1/ww-contribute',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({couple_id:_cid,name:name.trim(),amount:amt,message:msg.trim()})})
+    .then(function(r){return r.json();})
+    .then(function(){
+      document.getElementById('ww-form').style.display='none';
+      document.getElementById('ww-pay').style.display='block';
+      setTimeout(function(){
+        document.getElementById('ww-pay').style.display='none';
+        document.getElementById('ww-thanks').style.display='block';
+      },8000);
+    })
+    .catch(function(){
+      document.getElementById('ww-form').style.display='none';
+      document.getElementById('ww-pay').style.display='block';
+    });
+  };
+})();
+<\\/script>`;
+
       return wrap(k, [
         ww.message?`<p class="lead">${_escHtml(ww.message)}</p>`:'',
-        pay.length?`<dl>${pay.map(r=>`<div><dt>${_escHtml(r[0])}</dt><dd>${_escHtml(r[1])}</dd></div>`).join('')}</dl>`:'',
-        ww.closing?`<p class="sub">${_escHtml(ww.closing)}</p>`:''
-      ].filter(Boolean).join('\n        '));
+        formHtml,
+        ww.closing?`<p class="sub">${_escHtml(ww.closing)}</p>`:'',
+        registryHtml
+      ].filter(Boolean).join('\n        ')+'\n'+script);
     }
     if(k==='countdown'){
       const d=_wbDaysLeft();
@@ -5326,6 +5412,23 @@ section.b-center .stays{text-align:center}
 .stays b{font-family:${t2.headFont};font-size:${sch(20)}px;font-weight:500;display:block;color:${t2.item}}
 .stays i{font-style:normal;font-size:${scs(13)}px;color:${t2.text};opacity:.75;display:block;margin-top:2px}
 .stays a{color:${t2.accent};font-size:${scb(13)}px;text-decoration:none;border-bottom:1px solid ${t2.accent}66;display:inline-block;margin-top:6px}
+.ww-chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0}
+.ww-chip{font-size:${scb(13)}px;padding:8px 18px;border-radius:22px;border:1px solid ${t2.accent}66;color:${t2.text};background:transparent;cursor:pointer;transition:all .15s;font-family:inherit}
+.ww-chip.active,.ww-chip:hover{background:${t2.accent};color:#fff;border-color:${t2.accent}}
+.ww-input{width:100%;padding:10px 14px;border:1px solid ${t2.heading}22;border-radius:8px;font-size:${scb(14)}px;font-family:inherit;background:${t2.page};color:${t2.text};outline:none;box-sizing:border-box}
+.ww-input:focus{border-color:${t2.accent}}
+.ww-btn{display:block;width:100%;padding:12px;border:none;border-radius:8px;background:${t2.accent};color:#fff;font-size:${scb(14)}px;font-family:inherit;cursor:pointer;transition:opacity .15s}
+.ww-btn:disabled{opacity:.4;cursor:default}
+.ww-pay-box{background:${t2.heading}08;border-radius:10px;padding:14px 18px;margin-top:16px}
+.ww-pay-row{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid ${t2.heading}10;font-size:${scb(14)}px}
+.ww-pay-row:last-child{border-bottom:none}
+.ww-pay-label{font-size:${scb(11)}px;letter-spacing:.1em;text-transform:uppercase;color:${t2.accent};flex-shrink:0}
+.ww-pay-value{color:${t2.text};text-align:right}
+.ww-store-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid ${t2.accent};border-radius:8px;padding:8px 16px;font-size:${scb(13)}px;color:${t2.accent};text-decoration:none;transition:background .15s}
+.ww-store-btn:hover{background:${t2.accent}11}
+.ww-registry{margin-top:28px}
+.ww-reg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
+.ww-reg-card{border:1px solid ${t2.heading}18;border-radius:10px;overflow:hidden;background:${t2.page}}
 .faq{text-align:left}
 section.b-center .faq{text-align:center}
 /* On Justify, only the ANSWER justifies. A one-line question stretched to both margins
@@ -5592,8 +5695,6 @@ function renderWishingWell(c, actions){
 
   const ww = STATE.wishingwell;
   const total = _wwTotal();
-  const goal = Number(ww.goal)||0;
-  const pct = goal>0 ? Math.min(100, Math.round((total/goal)*100)) : 0;
   const count = (ww.contributions||[]).length;
   const thanksDue = _wwThanksDue();
 
@@ -5606,29 +5707,23 @@ function renderWishingWell(c, actions){
 
   const body = wwTab==='preview' ? _wwPreviewHtml(ww)
              : wwTab==='registry' ? _wwRegistryHtml(ww)
-             : _wwTrackerHtml(ww, total, goal, pct, count, thanksDue);
+             : _wwTrackerHtml(ww, total, count, thanksDue);
   c.innerHTML = `<div style="max-width:780px;margin:0 auto">${tabs}${body}</div>`;
 }
 
-function _wwTrackerHtml(ww, total, goal, pct, count, thanksDue){
-  const goalLine = goal>0 ? `Goal ${fmt(goal)}` : 'No goal set';
-  const progress = goal>0 ? `<div style="height:9px;border-radius:6px;background:var(--surface);overflow:hidden;margin:10px 0 4px"><div style="width:${pct}%;height:100%;background:var(--gold);border-radius:6px;transition:width .3s"></div></div>
-      <div style="font-size:11.5px;color:var(--muted)">${pct}% of goal</div>` : '';
-
+function _wwTrackerHtml(ww, total, count, thanksDue){
   const stats = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:18px 0 22px">
       <div style="background:var(--surface);border-radius:10px;padding:12px 14px"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink)">${count}</div><div style="font-size:11px;color:var(--muted)">contributor${count===1?'':'s'}</div></div>
       <div style="background:var(--surface);border-radius:10px;padding:12px 14px"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink)">${thanksDue}</div><div style="font-size:11px;color:var(--muted)">thank-you${thanksDue===1?'':'s'} due</div></div>
     </div>`;
 
   const header = `<div style="background:var(--card,var(--cream));border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:18px">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
-        <span style="font-size:13px;color:var(--muted)">Raised so far</span>
-        <span style="font-size:12px;color:var(--muted)">${goalLine}</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+        <span style="font-size:13px;color:var(--muted)">Gifted so far</span>
+        <button class="btn btn-outline btn-sm" onclick="openWwContribution()" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Log a contribution</button>
       </div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--ink)">${fmt(total)}</div>
-      ${progress}
       ${stats}
-      <button class="btn btn-primary" onclick="openWwContribution()" style="display:inline-flex;align-items:center;gap:7px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Log a contribution</button>
     </div>`;
 
   const _wwSortFns = {
@@ -6472,10 +6567,6 @@ function openWwSettings(){
   const ww = STATE.wishingwell;
   const body = `<div style="display:flex;flex-direction:column;gap:14px">
       <div>
-        <label class="form-label">Fundraising goal <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-        <input type="number" id="ww-s-goal" class="form-input" placeholder="0" min="0" step="1" value="${Number(ww.goal)>0?ww.goal:''}"/>
-      </div>
-      <div>
         <label class="form-label">Suggested amounts</label>
         <input type="text" id="ww-s-suggested" class="form-input" placeholder="50, 100, 200" value="${_wwEsc((ww.suggested||[]).join(', '))}"/>
         <div style="font-size:11px;color:var(--muted);margin-top:4px">Comma-separated. Shown as tappable chips on the public page.</div>
@@ -6510,7 +6601,6 @@ function openWwSettings(){
 
 function saveWwSettings(){
   const ww = STATE.wishingwell;
-  ww.goal = parseFloat(document.getElementById('ww-s-goal').value)||0;
   ww.suggested = (document.getElementById('ww-s-suggested').value||'').split(',').map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n)&&n>0);
   ww.message = document.getElementById('ww-s-message').value||'';
   ww.closing = document.getElementById('ww-s-closing').value||'';
@@ -6529,20 +6619,15 @@ function saveWwSettings(){
 function buildDashWishingWellHtml(){
   const ww = STATE.wishingwell;
   const total = _wwTotal();
-  const goal = Number(ww.goal)||0;
-  const pct = goal>0 ? Math.min(100, Math.round((total/goal)*100)) : 0;
   const count = (ww.contributions||[]).length;
-  const progress = goal>0
-    ? `<div style="height:8px;border-radius:5px;background:var(--surface);overflow:hidden;margin:10px 0 6px"><div style="width:${pct}%;height:100%;background:var(--gold);border-radius:5px"></div></div><div style="font-size:11.5px;color:var(--muted)">${pct}% of ${fmt(goal)} goal</div>`
-    : `<div style="font-size:11.5px;color:var(--muted);margin-top:8px">${count} contribution${count===1?'':'s'} logged</div>`;
   return `<div style="margin-top:20px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div><div style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Gifts</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--ink)">Wishing Well</div></div>
       <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();navigate('wishingwell')">View tracker \u2192</button>
     </div>
     <div style="background:var(--card,var(--cream));border:1px solid var(--border);border-radius:14px;padding:18px 20px">
-      <div style="font-size:12.5px;color:var(--muted)">Raised so far</div>
+      <div style="font-size:12.5px;color:var(--muted)">Gifted so far</div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--ink)">${fmt(total)}</div>
-      ${progress}
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px">${count} contribution${count===1?'':'s'} logged</div>
     </div></div>`;
 }
 
