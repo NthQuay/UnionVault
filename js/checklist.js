@@ -5240,6 +5240,7 @@ function _openInstallmentsForItem(bid, seed, due){
 // the item (Build B). If a holder already exists, it reuses it. Seeds the plan with the
 // item's current total so the editor pre-fills sensible amounts.
 function _itemMenuInstallments(bid){
+  if(typeof _uvRequirePaid==='function'&&!_uvRequirePaid('budgetPayments')) return;
   const parent=STATE.budget.items.find(x=>x.id===bid);
   if(!parent) return;
   if(typeof closeDots==='function') closeDots();
