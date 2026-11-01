@@ -147,7 +147,7 @@ function _uvShowUpgradeModal(feature){
         <div class="uv-upgrade-feat">&#10003; Print &amp; export everything</div>
         <div class="uv-upgrade-feat">&#10003; Remove Union Vault branding</div>
       </div>
-      <button class="uv-upgrade-cta" onclick="_uvGoCheckout()">${
+      <button class="uv-upgrade-cta" onclick="this.closest('.uv-upgrade-overlay').remove();_uvOpenSubPage()">${
         isTrialEligible ? 'Get full access - Start 14-day free trial' : 'Upgrade to Full Access'
       }</button>
       <button class="uv-upgrade-dismiss" onclick="this.closest('.uv-upgrade-overlay').remove()">Continue with free limited access plan</button>
@@ -243,6 +243,7 @@ function _uvOpenSubPage(){
     statusHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
       <span style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green,#3D9454)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Full Access</span>
       <span style="font-size:12px;color:var(--gold-deep);background:rgba(196,168,130,.15);padding:2px 8px;border-radius:6px;font-weight:600">${_escH(planLabel)}</span>
+      ${!d?.cancelAtPeriodEnd?'<button class="btn btn-sm btn-outline" onclick="_uvOpenPortal()" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Manage billing</button>':''}
     </div>
     <div style="font-size:12px;color:var(--muted)">${monthlyStr?monthlyStr+' · ':''}${periodEnd?'Renews '+periodEnd:''}</div>`;
   } else if(isTrial){
@@ -289,9 +290,10 @@ function _uvOpenSubPage(){
       </div>`;
     };
     plansHtml=`<div style="margin-top:4px">
-      <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">${isFull?'Change plan':'Choose a plan'}</div>
       <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Month-to-month flexibility</div>
         ${monthly?_pc(monthly):''}
+        <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:12px">Upfront multi-month packages</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           ${longer.map(_pc).join('')}
         </div>
@@ -303,10 +305,7 @@ function _uvOpenSubPage(){
   if(isGranted){
     actionsHtml='';
   } else if(isFull&&!d?.cancelAtPeriodEnd){
-    actionsHtml=`<div style="display:flex;flex-direction:column;align-items:center;gap:0;margin-top:8px">
-      <button class="btn btn-sm btn-outline" onclick="_uvOpenPortal()" style="display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Manage billing</button>
-      <div style="margin-top:12px"><button style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit" onclick="_uvConfirmCancel()">Cancel subscription</button></div>
-    </div>`;
+    actionsHtml='';
   } else if(isFree||isTrial){
     var selPlan=_UV_PLANS.find(function(p){return p.months===_uvSelectedSettingsMonths;})||_UV_PLANS[0];
     var selMs=selPlan&&selPlan.monthly?_uvFormatMoney(selPlan.monthly)+'/mo':'';
@@ -330,6 +329,10 @@ function _uvOpenSubPage(){
     ${cancelBanner}
     ${plansHtml}
     ${actionsHtml}
+    ${!isGranted?`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      ${isFree||isTrial?'<div style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green,#3D9454)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Cancel anytime on month-to-month plans. Save up to 40% on upfront terms.</div>':''}
+      <div style="font-size:11px;color:var(--muted)"><a href="#" onclick="event.preventDefault();_openTermsModal()" style="color:var(--gold-deep);text-decoration:none">Terms &amp; Privacy</a></div>
+    </div>`:''}
   </div>`;
   c.scrollTop=0;
 }
