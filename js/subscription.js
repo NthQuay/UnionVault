@@ -180,9 +180,9 @@ async function _uvGoCheckout(priceId){
     });
     const data = await r.json();
     if(data.url) window.location.href = data.url;
-    else console.error('[UV checkout] No URL returned', data);
+    else _cloudToast(data.error || 'Could not start checkout — please try again.', true);
   }catch(e){
-    console.error('[UV checkout] fetch error', e);
+    _cloudToast('Could not connect — please try again.', true);
   }
 }
 
