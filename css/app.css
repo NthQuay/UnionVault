@@ -1750,6 +1750,8 @@ body.dark .ftxt-caps{color:var(--gold)}
 .pngbw .decor-zone,.pngbw .floor-name-tag{filter:grayscale(1)}
 .floor-resize{position:absolute;right:-6px;bottom:-6px;width:15px;height:15px;border-radius:4px;background:var(--panel,var(--cream));border:1px solid var(--border);color:var(--muted);cursor:nwse-resize;opacity:0;transition:opacity .15s;display:flex;align-items:center;justify-content:center;touch-action:none;z-index:3}
 .floor-table:hover .floor-resize,.floor-decor:hover .floor-resize{opacity:1}
+.floor-rotate,.floor-rotate+span{opacity:0;transition:opacity .15s}
+.floor-table:hover .floor-rotate,.floor-table:hover .floor-rotate+span,.floor-decor:hover .floor-rotate,.floor-decor:hover .floor-rotate+span{opacity:1}
 .seat-seg{display:inline-flex;border:.5px solid #E3D7C4;border-radius:9px;overflow:hidden;background:#FBF8F3}
 body.dark .seat-seg{border-color:#6E6450;background:#24242A}
 .seat-seg button{border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--muted);padding:6px 9px;display:inline-flex;align-items:center;gap:4px;transition:all .15s}
