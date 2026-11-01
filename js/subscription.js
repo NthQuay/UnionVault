@@ -227,8 +227,16 @@ function _uvOpenSubPage(){
   const isTrial=_uvTier==='trial';
   const isFree=!isFull&&!isTrial;
 
+  const isGranted=d&&d.grantedAccess;
   let statusHtml='';
-  if(isFull){
+  if(isGranted){
+    const grantEnd=d.grantedUntil?new Date(d.grantedUntil).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'';
+    statusHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green,#3D9454)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Full Access</span>
+      <span style="font-size:12px;color:var(--gold-deep);background:rgba(196,168,130,.15);padding:2px 8px;border-radius:6px;font-weight:600">Beta Access</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">All features unlocked.${grantEnd?' Access until '+grantEnd+'.':''}</div>`;
+  } else if(isFull){
     const planLabel=plan?plan.label:'Full Access';
     const periodEnd=d&&d.currentPeriodEnd?new Date(d.currentPeriodEnd).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'';
     const monthlyStr=plan&&plan.monthly?_uvFormatMoney(plan.monthly)+'/mo':'';
@@ -255,7 +263,7 @@ function _uvOpenSubPage(){
     cancelBanner=`<div style="font-size:12.5px;color:var(--red);padding:10px 14px;background:rgba(192,57,43,.06);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px"><span>Your subscription ends ${_escH(endDate)}.</span><button class="btn btn-sm btn-outline" onclick="_uvReactivateSub().then(function(){_uvOpenSubPage()})">Reactivate</button></div>`;
   }
 
-  const showPlans=isFree||isTrial||(isFull&&!d?.cancelAtPeriodEnd);
+  const showPlans=!isGranted&&(isFree||isTrial||(isFull&&!d?.cancelAtPeriodEnd));
   let plansHtml='';
   if(showPlans){
     const currentMonths=plan?plan.months:0;
@@ -292,7 +300,9 @@ function _uvOpenSubPage(){
   }
 
   let actionsHtml='';
-  if(isFull&&!d?.cancelAtPeriodEnd){
+  if(isGranted){
+    actionsHtml='';
+  } else if(isFull&&!d?.cancelAtPeriodEnd){
     actionsHtml=`<div style="display:flex;flex-direction:column;align-items:center;gap:0;margin-top:8px">
       <button class="btn btn-sm btn-outline" onclick="_uvOpenPortal()" style="display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Manage billing</button>
       <div style="margin-top:12px"><button style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit" onclick="_uvConfirmCancel()">Cancel subscription</button></div>
