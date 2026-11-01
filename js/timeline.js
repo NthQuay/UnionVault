@@ -2217,14 +2217,13 @@ function _gtEditTags(td){
 }
 function _gtTagPopCloser(ev){
   const pop=document.getElementById('gt-tag-pop');
-  if(pop && !pop.contains(ev.target)){ _gtCloseTagPop(true); }
+  if(pop && !pop.contains(ev.target) && document.documentElement.contains(ev.target)){ _gtCloseTagPop(true); }
 }
 function _gtTagToggle(name){
   const g=STATE.guests.find(x=>x.id===_gtTagPopGid); if(!g) return;
   if(!g.tags) g.tags=[];
   const i=g.tags.findIndex(t=>t.toLowerCase()===name.toLowerCase());
   if(i>=0) g.tags.splice(i,1); else g.tags.push(name);
-  saveToStorage();
   _gtRefreshTagChips(g);
 }
 function _gtTagAddNew(){
@@ -2237,7 +2236,6 @@ function _gtTagAddNew(){
   if(!STATE.tagDefs) STATE.tagDefs={};
   if(!STATE.tagDefs[name] && !_allTagNames().some(n=>n.toLowerCase()===name.toLowerCase())){ /* plain tag, no def needed */ }
   inp.value='';
-  saveToStorage();
   _gtRefreshTagChips(g);
 }
 function _gtRefreshTagChips(g){
@@ -2253,7 +2251,7 @@ function _gtCloseTagPop(rerender){
   document.removeEventListener('click',_gtTagPopCloser);
   const pop=document.getElementById('gt-tag-pop'); if(pop) pop.remove();
   _gtTagPop=null; _gtTagPopGid=null;
-  if(rerender) renderGuestList();
+  if(rerender){ saveToStorage(); renderGuestList(); }
 }
 
 // Inline dietary editor: a small popup with the five diet toggles.

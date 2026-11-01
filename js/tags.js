@@ -58,7 +58,9 @@ function _tagInkColor(hex){
 // renders the selected (gold) filter state; `opts.count` appends a small count.
 function _tagChipHtml(name, opts){
   opts=opts||{};
-  const def=(STATE.tagDefs||{})[name];
+  const defs=STATE.tagDefs||{};
+  let def=defs[name];
+  if(!def){ const k=Object.keys(defs).find(k=>k.toLowerCase()===name.toLowerCase()); if(k) def=defs[k]; }
   const icon=def&&def.icon?_tagIconSvg(def.icon,11):'';
   const countHtml=(opts.count!=null)?`<span style="font-weight:400;opacity:.75">${opts.count}</span>`:'';
   const clickAttr=opts.click?` onclick="${opts.click}"`:'';
