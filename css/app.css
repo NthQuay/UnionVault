@@ -1276,9 +1276,8 @@ body.dark .bi-name{color:#B0A085 !important}
 .bi-head.bsub-narrow > .bi-total-block{order:3;flex-basis:100%;margin-top:1px}
 
 /* ── Budget jump-to-category bar (Settings → Budget) ── */
-/* Sticky strip of category chips that scroll to each card. Sits just under the
-   summary banner (which is itself sticky at top:-32px, z-40), so this docks below it. */
-#budget-jumpbar{position:sticky;top:0;z-index:39;background:var(--cream);border-bottom:1px solid var(--border);margin:0 -28px 14px;padding:5px 28px;display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+/* Lives inside the sticky summary banner so it sticks with it automatically. */
+#budget-jumpbar{border-top:1px solid var(--border);margin:0 -24px;padding:8px 24px;display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 #budget-jumpbar::-webkit-scrollbar{height:5px}
 #budget-jumpbar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .bjump-chip{flex:0 0 auto;display:inline-flex;flex-direction:column;gap:1px;align-items:flex-start;padding:5px 12px;border-radius:16px;background:var(--sw-bg,#FBF8F3);border:.5px solid var(--sw-border,#E3D7C4);cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s,border-color .15s;text-align:left}
@@ -2097,6 +2096,7 @@ body.dark .gt-mp-av{background:rgba(196,168,130,.16);color:var(--gold)}
   .settings-card.layout-cards>.settings-sect{padding-left:13px!important;padding-right:13px!important}
   /* Full-bleed banners: match the 16px mobile content padding so they don't overhang the viewport */
   .fullbleed-banner{margin-left:-16px!important;margin-right:-16px!important;padding-left:16px!important;padding-right:16px!important}
+  #budget-jumpbar{margin:0 -16px;padding:8px 16px}
   .topbar{padding:0 16px}
   .topbar-sub{display:none}
   /* Icon-sidebar mode: keep the icon-only strip visible at narrow widths instead of hiding it */

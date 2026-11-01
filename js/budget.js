@@ -157,12 +157,13 @@ function renderBudget(c,actions){
   const totalCost=STATE.budget.items.reduce((a,b)=>a+calcBudgetItemTotal(b),0);
   const totalSpent=STATE.budget.items.reduce((a,b)=>a+Number(b.deposit||0),0);
   const budgetTotal=STATE.budget.total||0;
+  const jumpHtml=_budgetJumpBarHtml();
   c.innerHTML=`
   ${useRsvp?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:10px 14px;background:var(--parchment);border-radius:8px;border:1px solid var(--border);font-size:13px;color:var(--gold-deep)">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Per-head sub-items are calculated using <strong>${rsvpCount} RSVP'd guests</strong>. Switch to <em>Custom</em> to use per-item guest numbers instead.
   </div>`:''}
-  <div class="card budget-total-card fullbleed-banner" style="margin:-32px -28px ${_hasBudgetAlerts()?'4px':'20px'};padding:14px 24px 14px;border-radius:0;border-left:none;border-right:none;border-top:none;position:sticky;top:-32px;z-index:40;box-shadow:0 2px 10px rgba(0,0,0,.05)">
+  <div class="card budget-total-card fullbleed-banner" style="margin:-32px -28px ${_hasBudgetAlerts()?'4px':'20px'};padding:14px 24px ${jumpHtml?'0':'14px'};border-radius:0;border-left:none;border-right:none;border-top:none;position:sticky;top:-32px;z-index:40;box-shadow:0 2px 10px rgba(0,0,0,.05)">
     ${((STATE.settings&&STATE.settings.budgetPanelCollapsed)||!_budgetShown('summary'))?`<div style="display:flex;align-items:center;gap:10px;${(STATE.settings&&STATE.settings.budgetPanelCollapsed)?'':'margin-bottom:10px'}">
       <span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gold-deep)">Budget</span>
       ${(()=>{
@@ -209,9 +210,9 @@ function renderBudget(c,actions){
     </div>
     <div id="budget-summary-body" style="position:relative">${_budgetShown('summary')?_budgetSummaryWithCorner():''}</div>
     </div>
+  ${jumpHtml}
   </div>
   ${_renderBudgetAlertsBar()}
-  ${_budgetJumpBarHtml()}
   <div id="budget-items">${_budgetItemsListHtml()}</div>`;
   // Apply remembered summary-row stage immediately (pre-paint) to avoid flash, then re-measure.
   _applyBgSummaryStage(_bgSummaryStage);
@@ -221,8 +222,7 @@ function renderBudget(c,actions){
   setTimeout(()=>{ _ensureBudgetSubReflowObserver(); requestAnimationFrame(_fitAllBudgetSubRows); _positionPinnedAlerts('budget'); }, 0);
   // Decide PAID-IN-FULL vs link-icon ordering per category header (3 wrap modes).
   setTimeout(()=>{ _ensureBudgetPaidLinkObserver(); requestAnimationFrame(_fitAllBudgetPaidLink); }, 0);
-  // Position the jump bar under the (variable-height) summary banner.
-  setTimeout(()=>{ requestAnimationFrame(_positionBudgetJumpBar); }, 0);
+  // Jump bar is now inside the sticky banner — no separate positioning needed.
 }
 
 // ---- Budget row narrow-width reflow (JS width-watcher) ----
@@ -978,9 +978,7 @@ function _budgetJumpBarHtml(){
   if(_budgetSearch) return '';
   const items=STATE.budget.items||[];
   if(items.length<2) return ''; // one (or no) category: nothing to jump between
-  // Sticky offset: dock just below the summary banner. The banner is sticky at
-  // top:-32px; its rendered height varies (collapsed vs expanded), so we measure
-  // at paint time (_positionBudgetJumpBar) rather than hardcode.
+  // Rendered inside the sticky banner so it sticks automatically with it.
   const chips=items.map(b=>{
     const nm=_escHtml(b.name||'Category');
     const subCount=(b.subItems&&b.subItems.length)||0;
@@ -1009,14 +1007,11 @@ function _budgetJumpTo(bid){
   if(!card) return;
   // If the category is collapsed, the card is short but still scrollable-to.
   const bar=document.getElementById('budget-jumpbar');
-  const barH=bar?bar.getBoundingClientRect().height:0;
   const banner=document.querySelector('.budget-total-card');
   const bannerH=banner?banner.getBoundingClientRect().height:0;
   const sc=document.getElementById('main-content')||document.scrollingElement||document.documentElement;
-  const y=card.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - barH - Math.max(0,bannerH-32) - 8;
+  const y=card.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - Math.max(0,bannerH-32) - 8;
   sc.scrollTo({top:Math.max(0,y),behavior:'smooth'});
-  // Re-position the sticky bar after the smooth scroll settles.
-  setTimeout(_positionBudgetJumpBar, 350);
   // Mark the tapped chip active (visual confirmation); clear others.
   if(bar){ bar.querySelectorAll('.bjump-chip').forEach(c=>c.classList.remove('act')); }
   const chip=bar&&bar.querySelector(`[data-bjump="${bid}"]`);
@@ -1025,12 +1020,7 @@ function _budgetJumpTo(bid){
 // Position the sticky bar's top offset just under the (variable-height) summary
 // banner, and keep the active chip in sync with the category currently in view.
 function _positionBudgetJumpBar(){
-  const bar=document.getElementById('budget-jumpbar');
-  if(!bar) return;
-  const banner=document.querySelector('.budget-total-card');
-  const bannerBottom=banner?banner.getBoundingClientRect().height:0;
-  // Banner is sticky at top:-32px, so its effective stuck height is height-32.
-  bar.style.top=Math.max(0,bannerBottom-32)+'px';
+  // Jump bar is now inside the sticky banner — no separate positioning needed.
 }
 function _setBudgetJumpBar(mode){
   STATE.settings.budgetJumpBar=(mode==='a'||mode==='b')?mode:'off';
