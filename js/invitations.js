@@ -119,7 +119,7 @@ function _invitationSectionHtml(which){
     }
     return `
     <div class="card" style="padding:24px">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;margin-bottom:4px">Your Invitation</div>
+      <div class="section-eyebrow" style="margin-bottom:4px">Your Invitation</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:18px">Upload your invitation file or link to a design in Canva, Google Drive, or elsewhere.</div>
       ${content}
     </div>`;

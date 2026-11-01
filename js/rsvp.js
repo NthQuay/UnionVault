@@ -172,6 +172,27 @@ function _rsvpSetField(key,prop,val){
   saveToStorage();
   navigate('rsvp-mgr');
 }
+function _rsvpCustomFieldAdd(){
+  if(!STATE.settings) STATE.settings={};
+  if(!Array.isArray(STATE.settings.rsvpCustomFields)) STATE.settings.rsvpCustomFields=[];
+  STATE.settings.rsvpCustomFields.push({id:'cf_'+uid(),label:'',type:'text',show:true,required:false});
+  saveToStorage();
+  navigate('rsvp-mgr');
+  setTimeout(()=>{const inputs=document.querySelectorAll('[data-custom-field-input]');if(inputs.length)inputs[inputs.length-1].focus();},100);
+}
+function _rsvpCustomFieldUpdate(id,prop,val){
+  if(!STATE.settings||!Array.isArray(STATE.settings.rsvpCustomFields)) return;
+  const f=STATE.settings.rsvpCustomFields.find(c=>c.id===id);
+  if(f) f[prop]=val;
+  saveToStorage();
+  navigate('rsvp-mgr');
+}
+function _rsvpCustomFieldRemove(id){
+  if(!STATE.settings||!Array.isArray(STATE.settings.rsvpCustomFields)) return;
+  STATE.settings.rsvpCustomFields=STATE.settings.rsvpCustomFields.filter(c=>c.id!==id);
+  saveToStorage();
+  navigate('rsvp-mgr');
+}
 function _rsvpFormFieldsCardHtml(){
   const flds=(_wbSite().rsvp||{}).fields||{};
   function fGet(key,defaults){const f=flds[key];if(!f)return defaults;return{show:f.show!==undefined?f.show:defaults.show,required:f.required!==undefined?f.required:defaults.required};}
@@ -181,24 +202,39 @@ function _rsvpFormFieldsCardHtml(){
   const so=fGet('songRequest',{show:false,required:false});
   const no=fGet('notes',{show:false,required:false});
   function tog(checked,onclick){return `<button type="button" onclick="${onclick}" style="position:relative;display:inline-flex;align-items:center;width:34px;height:20px;border-radius:10px;border:none;cursor:pointer;transition:background .2s;background:${checked?'var(--green)':'var(--border)'};padding:0;flex-shrink:0"><span style="position:absolute;left:${checked?'16px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span></button>`;}
-  function row(label,key,hasSh,showOn,hasReq,reqOn){
+  function row(label,key,hasSh,showOn,hasReq,reqOn,delHtml){
     const reqDisabled=!showOn;
-    return `<div style="display:grid;grid-template-columns:1fr 60px 60px;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px">
+    return `<div style="display:grid;grid-template-columns:1fr 60px 60px 24px;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px">
       <span>${label}</span>
       ${hasSh?tog(showOn,`_rsvpSetField('${key}','show',${!showOn})`):``}
       ${hasReq?`<span style="opacity:${reqDisabled?.35:1}">${tog(reqOn&&!reqDisabled,`if(!${reqDisabled})_rsvpSetField('${key}','required',${!(reqOn&&!reqDisabled)})`)}</span>`:`<span></span>`}
+      ${delHtml||'<span></span>'}
     </div>`;}
+  const customFields=(STATE.settings&&Array.isArray(STATE.settings.rsvpCustomFields))?STATE.settings.rsvpCustomFields:[];
+  const customRows=customFields.map(cf=>{
+    const labelHtml=cf.label?`${_escHtml(cf.label)} <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gold);background:rgba(196,168,130,.15);padding:1px 5px;border-radius:3px;margin-left:4px">Custom</span>`
+      :`<input data-custom-field-input type="text" placeholder="Field name…" value="${_escAttr(cf.label)}" onchange="_rsvpCustomFieldUpdate('${cf.id}','label',this.value)" style="font:inherit;font-size:13px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--cream);color:var(--ink);width:140px"/>`;
+    const delBtn=`<button onclick="_rsvpCustomFieldRemove('${cf.id}')" title="Remove" style="border:none;background:none;color:var(--red);cursor:pointer;font-size:14px;opacity:.6;padding:0;width:24px;text-align:center">×</button>`;
+    return `<div style="display:grid;grid-template-columns:1fr 60px 60px 24px;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;background:rgba(196,168,130,.06);margin:0 -20px;padding-left:20px;padding-right:20px">
+      <span>${labelHtml}</span>
+      ${tog(cf.show!==false,`_rsvpCustomFieldUpdate('${cf.id}','show',${cf.show===false})`)}
+      ${tog(!!cf.required&&cf.show!==false,`_rsvpCustomFieldUpdate('${cf.id}','required',${!cf.required})`)}
+      ${delBtn}
+    </div>`;
+  }).join('');
   return `<div class="card">
     <div class="section-eyebrow" style="margin-bottom:4px">RSVP form fields</div>
     <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">Choose which fields guests fill in when they RSVP online.</div>
-    <div style="display:grid;grid-template-columns:1fr 60px 60px;align-items:center;gap:8px;padding:0 0 6px;border-bottom:2px solid var(--border);font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase">
-      <span>Field</span><span style="text-align:center">Show</span><span style="text-align:center">Required</span>
+    <div style="display:grid;grid-template-columns:1fr 60px 60px 24px;align-items:center;gap:8px;padding:0 0 6px;border-bottom:2px solid var(--border);font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase">
+      <span>Field</span><span style="text-align:center">Show</span><span style="text-align:center">Req'd</span><span></span>
     </div>
     ${row('Phone number','phone',true,ph.show,true,ph.required)}
     ${row('Email address','email',true,em.show,true,em.required)}
     ${row('Home address','address',true,ad.show,true,ad.required)}
     ${row('Song request','songRequest',true,so.show,false,false)}
     ${row('Comments / notes','notes',true,no.show,false,false)}
+    ${customRows}
+    <button onclick="_rsvpCustomFieldAdd()" style="border:1px dashed var(--border);border-radius:7px;background:none;color:var(--gold);padding:8px 10px;width:100%;text-align:left;cursor:pointer;font-size:13px;font-family:inherit;margin-top:10px;display:flex;align-items:center;gap:5px"><span style="font-size:15px">+</span> Add custom field</button>
     <div style="font-size:11px;color:var(--muted);margin-top:10px">Required fields must be filled before submitting. If all fields are hidden, the contact step is skipped.</div>
   </div>`;}
 function _rsvpWidgetSeating(){
@@ -293,6 +329,7 @@ const _RSVP_SECTIONS=[
   ['summary','Response summary'],
   ['dietary','Dietary requirements'],
   ['plusones','Plus-ones'],
+  ['mealcount','Meal counts'],
   ['headcount','Guest headcount'],
   ['finalnumbers','Final numbers'],
   ['awaiting','Awaiting response'],
@@ -885,6 +922,7 @@ function _ageBandFromTags(tags){
 // overrides via .age-badge-child / .age-badge-infant (defined in CSS).
 function _ageBandLabel(band){ return (_AGE_BAND_META[band]||{}).label||''; }
 function _ageBandBadge(g){
+  if(STATE.settings&&STATE.settings.showAgeBadges===false) return '';
   const b=_guestAgeBand(g);
   if(b==='adult') return '';
   const m=_AGE_BAND_META[b];
@@ -1318,8 +1356,12 @@ function renderRsvpMgr(c, actions){
   const othSubHtml=Object.values(othNotes).map(o=>_alSubRow(_escHtml(o.label),o.n))
     .concat(othUnspec?[_alSubRow('Not specified yet',othUnspec,true)]:[]).join('');
   const dietTotal=Object.values(dietCounts).reduce((a,b)=>a+b,0);
-  const plusConfirmed=STATE.guests.filter(g=>g.plusOneId&&(g.listType||'A')!=='B').length;
-  const plusUnused=STATE.guests.filter(g=>g.plusOne&&!g.plusOneId&&(g.listType||'A')!=='B').length;
+  const _notB=g=>(g.listType||'A')!=='B';
+  const _hostsWithPlus=STATE.guests.filter(g=>g.plusOneId&&_notB(g));
+  const _pGuest=id=>STATE.guests.find(p=>p.id===id);
+  const plusConfirmed=_hostsWithPlus.filter(g=>{const p=_pGuest(g.plusOneId);return g.rsvp==='attending'&&p&&p.rsvp==='attending';}).length;
+  const plusAwaiting=_hostsWithPlus.filter(g=>g.rsvp==='awaiting').length;
+  const plusDeclined=_hostsWithPlus.filter(g=>{const p=_pGuest(g.plusOneId);return p&&p.rsvp==='declined';}).length;
 
   // ── Option B: filtered + searched guest list (A-list only; B-list excluded) ──
   const q=rsvpQuery.trim().toLowerCase();
@@ -1364,6 +1406,7 @@ function renderRsvpMgr(c, actions){
       invitation:!hidden.has('invitation')?_invitationSectionHtml('invitation'):'',
       sendguests:!hidden.has('sendguests')?_invitationSectionHtml('sendguests'):'',
       meal:!hidden.has('meal')?`<div class="card" id="rsvp-meal-card" style="padding:22px 20px 20px">${_mealSetupHtml()}</div>`:'',
+      mealcount:!hidden.has('mealcount')&&_mealOn()?`<div class="card" style="padding:22px 20px 20px">${_mealCountCardHtml()}</div>`:'',
       link:!hidden.has('link')?`<div class="card">
         <div class="section-eyebrow" style="margin-bottom:12px">Your RSVP Link</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1388,6 +1431,13 @@ function renderRsvpMgr(c, actions){
           Email me
         </label>
         <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Notifications are sent to your account email.</div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 12px">
+        <div class="section-eyebrow" style="margin-bottom:10px">Guest RSVP Lock</div>
+        <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
+          <input type="checkbox" ${(STATE.settings&&STATE.settings.rsvpLockEnabled!==false)?'checked':''} onchange="_rsvpSetLockEnabled(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+          Lock RSVP until name confirmed
+        </label>
+        <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Guests must type their name before they can submit changes.</div>
       </div>`:'',
       summary:!hidden.has('summary')?`<div class="card" style="position:relative">
         <div class="rsvp-style-switch">
@@ -1410,8 +1460,9 @@ function renderRsvpMgr(c, actions){
       </div>`:'',
       plusones:!hidden.has('plusones')?`<div class="card">
         <div class="section-eyebrow" style="margin-bottom:12px">Plus-Ones</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Confirmed</span><span style="font-weight:600;color:var(--green)">${plusConfirmed}</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>Allowed, unused</span><span style="font-weight:600;color:var(--muted)">${plusUnused}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0"></span>Confirmed</span><span style="font-weight:600;color:var(--green)">${plusConfirmed}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0"></span>Awaiting RSVP</span><span style="font-weight:600;color:var(--gold)">${plusAwaiting}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0"></span>Declined</span><span style="font-weight:600;color:var(--red)">${plusDeclined}</span></div>
         <div style="font-size:11.5px;color:var(--muted);margin-top:12px">Headcounts here are handy for your caterer and venue.</div>
       </div>`:'',
       headcount:!hidden.has('headcount')?_rsvpWidgetHeadcount():'',
@@ -1872,6 +1923,42 @@ function _rsvpColMenuHtml(){
   </div>`;
 }
 
+/* Meal count summary card — how many attending guests chose each option. */
+function _mealCountCardHtml(){
+  if(!_mealOn()) return '';
+  const attending=STATE.guests.filter(g=>g.rsvp==='attending'&&(g.listType||'A')!=='B');
+  const adultOpts=_mealOpts();
+  const isChild=g=>_guestAgeBand(g)==='child'||_guestAgeBand(g)==='infant';
+  const adults=attending.filter(g=>!isChild(g));
+  const children=attending.filter(g=>isChild(g));
+  const childOn=_childMealOn();
+  const childOpts=childOn?_childMealOpts():[];
+  const _colors=['var(--green)','var(--blue-badge,#4A7C9E)','var(--purple-badge,#8E6BA8)','var(--gold)','var(--red)','var(--teal,#21b5a4)'];
+  function countRows(guests,opts,colorStart){
+    const counts={};
+    opts.forEach(o=>{counts[o]=0;});
+    let noChoice=0;
+    guests.forEach(g=>{const m=String(g.meal||'').trim();if(m&&counts[m]!==undefined)counts[m]++;else if(m){counts[m]=(counts[m]||0)+1;}else noChoice++;});
+    const max=Math.max(1,...Object.values(counts),noChoice);
+    const rows=opts.map((o,i)=>{const n=counts[o]||0;const c=_colors[(colorStart+i)%_colors.length];return `<div style="display:flex;align-items:center;padding:7px 0${i>0?';border-top:1px solid var(--border)':''}"><span style="width:10px;height:10px;border-radius:3px;background:${c};margin-right:8px;flex-shrink:0"></span><span style="flex:1;font-size:13px;font-weight:500;min-width:0">${_escHtml(o)}</span><span style="flex:0 0 60px;height:6px;border-radius:3px;background:var(--border);margin-left:10px;overflow:hidden"><span style="display:block;height:100%;border-radius:3px;background:${c};width:${Math.round(n/max*100)}%"></span></span><span style="font-size:14px;font-weight:700;margin-left:12px;font-variant-numeric:tabular-nums">${n}</span></div>`;}).join('');
+    const noRow=noChoice?`<div style="display:flex;align-items:center;padding:7px 0;border-top:1px solid var(--border)"><span style="width:10px;height:10px;border-radius:3px;background:var(--muted);margin-right:8px;flex-shrink:0"></span><span style="flex:1;font-size:13px;font-weight:500;color:var(--muted);font-style:italic;min-width:0">No selection yet</span><span style="flex:0 0 60px;height:6px;border-radius:3px;background:var(--border);margin-left:10px;overflow:hidden"><span style="display:block;height:100%;border-radius:3px;background:var(--muted);opacity:.4;width:${Math.round(noChoice/max*100)}%"></span></span><span style="font-size:14px;font-weight:700;margin-left:12px;color:var(--muted);font-variant-numeric:tabular-nums">${noChoice}</span></div>`:'';
+    return rows+noRow;
+  }
+  const totalMeals=adults.filter(g=>(g.meal||'').trim()).length+children.filter(g=>(g.meal||'').trim()).length;
+  let html=`<div class="section-eyebrow" style="margin-bottom:10px">Meal Counts</div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><div><span style="font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.1">${totalMeals}</span><span style="font-size:12px;color:var(--muted);margin-left:4px">total meals</span></div><span style="font-size:11px;color:var(--muted)">of ${attending.length} attending</span></div>`;
+  if(adultOpts.length){
+    html+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Adult Meals</div>`;
+    html+=countRows(adults,adultOpts,0);
+  }
+  if(childOn&&childOpts.length&&children.length){
+    html+=`<div style="height:1px;background:var(--border);margin:12px 0"></div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#4A7C9E;margin-bottom:6px;display:flex;align-items:center;gap:5px"><span>Children's Meals</span><span class="age-badge age-badge-child" style="margin:0;font-size:9px;padding:1px 6px;border-radius:4px">${children.length} ${children.length===1?'child':'children'}</span></div>`;
+    html+=countRows(children,childOpts,adultOpts.length);
+  }
+  return html;
+}
+
 /* Meal choice setup. Renders as a standalone card body on the RSVP & Invites page. */
 function _mealSetupHtml(){
   const on=!!(STATE.settings && STATE.settings.mealChoiceOn);
@@ -1947,6 +2034,11 @@ function _childMealDelOpt(i){ const a=_childMealOptsArr(); if(i<0||i>=a.length) 
 function _rsvpSetEmailNotif(on){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpEmailOn=!!on;
+  saveToStorage();
+}
+function _rsvpSetLockEnabled(on){
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.rsvpLockEnabled=!!on;
   saveToStorage();
 }
 
