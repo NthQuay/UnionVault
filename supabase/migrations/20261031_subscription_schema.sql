@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "users_read_own_profile" ON user_profiles;
 CREATE POLICY "users_read_own_profile" ON user_profiles
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "users_read_own_sub" ON subscriptions;
 CREATE POLICY "users_read_own_sub" ON subscriptions
   FOR SELECT USING (auth.uid() = user_id);
 
