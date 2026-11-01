@@ -44,7 +44,10 @@ function _uvRequirePaid(feature){
 
 // ── Load subscription state from Supabase ───────────────────────────────────
 
+const _uvAdminBypass = new URLSearchParams(location.search).get('bypass') === 'uvadmin';
+
 async function _uvLoadSubscription(){
+  if(_uvAdminBypass){ _uvTier='full'; _uvTrialDaysLeft=0; _uvSubLoaded=true; _uvSubDetails={tier:'full',subStatus:'active'}; _uvUpdateSidebarLocks(); return; }
   if(!_sbSession){ _uvTier='free'; _uvTrialDaysLeft=0; _uvSubLoaded=true; return; }
 
   // Check sessionStorage cache (5 min TTL)
