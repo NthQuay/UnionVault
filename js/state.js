@@ -120,7 +120,7 @@ const STATE = {
   },
   invites: [],
   inviteMeta: {},
-  settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], childrenMealOn:true, childrenMealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current', partnerEmail:'', showAgeBadges:true, rsvpCustomFields:[], rsvpLockEnabled:true },
+  settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], childrenMealOn:true, childrenMealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current', partnerEmail:'', showAgeBadges:true, rsvpCustomFields:[], rsvpLockEnabled:true, rsvpLockPassword:'' },
   // Guest-facing website. Content is NOT duplicated here — sections read from the
   // planner (details, timeline, inspo, wishingwell) so there is one source of truth.
   // This object holds only what the planner has no opinion about: which sections are
@@ -165,6 +165,8 @@ const STATE = {
     // Until then it is false, and the only way to remove the footer is to edit the
     // downloaded HTML — which is true of every free-tier badge on the internet and is
     // not something client-side code can prevent. It is a convention, not a paywall.
+    passwordEnabled: false,
+    password: '',
     brandOff: false,
     home: { headline:'', sub:'' },
     // Per-section images. TWO independent slots per section — one under the heading, one

@@ -1072,6 +1072,15 @@ function _wbThemeBody(){
         <button type="button" class="${t.navPos==='side'?'active':''}" onclick="_wbSet('navPos','side')">Side bar</button>
       </span>
     </div>
+    <div style="margin-bottom:14px">
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Website password</div>
+      <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
+        <input type="checkbox" ${w.passwordEnabled?'checked':''} onchange="_wbSetPassword(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+        Password protect website
+      </label>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:6px">Visitors must enter this password to view your wedding website.</div>
+      ${w.passwordEnabled?`<input type="text" class="form-input" value="${_escHtml(w.password||'')}" placeholder="Set a password" oninput="_wbSetPasswordValue(this.value)" style="font-size:13px;width:100%"/>`:''}
+    </div>
     <div class="wb-slot-lbl" style="margin-bottom:6px">Custom CSS <span style="color:var(--red);font-weight:400;text-transform:none;letter-spacing:0">· advanced</span></div>
       <textarea class="form-input" id="wb-css" rows="7" spellcheck="false" placeholder="h1 { letter-spacing: .08em; }"
         oninput="_wbCss(this.value)"
@@ -1220,6 +1229,16 @@ function _wbCssClear(){
   _wbSite().theme.css='';
   saveToStorage();
   _wbRepaintTheme();
+}
+function _wbSetPassword(on){
+  const w=_wbSite();
+  w.passwordEnabled=!!on;
+  saveToStorage();
+  _wbRepaintTheme();
+}
+function _wbSetPasswordValue(v){
+  _wbSite().password=String(v||'');
+  saveToStorage();
 }
 function _wbRole(role, hex){
   const t=_wbSite().theme;
@@ -1446,6 +1465,15 @@ function _wbRepaintTheme(){
         <button type="button" class="${(t.navPos||'top')==='top'?'active':''}" onclick="_wbSet('navPos','top')">Top bar</button>
         <button type="button" class="${t.navPos==='side'?'active':''}" onclick="_wbSet('navPos','side')">Side bar</button>
       </span>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Website password</div>
+      <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
+        <input type="checkbox" ${w.passwordEnabled?'checked':''} onchange="_wbSetPassword(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+        Password protect website
+      </label>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:6px">Visitors must enter this password to view your wedding website.</div>
+      ${w.passwordEnabled?`<input type="text" class="form-input" value="${_escHtml(w.password||'')}" placeholder="Set a password" oninput="_wbSetPasswordValue(this.value)" style="font-size:13px;width:100%"/>`:''}
     </div>
     <div class="wb-slot-lbl" style="margin-bottom:6px">Custom CSS <span style="color:var(--red);font-weight:400;text-transform:none;letter-spacing:0">· advanced</span></div>
       <textarea class="form-input" id="wb-css" rows="7" spellcheck="false" placeholder="h1 { letter-spacing: .08em; }"
@@ -4570,11 +4598,11 @@ function _wbBuildSite(forDownload){
   const _uvCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
   const _uvMealOn=!!(STATE.settings&&STATE.settings.mealChoiceOn)&&Array.isArray(STATE.settings.mealOptions)&&(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()).length>0;
   const _uvMealOpts=_uvMealOn?(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()):[];
-  const _uvMealHtml=_uvMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="window._chooseMeal(this)">${_escHtml(o)}</div>`).join('');
+  const _uvMealHtml=_uvMealOpts.map(o=>`<div class="meal-chip" data-meal="${_escHtml(o)}" onclick="window._uvChooseMeal(this)">${_escHtml(o)}</div>`).join('');
   const _uvChildMealOn=_uvMealOn&&STATE.settings.childrenMealOn!==false&&(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()).length>0;
   const _uvChildMealEnabled=_uvMealOn&&STATE.settings.childrenMealOn!==false;
   const _uvChildMealOpts=_uvChildMealOn?(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()):[];
-  const _uvChildMealHtml=_uvChildMealOpts.map(o=>`<div class="rf-meal-chip" data-meal="${_escHtml(o)}" onclick="window._chooseMeal(this)">${_escHtml(o)}</div>`).join('');
+  const _uvChildMealHtml=_uvChildMealOpts.map(o=>`<div class="meal-chip" data-meal="${_escHtml(o)}" onclick="window._uvChooseMeal(this)">${_escHtml(o)}</div>`).join('');
   const _uvGuests2=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B'&&g.name);
   const _uvPlus1Ids=new Set(_uvGuests2.filter(g=>g.plusOneId).map(g=>g.plusOneId));
   const _uvAllFams=STATE.families||[];
@@ -4590,7 +4618,8 @@ function _wbBuildSite(forDownload){
   const _fNotes=(f=>{if(!f)return{show:false};return{show:!!f.show};})(_flds.notes);
   const _uvCustomFields=(STATE.settings.rsvpCustomFields||[]).filter(f=>f.show!==false);
   const _uvCustomJson=JSON.stringify(_uvCustomFields.map(f=>({id:f.id,l:f.label||'',r:!!f.required}))).replace(/'/g,'&#39;');
-  const _uvLockEnabled=!!(STATE.settings&&STATE.settings.rsvpLockEnabled);
+  const _uvLockEnabled=!!(STATE.settings&&STATE.settings.rsvpLockEnabled)&&!!(STATE.settings.rsvpLockPassword);
+  const _uvLockPw=_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'');
   const _uvDietaryOn=!(_uvRfields.dietary===false);
   const _uvHasStep2=_uvMealOn||_uvDietaryOn;
   const _uvHasStep3=_fPhone.show||_fEmail.show||_fAddr.show||_fSong.show||_fNotes.show||_uvCustomFields.length>0;
@@ -4661,22 +4690,22 @@ function _wbBuildSite(forDownload){
 .guest-section{padding:12px 0;text-align:left}
 .guest-section+.guest-section{border-top:1px solid ${t2.heading}12}
 .guest-section-name{font-family:${t2.headFont};font-size:16px;font-weight:600;color:${t2.heading};margin:0 0 12px;text-align:center}
-.field-label{font-size:13px;font-weight:500;color:${t2.text};margin:0 0 8px}
+.field-label{font-size:13px;font-weight:500;color:${t2.heading};margin:0 0 8px}
 .meal-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .meal-chip{padding:8px 16px;border-radius:20px;border:1.5px solid ${t2.heading}28;background:${t2.background||t2.page};font-size:13px;font-weight:500;color:${t2.text};cursor:pointer;transition:all .15s;font-family:inherit}
 .meal-chip.on{border-color:${_uvPal.accent};background:${_uvPal.accent}22}
 .diet-accordion{margin-top:4px}
 .diet-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:4px 0;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left}
-.diet-toggle-label{font-size:13px;font-weight:500;color:${t2.text};display:flex;align-items:center;gap:6px}
+.diet-toggle-label{font-size:13px;font-weight:500;color:${t2.heading};display:flex;align-items:center;gap:6px}
 .diet-count{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:${_uvPal.accent};color:${_uvPal.ink};font-size:10px;font-weight:700}
 .diet-chevron{transition:transform .2s;color:${t2.text}}
 .diet-accordion.open .diet-chevron{transform:rotate(180deg)}
 .diet-body{display:none;padding:10px 0 4px}
 .diet-accordion.open .diet-body{display:block}
-.chip-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.diet-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:8px;border:none;background:transparent;font-size:12.5px;color:${t2.text};cursor:pointer;transition:all .15s;user-select:none}
+.chip-row{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.diet-chip{display:inline-flex;align-items:center;gap:3px;padding:4px;border-radius:5px;border:none;background:transparent;font-size:11px;color:${t2.text};cursor:pointer;transition:all .15s;user-select:none}
 .diet-chip.on{color:${_uvPal.accent};font-weight:600}
-.chip-check{width:14px;height:14px;border-radius:3px;border:1.5px solid ${t2.heading}28;background:${t2.background||t2.page};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.chip-check{width:12px;height:12px;border-radius:2px;border:1.5px solid ${t2.heading}28;background:${t2.background||t2.page};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .diet-chip.on .chip-check{background:${_uvPal.accent};border-color:${_uvPal.accent};color:${_uvPal.ink}}
 .chip-check svg{visibility:hidden}
 .diet-chip.on .chip-check svg{visibility:visible}
@@ -4714,9 +4743,9 @@ function _wbBuildSite(forDownload){
     ${_uvLockEnabled?`<div id="rf-lock-screen" class="rf-lock">
       <button class="rfm-close" onclick="_uvCloseRsvp()" aria-label="Close" style="position:absolute;top:14px;right:14px">&#215;</button>
       <div class="rf-lock-icon">&#128274;</div>
-      <h3>Confirm your identity</h3>
-      <p>Type your first or last name to unlock</p>
-      <input type="text" id="rf-lock-input" placeholder="Your name\\u2026" autocomplete="off" oninput="window._uvCheckLock&&window._uvCheckLock()">
+      <h3>RSVP is locked</h3>
+      <p>Enter the password provided by the couple</p>
+      <input type="text" id="rf-lock-input" placeholder="Enter RSVP password" autocomplete="off" oninput="window._uvCheckLock&&window._uvCheckLock()">
       <br><button class="rf-lock-btn" id="rf-lock-btn" disabled onclick="window._uvUnlock&&window._uvUnlock()">Unlock</button>
       <p class="rf-lock-err" id="rf-lock-err"></p>
     </div>`:''}
@@ -4767,7 +4796,7 @@ function _wbBuildSite(forDownload){
       <button class="rf-nav-back" id="rf-back" onclick="window._uvRsvpBack()" hidden>&#8592; Back</button>
       <button class="rf-nav-next" id="rf-next" onclick="window._uvRsvpNext()" disabled>Next &#8594;</button>
     </div>
-    <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-search='${_uvGuestSearchJson}' data-couple="${_uvCoupleId}" data-wdate="${_uvWeddingDate}" data-custom='${_uvCustomJson}' data-lock="${_uvLockEnabled?'1':'0'}"></div>
+    <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-search='${_uvGuestSearchJson}' data-couple="${_uvCoupleId}" data-wdate="${_uvWeddingDate}" data-custom='${_uvCustomJson}' data-lock="${_uvLockEnabled?'1':'0'}" data-lockpw="${_uvLockPw}"></div>
     ${_uvMealHtml?`<template id="uv-rf-meal-tmpl"><div class="rf-chips">${_uvMealHtml}</div></template>`:''}
     ${_uvChildMealHtml?`<template id="uv-rf-children-meal-tmpl"><div class="rf-chips">${_uvChildMealHtml}</div></template>`:''}
     </div>
@@ -4809,8 +4838,9 @@ function _wbBuildSite(forDownload){
 
   /* ── Lock ── */
   var _lockOn=_gd&&_gd.dataset.lock==='1';
+  var _lockPw=_gd&&_gd.dataset.lockpw||'';
   (function(){
-    if(!_lockOn)return;
+    if(!_lockOn||!_lockPw)return;
     var unlocked=false;
     try{unlocked=sessionStorage.getItem('uv-rsvp-unlocked')==='1';}catch(e){}
     if(unlocked){
@@ -4821,14 +4851,13 @@ function _wbBuildSite(forDownload){
     window._uvCheckLock=function(){
       var inp=document.getElementById('rf-lock-input');
       var btn=document.getElementById('rf-lock-btn');
-      if(inp&&btn)btn.disabled=inp.value.trim().length<2;
+      if(inp&&btn)btn.disabled=inp.value.trim().length<1;
     };
     window._uvUnlock=function(){
       var inp=document.getElementById('rf-lock-input');if(!inp)return;
-      var val=inp.value.trim().toLowerCase();if(val.length<2)return;
-      var found=GSearch.some(function(g){return g.n.toLowerCase().indexOf(val)!==-1;});
+      var val=inp.value.trim();if(!val)return;
       var err=document.getElementById('rf-lock-err');
-      if(!found){if(err)err.textContent='Name not found. Please try again.';return;}
+      if(val!==_lockPw){if(err)err.textContent='Incorrect password. Please try again.';return;}
       try{sessionStorage.setItem('uv-rsvp-unlocked','1');}catch(e){}
       var ls=document.getElementById('rf-lock-screen');if(ls)ls.style.display='none';
       var fw=document.getElementById('rf-form-wrap');if(fw)fw.hidden=false;
@@ -5006,7 +5035,7 @@ function _wbBuildSite(forDownload){
           if(tmpl){
             var frag=tmpl.content.cloneNode(true);
             var wrap2=document.createElement('div');wrap2.appendChild(frag);
-            wrap2.querySelectorAll('.rf-meal-chip').forEach(function(btn){
+            wrap2.querySelectorAll('.meal-chip').forEach(function(btn){
               btn.dataset.mid=m.id;
               btn.setAttribute('onclick','window._uvChooseMeal(this)');
               if(mealPick[m.id]===btn.dataset.meal)btn.classList.add('on');
@@ -5044,7 +5073,7 @@ function _wbBuildSite(forDownload){
 
   window._uvChooseMeal=function(btn){
     var id=btn.dataset.mid,ml=btn.dataset.meal;mealPick[id]=ml;
-    btn.closest('.meal-chips').querySelectorAll('.meal-chip,.rf-meal-chip').forEach(function(c){c.classList.remove('on');});
+    btn.closest('.meal-chips').querySelectorAll('.meal-chip').forEach(function(c){c.classList.remove('on');});
     btn.classList.add('on');
     var sec=btn.closest('.guest-section');if(sec){var err=sec.querySelector('.meal-error');if(err)err.remove();var chips=sec.querySelector('.meal-chips');if(chips){chips.style.outline='';chips.style.padding='';}}
     _checkStep2();
@@ -5241,6 +5270,7 @@ body.sidenav nav{position:sticky;top:0;height:100dvh;overflow-y:auto;width:${scb
 body.sidenav .navlinks{flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;gap:0;margin-top:${sp(8)}px}
 body.sidenav nav a{display:block;padding:${sp(9)}px ${sp(6)}px;opacity:.7}
 body.sidenav .navtoggle{display:none}
+body.sidenav .sidebar-brand{margin-top:auto;text-align:center;padding-top:${sp(16)}px}
 .site-content{flex:1;min-width:0}
 @media(max-width:620px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{flex-direction:row;flex-wrap:wrap;justify-content:center;margin-top:0}body.sidenav nav a{display:inline;padding:0}}
 header{text-align:center;padding:${sp(72)}px 24px ${sp(60)}px}
@@ -5487,14 +5517,41 @@ section.lft h2::after{margin-left:0;margin-right:auto}
 .intro{font-weight:300;letter-spacing:.03em}
 dl dt{font-size:${scb(9.5)}px!important;opacity:.5!important;letter-spacing:.18em!important}
 `:''}
+${w.passwordEnabled&&w.password?`
+.wb-pw-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:${t2.background||t2.page}}
+.wb-pw-gate .lock-card{text-align:center;padding:32px 28px;border-radius:16px;max-width:340px;width:90%;background:${t2.band||t2.page};box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.wb-pw-gate .lock-icon{font-size:36px;margin-bottom:10px}
+.wb-pw-gate h3{font-family:${t2.headFont};font-size:22px;font-weight:400;color:${t2.heading};margin:0 0 4px}
+.wb-pw-gate p{font-size:13px;color:${t2.text};opacity:.7;margin:0 0 18px}
+.wb-pw-gate input{width:100%;box-sizing:border-box;padding:10px 14px;font-size:14px;font-family:inherit;border:none;border-bottom:1.5px solid ${t2.heading}28;background:transparent;color:${t2.text};outline:none;text-align:center;border-radius:0}
+.wb-pw-gate input:focus{border-color:${t2.accent}}
+.wb-pw-gate .lock-btn{display:inline-block;margin-top:18px;padding:10px 36px;border:none;border-radius:24px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;background:${t2.button||t2.accent}22;color:${t2.button||t2.accent};letter-spacing:.02em}
+.wb-pw-gate .lock-err{font-size:12px;color:#DC2626;margin-top:8px;min-height:18px}
+`:''}
 ${_wbCssSafe(t2.css)}
 </style></head>
 <body${t2.navPos==='side'?' class="sidenav"':''}>
-${nav?`<nav>${nav}</nav>`:''}
+${w.passwordEnabled&&w.password?`<div class="wb-pw-gate" id="wb-pw-gate">
+  <div class="lock-card">
+    <div class="lock-icon">&#128274;</div>
+    <h3>This website is private</h3>
+    <p>Enter the password to continue</p>
+    <input type="text" id="wb-pw-input" placeholder="Enter password" autocomplete="off">
+    <br><button class="lock-btn" id="wb-pw-btn" onclick="window._wbUnlockSite()">Enter</button>
+    <p class="lock-err" id="wb-pw-err"></p>
+  </div>
+</div>`:''}
+${nav?`<nav>${nav}${t2.navPos==='side'&&!w.brandOff?`<div class="madewith sidebar-brand">
+    <span class="mw-lbl">Website made with</span>
+    <a class="mw-lock" href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault" style="text-decoration:none">
+      <img class="mw-crest" src="${brand.crest==='dark'?WB_CREST_DARK:WB_CREST_LIGHT}" alt="" width="26" height="24"/>
+      <span class="mw-txt"><b>UNION</b><i>VAULT</i></span>
+    </a>
+  </div>`:''}</nav>`:''}
 ${t2.navPos==='side'?`<div class="site-content"><main>${blocks}</main></div>`:`<main>${blocks}</main>`}
 <footer>
   ${_escHtml(_wbCouple())}
-  ${w.brandOff ? '' : `<div class="madewith">
+  ${w.brandOff||t2.navPos==='side' ? '' : `<div class="madewith">
     <span class="mw-lbl">Website made with</span>
     <a class="mw-lock" href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault" style="text-decoration:none">
       <img class="mw-crest" src="${brand.crest==='dark'?WB_CREST_DARK:WB_CREST_LIGHT}" alt="" width="26" height="24"/>
@@ -5505,6 +5562,29 @@ ${t2.navPos==='side'?`<div class="site-content"><main>${blocks}</main></div>`:`<
 ${_uvModal}
 <script>
 (function(){
+  ${w.passwordEnabled&&w.password?`
+  /* ── Website password gate ── */
+  (function(){
+    var gate=document.getElementById('wb-pw-gate');if(!gate)return;
+    var pw='${_escHtml(w.password).replace(/'/g,"\\'")}';
+    var unlocked=false;
+    try{unlocked=sessionStorage.getItem('uv-site-unlocked')==='1';}catch(e){}
+    if(unlocked){gate.remove();return;}
+    var inp=document.getElementById('wb-pw-input');
+    var err=document.getElementById('wb-pw-err');
+    window._wbUnlockSite=function(){
+      if(!inp)return;
+      var val=inp.value.trim();
+      if(val===pw){
+        try{sessionStorage.setItem('uv-site-unlocked','1');}catch(e){}
+        gate.remove();
+      }else{
+        if(err)err.textContent='Incorrect password. Please try again.';
+      }
+    };
+    if(inp)inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();window._wbUnlockSite();}});
+  })();
+  `:''}
   var n=document.querySelector('nav'), b=n&&n.querySelector('.navtoggle');
   // The .js class is what ARMS the collapsed-nav CSS. It is added here, at runtime, so a
   // guest with JS disabled never sees a menu button that cannot open — they get the plain

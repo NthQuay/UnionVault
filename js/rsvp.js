@@ -1435,9 +1435,12 @@ function renderRsvpMgr(c, actions){
         <div class="section-eyebrow" style="margin-bottom:10px">Guest RSVP Lock</div>
         <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
           <input type="checkbox" ${(STATE.settings&&STATE.settings.rsvpLockEnabled!==false)?'checked':''} onchange="_rsvpSetLockEnabled(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
-          Lock RSVP until name confirmed
+          Password protect RSVP
         </label>
-        <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Guests must type their name before they can submit changes.</div>
+        <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Guests must enter this password before they can RSVP.</div>
+        ${(STATE.settings&&STATE.settings.rsvpLockEnabled!==false)?`<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+          <input type="text" id="rsvp-lock-pw" class="form-input" value="${_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'')}" placeholder="Set a password" oninput="_rsvpSetLockPassword(this.value)" style="flex:1;font-size:13px"/>
+        </div>`:''}
       </div>`:'',
       summary:!hidden.has('summary')?`<div class="card" style="position:relative">
         <div class="rsvp-style-switch">
@@ -2039,6 +2042,12 @@ function _rsvpSetEmailNotif(on){
 function _rsvpSetLockEnabled(on){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpLockEnabled=!!on;
+  saveToStorage();
+  renderRsvp();
+}
+function _rsvpSetLockPassword(pw){
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.rsvpLockPassword=String(pw||'');
   saveToStorage();
 }
 
