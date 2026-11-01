@@ -1466,6 +1466,11 @@ function _guestFilterMenuHtml(){
     <div onclick="event.stopPropagation();_guestFilterSubToggle(true)" style="display:flex;align-items:center;justify-content:space-between;padding:9px 8px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer" onmouseover="this.style.background='rgba(196,168,130,.1)'" onmouseout="this.style.background=''">
       <span style="display:inline-flex;align-items:center;gap:8px">${colsIcon}Columns</span>${chevron}
     </div>
+    <div style="height:1px;background:var(--border);margin:5px 4px"></div>
+    <div onclick="event.stopPropagation();_toggleAgeBadges()" style="display:flex;align-items:center;justify-content:space-between;padding:9px 8px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer" onmouseover="this.style.background='rgba(196,168,130,.1)'" onmouseout="this.style.background=''">
+      <span style="display:inline-flex;align-items:center;gap:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>Show age badges</span>
+      <span style="position:relative;display:inline-flex;align-items:center;width:34px;height:20px;border-radius:10px;background:${(STATE.settings&&STATE.settings.showAgeBadges!==false)?'var(--green)':'var(--border)'};flex-shrink:0"><span style="position:absolute;left:${(STATE.settings&&STATE.settings.showAgeBadges!==false)?'16px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span></span>
+    </div>
     ${_bListCogRowHtml('_guestFilterMenuClose()')}`;
   const colsView=`
     <div onclick="event.stopPropagation();_guestFilterSubToggle(false)" style="display:flex;align-items:center;gap:8px;padding:7px 8px 9px;border-radius:7px;font-size:12px;font-weight:600;color:var(--gold-deep);cursor:pointer">${backIcon}Back</div>
@@ -1656,6 +1661,11 @@ function _cardCogMenuHtml(){
     ${item('Manage tags',tagsIcon,'openManageTags()')}
     ${item('Hide / show filters…',eyeIcon,'openGuestCountsPopup()')}
     ${item('Card fields…',fieldsIcon,'openCardFieldsPopup()')}
+    <div style="height:1px;background:var(--border);margin:5px 4px"></div>
+    <div onclick="event.stopPropagation();_toggleAgeBadges()" style="display:flex;align-items:center;justify-content:space-between;padding:9px 8px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer" onmouseover="this.style.background='rgba(196,168,130,.1)'" onmouseout="this.style.background=''">
+      <span style="display:inline-flex;align-items:center;gap:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>Show age badges</span>
+      <span style="position:relative;display:inline-flex;align-items:center;width:34px;height:20px;border-radius:10px;background:${(STATE.settings&&STATE.settings.showAgeBadges!==false)?'var(--green)':'var(--border)'};flex-shrink:0"><span style="position:absolute;left:${(STATE.settings&&STATE.settings.showAgeBadges!==false)?'16px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span></span>
+    </div>
     ${_bListCogRowHtml('_cardCogClose()')}
   </div>`;
 }
@@ -1684,6 +1694,13 @@ function _cardCogAttachCloser(){
   };
   const c=_cardCogCloser;
   setTimeout(()=>document.addEventListener('click',c),0);
+}
+
+function _toggleAgeBadges(){
+  if(!STATE.settings) return;
+  STATE.settings.showAgeBadges=STATE.settings.showAgeBadges===false?true:false;
+  saveToStorage();
+  renderGuestList();
 }
 
 function setGuestSearch(val){

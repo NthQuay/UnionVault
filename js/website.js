@@ -4502,9 +4502,12 @@ function _wbBuildSite(forDownload){
   const _fAddr=(f=>{if(f===false)return{show:false,required:false};if(!f)return{show:false,required:false};return{show:f.show!==false,required:!!f.required};})(_flds.address);
   const _fSong=(f=>{if(!f)return{show:false};return{show:!!f.show};})(_flds.songRequest);
   const _fNotes=(f=>{if(!f)return{show:false};return{show:!!f.show};})(_flds.notes);
+  const _uvCustomFields=(STATE.settings.rsvpCustomFields||[]).filter(f=>f.show!==false);
+  const _uvCustomJson=JSON.stringify(_uvCustomFields.map(f=>({id:f.id,l:f.label||'',r:!!f.required}))).replace(/'/g,'&#39;');
+  const _uvLockEnabled=!!(STATE.settings&&STATE.settings.rsvpLockEnabled);
   const _uvDietaryOn=!(_uvRfields.dietary===false);
   const _uvHasStep2=_uvMealOn||_uvDietaryOn;
-  const _uvHasStep3=_fPhone.show||_fEmail.show||_fAddr.show||_fSong.show||_fNotes.show;
+  const _uvHasStep3=_fPhone.show||_fEmail.show||_fAddr.show||_fSong.show||_fNotes.show||_uvCustomFields.length>0;
   const _uvNumSteps=1+(_uvHasStep2?1:0)+(_uvHasStep3?1:0);
   const _uvWeddingDate=_escHtml((STATE.settings&&STATE.settings.weddingDate)||_uvRsvp.date||'');
   const _uvPal=(()=>{const p=_uvRsvp.palette||'sage';const ps={sage:{accent:'#5C7D6B',ink:'#2D3D35'},ivory:{accent:'#A08050',ink:'#3A3020'},blush:{accent:'#C0745A',ink:'#3D2820'},midnight:{accent:'#7B95C8',ink:'#D0D8E8'},slate:{accent:'#8AA4A8',ink:'#CAD3D6'}};if(p==='custom'){const cc=_uvRsvp.customColors||{};return {accent:cc.accent||'#5C7D6B',ink:cc.ink||_wbInk(cc.accent||'#5C7D6B')};}return ps[p]||ps.sage;})();
@@ -4610,9 +4613,28 @@ function _wbBuildSite(forDownload){
 #contact-couple{font-size:12.5px;color:${t2.text};margin-top:16px;text-align:center}
 .rsvp-copy-label{display:flex;align-items:flex-start;gap:10px;padding:12px 0 4px;cursor:pointer;font-size:13px;color:${t2.text};line-height:1.4}
 .rsvp-copy-label input{width:16px;height:16px;accent-color:${_uvPal.accent};cursor:pointer;margin-top:1px;flex-shrink:0}
+.rf-lock{text-align:center;padding:48px 24px;position:relative}
+.rf-lock-icon{font-size:36px;margin-bottom:16px;opacity:.6}
+.rf-lock h3{font-family:${t2.headFont};font-size:18px;color:${t2.heading};margin:0 0 8px}
+.rf-lock p{font-size:13px;color:${t2.text};opacity:.7;margin:0 0 20px}
+.rf-lock input{width:100%;max-width:280px;padding:12px 14px;font-size:14px;font-family:inherit;color:${t2.text};background:transparent;border:none;border-bottom:1.5px solid ${t2.heading}28;outline:none;text-align:center;border-radius:0;box-sizing:border-box}
+.rf-lock input:focus{border-color:${_uvPal.accent}}
+.rf-lock .rf-lock-btn{margin-top:16px;padding:10px 28px;font-size:14px;font-weight:600;font-family:inherit;border:none;border-radius:8px;background:${_uvPal.accent};color:#fff;cursor:pointer;transition:opacity .15s}
+.rf-lock .rf-lock-btn:disabled{opacity:.4;cursor:default}
+.rf-lock .rf-lock-err{font-size:12px;color:#DC2626;margin-top:8px;min-height:18px}
 </style>
 <div id="uv-rsvp-overlay" onclick="if(event.target===this)_uvCloseRsvp()">
   <div id="uv-rsvp-sheet">
+    ${_uvLockEnabled?`<div id="rf-lock-screen" class="rf-lock">
+      <button class="rfm-close" onclick="_uvCloseRsvp()" aria-label="Close" style="position:absolute;top:14px;right:14px">&#215;</button>
+      <div class="rf-lock-icon">&#128274;</div>
+      <h3>Confirm your identity</h3>
+      <p>Type your first or last name to unlock</p>
+      <input type="text" id="rf-lock-input" placeholder="Your name\\u2026" autocomplete="off" oninput="window._uvCheckLock&&window._uvCheckLock()">
+      <br><button class="rf-lock-btn" id="rf-lock-btn" disabled onclick="window._uvUnlock&&window._uvUnlock()">Unlock</button>
+      <p class="rf-lock-err" id="rf-lock-err"></p>
+    </div>`:''}
+    <div id="rf-form-wrap"${_uvLockEnabled?' hidden':''}>
     <div class="rfm-hdr">
       <span class="rfm-title">RSVP</span>
       <button class="rfm-close" onclick="_uvCloseRsvp()" aria-label="Close">&#215;</button>
@@ -4650,6 +4672,7 @@ function _wbBuildSite(forDownload){
         ${_fAddr.show?`<div class="contact-field"><p class="contact-label">Mailing address${_fAddr.required?' <span class="required-star">*</span>':''}</p><input class="contact-input" id="f-street" type="text" placeholder="Street address" style="margin-bottom:8px" oninput="window._uvCheckStep3&&window._uvCheckStep3()"><div class="addr-row"><input class="contact-input" type="text" id="f-suburb" placeholder="Suburb"><input class="contact-input" type="text" id="f-state" placeholder="State"><input class="contact-input" type="text" id="f-post" placeholder="Post"></div></div>`:''}
         ${_fSong.show?`<div class="contact-field"><p class="contact-label">Song request</p><input class="contact-input" id="f-song" type="text" placeholder="Artist \\u2014 Song title"></div>`:''}
         ${_fNotes.show?`<div class="contact-field"><p class="contact-label">Message for the couple</p><textarea class="contact-textarea" id="f-notes" placeholder="A note, a wish\\u2026"></textarea></div>`:''}
+        <div id="rf-custom-fields"></div>
         ${_fEmail.show?'<label class="rsvp-copy-label"><input type="checkbox" id="f-email-copy" checked> Email me a copy of my RSVP confirmation</label>':''}
       </div>`:''}
       <div class="rf-step-panel" id="rf-step-done"></div>
@@ -4658,9 +4681,10 @@ function _wbBuildSite(forDownload){
       <button class="rf-nav-back" id="rf-back" onclick="window._uvRsvpBack()" hidden>&#8592; Back</button>
       <button class="rf-nav-next" id="rf-next" onclick="window._uvRsvpNext()" disabled>Next &#8594;</button>
     </div>
-    <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-search='${_uvGuestSearchJson}' data-couple="${_uvCoupleId}" data-wdate="${_uvWeddingDate}"></div>
+    <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-search='${_uvGuestSearchJson}' data-couple="${_uvCoupleId}" data-wdate="${_uvWeddingDate}" data-custom='${_uvCustomJson}' data-lock="${_uvLockEnabled?'1':'0'}"></div>
     ${_uvMealHtml?`<template id="uv-rf-meal-tmpl"><div class="rf-chips">${_uvMealHtml}</div></template>`:''}
     ${_uvChildMealHtml?`<template id="uv-rf-children-meal-tmpl"><div class="rf-chips">${_uvChildMealHtml}</div></template>`:''}
+    </div>
   </div>
 </div>
 <script>
@@ -4683,6 +4707,49 @@ function _wbBuildSite(forDownload){
   var CHK='<svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg>';
   var CHEVRON='<svg class="diet-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,5 7,9 11,5"/></svg>';
   function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  /* ── Custom fields ── */
+  var _customFields=_gd?JSON.parse(_gd.dataset.custom||'[]'):[];
+  var _customVals={};
+  (function(){
+    var wrap=document.getElementById('rf-custom-fields');if(!wrap||!_customFields.length)return;
+    var html='';
+    _customFields.forEach(function(f){
+      html+='<div class="contact-field"><p class="contact-label">'+_esc(f.l)+(f.r?' <span class="required-star">*</span>':'')+'</p><input class="contact-input" id="f-custom-'+_esc(f.id)+'" type="text" placeholder="" oninput="window._uvCustomInput&&window._uvCustomInput(this,\\''+_esc(f.id)+'\\')"></div>';
+    });
+    wrap.innerHTML=html;
+  })();
+  window._uvCustomInput=function(el,fid){_customVals[fid]=el.value;window._uvCheckStep3&&window._uvCheckStep3();};
+
+  /* ── Lock ── */
+  var _lockOn=_gd&&_gd.dataset.lock==='1';
+  (function(){
+    if(!_lockOn)return;
+    var unlocked=false;
+    try{unlocked=sessionStorage.getItem('uv-rsvp-unlocked')==='1';}catch(e){}
+    if(unlocked){
+      var ls=document.getElementById('rf-lock-screen');if(ls)ls.remove();
+      var fw=document.getElementById('rf-form-wrap');if(fw)fw.hidden=false;
+      return;
+    }
+    window._uvCheckLock=function(){
+      var inp=document.getElementById('rf-lock-input');
+      var btn=document.getElementById('rf-lock-btn');
+      if(inp&&btn)btn.disabled=inp.value.trim().length<2;
+    };
+    window._uvUnlock=function(){
+      var inp=document.getElementById('rf-lock-input');if(!inp)return;
+      var val=inp.value.trim().toLowerCase();if(val.length<2)return;
+      var found=GSearch.some(function(g){return g.n.toLowerCase().indexOf(val)!==-1;});
+      var err=document.getElementById('rf-lock-err');
+      if(!found){if(err)err.textContent='Name not found. Please try again.';return;}
+      try{sessionStorage.setItem('uv-rsvp-unlocked','1');}catch(e){}
+      var ls=document.getElementById('rf-lock-screen');if(ls)ls.style.display='none';
+      var fw=document.getElementById('rf-form-wrap');if(fw)fw.hidden=false;
+    };
+    var lockInp=document.getElementById('rf-lock-input');
+    if(lockInp)lockInp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();window._uvUnlock();}});
+  })();
 
   /* ── Search ── */
   window._uvCheckSearchBtn=function(){
@@ -4824,6 +4891,7 @@ function _wbBuildSite(forDownload){
     var nx2=document.getElementById('rf-next');if(nx2){nx2.disabled=true;nx2.textContent='Next \\u2192';}
     var stEl=document.querySelector('.rfm-steps');if(stEl)stEl.style.display='';
     document.querySelectorAll('#rf-step3 input,#rf-step3 textarea').forEach(function(el){el.value='';});
+    _customVals={};
     var ecb=document.getElementById('f-email-copy');if(ecb)ecb.checked=true;
   };
   window._uvOpenRsvp=function(){var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.add('open');document.body.style.overflow='hidden';}};
@@ -4932,7 +5000,8 @@ function _wbBuildSite(forDownload){
     var pOk=!_phoneReq||((document.getElementById('f-phone')||{value:''}).value||'').trim().length>0;
     var eOk=!_emailReq||((document.getElementById('f-email')||{value:''}).value||'').trim().length>0;
     var aOk=!_addrReq||((document.getElementById('f-street')||{value:''}).value||'').trim().length>0;
-    nx.disabled=!(pOk&&eOk&&aOk);nx.textContent='Send my RSVP';
+    var cOk=_customFields.every(function(f){if(!f.r)return true;return(_customVals[f.id]||'').trim().length>0;});
+    nx.disabled=!(pOk&&eOk&&aOk&&cOk);nx.textContent='Send my RSVP';
   };
 
   /* ── Step navigation ── */
@@ -5016,6 +5085,9 @@ function _wbBuildSite(forDownload){
     var sp=((document.getElementById('f-post')||{value:''}).value||'').trim();
     var addr=[st,su2,ss,sp].filter(Boolean).join(', ')||null;
     var notes=((document.getElementById('f-notes')||{value:''}).value||'').trim();
+    var customParts=[];
+    _customFields.forEach(function(f){var v=(_customVals[f.id]||'').trim();if(v)customParts.push(f.l+': '+v);});
+    var fullMsg=[notes,customParts.length?customParts.join('\\n'):null].filter(Boolean).join('\\n---\\n')||null;
     var anyYes=group.some(function(m){return m.att===true;});
 
     var payloads=group.map(function(m){
@@ -5025,7 +5097,7 @@ function _wbBuildSite(forDownload){
       var on2=(dietNotes[m.id+'-other']||'').trim();
       if(an)ds.push('allergy:'+an);
       if(on2)ds.push('other:'+on2);
-      return {couple_id:cid,guest_name:n,email:email||null,phone:phone||null,address:addr,message:notes||null,attending:m.att===true?'yes':'no',dietary:ds.length?ds:null,meal:mealPick[m.id]||null,high_chair:!!(mealPick[m.id+'-hc'])};
+      return {couple_id:cid,guest_name:n,email:email||null,phone:phone||null,address:addr,message:fullMsg,attending:m.att===true?'yes':'no',dietary:ds.length?ds:null,meal:mealPick[m.id]||null,high_chair:!!(mealPick[m.id+'-hc'])};
     });
 
     try{
@@ -5034,7 +5106,7 @@ function _wbBuildSite(forDownload){
       }));
       var allOk=results.every(function(r){return r.ok||r.status===201;});
       if(allOk){
-        fetch(_su+'/functions/v1/rsvp-notify',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({couple_id:cid,guest_name:payloads.map(function(p){return p.guest_name;}).join(', '),attending:anyYes?'yes':'no',members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending,dietary:p.dietary||[],meal:p.meal||null};}),phone:phone||null,email:email||null,address:addr,message:notes||null})}).catch(function(){});
+        fetch(_su+'/functions/v1/rsvp-notify',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({couple_id:cid,guest_name:payloads.map(function(p){return p.guest_name;}).join(', '),attending:anyYes?'yes':'no',members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending,dietary:p.dietary||[],meal:p.meal||null};}),phone:phone||null,email:email||null,address:addr,message:fullMsg})}).catch(function(){});
 
         _rfWizPanels.forEach(function(pid){var p=document.getElementById('rf-'+pid);if(p)p.classList.remove('active');});
         var nav3=document.getElementById('rf-nav');if(nav3)nav3.style.display='none';
