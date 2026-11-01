@@ -376,6 +376,7 @@ function _uvSelectPricePill(btn){
   if(valEl) valEl.textContent=plan&&plan.monthly?_uvFormatMoney(plan.monthly).replace('$',''):'—';
   var dsp=document.getElementById('price-display');
   if(dsp){dsp.style.fontSize='72px';dsp.style.lineHeight='1';dsp.style.marginBottom='0';}
+  if(valEl){valEl.style.fontSize='inherit';valEl.style.color='inherit';valEl.style.verticalAlign='baseline';}
   var tl=dsp&&dsp.previousElementSibling;
   if(tl&&tl.classList.contains('price-tagline')) tl.style.marginBottom='4px';
   var cy=document.getElementById('price-cycle-label');

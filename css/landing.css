@@ -163,7 +163,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 .price-name{font-family:var(--font-display);font-size:24px;font-weight:400;color:var(--ink);margin-bottom:4px}
 .price-tagline{font-size:12px;color:var(--muted);margin-bottom:4px}
 .price-amount{font-family:var(--font-display);font-size:72px;font-weight:300;color:var(--ink);line-height:1;margin-bottom:0}
-.price-amount span{font-size:20px;font-weight:400;vertical-align:super;margin-right:2px;color:var(--muted)}
+.price-amount .price-currency{font-size:20px;font-weight:400;vertical-align:super;margin-right:2px;color:var(--muted)}
 .price-cycle{font-size:13px;color:var(--muted);margin-bottom:6px}
 .price-divider{height:1px;background:var(--border);margin-bottom:20px}
 .price-features{display:flex;flex-direction:column;gap:11px;margin-bottom:28px;flex:1}
