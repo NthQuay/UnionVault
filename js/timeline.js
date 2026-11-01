@@ -11,7 +11,7 @@ const TL_CATS = {
 
 // Which timeline view is showing: 'run' (run-sheet) or 'music' (DJ/band sheet).
 let _tlView = 'run';
-function tlSetView(v){ _tlView = (v==='music'?'music':'run'); const c=document.getElementById('main-content'); const a=document.getElementById('topbar-actions'); if(c) renderTimeline(c, a||document.createElement('div')); }
+function tlSetView(v){ if(v==='music'&&typeof _uvRequirePaid==='function'&&!_uvRequirePaid('timeline')) return; _tlView = (v==='music'?'music':'run'); const c=document.getElementById('main-content'); const a=document.getElementById('topbar-actions'); if(c) renderTimeline(c, a||document.createElement('div')); }
 
 function tlTo12h(t){
   if(!t) return '';
@@ -287,6 +287,7 @@ function tlRenumberSongs(){
   if(btn){ const has=list.querySelector('[data-song-block]'); btn.lastChild.textContent = has?'Add another song':'Add song'; }
 }
 function tlAddSongBlock(){
+  if(typeof _uvRequirePaid==='function'&&!_uvRequirePaid('timeline')) return;
   const list=document.getElementById('tl-song-list'); if(!list) return;
   const tmp=document.createElement('div'); tmp.innerHTML=tlSongBlockHtml({}, 0);
   list.appendChild(tmp.firstElementChild); tlRenumberSongs();
@@ -517,7 +518,7 @@ async function _showPublicRunSheet(coupleId){
           ${subLine?`<div class="prs-page-sub">${subLine}</div>`:''}
         </div>
         ${bodyHtml}
-        <div class="prs-page-brand">Created with <strong>UnionVault</strong></div>
+        <div class="prs-page-brand"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Created with <strong>Union Vault</strong></a></div>
       </div>
     </div>`;
   document.body.style.visibility='visible';
@@ -564,6 +565,7 @@ function printTimeline(mode){
     <h1>${_tlPrintNames()}</h1>
     <div class="sub">${_tlPrintSubLine()}</div>
     <table>${rows||'<tr><td style="padding:20px;text-align:center;color:#999">No moments added yet.</td></tr>'}</table>
+    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#999"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Created with <strong>Union Vault</strong></a></div>
     </body></html>`);
   win.document.close();
   win.focus();
@@ -605,6 +607,7 @@ function printTimelineMusic(){
     <h1>${_tlPrintNames()}</h1>
     <div class="sub">${_tlPrintSubLine()}</div>
     <table>${rows||'<tr><td style="padding:20px;text-align:center;color:#999">No songs tagged yet.</td></tr>'}</table>
+    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#999"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Created with <strong>Union Vault</strong></a></div>
     </body></html>`);
   win.document.close();
   win.focus();

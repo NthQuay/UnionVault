@@ -148,9 +148,9 @@ function _uvShowUpgradeModal(feature){
         <div class="uv-upgrade-feat">&#10003; Remove Union Vault branding</div>
       </div>
       <button class="uv-upgrade-cta" onclick="_uvGoCheckout()">${
-        isTrialEligible ? 'Start 14-day free trial' : 'Upgrade to Full Access'
+        isTrialEligible ? 'Get full access - Start 14-day free trial' : 'Upgrade to Full Access'
       }</button>
-      <button class="uv-upgrade-dismiss" onclick="this.closest('.uv-upgrade-overlay').remove()">Continue with free plan</button>
+      <button class="uv-upgrade-dismiss" onclick="this.closest('.uv-upgrade-overlay').remove()">Continue with free limited access plan</button>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -161,27 +161,27 @@ function _escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').r
 // ── Checkout redirect ───────────────────────────────────────────────────────
 
 async function _uvGoCheckout(priceId){
-  // If no priceId passed, redirect to the pricing section on the landing page
-  // (the user picks their plan there). For now, use a default price.
-  // The real priceId will come from settings or the upgrade modal plan selector.
   const pid = priceId || _uvGetDefaultPriceId();
   if(!pid){
-    navigate('settings');
-    setTimeout(function(){ _uvOpenSubPage(); }, 50);
+    _uvOpenSubPage();
     return;
   }
 
-  await _sbEnsureFreshToken();
+  const plan = _uvPlanByPrice(pid);
+  const planLabel = plan ? plan.label + ' of Full Access — Union Vault' : 'Full Access — Union Vault';
+
   try{
+    await _sbEnsureFreshToken();
     const r = await fetch(_SB_URL+'/functions/v1/create-checkout-session',{
       method:'POST',
       headers:{'Authorization':_sbAuthHdr(),'apikey':_SB_KEY,'Content-Type':'application/json'},
-      body: JSON.stringify({priceId: pid}),
+      body: JSON.stringify({priceId: pid, planLabel: planLabel}),
     });
     const data = await r.json();
     if(data.url) window.location.href = data.url;
     else _cloudToast(data.error || 'Could not start checkout — please try again.', true);
   }catch(e){
+    console.error('Checkout error:', e);
     _cloudToast('Could not connect — please try again.', true);
   }
 }
@@ -195,10 +195,10 @@ function _uvGetDefaultPriceId(){
 // Price IDs are filled once Stripe products are created.
 const _UV_PLANS = [
   { months:1,  label:'Monthly',     short:'1 mo',  priceId:'price_1UWhTrBK4MlrXpHgOhxSq5pL', monthly:1299, discount:0 },
-  { months:6,  label:'6 months',    short:'6 mo',  priceId:'price_1UWipfBK4MlrXpHgajg25HlC', monthly:1234, discount:5 },
-  { months:9,  label:'9 months',    short:'9 mo',  priceId:'price_1UWhTrBK4MlrXpHgdfm0SGea', monthly:1104, discount:15 },
-  { months:12, label:'12 months',   short:'12 mo', priceId:'price_1UWhTrBK4MlrXpHg1TQ8TSjI', monthly:974,  discount:25 },
-  { months:18, label:'18 months',   short:'18 mo', priceId:'price_1UWhTrBK4MlrXpHgQqcfChYB', monthly:779,  discount:40 },
+  { months:6,  label:'6 months',    short:'6 mo',  priceId:'price_1UWhTrBK4MlrXpHgQqcfChYB', monthly:1234, discount:5 },
+  { months:9,  label:'9 months',    short:'9 mo',  priceId:'price_1UWhTrBK4MlrXpHg1TQ8TSjI', monthly:1104, discount:15 },
+  { months:12, label:'12 months',   short:'12 mo', priceId:'price_1UWipfBK4MlrXpHgajg25HlC', monthly:974,  discount:25 },
+  { months:18, label:'18 months',   short:'18 mo', priceId:'price_1UWhTrBK4MlrXpHgdfm0SGea', monthly:779,  discount:40 },
 ];
 
 function _uvPlanByPrice(priceId){

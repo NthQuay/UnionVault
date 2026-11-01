@@ -25,7 +25,7 @@ serve(async (req) => {
     const user = await ur.json()
     if (!user?.id) return json(401, { ok: false, error: 'Sign in required' })
 
-    let body: { priceId?: string }
+    let body: { priceId?: string; planLabel?: string }
     try { body = await req.json() } catch { return json(400, { ok: false, error: 'Invalid JSON' }) }
     if (!body.priceId) return json(400, { ok: false, error: 'Missing priceId' })
 
@@ -69,6 +69,9 @@ serve(async (req) => {
     }
     if (isFirstSub) {
       params['subscription_data[trial_period_days]'] = '14'
+    }
+    if (body.planLabel) {
+      params['custom_text[submit][message]'] = body.planLabel
     }
 
     const session = await stripePost('checkout/sessions', params, STRIPE_KEY)
