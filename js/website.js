@@ -4601,6 +4601,7 @@ function _wbBuildSite(forDownload){
   const _uvMealHtml=_uvMealOpts.map(o=>`<div class="meal-chip" data-meal="${_escHtml(o)}" onclick="window._uvChooseMeal(this)">${_escHtml(o)}</div>`).join('');
   const _uvChildMealOn=_uvMealOn&&STATE.settings.childrenMealOn!==false&&(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()).length>0;
   const _uvChildMealEnabled=_uvMealOn&&STATE.settings.childrenMealOn!==false;
+  const _uvHighChairOn=!!(STATE.settings&&STATE.settings.highChairOn!==false);
   const _uvChildMealOpts=_uvChildMealOn?(STATE.settings.childrenMealOptions||[]).filter(x=>String(x||'').trim()):[];
   const _uvChildMealHtml=_uvChildMealOpts.map(o=>`<div class="meal-chip" data-meal="${_escHtml(o)}" onclick="window._uvChooseMeal(this)">${_escHtml(o)}</div>`).join('');
   const _uvGuests2=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B'&&g.name);
@@ -4809,7 +4810,7 @@ function _wbBuildSite(forDownload){
   var _rfWizPanels=['step1'${_uvHasStep2?",'step2'":""}${_uvHasStep3?",'step3'":""}];
   var _rfTotalSteps=_rfWizPanels.length;
   var _rfStep=1;
-  var _mealOn=${_uvMealOn?'true':'false'},_childMealEnabled=${_uvChildMealEnabled?'true':'false'};
+  var _mealOn=${_uvMealOn?'true':'false'},_childMealEnabled=${_uvChildMealEnabled?'true':'false'},_highChairOn=${_uvHighChairOn?'true':'false'};
   var _dietaryOn=${_uvDietaryOn?'true':'false'};
   var _phoneReq=${_fPhone.show&&_fPhone.required?'true':'false'},_emailReq=${_fEmail.show&&_fEmail.required?'true':'false'},_addrReq=${_fAddr.show&&_fAddr.required?'true':'false'};
   var group=[],plus1Names={},dietSel={},dietNotes={},mealPick={};
@@ -5045,9 +5046,9 @@ function _wbBuildSite(forDownload){
             html+='<p class="field-label" style="font-style:italic;opacity:.65">A children\\'s meal will be provided</p>';
           }
         }
-        if(isInf||isCh){
-          html+='<label class="rf-hc-label"><input type="checkbox" data-hcid="'+m.id+'" '+(mealPick[m.id+'-hc']?'checked':'')+' onchange="mealPick[this.dataset.hcid+\\'-hc\\']=this.checked"> <span>High chair required</span></label>';
-        }
+      }
+      if(_highChairOn&&(isInf||isCh)){
+        html+='<label class="rf-hc-label"><input type="checkbox" data-hcid="'+m.id+'" '+(mealPick[m.id+'-hc']?'checked':'')+' onchange="mealPick[this.dataset.hcid+\\'-hc\\']=this.checked"> <span>High chair required</span></label>';
       }
       if(_dietaryOn){
         html+='<div class="diet-accordion" onclick="window._uvToggleDiet(this)" style="margin-top:12px">';

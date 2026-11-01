@@ -25,8 +25,8 @@ function _rsvpGuestStats(){
   const gs=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B');
   const att=gs.filter(g=>g.rsvp==='attending');
   // Age bands among ATTENDING guests (adult is implicit — _guestAgeBand normalises).
-  let adults=0,children=0,infants=0;
-  att.forEach(g=>{ const b=(typeof _guestAgeBand==='function')?_guestAgeBand(g):(g.ageBand||'adult'); if(b==='child')children++; else if(b==='infant')infants++; else adults++; });
+  let adults=0,children=0,infants=0,highChairs=0;
+  att.forEach(g=>{ const b=(typeof _guestAgeBand==='function')?_guestAgeBand(g):(g.ageBand||'adult'); if(b==='child')children++; else if(b==='infant')infants++; else adults++; if(g.highChair)highChairs++; });
   // Per-head cover count mirrors the budget rule if available; else adults + children.
   let coverCount;
   if(typeof _rsvpPerHeadCount==='function'){ try{ coverCount=_rsvpPerHeadCount(); }catch(_){ coverCount=undefined; } }
@@ -44,7 +44,7 @@ function _rsvpGuestStats(){
   return {
     total:gs.length,
     attending:att.length,
-    adults,children,infants,coverCount,
+    adults,children,infants,highChairs,coverCount,
     withEmail,withPhone,missingBoth,
     seated,unseated
   };
@@ -68,7 +68,8 @@ function _rsvpWidgetHeadcount(){
     <div class="section-eyebrow" style="margin-bottom:12px">Guest Headcount</div>
     ${row('Adults',st.adults)}
     ${row('Children',st.children)}
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>Infants</span><span style="font-weight:600;color:var(--gold-deep)">${st.infants}</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;${st.highChairs?'border-bottom:1px solid var(--border);':''}font-size:13px"><span>Infants</span><span style="font-weight:600;color:var(--gold-deep)">${st.infants}</span></div>
+    ${st.highChairs?`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>High chairs needed</span><span style="font-weight:600;color:var(--gold-deep)">${st.highChairs}</span></div>`:''}
     <div style="font-size:11.5px;color:var(--muted);margin-top:11px">Among ${st.attending} attending &middot; per-head cover count: <strong style="color:var(--ink)">${st.coverCount}</strong></div>
   </div>`;
 }
@@ -243,7 +244,8 @@ function _rsvpWidgetSeating(){
   return `<div class="card">
     <div class="section-eyebrow" style="margin-bottom:12px">Seating Status</div>
     ${row('Seated',st.seated,'var(--green)')}
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>Not seated</span><span style="font-weight:600;color:var(--gold-deep)">${st.unseated}</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;${st.highChairs?'border-bottom:1px solid var(--border);':''}font-size:13px"><span>Not seated</span><span style="font-weight:600;color:var(--gold-deep)">${st.unseated}</span></div>
+    ${st.highChairs?`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>High chairs needed</span><span style="font-weight:600;color:var(--gold-deep)">${st.highChairs}</span></div>`:''}
     <div style="font-size:11.5px;color:var(--muted);margin-top:11px">Of ${st.attending} attending guest${st.attending===1?'':'s'}.</div>
   </div>`;
 }
@@ -1271,6 +1273,7 @@ async function _loadOnlineRsvps(){
         }
         // Carry meal, phone, email, address across if not already on guest record
         if(r.meal&&!g.meal){g.meal=r.meal;g.mealSrc='guest';rowChanged=true;}
+        if(r.high_chair!=null&&g.highChair!==!!r.high_chair){g.highChair=!!r.high_chair;rowChanged=true;}
         if(r.phone&&!(g.phone||'').trim()){g.phone=r.phone.trim();rowChanged=true;}
         if(r.email&&!(g.email||'').trim()){g.email=r.email.trim();rowChanged=true;}
         if(r.address&&!(g.address||'').trim()){g.address=r.address.trim();rowChanged=true;}
@@ -1402,6 +1405,7 @@ function renderRsvpMgr(c, actions){
     const hidden=_rsvpHiddenSet();
     const cols=_rsvpCardCols();
     const gridCols=cols==='4'?'repeat(4,minmax(0,1fr))':cols==='3'?'repeat(3,minmax(0,1fr))':cols==='2'?'repeat(2,minmax(0,1fr))':'repeat(auto-fit,minmax(280px,1fr))';
+    const hcOn=STATE.settings&&STATE.settings.highChairOn!==false;
     const cardHtml={
       invitation:!hidden.has('invitation')?_invitationSectionHtml('invitation'):'',
       sendguests:!hidden.has('sendguests')?_invitationSectionHtml('sendguests'):'',
@@ -1441,6 +1445,13 @@ function renderRsvpMgr(c, actions){
         ${(STATE.settings&&STATE.settings.rsvpLockEnabled!==false)?`<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
           <input type="text" id="rsvp-lock-pw" class="form-input" value="${_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'')}" placeholder="Set a password" oninput="_rsvpSetLockPassword(this.value)" style="flex:1;font-size:13px"/>
         </div>`:''}
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 12px">
+        <div class="section-eyebrow" style="margin-bottom:10px">High-Chair Tracking</div>
+        <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
+          <input type="checkbox" ${hcOn?'checked':''} onchange="_highChairSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+          Offer high chairs to children &amp; infants
+        </label>
+        <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Adds a high-chair option on the RSVP form for child and infant guests.</div>
       </div>`:'',
       summary:!hidden.has('summary')?`<div class="card" style="position:relative">
         <div class="rsvp-style-switch">
@@ -2034,6 +2045,8 @@ function _childMealSetOn(on){ if(on && _sbSession && typeof _uvRequirePaid==='fu
 function _childMealSetOpt(i,v){ const a=_childMealOptsArr(); if(i<0||i>=a.length) return; a[i]=String(v||'').trim(); saveToStorage(); rsvpRerenderList(); }
 function _childMealAddOpt(){ _childMealOptsArr().push(''); saveToStorage(); rsvpRerenderList(); _rsvpRerenderMealCard(); }
 function _childMealDelOpt(i){ const a=_childMealOptsArr(); if(i<0||i>=a.length) return; a.splice(i,1); saveToStorage(); rsvpRerenderList(); _rsvpRerenderMealCard(); }
+function _highChairOn(){ return !!(STATE.settings&&STATE.settings.highChairOn!==false); }
+function _highChairSetOn(on){ if(on&&_sbSession&&typeof _uvRequirePaid==='function'&&!_uvIsPaid()){_uvRequirePaid('highChair');return;} if(!STATE.settings)STATE.settings={}; STATE.settings.highChairOn=!!on; saveToStorage(); navigate('rsvp-mgr'); }
 function _rsvpSetEmailNotif(on){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpEmailOn=!!on;
