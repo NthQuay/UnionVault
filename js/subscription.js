@@ -374,6 +374,12 @@ function _uvSelectPricePill(btn){
   const plan=_UV_PLANS.find(p=>p.months===months);
   const valEl=document.getElementById('price-value');
   if(valEl) valEl.textContent=plan&&plan.monthly?_uvFormatMoney(plan.monthly).replace('$',''):'—';
+  var dsp=document.getElementById('price-display');
+  if(dsp){dsp.style.fontSize='72px';dsp.style.lineHeight='1';dsp.style.marginBottom='0';}
+  var tl=dsp&&dsp.previousElementSibling;
+  if(tl&&tl.classList.contains('price-tagline')) tl.style.marginBottom='4px';
+  var cy=document.getElementById('price-cycle-label');
+  if(cy) cy.style.marginBottom='6px';
 }
 
 function _uvPricingCTA(){

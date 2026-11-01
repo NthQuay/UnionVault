@@ -161,7 +161,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v389';
+const APP_BUILD='v390';
 const APP_BUILD_DATE='2026-11-01';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
