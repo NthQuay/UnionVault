@@ -161,10 +161,10 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 .price-card.featured{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 8px 32px rgba(184,150,90,.12)}
 .price-badge{display:inline-block;background:var(--gold);color:#fff;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:16px;align-self:flex-start}
 .price-name{font-family:var(--font-display);font-size:24px;font-weight:400;color:var(--ink);margin-bottom:4px}
-.price-tagline{font-size:12px;color:var(--muted);margin-bottom:20px}
-.price-amount{font-family:var(--font-display);font-size:44px;font-weight:300;color:var(--ink);line-height:1;margin-bottom:4px}
+.price-tagline{font-size:12px;color:var(--muted);margin-bottom:4px}
+.price-amount{font-family:var(--font-display);font-size:52px;font-weight:300;color:var(--ink);line-height:1;margin-bottom:2px}
 .price-amount span{font-size:17px;font-weight:400;vertical-align:super;margin-right:2px;color:var(--muted)}
-.price-cycle{font-size:12px;color:var(--muted);margin-bottom:24px}
+.price-cycle{font-size:12px;color:var(--muted);margin-bottom:4px}
 .price-divider{height:1px;background:var(--border);margin-bottom:20px}
 .price-features{display:flex;flex-direction:column;gap:11px;margin-bottom:28px;flex:1}
 .price-feat{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink);font-weight:300;line-height:1.4}
