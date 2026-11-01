@@ -19,6 +19,15 @@ function welcomeFinish(){
   STATE.event.date = document.getElementById('w-date').value || '';
   STATE.event.venue = document.getElementById('w-venue').value.trim() || '';
   STATE.budget.total = Number(document.getElementById('w-budget').value) || 0;
+  if(!STATE.guests.length){
+    const id1=uid(),id2=uid(),goh="Guest's of Honour";
+    STATE.guests.push(
+      {id:id1,name:p1,rsvp:'attending',dietary:[],tags:[goh],phone:'',email:'',address:'',coupleId:id2,plusOneId:null,plusOne:false,relationship:t1,isMain:true,listType:'A',ageBand:'adult'},
+      {id:id2,name:p2,rsvp:'attending',dietary:[],tags:[goh],phone:'',email:'',address:'',coupleId:id1,plusOneId:null,plusOne:false,relationship:t2,isMain:false,listType:'A',ageBand:'adult'}
+    );
+    if(!STATE.tagDefs) STATE.tagDefs={};
+    if(!STATE.tagDefs[goh]) STATE.tagDefs[goh]={color:'#B8963E',icon:'sparkle'};
+  }
   applySuggestedChecklistDueDates();
   saveToStorage();
   document.getElementById('setup-modal-overlay').classList.add('hidden');
