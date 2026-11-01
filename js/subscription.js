@@ -196,9 +196,9 @@ function _uvGetDefaultPriceId(){
 const _UV_PLANS = [
   { months:1,  label:'Monthly',     short:'1 mo',  priceId:'price_1UWhTrBK4MlrXpHgOhxSq5pL', monthly:1299, discount:0 },
   { months:6,  label:'6 months',    short:'6 mo',  priceId:'price_1UWipfBK4MlrXpHgajg25HlC', monthly:1234, discount:5 },
-  { months:9,  label:'9 months',    short:'9 mo',  priceId:'price_1UWhTrBK4MlrXpHgdfm0SGea', monthly:1169, discount:10 },
-  { months:12, label:'12 months',   short:'12 mo', priceId:'price_1UWhTrBK4MlrXpHg1TQ8TSjI', monthly:1104, discount:15 },
-  { months:18, label:'18 months',   short:'18 mo', priceId:'price_1UWhTrBK4MlrXpHgQqcfChYB', monthly:974,  discount:20 },
+  { months:9,  label:'9 months',    short:'9 mo',  priceId:'price_1UWhTrBK4MlrXpHgdfm0SGea', monthly:1104, discount:15 },
+  { months:12, label:'12 months',   short:'12 mo', priceId:'price_1UWhTrBK4MlrXpHg1TQ8TSjI', monthly:974,  discount:25 },
+  { months:18, label:'18 months',   short:'18 mo', priceId:'price_1UWhTrBK4MlrXpHgQqcfChYB', monthly:779,  discount:40 },
 ];
 
 function _uvPlanByPrice(priceId){
