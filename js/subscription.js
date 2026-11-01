@@ -184,7 +184,146 @@ async function _uvGoCheckout(priceId){
 }
 
 function _uvGetDefaultPriceId(){
-  return typeof UV_STRIPE_MONTHLY_PRICE !== 'undefined' ? UV_STRIPE_MONTHLY_PRICE : '';
+  return _UV_PLANS[0]?.priceId || '';
+}
+
+// ── Plan definitions ───────────────────────────────────────────────────────
+// Each plan: { months, label, priceId, monthly (AUD cents), discount }
+// Price IDs are filled once Stripe products are created.
+const _UV_PLANS = [
+  { months:1,  label:'Monthly',     short:'1 mo',  priceId:'', monthly:0, discount:0 },
+  { months:6,  label:'6 months',    short:'6 mo',  priceId:'', monthly:0, discount:5 },
+  { months:9,  label:'9 months',    short:'9 mo',  priceId:'', monthly:0, discount:10 },
+  { months:12, label:'12 months',   short:'12 mo', priceId:'', monthly:0, discount:15 },
+  { months:18, label:'18 months',   short:'18 mo', priceId:'', monthly:0, discount:20 },
+];
+
+function _uvPlanByPrice(priceId){
+  if(!priceId) return null;
+  return _UV_PLANS.find(p=>p.priceId && p.priceId===priceId) || null;
+}
+
+function _uvCurrentPlan(){
+  if(!_uvSubDetails || !_uvSubDetails.priceId) return null;
+  return _uvPlanByPrice(_uvSubDetails.priceId);
+}
+
+function _uvFormatMoney(cents){
+  if(!cents) return '—';
+  return '$'+(cents/100).toFixed(cents%100?2:0);
+}
+
+// ── Settings subscription panel ────────────────────────────────────────────
+
+function _uvSubPanelHtml(){
+  const d=_uvSubDetails;
+  const plan=_uvCurrentPlan();
+  const isFull=_uvTier==='full';
+  const isTrial=_uvTier==='trial';
+  const isFree=!isFull&&!isTrial;
+
+  let statusHtml='';
+  if(isFull){
+    const planLabel=plan?plan.label:'Full Access';
+    const periodEnd=d&&d.currentPeriodEnd?new Date(d.currentPeriodEnd).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'';
+    const monthlyStr=plan&&plan.monthly?_uvFormatMoney(plan.monthly)+'/mo':'';
+    statusHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green,#3D9454)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Full Access</span>
+      <span style="font-size:12px;color:var(--gold-deep);background:rgba(196,168,130,.15);padding:2px 8px;border-radius:6px;font-weight:600">${_escH(planLabel)}</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">${monthlyStr?monthlyStr+' · ':''}${periodEnd?'Renews '+periodEnd:''}</div>`;
+  } else if(isTrial){
+    const daysLeft=_uvTrialDaysLeft||0;
+    statusHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold,#B8965A)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Free Trial</span>
+      <span style="font-size:12px;color:var(--gold-deep);background:rgba(196,168,130,.15);padding:2px 8px;border-radius:6px;font-weight:600">${daysLeft} day${daysLeft===1?'':'s'} left</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">All features unlocked during your trial.</div>`;
+  } else {
+    statusHtml=`<div style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Free Tier</div>
+    <div style="font-size:12px;color:var(--muted)">Upgrade for unlimited guests, seating plans, print &amp; more.</div>`;
+  }
+
+  // Cancel-pending banner
+  let cancelBanner='';
+  if(d&&d.cancelAtPeriodEnd){
+    const endDate=d.currentPeriodEnd?new Date(d.currentPeriodEnd).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'the end of your billing period';
+    cancelBanner=`<div style="font-size:12.5px;color:var(--red);padding:10px 14px;background:rgba(192,57,43,.06);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>Your subscription ends ${_escH(endDate)}.</span><button class="btn btn-sm btn-outline" onclick="_uvReactivateSub().then(function(){navigate('settings')})">Reactivate</button></div>`;
+  }
+
+  // Plan selector (for free/trial users upgrading, or full users switching)
+  const showPlans=isFree||isTrial||(isFull&&!d?.cancelAtPeriodEnd);
+  let plansHtml='';
+  if(showPlans){
+    const currentMonths=plan?plan.months:0;
+    plansHtml=`<div style="margin-top:4px">
+      <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">${isFull?'Change plan':'Choose a plan'}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">
+        ${_UV_PLANS.map(p=>{
+          const isCurrent=isFull&&currentMonths===p.months;
+          const border=isCurrent?'var(--gold)':'var(--border)';
+          const bg=isCurrent?'rgba(196,168,130,.08)':'transparent';
+          const monthlyStr=p.monthly?_uvFormatMoney(p.monthly)+'/mo':'';
+          const totalStr=p.monthly?_uvFormatMoney(p.monthly*p.months):'';
+          return `<div style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCurrent?'default':'pointer'};transition:all .15s;position:relative"
+            ${isCurrent?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'"`}>
+            ${isCurrent?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Current</div>':''}
+            ${p.discount?`<div style="font-size:10px;font-weight:700;color:var(--green,#3D9454);margin-bottom:4px">Save ${p.discount}%</div>`:''}
+            <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${monthlyStr||'Price TBC'}</div>
+            ${p.months>1&&totalStr?`<div style="font-size:11px;color:var(--muted);margin-top:1px">${totalStr} total</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Action buttons
+  let actionsHtml='';
+  if(isFull&&!d?.cancelAtPeriodEnd){
+    actionsHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <button class="btn btn-sm btn-outline" onclick="_uvOpenPortal()">Manage billing</button>
+      <button class="btn btn-sm" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline" onclick="_uvConfirmCancel()">Cancel subscription</button>
+    </div>`;
+  } else if(isFree||isTrial){
+    actionsHtml=`<div style="margin-top:4px"><button class="btn btn-sm btn-primary" onclick="_uvGoCheckout()">Upgrade to Full Access</button></div>`;
+  }
+
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+    <div>${statusHtml}</div>
+    ${cancelBanner}
+    ${plansHtml}
+    ${actionsHtml}
+  </div>`;
+}
+
+function _uvSelectSettingsPlan(months){
+  const plan=_UV_PLANS.find(p=>p.months===months);
+  if(!plan) return;
+  if(plan.priceId){
+    if(_uvTier==='full'){
+      _uvOpenPortal();
+    } else {
+      _uvGoCheckout(plan.priceId);
+    }
+  } else {
+    if(typeof showToast==='function') showToast('Pricing coming soon — check back shortly.','info');
+  }
+}
+
+function _uvConfirmCancel(){
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  overlay.innerHTML=`<div style="background:var(--cream);color:var(--ink);border-radius:14px;padding:28px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.2);text-align:center">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;margin-bottom:8px">Cancel subscription?</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5">You'll keep Full Access until the end of your current billing period. You can reactivate anytime before then.</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-sm btn-outline" onclick="this.closest('div[style*=fixed]').remove()">Keep my plan</button>
+      <button class="btn btn-sm" style="background:var(--red,#C05840);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer" onclick="this.textContent='Cancelling…';this.disabled=true;_uvCancelSub().then(function(){navigate('settings')}).finally(function(){var o=document.querySelector('div[style*=fixed]');if(o)o.remove();})">Yes, cancel</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
 }
 
 // ── Landing page pricing pills ──────────────────────────────────────────────
@@ -192,11 +331,18 @@ function _uvGetDefaultPriceId(){
 function _uvSelectPricePill(btn){
   document.querySelectorAll('.price-pill').forEach(function(p){ p.classList.remove('active'); });
   btn.classList.add('active');
+  const months=parseInt(btn.dataset.months)||1;
+  const plan=_UV_PLANS.find(p=>p.months===months);
+  const valEl=document.getElementById('price-value');
+  if(valEl) valEl.textContent=plan&&plan.monthly?_uvFormatMoney(plan.monthly).replace('$',''):'—';
 }
 
 function _uvPricingCTA(){
   if(_sbSession){
-    _uvGoCheckout();
+    const active=document.querySelector('.price-pill.active');
+    const months=active?parseInt(active.dataset.months)||1:1;
+    const plan=_UV_PLANS.find(p=>p.months===months);
+    _uvGoCheckout(plan&&plan.priceId?plan.priceId:'');
   } else {
     var a=document.getElementById('auth');
     if(a){a.scrollIntoView({behavior:'smooth'});setTimeout(function(){document.querySelectorAll('.tab')[1].click();var e=document.getElementById('auth-up-email');if(e)e.focus();},400);}
