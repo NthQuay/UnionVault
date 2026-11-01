@@ -424,7 +424,7 @@ function renderSettings(c, actions){
           <div style="font-size:12px;color:var(--muted);margin-top:2px">When cloud data is newer, silently update this device without showing a prompt.</div>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" ${(function(){try{return localStorage.getItem('uv-suppress-conflict')==='1';}catch(e){return !!STATE.settings.suppressVersionMismatch;}})()?'checked':''} onchange="STATE.settings.suppressVersionMismatch=this.checked;try{this.checked?localStorage.setItem('uv-suppress-conflict','1'):localStorage.removeItem('uv-suppress-conflict');}catch(e){}saveToStorage()"/>
+          <input type="checkbox" ${(function(){try{var v=localStorage.getItem('uv-suppress-conflict');return v==='0'?false:true;}catch(e){return STATE.settings.suppressVersionMismatch!==false;}})()?'checked':''} onchange="STATE.settings.suppressVersionMismatch=this.checked;try{this.checked?localStorage.removeItem('uv-suppress-conflict'):localStorage.setItem('uv-suppress-conflict','0');}catch(e){}saveToStorage()"/>
           <div class="toggle-track"></div>
         </label>
       </div>

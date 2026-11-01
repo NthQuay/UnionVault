@@ -218,7 +218,9 @@ function _uvFormatMoney(cents){
 
 // ── Subscription page (opened from Account & Cloud button) ────────────────
 
-function _uvOpenSubPage(){
+async function _uvOpenSubPage(){
+  _uvInvalidateCache();
+  await _uvLoadSubscription();
   const c=document.getElementById('main-content');
   if(!c) return;
   const d=_uvSubDetails;

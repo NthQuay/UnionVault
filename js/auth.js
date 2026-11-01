@@ -611,7 +611,7 @@ async function _autoSyncCheckOnBoot(){
       // If there's existing local data, ask first — don't silently overwrite it
       const hasLocal=!!(STATE.guests&&STATE.guests.length)||!!(STATE.event&&(STATE.event.names||STATE.event.date));
       if(hasLocal){
-        const _sup=(function(){try{return localStorage.getItem('uv-suppress-conflict')==='1';}catch(e){}return !!STATE.settings?.suppressVersionMismatch;})();
+        const _sup=(function(){try{var v=localStorage.getItem('uv-suppress-conflict');return v==='0'?false:true;}catch(e){}return STATE.settings?.suppressVersionMismatch!==false;})();
         if(_sup){ await cloudLoadClick(true); return; }
         _showConflictDialog(cloudTs,0);
         return;
@@ -623,7 +623,7 @@ async function _autoSyncCheckOnBoot(){
     const localTs=new Date(localTsRaw).getTime();
     if(cloudTs-localTs>5000){
       // Cloud is newer — show dialog so user can choose to keep local changes
-      const _sup=(function(){try{return localStorage.getItem('uv-suppress-conflict')==='1';}catch(e){}return !!STATE.settings?.suppressVersionMismatch;})();
+      const _sup=(function(){try{var v=localStorage.getItem('uv-suppress-conflict');return v==='0'?false:true;}catch(e){}return STATE.settings?.suppressVersionMismatch!==false;})();
       if(_sup){ await cloudLoadClick(true); return; }
       _showConflictDialog(cloudTs,localTs);
     } else {
@@ -636,8 +636,8 @@ async function _autoSyncCheckOnBoot(){
 setInterval(function(){ if(_sbSession) _autoSyncCheckOnBoot(); }, 5*60*1000);
 
 function _showConflictDialog(cloudTs,localTs){
-  try{if(localStorage.getItem('uv-suppress-conflict')==='1') return;}catch(e){}
-  if(STATE.settings?.suppressVersionMismatch) return;
+  try{if(localStorage.getItem('uv-suppress-conflict')!=='0') return;}catch(e){}
+  if(STATE.settings?.suppressVersionMismatch!==false) return;
   const fmt=ts=>ts?new Date(ts).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'Unknown';
   const overlay=document.createElement('div');
   overlay.id='conflict-overlay';
