@@ -403,7 +403,7 @@ function _ssRender(open){
     <div style="${lab}">Message</div>
     <div id="ss-msg" style="border:.5px solid var(--border);border-radius:11px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--ink);background:var(--surface);white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto">${esc(msg)}</div>
     ${mode==='share'?`<div style="font-size:11.5px;color:var(--muted);line-height:1.5">Your phone's share menu opens with the invitation attached and the message ready — choose ${esc(_ssMethodLabel(s.method))}, then the guest's chat.</div>`:''}
-    ${mode==='email-direct'?`<div style="font-size:11.5px;color:var(--muted)">Sent from invites@unionvault.app as “${esc(_ssCoupleNames()||'UnionVault')}” — replies come to you.</div>`:''}
+    ${mode==='email-direct'?`<div style=”display:flex;align-items:center;gap:10px;margin-top:2px”><div style=”font-size:11.5px;color:var(--muted);flex:1”>Sent from invites@unionvault.app as “${esc(_ssCoupleNames()||'UnionVault')}” — replies come to you.</div><button type=”button” class=”btn btn-outline btn-sm” onclick=”_ssPreviewEmail()” style=”flex-shrink:0;font-size:11px”>Preview email</button></div>`:''}
   </div>`;
   const primary = mode==='email-direct' ? 'Send email'
     : mode==='share' ? 'Share to '+_ssMethodLabel(s.method)
@@ -437,25 +437,22 @@ async function _ssGo(){
     _ssDone('Shared — finish sending in '+_ssMethodLabel(s.method)+'.');
     return;
   }
-  if(mode==='email-direct'){
-    if(!s.to){ if(typeof _showInfoToast==='function') _showInfoToast('No email address on file for this guest.', null, null); return; }
-    if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+  if(mode===’email-direct’){
+    if(!s.to){ if(typeof _showInfoToast===’function’) _showInfoToast(‘No email address on file for this guest.’, null, null); return; }
+    if(btn){ btn.disabled=true; btn.textContent=’Sending…’; }
     if(s.asset.file && (s.attach||s.addLink)) await _ssEnsureUploaded();
-    const names=_ssCoupleNames();
-    const payload={ to:[s.to], subject:(s.kind==='invite'?'You’re invited':'Save the date')+(names?' — '+names:''), body:msg,
-      fromName:names||'UnionVault', kicker:names?names+"'s wedding":'', title:s.kind==='invite'?'You’re invited':'Save the date', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession.user&&_sbSession.user.email)||'' };
-    if(s.attach && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
+    const payload=_ssBuildPayload(s, msg);
     let ok=false;
     try{
       await _sbEnsureFreshToken();
-      const r=await fetch(_SB_URL+'/functions/v1/send-guest-email',{ method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+_sbSession.access_token,'apikey':_SB_KEY},
+      const r=await fetch(_SB_URL+’/functions/v1/send-guest-email’,{ method:’POST’,
+        headers:{‘Content-Type’:’application/json’,’Authorization’:’Bearer ‘+_sbSession.access_token,’apikey’:_SB_KEY},
         body:JSON.stringify(payload) });
       ok = r.ok && (await r.json()).ok===true;
     }catch(_){ ok=false; }
-    if(ok){ _ssDone('Email sent to '+s.to+'.'); return; }
-    if(btn){ btn.disabled=false; btn.textContent='Send email'; }
-    if(typeof _showInfoToast==='function') _showInfoToast('Couldn’t send from UnionVault — opening your mail app instead.', null, null);
+    if(ok){ _ssDone(‘Email sent to ‘+s.to+’.’); return; }
+    if(btn){ btn.disabled=false; btn.textContent=’Send email’; }
+    if(typeof _showInfoToast===’function’) _showInfoToast(‘Couldn’t send from UnionVault — opening your mail app instead.’, null, null);
     _ssFallback(msg); return;
   }
   if(s.asset.file && s.addLink) await _ssEnsureUploaded();
@@ -897,6 +894,17 @@ function _inviteChanMenuHtml(){
       <span style="min-width:0;flex:1">
         <span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">RSVP date &amp; message templates</span>
         <span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Set your deadline and edit invite / reminder text</span>
+      </span>
+      <span style="margin-left:auto;color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
+    </button>
+    <div style="height:8px"></div>
+    <button type="button" onclick="event.stopPropagation();${closeMenuJs}_openEmailDesignModal()" style="${btnStyle}">
+      <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+      </span>
+      <span style="min-width:0;flex:1">
+        <span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">Email design</span>
+        <span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Choose template, colours &amp; fonts for guest emails</span>
       </span>
       <span style="margin-left:auto;color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
     </button>
@@ -2284,6 +2292,112 @@ function confirmDeleteGuest(id){
     STATE.seating[tid]=(STATE.seating[tid]||[]).map(x=>idsToDelete.has(x)?null:x);
   });
   }, 'guests');
+}
+
+// ── Email payload builder (shared by _ssGo and _ssPreviewEmail) ──────────
+function _ssBuildPayload(s, msg){
+  if(!s) s=_ss; if(!msg) msg=_ssMessage();
+  const names=_ssCoupleNames();
+  const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const payload={ to:s&&s.to?[s.to]:[], subject:(s&&s.kind==='invite'?'You’re invited':'Save the date')+(names?' — '+names:''), body:msg,
+    fromName:names||'UnionVault', kicker:names?names+'’s wedding':'', title:s&&s.kind==='invite'?'You’re invited':'Save the date',
+    replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
+    templateId:ed.templateId||'classic',
+    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false } };
+  if(s&&s.attach && s.asset && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
+  return payload;
+}
+
+// ── Email preview ────────────────────────────────────────────────────────
+async function _ssPreviewEmail(){
+  const s=_ss;
+  const msg=s?_ssMessage():'Dear Guest,\n\nYou are invited to our wedding.\n\nWith love.';
+  const payload=_ssBuildPayload(s, msg);
+  payload.preview=true;
+  if(typeof _showInfoToast==='function') _showInfoToast('Loading preview…',null,null);
+  try{
+    await _sbEnsureFreshToken();
+    const r=await fetch(_SB_URL+'/functions/v1/send-guest-email',{ method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+_sbSession.access_token,'apikey':_SB_KEY},
+      body:JSON.stringify(payload) });
+    const data=await r.json();
+    if(!data.ok||!data.html){ if(typeof _showInfoToast==='function') _showInfoToast('Preview unavailable.',null,null); return; }
+    const w=Math.min(600,window.innerWidth-40);
+    openConfirm2('Email preview',
+      `<div style="display:flex;justify-content:center"><iframe srcdoc="${_escHtml(data.html)}" sandbox="allow-same-origin" style="width:${w}px;height:480px;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe></div>`,
+      `<button class="btn btn-outline btn-sm" onclick="_closeConfirm2Direct()">Close</button>`);
+  }catch(_){ if(typeof _showInfoToast==='function') _showInfoToast('Preview failed — check your connection.',null,null); }
+}
+
+// ── Email design modal ───────────────────────────────────────────────────
+function _openEmailDesignModal(){
+  const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const tplId=ed.templateId||'classic';
+  const accent=ed.accentColor||'#8a6a2c';
+  const ff=ed.fontFamily||'serif';
+  const logo=ed.showLogo!==false;
+  const tplThumb=(id,name,desc,bandColor,cardColor,borderLeft)=>{
+    const sel=tplId===id;
+    return `<button type="button" onclick="_emailDesignSet('templateId','${id}')" style="flex:1;min-width:100px;max-width:160px;border:2px solid ${sel?'var(--gold)':'var(--border)'};border-radius:12px;padding:0;overflow:hidden;cursor:pointer;background:var(--cream);display:flex;flex-direction:column;text-align:left;position:relative${sel?';box-shadow:0 0 0 2px var(--gold-fade)':''}">
+      <div style="height:28px;background:${bandColor};${borderLeft?'border-left:4px solid '+accent:''}"></div>
+      <div style="padding:8px 10px;background:${cardColor}">
+        <div style="width:70%;height:4px;background:${accent};border-radius:2px;margin-bottom:5px;opacity:.6"></div>
+        <div style="width:100%;height:3px;background:var(--muted);border-radius:2px;margin-bottom:3px;opacity:.2"></div>
+        <div style="width:85%;height:3px;background:var(--muted);border-radius:2px;margin-bottom:3px;opacity:.2"></div>
+        <div style="width:60%;height:3px;background:var(--muted);border-radius:2px;opacity:.2"></div>
+      </div>
+      <div style="padding:6px 10px 8px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:600;color:var(--ink)">${name}</div>
+        <div style="font-size:9.5px;color:var(--muted);line-height:1.3;margin-top:1px">${desc}</div>
+      </div>
+      ${sel?'<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>':''}
+    </button>`;
+  };
+  const body=`<div style="display:flex;flex-direction:column;gap:18px">
+    <div>
+      <div style="font-size:13.5px;font-weight:500;margin-bottom:8px">Template</div>
+      <div id="email-tpl-picker" style="display:flex;gap:10px;flex-wrap:wrap">
+        ${tplThumb('classic','Classic','Cream card, warm tones','#F4EEE4','#FBF8F3',false)}
+        ${tplThumb('modern','Modern','Clean white, accent border','#F5F5F5','#FFFFFF',true)}
+        ${tplThumb('botanical','Botanical','Sage green, natural feel','#E8EDE6','#FFFFFF',false)}
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Accent colour</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="color" id="email-accent" value="${accent}" onchange="_emailDesignSet('accentColor',this.value)" style="width:36px;height:30px;border:1px solid var(--border);border-radius:6px;padding:1px;cursor:pointer"/>
+        <span style="font-size:12px;color:var(--muted);font-family:monospace">${accent}</span>
+        <button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignSet('accentColor','#8a6a2c');document.getElementById('email-accent').value='#8a6a2c'" style="font-size:10px;margin-left:auto">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Font style</div>
+      <span class="inv-seg" style="display:inline-flex">
+        <button type="button" class="${ff==='serif'?'active':''}" onclick="_emailDesignSet('fontFamily','serif')" style="font-family:Georgia,serif">Serif</button>
+        <button type="button" class="${ff==='sans-serif'?'active':''}" onclick="_emailDesignSet('fontFamily','sans-serif')">Sans-serif</button>
+      </span>
+    </div>
+    <div>
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+        <input type="checkbox" ${logo?'checked':''} onchange="_emailDesignSet('showLogo',this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+        <span style="font-size:13px;color:var(--ink)">Show logo in email header</span>
+      </label>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px">
+      <button type="button" class="btn btn-outline btn-sm" onclick="_ssPreviewEmail()" style="display:inline-flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Preview with sample content
+      </button>
+    </div>
+  </div>`;
+  openModal('Email Design',body,`<button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`);
+}
+function _emailDesignSet(key, val){
+  if(!STATE.settings) STATE.settings={};
+  if(!STATE.settings.emailDesign) STATE.settings.emailDesign={ templateId:'classic', accentColor:'#8a6a2c', fontFamily:'serif', showLogo:true };
+  STATE.settings.emailDesign[key]=val;
+  saveToStorage();
+  if(key==='templateId'||key==='accentColor') _openEmailDesignModal();
 }
 
 // ══════════════════════════════════════════════

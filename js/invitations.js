@@ -59,7 +59,7 @@ function _invitationSectionHtml(which){
           </div>
         </div>
         <div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
-          ${_invSrc2&&_invIsImg2?`<div style="background:var(--surface);display:flex;align-items:center;justify-content:center;padding:10px;border-bottom:1px solid var(--border)"><img src="${_escHtml(_invSrc2)}" style="max-width:100%;max-height:320px;border-radius:6px;object-fit:contain" alt=""/></div>`:''}
+          ${_invSrc2&&_invIsImg2?`<div style="background:var(--surface);display:flex;align-items:center;justify-content:center;padding:10px;border-bottom:1px solid var(--border)"><img src="${_escHtml(_invSrc2)}" style="max-width:100%;max-height:150px;border-radius:6px;object-fit:contain" alt=""/></div>`:''}
           <div style="display:flex;align-items:center;gap:8px;padding:10px 13px">
             ${!(_invSrc2&&_invIsImg2)?_fileThumb:''}
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(ftrun)}</div><div style="font-size:11.5px;color:var(--muted)">${_escHtml(inv.file.sizeLabel||'')}</div></div>
@@ -102,7 +102,7 @@ function _invitationSectionHtml(which){
       content=`${_fileInput}
       <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden">
         <div style="${hasPreview&&_invIsImg?'min-height:120px;padding:10px':'height:120px'};background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid var(--border);gap:6px">
-          ${hasPreview&&_invIsImg?`<img src="${_escHtml(_invSrc)}" style="max-width:100%;max-height:320px;object-fit:contain;border-radius:6px" alt=""/>`:
+          ${hasPreview&&_invIsImg?`<img src="${_escHtml(_invSrc)}" style="max-width:100%;max-height:150px;object-fit:contain;border-radius:6px" alt=""/>`:
           `<svg width="36" height="44" viewBox="0 0 40 48" fill="none" opacity=".3"><path d="M4 4C4 1.79 5.79 0 8 0H28L40 12V44C40 46.21 38.21 48 36 48H8C5.79 48 4 46.21 4 44V4Z" fill="var(--muted)"/><path d="M28 0L40 12H32C29.79 12 28 10.21 28 8V0Z" fill="rgba(0,0,0,.15)"/></svg>
           <span style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:var(--muted);padding:2px 8px;border-radius:4px">${_escHtml(fext)}</span>`}
         </div>
@@ -159,7 +159,68 @@ function _invitationSectionHtml(which){
 
 function _invitationCreate(){ _invComingSoon(); }
 function _invitationUpload(){ _invTriggerUpload(); }
-function _invitationSend(channel){ alert('Sending by '+channel+' will be enabled soon.'); }
+function _invitationSend(channel){
+  if(channel==='text'){
+    if(typeof _showInfoToast==='function') _showInfoToast('Text messages are sent per-guest from the RSVP tracker.',null,null);
+    return;
+  }
+  const guests=(STATE.guests||[]).filter(g=>(g.email||'').trim());
+  if(!guests.length){ if(typeof _showInfoToast==='function') _showInfoToast('No guests have email addresses.',null,null); return; }
+  const names=_ssCoupleNames();
+  const count=guests.length;
+  openConfirm2('Send invitations by email',
+    `<div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:14px;color:var(--ink)">Send your invitation to <strong>${count}</strong> guest${count===1?'':'s'} with an email address?</div>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.5">Each guest receives a personalised email from <strong>invites@unionvault.app</strong> as "${_escHtml(names||'UnionVault')}" using their template message.${(STATE.invitation&&STATE.invitation.file&&STATE.invitation.file.mediaId)?' Your uploaded invitation will be attached.':''}</div>
+      <div id="inv-batch-progress" style="display:none">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Sending… <span id="inv-batch-count">0</span> / ${count}</div>
+        <div style="height:6px;border-radius:3px;background:var(--border);overflow:hidden"><div id="inv-batch-bar" style="height:100%;width:0;background:var(--gold);border-radius:3px;transition:width .3s"></div></div>
+      </div>
+    </div>`,
+    `<button class="btn btn-outline btn-sm" onclick="_closeConfirm2Direct()">Cancel</button>
+     <button class="btn btn-primary btn-sm" id="inv-batch-go" onclick="_invBatchSend()">Send all</button>`);
+}
+async function _invBatchSend(){
+  const btn=document.getElementById('inv-batch-go'); if(btn) btn.disabled=true;
+  const prog=document.getElementById('inv-batch-progress'); if(prog) prog.style.display='';
+  const countEl=document.getElementById('inv-batch-count');
+  const bar=document.getElementById('inv-batch-bar');
+  const guests=(STATE.guests||[]).filter(g=>(g.email||'').trim());
+  const total=guests.length; let sent=0; let failed=0;
+  const asset=_ssInviteAsset();
+  const kind='invite';
+  await _sbEnsureFreshToken();
+  for(let i=0;i<guests.length;i++){
+    const g=guests[i];
+    const grp={kind:'solo',members:[g]};
+    const msg=_fillTemplate(_inviteTpl(kind), grp);
+    const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
+    const names=_ssCoupleNames();
+    const payload={ to:[(g.email||'').trim()], subject:'You’re invited'+(names?' — '+names:''), body:msg,
+      fromName:names||'UnionVault', kicker:names?names+'’s wedding':'', title:'You’re invited',
+      replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
+      templateId:ed.templateId||'classic',
+      designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false } };
+    if(asset.file && asset.publicUrl) payload.attachment={ filename:asset.file.name||'invitation', path:asset.publicUrl };
+    try{
+      const r=await fetch(_SB_URL+'/functions/v1/send-guest-email',{ method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+_sbSession.access_token,'apikey':_SB_KEY},
+        body:JSON.stringify(payload) });
+      const data=await r.json();
+      if(data.ok){
+        sent++;
+        const slotKey='solo:'+g.id;
+        _trackerRecordSend(kind, slotKey, 'email', '__deferred__');
+      } else { failed++; }
+    }catch(_){ failed++; }
+    if(countEl) countEl.textContent=sent+failed;
+    if(bar) bar.style.width=((sent+failed)/total*100)+'%';
+  }
+  _closeConfirm2Direct();
+  const note=sent+' invitation'+(sent===1?'':'s')+' sent by email.'+(failed?' '+failed+' failed.':'');
+  if(typeof _showInfoToast==='function') _showInfoToast(note,null,null);
+  if(typeof rsvpRerenderList==='function') rsvpRerenderList();
+}
 
 function _invPlatformInfo(url){
   if(!url) return null;

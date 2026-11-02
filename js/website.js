@@ -531,15 +531,15 @@ function renderWebsite(c, actions){
   const fontLabel = (t.heading||'').replace(/['"]/g,'').split(',')[0];
 
   const published = !!w.published;
-  const publishRow = `<div class="wb-theme-row" onclick="_wbTogglePublish()" style="background:${published?'rgba(74,99,73,.07)':'var(--surface)'}">
+  const publishRow = `<div class="wb-theme-row" style="background:${published?'rgba(74,99,73,.07)':'var(--surface)'};cursor:default">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${published?'#4a6349':'var(--muted)'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">${published?'<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>':'<circle cx="12" cy="12" r="9"/><path d="M12 9v3l2 2"/><circle cx="12" cy="16.5" r=".4" fill="currentColor"/>'}
       </svg>
       <div style="flex:1;min-width:0">
         <div class="wb-name" style="${published?'color:#4a6349':''}">Site ${published?'published':'not published'}</div>
-        <div class="wb-sub">${published?'Guests can view your site':'Private — click to publish'}</div>
+        <div class="wb-sub">${published?'Guests can view your site':'Toggle to publish'}</div>
       </div>
-      <label class="toggle-switch" onclick="event.stopPropagation()" style="transform:scale(.68);transform-origin:right center;pointer-events:none">
-        <input type="checkbox" ${published?'checked':''} tabindex="-1"/>
+      <label class="toggle-switch" style="transform:scale(.68);transform-origin:right center;cursor:pointer">
+        <input type="checkbox" ${published?'checked':''} onchange="_wbTogglePublish()"/>
         <span class="toggle-track"></span>
       </label>
     </div>`;

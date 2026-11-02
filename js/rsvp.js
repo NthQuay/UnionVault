@@ -1081,7 +1081,7 @@ function _orsvpRender(){
         <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)">
           <div style="width:32px;height:32px;border-radius:50%;background:var(--surface);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;letter-spacing:-.02em">${grp.initials}</div>
           <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${grp.householdName}</div><div style="font-size:11.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${summaryLine}</div></div>
-          <div style="font-size:11px;color:var(--muted);flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;white-space:nowrap">${_fmt(grp.submittedDate)}${histBtn}</div>
+          <div style="font-size:11px;color:var(--muted);flex-shrink:0;display:flex;align-items:center;gap:6px;white-space:nowrap">${histBtn}<span>${_fmt(grp.submittedDate)}</span></div>
         </div>
         ${memberRows}${contactHtml}${msgHtml}${histSection}
       </div>`;
@@ -1106,7 +1106,7 @@ function _orsvpRender(){
         <div style="display:flex;align-items:center;gap:8px;padding:9px 14px ${ci.length?'4px':'9px'};${ci.length?'':'border-bottom:1px solid var(--border);'}background:var(--surface)">
           <div style="width:28px;height:28px;border-radius:50%;background:var(--cream);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${grp.initials}</div>
           <div style="flex:1;min-width:0"><span style="font-size:13px;font-weight:600;color:var(--ink)">${grp.householdName}</span> <span style="font-size:11.5px;color:var(--muted)">— ${summaryLine}</span></div>
-          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="font-size:11px;color:var(--muted)">${_fmt(grp.submittedDate)}</span>${histBtn}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${histBtn}<span style="font-size:11px;color:var(--muted)">${_fmt(grp.submittedDate)}</span></div>
         </div>
         ${contactRow}${memberRows}${histSection}
       </div>`;
@@ -1117,8 +1117,9 @@ function _orsvpRender(){
 function _orsvpSetFilter(f){window._orsvpFilter=f;_orsvpRender();}
 function _orsvpSetView(v){window._orsvpView=v;try{localStorage.setItem('uv_orsvp_view',v);}catch(e){}  _orsvpRender();}
 function _orsvpToggleHistory(btn){
-  const id=btn.dataset.grpId?'orhist-'+btn.dataset.grpId:null;
-  const panel=btn.closest('[style]').querySelector('[id^="orhist-"]');
+  const card=btn.closest('div[style*="border-radius"]');
+  if(!card) return;
+  const panel=card.querySelector('[id^="orhist-"]');
   if(panel){panel.hidden=!panel.hidden;btn.style.color=panel.hidden?'var(--muted)':'var(--gold-deep)';}
 }
 

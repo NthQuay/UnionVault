@@ -595,7 +595,7 @@ function renderDashboard(c, actions){
   // Vendor Look Up — category coverage. Reads STATE.vendors and shows which key
   // categories are filled and which are still open, with a direct route into the
   // directory filtered to that category.
-  W.vendorlookup = ()=> `<div id="db-w-vendorlookup" class="db-widget">${buildDashVendorLookupHtml()}</div>`;
+  W.vendorlookup = ()=> `<div id="db-w-vendorlookup" class="db-widget" style="background:var(--cream);border:1px solid var(--border);border-radius:16px;padding:20px">${buildDashVendorLookupHtml()}</div>`;
 
   // Switcher control (deep-beige 4-box icon, no label, no checks) — shared across styles
   const heroSwitcher = !dashEditMode ? '' : `<div class="hero-style-switch">
