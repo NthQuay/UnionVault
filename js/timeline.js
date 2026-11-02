@@ -9,6 +9,13 @@ const TL_CATS = {
   other:     { label:'Other',         color:'var(--muted)', dot:'#8A8A88' }
 };
 
+function _tlGetCat(key){
+  if(TL_CATS[key]) return TL_CATS[key];
+  const custom = (STATE.timelineCats||[]).find(c=>c.id===key);
+  if(custom) return { label:custom.label, color:custom.color, dot:custom.color };
+  return TL_CATS.other;
+}
+
 // ── Multiple timelines ───────────────────────────────────────
 const TL_COLORS = [
   { name:'green',  hex:'#3a8a5c', bg:'rgba(58,138,92,.10)' },
@@ -245,7 +252,7 @@ function _tlOpenMasterView(){
 
   let rows = '';
   all.forEach((it,idx)=>{
-    const cat = TL_CATS[it.cat] || TL_CATS.other;
+    const cat = _tlGetCat(it.cat);
     const next = all[idx+1];
     let gapHtml = '';
     if(next){
@@ -302,7 +309,7 @@ function _tlPrintMaster(){
   });
   all.sort((a,b)=>{ const ma=tlMinutes(a.time), mb=tlMinutes(b.time); if(ma===null)return 1; if(mb===null)return -1; return ma-mb; });
   const rows = all.map(it=>{
-    const cat=TL_CATS[it.cat]||TL_CATS.other;
+    const cat=_tlGetCat(it.cat);
     const meta=[it.location,it.who].filter(Boolean).join(' · ');
     return `<tr>
       <td style="padding:10px 14px 10px 0;white-space:nowrap;vertical-align:top;font-weight:600;font-size:13px;border-bottom:1px solid #eee">${tlTo12h(it.time)||'—'}</td>
@@ -530,7 +537,7 @@ function renderTimeline(c, actions){
   let legend = '';
   if(items.length){
     legend = `<div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:26px">
-      ${usedCats.map(k=>{const cat=TL_CATS[k]||TL_CATS.other;return`<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><span style="width:9px;height:9px;border-radius:50%;background:${cat.dot};display:inline-block"></span>${cat.label}</span>`;}).join('')}
+      ${usedCats.map(k=>{const cat=_tlGetCat(k);return`<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><span style="width:9px;height:9px;border-radius:50%;background:${cat.dot};display:inline-block"></span>${cat.label}</span>`;}).join('')}
     </div>`;
   }
 
@@ -544,7 +551,7 @@ function renderTimeline(c, actions){
   } else {
     let rows = '';
     items.forEach((it,idx)=>{
-      const cat = TL_CATS[it.cat] || TL_CATS.other;
+      const cat = _tlGetCat(it.cat);
       const next = items[idx+1];
       let gapHtml = '';
       if(next){
@@ -599,7 +606,102 @@ function renderTimeline(c, actions){
 }
 
 function tlCatOptions(sel){
-  return Object.entries(TL_CATS).map(([k,v])=>`<option value="${k}" ${k===sel?'selected':''}>${v.label}</option>`).join('');
+  let opts = Object.entries(TL_CATS).map(([k,v])=>`<option value="${k}" ${k===sel?'selected':''}>${v.label}</option>`).join('');
+  const custom = STATE.timelineCats||[];
+  if(custom.length) opts += `<optgroup label="Custom">` + custom.map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${_escHtml(c.label)}</option>`).join('') + `</optgroup>`;
+  return opts;
+}
+
+const _TL_CAT_COLORS = ['#B08D9E','#8B7355','#6B8E9E','#4A7C59','#9E8B6B','#C56B8C','#5C8A4E','#4A7C9E','#8E6BA8','#B8963E','#21b5a4','#b57a4a'];
+
+function _tlManageCats(){
+  _tlRenderManageCatsModal();
+}
+
+function _tlRenderManageCatsModal(){
+  const custom = STATE.timelineCats||[];
+  const builtIn = Object.entries(TL_CATS).map(([k,v])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="width:12px;height:12px;border-radius:50%;background:${v.dot};flex-shrink:0"></span>
+      <span style="flex:1;font-size:13px">${v.label}</span>
+      <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Default</span>
+    </div>`).join('');
+
+  const customRows = custom.map(c=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)" id="tlcat-row-${c.id}">
+      <span style="width:12px;height:12px;border-radius:50%;background:${c.color};flex-shrink:0;cursor:pointer" onclick="_tlCatEditColor('${c.id}')" title="Change colour"></span>
+      <span style="flex:1;font-size:13px">${_escHtml(c.label)}</span>
+      <button onclick="_tlCatRename('${c.id}')" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button onclick="_tlCatDelete('${c.id}')" title="Delete" style="background:none;border:none;cursor:pointer;color:var(--red);padding:2px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+    </div>`).join('');
+
+  openModal('Manage Categories', `
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px">Default</div>
+      ${builtIn}
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-top:16px;margin-bottom:4px">Custom${custom.length?` (${custom.length})`:''}</div>
+      <div id="tlcat-custom-list">${customRows||'<div style="padding:12px 0;font-size:12px;color:var(--muted)">No custom categories yet.</div>'}</div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <input class="form-input" id="tlcat-new-name" placeholder="New category name…" style="flex:1;font-size:13px"/>
+        <button class="btn btn-primary btn-sm" onclick="_tlCatAdd()" style="white-space:nowrap">Add</button>
+      </div>
+    </div>`,
+    `<button class="btn btn-outline" onclick="closeModalDirect()">Done</button>`);
+  const inp = document.getElementById('tlcat-new-name');
+  if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); _tlCatAdd(); } });
+}
+
+function _tlCatAdd(){
+  const inp = document.getElementById('tlcat-new-name');
+  const name = (inp||{}).value?.trim();
+  if(!name) return;
+  if(!STATE.timelineCats) STATE.timelineCats=[];
+  const usedColors = STATE.timelineCats.map(c=>c.color);
+  const color = _TL_CAT_COLORS.find(c=>!usedColors.includes(c)) || _TL_CAT_COLORS[STATE.timelineCats.length % _TL_CAT_COLORS.length];
+  STATE.timelineCats.push({ id:'cat_'+uid(), label:name, color });
+  saveToStorage();
+  _tlRenderManageCatsModal();
+}
+
+function _tlCatRename(id){
+  const cat = (STATE.timelineCats||[]).find(c=>c.id===id);
+  if(!cat) return;
+  const name = prompt('Rename category:', cat.label);
+  if(name===null || !name.trim()) return;
+  cat.label = name.trim();
+  saveToStorage();
+  _tlRenderManageCatsModal();
+}
+
+function _tlCatEditColor(id){
+  const cat = (STATE.timelineCats||[]).find(c=>c.id===id);
+  if(!cat) return;
+  const row = document.getElementById('tlcat-row-'+id);
+  if(!row) return;
+  let picker = row.querySelector('.tlcat-color-picker');
+  if(picker){ picker.remove(); return; }
+  picker = document.createElement('div');
+  picker.className = 'tlcat-color-picker';
+  picker.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:8px 0;width:100%';
+  _TL_CAT_COLORS.forEach(c=>{
+    const swatch = document.createElement('span');
+    swatch.style.cssText = `width:22px;height:22px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${c===cat.color?'var(--ink)':'transparent'};transition:border-color .15s`;
+    swatch.onclick = ()=>{ cat.color=c; saveToStorage(); _tlRenderManageCatsModal(); };
+    picker.appendChild(swatch);
+  });
+  row.appendChild(picker);
+}
+
+function _tlCatDelete(id){
+  const cat = (STATE.timelineCats||[]).find(c=>c.id===id);
+  if(!cat) return;
+  const inUse = (STATE.timelines||[]).some(tl=>tl.items.some(it=>it.cat===id)) || (STATE.timeline||[]).some(it=>it.cat===id);
+  if(inUse){
+    if(!confirm(`"${cat.label}" is used by moments. Delete it? Those moments will fall back to "Other".`)) return;
+  }
+  STATE.timelineCats = STATE.timelineCats.filter(c=>c.id!==id);
+  saveToStorage();
+  _tlRenderManageCatsModal();
 }
 
 function timelineFormBody(it){
@@ -611,8 +713,8 @@ function timelineFormBody(it){
       <div class="form-group"><label class="form-label">Category</label>
         <div style="position:relative">
           <select class="form-input" id="tl-cat" style="appearance:none;-webkit-appearance:none;padding-right:32px">${tlCatOptions(it.cat||'reception')}</select>
-          
         </div>
+        <div style="margin-top:4px;text-align:right"><button type="button" onclick="_tlManageCats()" style="font-size:11px;color:var(--gold-deep);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Manage categories</button></div>
       </div>
     </div>
     <div class="form-group"><label class="form-label">Moment</label><input class="form-input" id="tl-title" placeholder="e.g. First Dance" value="${(it.title||'').replace(/"/g,'&quot;')}"/></div>
@@ -870,7 +972,7 @@ async function _showPublicRunSheet(coupleId){
   } else {
     catOrder.forEach(k=>{
       if(!groups[k]||!groups[k].length) return;
-      const cat = TL_CATS[k]||TL_CATS.other;
+      const cat = _tlGetCat(k);
       bodyHtml += `<div class="prs-sect">
         <div class="prs-sect-hd"><span class="prs-sect-dot" style="background:${cat.dot}"></span><span class="prs-sect-name">${cat.label}</span></div>`;
       groups[k].forEach((it,idx)=>{
@@ -921,7 +1023,7 @@ function printTimeline(mode){
   if(mode==='music'){ return printTimelineMusic(); }
   const items = tlSorted();
   const rows = items.map(it=>{
-    const cat=TL_CATS[it.cat]||TL_CATS.other;
+    const cat=_tlGetCat(it.cat);
     const meta=[it.location,it.who].filter(Boolean).join(' · ');
     const songs=(Array.isArray(it.songs)?it.songs:[]).filter(s=>s&&(s.title||s.artist));
     const songHtml = songs.length ? `<div style="margin-top:5px">${songs.map(s=>{

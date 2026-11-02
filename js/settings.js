@@ -736,6 +736,7 @@ async function _exportDataJsonInner(){
     timeline: STATE.timeline||[],
     timelines: STATE.timelines||[],
     activeTimelineId: STATE.activeTimelineId||null,
+    timelineCats: STATE.timelineCats||[],
     events: STATE.events||[],
     families: STATE.families||[],
     tagDefs: STATE.tagDefs||{},
@@ -1054,6 +1055,7 @@ function _applyStartFromScratch(){
     STATE.timeline=[];
     STATE.timelines=[];
     STATE.activeTimelineId=null;
+    STATE.timelineCats=[];
   }
   if(sel.has('inspo')){
     // Clear inspiration (colours + images) and the vision board that references them.

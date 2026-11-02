@@ -253,7 +253,7 @@ function _exportTimelineInner(){
   const items=(typeof tlSorted==='function')?tlSorted():(STATE.timeline||[]);
   if(!items.length) return `<div style="text-align:center;color:#9A9389;padding:24px">No moments added yet.</div>`;
   const rows=items.map(it=>{
-    const cat=(typeof TL_CATS!=='undefined'&&TL_CATS[it.cat])?TL_CATS[it.cat]:null;
+    const cat=(typeof _tlGetCat==='function')?_tlGetCat(it.cat):(typeof TL_CATS!=='undefined'&&TL_CATS[it.cat])?TL_CATS[it.cat]:null;
     const meta=[it.location,it.who].filter(Boolean).join(' · ');
     const t=(typeof tlTo12h==='function')?(tlTo12h(it.time)||'—'):(it.time||'—');
     return `<tr class="x-row"><td class="x-time">${t}</td><td><div style="font-size:14px;font-weight:600">${_escHtml(it.title||'')}${cat?` <span style="font-size:9.5px;font-weight:600;color:${cat.color};text-transform:uppercase;letter-spacing:.05em;margin-left:5px">${cat.label}</span>`:''}</div>${meta?`<div style="font-size:12px;color:#777">${_escHtml(meta)}</div>`:''}${it.notes?`<div style="font-size:12px;color:#999;margin-top:1px">${_escHtml(it.notes)}</div>`:''}</td></tr>`;

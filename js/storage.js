@@ -29,6 +29,7 @@ function saveToStorage(){
     timeline: STATE.timeline||[],
     timelines: STATE.timelines||[],
     activeTimelineId: STATE.activeTimelineId||null,
+    timelineCats: STATE.timelineCats||[],
     events: STATE.events,
     tagDefs: STATE.tagDefs||{},
     families: STATE.families||[],

@@ -107,6 +107,7 @@ const STATE = {
   ],
   timelines: [],
   activeTimelineId: null,
+  timelineCats: [],
   events: [],
   families: [],
   // Starter guest tags (name → colour + icon) for new accounts; users edit or delete freely.

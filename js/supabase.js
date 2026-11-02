@@ -178,7 +178,7 @@ async function _sbSelect(table,filter){
 const _CS=['event','settings','guests','checklist','vendors','quotes',
   'checklistCategories','checklistDrafts','checklistCatOrder',
   'budget','tables','seating','inspo','visionboard','wishingwell',
-  'website','timeline','timelines','activeTimelineId','events','tagDefs','families',
+  'website','timeline','timelines','activeTimelineId','timelineCats','events','tagDefs','families',
   'invites','inviteMeta','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets'];
 
 async function _cloudSave(silent,keepalive){
@@ -197,7 +197,7 @@ async function _cloudSave(silent,keepalive){
     budget:STATE.budget, tables:STATE.tables, seating:STATE.seating,
     inspo:STATE.inspo, visionboard:STATE.visionboard,
     wishingwell:STATE.wishingwell, website:STATE.website,
-    timeline:STATE.timeline||[], timelines:STATE.timelines||[], activeTimelineId:STATE.activeTimelineId||null,
+    timeline:STATE.timeline||[], timelines:STATE.timelines||[], activeTimelineId:STATE.activeTimelineId||null, timelineCats:STATE.timelineCats||[],
     events:STATE.events,
     tagDefs:STATE.tagDefs||{}, families:STATE.families||[],
     invites:STATE.invites||[], inviteMeta:STATE.inviteMeta||{}, invitation:STATE.invitation||{},
@@ -268,7 +268,7 @@ async function cloudLoadClick(silent){
   const _localFamiliesBeforeLoad = STATE.families ? STATE.families.slice() : [];
   if(r.saved.event)    Object.assign(STATE.event,r.saved.event);
   if(r.saved.settings) Object.assign(STATE.settings,r.saved.settings);
-  ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','timelines','families','invites'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
+  ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','timelines','timelineCats','families','invites'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
   ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets','activeTimelineId'].forEach(k=>{if(r.saved[k])STATE[k]=r.saved[k];});
   if(typeof _tlEnsureTimelines==='function') _tlEnsureTimelines();
   // Re-add any local-only families (not present in cloud) whose members still

@@ -816,6 +816,7 @@ function loadFromStorage(){
       STATE.timelines = saved.timelines;
       STATE.activeTimelineId = saved.activeTimelineId || null;
     }
+    if(saved.timelineCats) STATE.timelineCats = saved.timelineCats;
     if(typeof _tlEnsureTimelines==='function') _tlEnsureTimelines();
     if(saved.events)STATE.events = saved.events;
     if(!Array.isArray(STATE.events)) STATE.events = [];
