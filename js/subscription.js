@@ -265,7 +265,8 @@ async function _uvOpenSubPage(){
     cancelBanner=`<div style="font-size:12.5px;color:var(--red);padding:10px 14px;background:rgba(192,57,43,.06);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px"><span>Your subscription ends ${_escH(endDate)}.</span><button class="btn btn-sm btn-outline" onclick="_uvReactivateSub().then(function(){_uvOpenSubPage()})">Reactivate</button></div>`;
   }
 
-  const showPlans=!isGranted&&(isFree||isTrial||(isFull&&!d?.cancelAtPeriodEnd));
+  const isStripeTrial=isTrial&&d?.subStatus==='trialing';
+  const showPlans=!isGranted&&!isStripeTrial&&(isFree||(isFull&&!d?.cancelAtPeriodEnd));
   let plansHtml='';
   if(showPlans){
     const currentMonths=plan?plan.months:0;
@@ -305,9 +306,11 @@ async function _uvOpenSubPage(){
   let actionsHtml='';
   if(isGranted){
     actionsHtml='';
+  } else if(isStripeTrial){
+    actionsHtml=`<div style="margin-top:8px"><button class="btn btn-sm btn-outline" onclick="_uvOpenPortal()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;font-size:13px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Manage billing</button></div>`;
   } else if(isFull&&!d?.cancelAtPeriodEnd){
     actionsHtml='';
-  } else if(isFree||isTrial){
+  } else if(isFree){
     var selPlan=_UV_PLANS.find(function(p){return p.months===_uvSelectedSettingsMonths;})||_UV_PLANS[0];
     var selMs=selPlan&&selPlan.monthly?_uvFormatMoney(selPlan.monthly)+'/mo':'';
     actionsHtml=`<div style="margin-top:8px"><button class="btn btn-primary" onclick="_uvGoCheckout((_UV_PLANS.find(function(p){return p.months===_uvSelectedSettingsMonths;})||_UV_PLANS[0]).priceId)" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;font-size:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Upgrade — ${_escH(selPlan.label)}${selMs?' ('+selMs+')':''}</button></div>`;
