@@ -246,18 +246,50 @@ function _tlOpenMasterView(){
   let rows = '';
   all.forEach((it,idx)=>{
     const cat = TL_CATS[it.cat] || TL_CATS.other;
-    rows += `<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
-      <div style="font-size:13px;font-weight:600;white-space:nowrap;min-width:60px">${tlTo12h(it.time)||'—'}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:14px">${_escHtml(it.title||'Untitled')}</div>
-        ${it.location?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${_escHtml(it.location)}</div>`:''}
-        <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:1px 7px;border-radius:8px;margin-top:4px;background:${it._bg};color:${it._color}">${_escHtml(it._source)}</span>
+    const next = all[idx+1];
+    let gapHtml = '';
+    if(next){
+      const gap = tlMinutes(next.time)!==null && tlMinutes(it.time)!==null ? tlMinutes(next.time)-tlMinutes(it.time) : null;
+      const gl = tlGapLabel(gap);
+      if(gl) gapHtml = `<div style="display:flex;align-items:center;gap:8px;padding:2px 0 2px 0;margin-left:92px"><span style="font-size:10.5px;color:var(--muted);font-style:italic;letter-spacing:.02em">${gl} later</span></div>`;
+    }
+    const meta = [it.location, it.who].filter(Boolean);
+    rows += `
+    <div class="tl-row" style="display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:start">
+      <div style="text-align:right;padding-top:2px">
+        <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap">${tlTo12h(it.time)||'—'}</div>
       </div>
-    </div>`;
+      <div style="position:relative;padding-left:24px;padding-bottom:${next?'4px':'0'}">
+        <span style="position:absolute;left:0;top:5px;width:13px;height:13px;border-radius:50%;background:${it._color};box-shadow:0 0 0 3px var(--cream),0 0 0 4px ${it._color}33;z-index:2"></span>
+        ${next?`<span style="position:absolute;left:6px;top:18px;bottom:-22px;width:1.5px;background:var(--border)"></span>`:''}
+        <div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:13px 15px;transition:border-color .15s,box-shadow .15s" onmouseover="this.style.borderColor='${it._color}';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+            <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:500;color:var(--ink);line-height:1.2">${_escHtml(it.title||'Untitled')}</span>
+            <span style="flex-shrink:0;font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${cat.color};background:${cat.dot}1A;padding:3px 8px;border-radius:20px;white-space:nowrap">${cat.label}</span>
+          </div>
+          ${meta.length?`<div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-size:12.5px;color:var(--muted)">
+            ${it.location?`<span style="display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${_escHtml(it.location)}</span>`:''}
+            ${it.who?`<span style="display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${_escHtml(it.who)}</span>`:''}
+          </div>`:''}
+          ${it.notes?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.45">${it.notes.replace(/</g,'&lt;')}</div>`:''}
+          <div style="margin-top:6px"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:1px 7px;border-radius:8px;background:${it._bg};color:${it._color}"><span style="width:5px;height:5px;border-radius:50%;background:${it._color}"></span>${_escHtml(it._source)}</span></div>
+        </div>
+      </div>
+    </div>
+    ${gapHtml}`;
   });
 
-  c.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${pills}</div>
-    <div style="margin-top:4px">${rows||'<div style="text-align:center;padding:30px;color:var(--muted)">No moments in selected timelines.</div>'}</div>`;
+  const first = all.find(i=>tlMinutes(i.time)!==null);
+  const lastWithTime = [...all].reverse().find(i=>tlMinutes(i.time)!==null);
+  let span = '';
+  if(first && lastWithTime && first!==lastWithTime){
+    const total = tlMinutes(lastWithTime.time)-tlMinutes(first.time);
+    span = `Spans ${tlGapLabel(total)} · ${tlTo12h(first.time)} – ${tlTo12h(lastWithTime.time)}`;
+  }
+
+  c.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${pills}</div>
+    <div style="display:flex;flex-direction:column;gap:0;max-width:620px">${rows||'<div style="text-align:center;padding:30px;color:var(--muted)">No moments in selected timelines.</div>'}</div>
+    ${span?`<div style="max-width:620px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center">${span} · ${all.length} moment${all.length!==1?'s':''} across ${active.length} timeline${active.length!==1?'s':''}</div>`:''}`;
 }
 
 function _tlPrintMaster(){
