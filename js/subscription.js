@@ -90,6 +90,9 @@ function _applySubData(d){
   _uvSubDetails = d;
   _uvSubLoaded = true;
   _uvUpdateSidebarLocks();
+  if(_uvIsPaid()){
+    var ub=document.querySelector('.uv-upgrade-card-dash'); if(ub) ub.remove();
+  }
 }
 
 function _uvInvalidateCache(){
