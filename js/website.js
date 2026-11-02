@@ -854,7 +854,7 @@ let _wbThemeTab = 'colour';
 function _wbSetThemeTab(t){ _wbThemeTab=t; _wbRepaintTheme(); }
 
 function _wbThemeBody(){
-  const t=_wbSite().theme;
+  const w=_wbSite(), t=w.theme;
   const pal = (STATE.inspo && Array.isArray(STATE.inspo.colors)) ? STATE.inspo.colors : [];
 
   const specimen = `<div style="margin-bottom:14px">
@@ -1274,7 +1274,7 @@ function _wbRepaintTheme(){
   const tbody = document.getElementById('wb-theme-body');
   if(tbody){
     // Panel is open — swap only the tab content; specimen and tab bar stay in place.
-    const t=_wbSite().theme;
+    const w=_wbSite(), t=w.theme;
     const pal=(STATE.inspo&&Array.isArray(STATE.inspo.colors))?STATE.inspo.colors:[];
     let body='';
     if(_wbThemeTab==='colour'){
