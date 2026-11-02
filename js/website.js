@@ -4073,7 +4073,7 @@ function _wbBuildSite(forDownload){
   const navLinks = homeLink + sections.filter(k=>k!=='home').map(k=>
     `<a href="#${k}">${_escHtml(_wbNavLabel(k))}</a>`).join('');
   const sideToggle = t.navPos==='side'
-    ? `<button type="button" class="navtoggle" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>`
+    ? `<button type="button" class="navtoggle" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="navlinks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>`
     : '';
   const topToggle = t.navPos!=='side'
     ? `<button type="button" class="navtoggle" aria-expanded="false" aria-controls="navlinks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>Menu</button>`
@@ -5330,7 +5330,14 @@ body.sidenav .sidebar-brand{text-align:center;padding-top:${sp(12)}px}
 body.sidenav nav:not(:has(.sidebar-names)) .sidebar-brand{margin-top:auto}
 .site-content{flex:1;min-width:0}
 @media(max-width:620px) and (min-width:481px){body.sidenav nav{width:${scb(160)}px;padding:${sp(16)}px ${sp(10)}px}body.sidenav nav a{font-size:${scb(11)}px;padding:${sp(7)}px ${sp(4)}px}.sidebar-names{font-size:${scb(13)}px}}
-@media(max-width:480px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{flex-direction:row;flex-wrap:wrap;justify-content:center;margin-top:0;gap:6px 16px}body.sidenav nav a{display:inline;padding:0}body.sidenav .sidebar-brand{display:none}body.sidenav .sidebar-names{display:none}body.sidenav header h1{display:block}body.sidenav .navtoggle{display:none}}
+/* Below 480px a vertical sidebar has nowhere to go, so it becomes a sticky top bar —
+   but a full link list wrapped into that bar is what used to run every label together
+   with no room to breathe (gap:0 and zero link padding, both inherited from the desktop
+   vertical layout, which supplies spacing a different way). Collapsing behind the same
+   toggle used for the desktop icon-strip, instead of trying to fit every link on screen
+   at once, is the fix: hidden by default, one tap reveals it as a dropdown list, exactly
+   how the top-nav layout already behaves at this width (see the nav.js rules below). */
+@media(max-width:480px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{display:none;flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;margin-top:${sp(8)}px;gap:0}body.sidenav.mnav-open .navlinks{display:flex}body.sidenav nav a{display:block;padding:${sp(9)}px ${sp(6)}px}body.sidenav .sidebar-brand{display:none}body.sidenav .sidebar-names{display:none}body.sidenav header h1{display:block}body.sidenav.mnav-open .navtoggle svg{transform:rotate(180deg)}}
 header{text-align:center;padding:${sp(72)}px 24px ${sp(60)}px}
 /* v125: min-height is set INLINE (it depends on hero.height), so the padding here is only
    breathing room, not the thing that sizes the box. Before, padding WAS the height — and
@@ -5656,8 +5663,26 @@ ${_uvModal}
   `:''}
   var n=document.querySelector('nav'), b=n&&n.querySelector('.navtoggle'), isSide=document.body.classList.contains('sidenav');
   if(isSide&&n&&b){
+    // Same button, two jobs by width: above 480px it shrinks the sidebar to an icon
+    // strip (.collapsed); at or below it, the sidebar is already a top bar with its
+    // links hidden by default, and this reveals them as a dropdown (.mnav-open) —
+    // checked live, not cached, since a tablet rotating through 480px should get the
+    // behaviour for whichever width it's actually at.
     b.addEventListener('click',function(){
-      document.body.classList.toggle('collapsed');
+      if(window.innerWidth<=480){
+        var open=document.body.classList.toggle('mnav-open');
+        b.setAttribute('aria-expanded',open?'true':'false');
+      }else{
+        document.body.classList.toggle('collapsed');
+      }
+    });
+    n.querySelectorAll('.navlinks a').forEach(function(a){
+      a.addEventListener('click',function(){
+        if(window.innerWidth<=480){
+          document.body.classList.remove('mnav-open');
+          b.setAttribute('aria-expanded','false');
+        }
+      });
     });
   }else if(n&&b){
     n.className='js';
