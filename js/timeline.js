@@ -129,6 +129,7 @@ function _tlEditTimeline(id){
         <span><span class="tl-pub-title">Show on Website</span><span class="tl-pub-sub">Include in the website builder schedule section</span></span>
         <span class="toggle-switch"><input type="checkbox" id="tl-edit-website" ${tl.showOnWebsite!==false?'checked':''}/><span class="toggle-track"></span></span>
       </label>
+      ${(()=>{if(!tl.linkedEventId)return '';const ev=(STATE.events||[]).find(e=>e.id===tl.linkedEventId);if(!ev)return '';return '<div style="border-top:1px solid var(--border);padding-top:14px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Linked Event</div><div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--gold);border-radius:10px;background:var(--gold-bg)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span style="flex:1;font-size:13px;font-weight:500;color:var(--gold-deep)">'+_escHtml(ev.name)+'</span><button type="button" class="btn btn-outline btn-sm" onclick="_tlUnlinkEvent(\''+tl.id+'\',\''+ev.id+'\')" style="font-size:11px">Unlink</button></div></div>';})()}
     </div>`,
     `<button class="btn btn-danger" onclick="_tlConfirmDeleteTimeline('${id}')" style="margin-right:auto">Delete</button>
      <button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
@@ -153,7 +154,17 @@ function _tlConfirmDeleteTimeline(id){
   _confirmDeleteDialog({title:'Delete Timeline', question:'Delete this timeline and all its moments?', name:tl.name, verb:'Delete', onConfirmJs:`_tlDoDeleteTimeline('${id}')`});
 }
 
+function _tlUnlinkEvent(tlId, evId){
+  const tl=(STATE.timelines||[]).find(t=>t.id===tlId);
+  if(tl) delete tl.linkedEventId;
+  const ev=(STATE.events||[]).find(e=>e.id===evId);
+  if(ev) delete ev.timelineId;
+  saveToStorage(); closeModalDirect(); _tlEditTimeline(tlId);
+}
+
 function _tlDoDeleteTimeline(id){
+  const tl=STATE.timelines.find(t=>t.id===id);
+  if(tl&&tl.linkedEventId){const ev=(STATE.events||[]).find(e=>e.id===tl.linkedEventId);if(ev) delete ev.timelineId;}
   STATE.timelines = STATE.timelines.filter(t=>t.id!==id);
   if(STATE.activeTimelineId===id) STATE.activeTimelineId=null;
   if(STATE.timelines.length) STATE.timeline = STATE.timelines[0].items;
@@ -192,7 +203,7 @@ function _tlRenderListView(c, actions){
     cardsHtml += `<div onclick="_tlOpenTimeline('${tl.id}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface,var(--cream));border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
       <div style="width:4px;height:40px;border-radius:3px;background:${col.hex};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:14px">${_escHtml(tl.name)}</div>
+        <div style="font-weight:600;font-size:14px">${_escHtml(tl.name)}${(()=>{if(!tl.linkedEventId)return '';const ev=(STATE.events||[]).find(e=>e.id===tl.linkedEventId);if(!ev)return '';return ' <span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:500;color:var(--gold-deep);background:var(--gold-bg);padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'+_escHtml(ev.name)+'</span>';})()}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${n} moment${n!==1?'s':''} · ${span}${tl.showOnWebsite!==false?' · <span title="Visible on website" style="opacity:.6">&#127760;</span>':''}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()">

@@ -141,6 +141,7 @@ function _renderEventDetail(){
         ${ev.type?`<span style="color:var(--gold-deep);font-weight:500">${_esc(ev.type)}</span>`:''}${(ev.type&&(dateLine||venueLine))?' \u00b7 ':''}${dateLine}${(dateLine&&venueLine)?' \u00b7 ':''}${venueLine}${mapLink}
       </div>
       ${ev.notes?`<div style="font-size:12.5px;color:var(--ink);background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:10px 12px;margin-bottom:16px;line-height:1.5">${_esc(ev.notes)}</div>`:''}
+      ${_evLinkedTimelineBadge(ev)}
       <div style="display:flex;gap:8px;margin-bottom:4px">
         <div style="flex:1;background:var(--surface);border-radius:9px;padding:10px;text-align:center"><div id="ev-stat-att" style="font-size:18px;font-weight:600;color:var(--green)">${ct.attending}</div><div style="font-size:10px;color:var(--muted)">Attending</div></div>
         <div style="flex:1;background:var(--surface);border-radius:9px;padding:10px;text-align:center"><div id="ev-stat-dec" style="font-size:18px;font-weight:600;color:var(--red)">${ct.declined}</div><div style="font-size:10px;color:var(--muted)">Declined</div></div>
@@ -614,6 +615,128 @@ function _evPickApplyFilter(){
   _evPickRebuildAll(q);
 }
 
+// ── Timeline linking helpers ─────────────────────────────────────────────
+function _evTimelineLinkHtml(ev){
+  if(typeof _tlEnsureTimelines==='function') _tlEnsureTimelines();
+  const tls=STATE.timelines||[];
+  if(!tls.length) return '';
+  const linked=ev&&ev.timelineId?tls.find(t=>t.id===ev.timelineId):null;
+  if(linked){
+    const col=(typeof TL_COLORS!=='undefined'&&TL_COLORS[linked.colorIdx])?TL_COLORS[linked.colorIdx]:{hex:'var(--gold)'};
+    const n=linked.items?linked.items.length:0;
+    return `<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+      <label class="form-label">Linked Timeline</label>
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--gold);border-radius:10px;background:var(--gold-bg)">
+        <span style="width:10px;height:10px;border-radius:50%;background:${col.hex};flex-shrink:0"></span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500">${_esc(linked.name)}</div>
+          <div style="font-size:11px;color:var(--muted)">${n} moment${n!==1?'s':''}</div>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="_evUnlinkFromForm('${ev.id}','${linked.id}')" style="font-size:11px">Unlink</button>
+      </div></div>`;
+  }
+  const first=tls[0];
+  const isWeddingDay=first&&!first.linkedEventId&&tls.indexOf(first)===0;
+  const available=tls.filter(t=>{
+    if(isWeddingDay&&t===first) return false;
+    if(t.linkedEventId) return false;
+    return true;
+  });
+  let existingHtml='';
+  if(available.length){
+    existingHtml=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:4px 0">
+      <span style="flex:1;height:1px;background:var(--border)"></span>or link an existing timeline<span style="flex:1;height:1px;background:var(--border)"></span></div>`;
+    available.forEach(tl=>{
+      const col=(typeof TL_COLORS!=='undefined'&&TL_COLORS[tl.colorIdx])?TL_COLORS[tl.colorIdx]:{hex:'var(--gold)'};
+      const n=tl.items?tl.items.length:0;
+      existingHtml+=`<div class="ev-tl-pick" data-tlid="${tl.id}" onclick="_evSelectLink('${tl.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s">
+        <span style="width:10px;height:10px;border-radius:50%;background:${col.hex};flex-shrink:0"></span>
+        <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${_esc(tl.name)}</div><div style="font-size:11px;color:var(--muted)">${n} moment${n!==1?'s':''}</div></div>
+        <div class="ev-tl-radio" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center"></div>
+      </div>`;
+    });
+  }
+  return `<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+    <label class="form-label">Linked Timeline</label>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5">Attach a schedule to this event.</div>
+    <div id="ev-tl-options" style="display:flex;flex-direction:column;gap:8px">
+      <div onclick="_evSelectLink('create')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px dashed var(--border);border-radius:10px;cursor:pointer;font-size:13px;color:var(--gold-deep);font-weight:500;transition:all .15s" id="ev-tl-create">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Create new timeline for this event
+      </div>
+      ${existingHtml}
+    </div>
+    <div id="ev-tl-selected" style="display:none"></div>
+  </div>`;
+}
+function _evSelectLink(action){
+  window._evLinkAction=action;
+  const opts=document.getElementById('ev-tl-options');
+  const sel=document.getElementById('ev-tl-selected');
+  if(!opts||!sel) return;
+  if(action==='create'){
+    opts.style.display='none'; sel.style.display='block';
+    const evName=(document.getElementById('ev-name')||{}).value||'New Timeline';
+    sel.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--gold);border-radius:10px;background:var(--gold-bg)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:var(--gold-deep)">Create new: ${_esc(evName.trim())}</div>
+      <div style="font-size:11px;color:var(--muted)">A new timeline will be created and linked when you save</div></div>
+      <span onclick="_evDeselectLink()" style="cursor:pointer;color:var(--muted);padding:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+    </div>`;
+  } else {
+    document.querySelectorAll('.ev-tl-pick').forEach(el=>{
+      const isSel=el.dataset.tlid===action;
+      el.style.borderColor=isSel?'var(--gold)':'var(--border)';
+      el.style.background=isSel?'var(--gold-bg)':'';
+      const radio=el.querySelector('.ev-tl-radio');
+      if(radio){
+        radio.style.borderColor=isSel?'var(--gold)':'var(--border)';
+        radio.style.background=isSel?'var(--gold)':'';
+        radio.innerHTML=isSel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'';
+      }
+    });
+  }
+}
+function _evDeselectLink(){
+  window._evLinkAction=null;
+  const opts=document.getElementById('ev-tl-options');
+  const sel=document.getElementById('ev-tl-selected');
+  if(opts) opts.style.display='flex';
+  if(sel){ sel.style.display='none'; sel.innerHTML=''; }
+  document.querySelectorAll('.ev-tl-pick').forEach(el=>{
+    el.style.borderColor='var(--border)'; el.style.background='';
+    const radio=el.querySelector('.ev-tl-radio');
+    if(radio){ radio.style.borderColor='var(--border)'; radio.style.background=''; radio.innerHTML=''; }
+  });
+}
+function _evUnlinkFromForm(evId, tlId){
+  const ev=(STATE.events||[]).find(e=>e.id===evId);
+  const tl=(STATE.timelines||[]).find(t=>t.id===tlId);
+  if(ev) delete ev.timelineId;
+  if(tl) delete tl.linkedEventId;
+  saveToStorage();
+  if(typeof openEventForm==='function') openEventForm(evId);
+}
+function _evLinkedTimelineBadge(ev){
+  if(!ev||!ev.timelineId) return '';
+  const tl=(STATE.timelines||[]).find(t=>t.id===ev.timelineId);
+  if(!tl) return '';
+  const col=(typeof TL_COLORS!=='undefined'&&TL_COLORS[tl.colorIdx])?TL_COLORS[tl.colorIdx]:{hex:'var(--gold)'};
+  const n=tl.items?tl.items.length:0;
+  const sorted=tl.items?tl.items.slice().sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))):[];
+  const first=sorted[0], last=sorted[sorted.length-1];
+  const span=first&&last&&first!==last&&typeof tlTo12h==='function'?`${tlTo12h(first.time)} – ${tlTo12h(last.time)}`:(first&&typeof tlTo12h==='function'?tlTo12h(first.time):'');
+  return `<div style="margin-bottom:16px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:500;margin-bottom:6px">Linked Timeline</div>
+    <div onclick="if(typeof _tlOpenTimeline==='function')_tlOpenTimeline('${tl.id}')" style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:500;background:var(--gold-bg);color:var(--gold-deep);cursor:pointer;border:1px solid transparent;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='transparent'">
+      <span style="width:8px;height:8px;border-radius:50%;background:${col.hex}"></span>
+      ${_esc(tl.name)}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:4px">${n} moment${n!==1?'s':''}${span?' · '+span:''}</div>
+  </div>`;
+}
+
 function openEventForm(id){
   const ev=id?(STATE.events||[]).find(e=>e.id===id):null;
   const isEdit=!!ev;
@@ -638,11 +761,12 @@ function openEventForm(id){
       <div class="form-group"><label class="form-label">Venue address</label><input class="form-input" id="ev-addr" placeholder="Optional" value="${ev?_escAttr(ev.venueAddress||''):''}"/></div>
       <div class="form-group"><label class="form-label">Map link</label><input class="form-input" id="ev-map" placeholder="Optional — paste a Google Maps URL" value="${ev?_escAttr(ev.venueMapUrl||''):''}"/></div>
       <div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="ev-notes" placeholder="Optional" value="${ev?_escAttr(ev.notes||''):''}"/></div>
+      ${_evTimelineLinkHtml(ev)}
     </div>`,
     `${isEdit?`<button class="btn btn-outline" style="margin-right:auto;color:var(--red)" onclick="deleteEvent('${ev.id}')">Delete</button>`:''}
      <button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
      <button class="btn btn-primary" onclick="saveEvent(${isEdit?`'${ev.id}'`:'null'})">${isEdit?'Save':'Add'}</button>`);
-  // If editing a preset type, the custom box stays hidden; if "Other" selected, reveal.
+  window._evLinkAction = null;
   setTimeout(_evTypeChange,0);
 }
 function _evTypeChange(){
@@ -675,24 +799,45 @@ function saveEvent(id){
     savedId=uid();
     STATE.events.push(Object.assign({id:savedId, rsvps:{}}, fields));
   }
+  const linkAction=window._evLinkAction; window._evLinkAction=null;
+  if(linkAction==='create'){
+    if(typeof _tlEnsureTimelines==='function') _tlEnsureTimelines();
+    const colorIdx=(STATE.timelines||[]).length%(typeof TL_COLORS!=='undefined'?TL_COLORS.length:6);
+    const newTl={id:uid(), name:fields.name, colorIdx, inMaster:true, showOnWebsite:false, linkedEventId:savedId, items:[]};
+    STATE.timelines.push(newTl);
+    const ev2=(STATE.events||[]).find(e=>e.id===savedId);
+    if(ev2) ev2.timelineId=newTl.id;
+  } else if(linkAction&&linkAction!=='unlink'){
+    const tl=(STATE.timelines||[]).find(t=>t.id===linkAction);
+    if(tl){ tl.linkedEventId=savedId; }
+    const ev2=(STATE.events||[]).find(e=>e.id===savedId);
+    if(ev2) ev2.timelineId=linkAction;
+  }
   saveToStorage();
   closeModalDirect();
-  // Return to detail if we were editing an existing event, else the list.
   if(id) openEventDetail(savedId); else navigate('events');
 }
 function deleteEvent(id){
   const ev=(STATE.events||[]).find(e=>e.id===id); if(!ev) return;
   const nm=ev.name||'this event';
+  const q=ev.timelineId?'Delete this event and its guest list? The linked timeline will be unlinked (not deleted).':'Delete this event and its guest list?';
   if(typeof _confirmDeleteDialog==='function'){
-    _confirmDeleteDialog({title:'Delete Event', question:'Delete this event and its guest list?', name:nm, verb:'Delete', onConfirmJs:`confirmDeleteEvent('${id}')`});
+    _confirmDeleteDialog({title:'Delete Event', question:q, name:nm, verb:'Delete', onConfirmJs:`confirmDeleteEvent('${id}')`});
   } else if(confirm('Delete '+nm+'?')){ confirmDeleteEvent(id); }
+}
+function _evUnlinkOnDelete(id){
+  const ev=(STATE.events||[]).find(e=>e.id===id);
+  if(ev&&ev.timelineId){
+    const tl=(STATE.timelines||[]).find(t=>t.id===ev.timelineId);
+    if(tl) delete tl.linkedEventId;
+  }
 }
 function confirmDeleteEvent(id){
   closeModalDirect();
-  const run=()=>{ STATE.events=(STATE.events||[]).filter(e=>e.id!==id); navigate('events'); };
+  const run=()=>{ _evUnlinkOnDelete(id); STATE.events=(STATE.events||[]).filter(e=>e.id!==id); navigate('events'); };
   if(typeof _undoableDelete==='function'){
     const ev=(STATE.events||[]).find(e=>e.id===id); const nm=ev?(ev.name||'event'):'event';
-    _undoableDelete(nm, ()=>{ STATE.events=(STATE.events||[]).filter(e=>e.id!==id); }, 'events');
+    _undoableDelete(nm, ()=>{ _evUnlinkOnDelete(id); STATE.events=(STATE.events||[]).filter(e=>e.id!==id); }, 'events');
   } else { run(); }
 }
 
