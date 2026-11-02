@@ -4726,8 +4726,9 @@ function _wbBuildSite(forDownload){
 .guest-section+.guest-section{border-top:1px solid ${t2.heading}12}
 .guest-section-name{font-family:${t2.headFont};font-size:16px;font-weight:600;color:${t2.heading};margin:0 0 12px;text-align:center}
 .field-label{font-size:13px;font-weight:500;color:${t2.heading};margin:0 0 8px}
-.meal-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
-.meal-chip{padding:8px 16px;border-radius:20px;border:1.5px solid ${t2.heading}28;background:${t2.background||t2.page};font-size:13px;font-weight:500;color:${t2.text};cursor:pointer;transition:all .15s;font-family:inherit}
+.meal-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.rf-chips{display:contents}
+.meal-chip{padding:5px 12px;border-radius:16px;border:1.5px solid ${t2.heading}28;background:${t2.background||t2.page};font-size:12px;font-weight:500;color:${t2.text};cursor:pointer;transition:all .15s;font-family:inherit}
 .meal-chip.on{border-color:${_uvPal.accent};background:${_uvPal.accent}22}
 .diet-accordion{margin-top:4px}
 .diet-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:4px 0;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left}
@@ -4773,7 +4774,7 @@ function _wbBuildSite(forDownload){
 .rf-lock .rf-lock-btn:disabled{opacity:.4;cursor:default}
 .rf-lock .rf-lock-err{font-size:12px;color:#DC2626;margin-top:8px;min-height:18px}
 </style>
-<div id="uv-rsvp-overlay" onclick="if(event.target===this)_uvCloseRsvp()">
+<div id="uv-rsvp-overlay">
   <div id="uv-rsvp-sheet">
     ${_uvLockEnabled?`<div id="rf-lock-screen" class="rf-lock">
       <button class="rfm-close" onclick="_uvCloseRsvp()" aria-label="Close" style="position:absolute;top:14px;right:14px">&#215;</button>
