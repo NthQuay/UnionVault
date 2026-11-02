@@ -2303,7 +2303,8 @@ function _ssBuildPayload(s, msg){
     fromName:names||'UnionVault', kicker:names?names+'’s wedding':'', title:s&&s.kind==='invite'?'You’re invited':'Save the date',
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
     templateId:ed.templateId||'classic',
-    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false } };
+    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
+      headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' } };
   if(s&&s.attach && s.asset && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
   return payload;
 }
@@ -2336,6 +2337,8 @@ function _openEmailDesignModal(){
   const accent=ed.accentColor||'#8a6a2c';
   const ff=ed.fontFamily||'serif';
   const logo=ed.showLogo!==false;
+  const hdrImg=ed.headerImage||'';
+  const hdrPreview=hdrImg?_mediaUrl(hdrImg):'';
   const tplThumb=(id,name,desc,bandColor,cardColor,borderLeft)=>{
     const sel=tplId===id;
     return `<button type="button" onclick="_emailDesignSet('templateId','${id}')" style="flex:1;min-width:100px;max-width:160px;border:2px solid ${sel?'var(--gold)':'var(--border)'};border-radius:12px;padding:0;overflow:hidden;cursor:pointer;background:var(--cream);display:flex;flex-direction:column;text-align:left;position:relative${sel?';box-shadow:0 0 0 2px var(--gold-fade)':''}">
@@ -2378,9 +2381,19 @@ function _openEmailDesignModal(){
       </span>
     </div>
     <div>
+      <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Header image</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Upload a custom banner for the top of your emails. Recommended: 1200 &times; 400 px (displays at 600 &times; 200).</div>
+      ${hdrPreview?`<div style="margin-bottom:8px;position:relative;display:inline-block"><img src="${_escHtml(hdrPreview)}" style="max-width:100%;max-height:100px;border-radius:8px;border:1px solid var(--border);object-fit:contain" alt="Header preview"/>
+        <button type="button" onclick="_emailDesignRemoveHeader()" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--cream);border:2px solid var(--cream);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">&times;</button></div>`:''}
+      <div><button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignPickHeader()" style="display:inline-flex;align-items:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        ${hdrPreview?'Replace image':'Upload image'}
+      </button></div>
+    </div>
+    <div>
       <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
         <input type="checkbox" ${logo?'checked':''} onchange="_emailDesignSet('showLogo',this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
-        <span style="font-size:13px;color:var(--ink)">Show logo in email header</span>
+        <span style="font-size:13px;color:var(--ink)">Show logo in email footer</span>
       </label>
     </div>
     <div style="border-top:1px solid var(--border);padding-top:14px">
@@ -2394,10 +2407,32 @@ function _openEmailDesignModal(){
 }
 function _emailDesignSet(key, val){
   if(!STATE.settings) STATE.settings={};
-  if(!STATE.settings.emailDesign) STATE.settings.emailDesign={ templateId:'classic', accentColor:'#8a6a2c', fontFamily:'serif', showLogo:true };
+  if(!STATE.settings.emailDesign) STATE.settings.emailDesign={ templateId:'classic', accentColor:'#8a6a2c', fontFamily:'serif', showLogo:true, headerImage:'' };
   STATE.settings.emailDesign[key]=val;
   saveToStorage();
-  if(key==='templateId'||key==='accentColor') _openEmailDesignModal();
+  if(key==='templateId'||key==='accentColor'||key==='headerImage') _openEmailDesignModal();
+}
+function _emailDesignPickHeader(){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='image/*';
+  inp.onchange=async()=>{
+    const f=inp.files&&inp.files[0]; if(!f) return;
+    if(typeof _showInfoToast==='function') _showInfoToast('Uploading header…',null,null);
+    try{
+      const reader=new FileReader();
+      reader.onload=async()=>{
+        const dataUrl=await compressImage(reader.result, 1200, 0.85);
+        const id=await _mediaPut(dataUrl, f.name||'email-header', f.type||'image/jpeg');
+        _emailDesignSet('headerImage', id);
+        if(typeof _showInfoToast==='function') _showInfoToast('Header image saved.',null,null);
+      };
+      reader.readAsDataURL(f);
+    }catch(_){ if(typeof _showInfoToast==='function') _showInfoToast('Upload failed.',null,null); }
+  };
+  inp.click();
+}
+function _emailDesignRemoveHeader(){
+  _emailDesignSet('headerImage','');
 }
 
 // ══════════════════════════════════════════════

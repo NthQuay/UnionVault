@@ -59,7 +59,7 @@ function _invitationSectionHtml(which){
           </div>
         </div>
         <div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
-          ${_invSrc2&&_invIsImg2?`<div style="background:var(--surface);display:flex;align-items:center;justify-content:center;padding:10px;border-bottom:1px solid var(--border)"><img src="${_escHtml(_invSrc2)}" style="max-width:100%;max-height:150px;border-radius:6px;object-fit:contain" alt=""/></div>`:''}
+          ${_invSrc2&&_invIsImg2?`<div style="background:var(--surface);display:flex;align-items:center;justify-content:center;padding:10px;border-bottom:1px solid var(--border)"><img src="${_escHtml(_invSrc2)}" style="max-width:100%;max-height:200px;border-radius:6px;object-fit:contain" alt=""/></div>`:''}
           <div style="display:flex;align-items:center;gap:8px;padding:10px 13px">
             ${!(_invSrc2&&_invIsImg2)?_fileThumb:''}
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(ftrun)}</div><div style="font-size:11.5px;color:var(--muted)">${_escHtml(inv.file.sizeLabel||'')}</div></div>
@@ -102,7 +102,7 @@ function _invitationSectionHtml(which){
       content=`${_fileInput}
       <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden">
         <div style="${hasPreview&&_invIsImg?'min-height:120px;padding:10px':'height:120px'};background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid var(--border);gap:6px">
-          ${hasPreview&&_invIsImg?`<img src="${_escHtml(_invSrc)}" style="max-width:100%;max-height:150px;object-fit:contain;border-radius:6px" alt=""/>`:
+          ${hasPreview&&_invIsImg?`<img src="${_escHtml(_invSrc)}" style="max-width:100%;max-height:200px;object-fit:contain;border-radius:6px" alt=""/>`:
           `<svg width="36" height="44" viewBox="0 0 40 48" fill="none" opacity=".3"><path d="M4 4C4 1.79 5.79 0 8 0H28L40 12V44C40 46.21 38.21 48 36 48H8C5.79 48 4 46.21 4 44V4Z" fill="var(--muted)"/><path d="M28 0L40 12H32C29.79 12 28 10.21 28 8V0Z" fill="rgba(0,0,0,.15)"/></svg>
           <span style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:var(--muted);padding:2px 8px;border-radius:4px">${_escHtml(fext)}</span>`}
         </div>
@@ -200,7 +200,8 @@ async function _invBatchSend(){
       fromName:names||'UnionVault', kicker:names?names+'’s wedding':'', title:'You’re invited',
       replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
       templateId:ed.templateId||'classic',
-      designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false } };
+      designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
+        headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' } };
     if(asset.file && asset.publicUrl) payload.attachment={ filename:asset.file.name||'invitation', path:asset.publicUrl };
     try{
       const r=await fetch(_SB_URL+'/functions/v1/send-guest-email',{ method:'POST',

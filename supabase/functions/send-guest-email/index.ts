@@ -33,7 +33,7 @@ serve(async (req) => {
 
   let b: { to?: string[]; subject?: string; body?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string;
            attachment?: { filename?: string; path?: string };
-           templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean }; preview?: boolean }
+           templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean }
   try { b = await req.json() } catch { return json(400, { ok: false, error: 'Invalid JSON' }) }
 
   const isPreview = !!b.preview
@@ -53,6 +53,8 @@ serve(async (req) => {
   const fontFamilyId = b.designOpts?.fontFamily === 'sans-serif' ? 'sans-serif' : 'serif'
   const fontFamily = fontFamilyId === 'sans-serif' ? "Helvetica,Arial,sans-serif" : "Georgia,'Times New Roman',serif"
   const showLogo = b.designOpts?.showLogo !== false
+  const headerImageRaw = String(b.designOpts?.headerImage || '')
+  const headerImage = headerImageRaw.startsWith(`${SB_URL}/storage/v1/object/public/photos/`) && !headerImageRaw.includes('..') ? headerImageRaw : ''
 
   // Look up sender's tier for branding decision
   const SB_SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -72,7 +74,7 @@ serve(async (req) => {
     kicker: String(b.kicker ?? '').slice(0, 120),
     title: String(b.title ?? '').slice(0, 200),
     text: text || 'Preview of your email template.',
-    showBranding, accentColor, fontFamily, showLogo, templateId: tplId,
+    showBranding, accentColor, fontFamily, showLogo, headerImage, templateId: tplId,
   })
 
   if (isPreview) return json(200, { ok: true, html })
@@ -117,6 +119,7 @@ function buildParas(text: string, color: string): string {
 interface TemplateOpts {
   kicker?: string; title?: string; text: string; showBranding?: boolean
   accentColor: string; fontFamily: string; showLogo: boolean; templateId: string
+  headerImage: string
 }
 
 function brandedHtml(opts: TemplateOpts): string {
@@ -131,18 +134,19 @@ function classicTemplate(opts: TemplateOpts): string {
   const ac = escH(opts.accentColor)
   const paras = buildParas(opts.text, ac)
 
-  const logoBand = opts.showLogo
-    ? `<tr><td class="uv-band" align="center" style="background:#F4EEE4;padding:22px 0 16px">
-<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="120" alt="UnionVault" style="display:block;width:120px;height:auto;border:0"></picture>
-</td></tr>` : ''
+  const headerBand = opts.headerImage
+    ? `<tr><td style="padding:0"><img src="${opts.headerImage}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>` : ''
 
-  const brandingFooter = opts.showBranding
-    ? `<tr><td style="padding:0 26px 6px"><hr style="border:none;border-top:1px solid #E0D8CF;margin:0 0 14px"></td></tr>
-<tr><td align="center" style="padding:0 26px 10px">
+  const logoFooter = opts.showLogo
+    ? `<tr><td align="center" style="padding:0 26px 10px">
 <a href="https://unionvault.app" style="text-decoration:none">
 <picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="90" alt="Union Vault" style="display:block;width:90px;height:auto;border:0;margin:0 auto"></picture>
-</a></td></tr>
-<tr><td align="center" class="uv-muted" style="padding:0 26px 22px;font-size:11px;color:#6E6259">Planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>`
+</a></td></tr>` : ''
+
+  const brandingFooter = (opts.showBranding || opts.showLogo)
+    ? `<tr><td style="padding:0 26px 6px"><hr style="border:none;border-top:1px solid #E0D8CF;margin:0 0 14px"></td></tr>
+${logoFooter}
+${opts.showBranding ? `<tr><td align="center" class="uv-muted" style="padding:0 26px 22px;font-size:11px;color:#6E6259">Planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>` : ''}`
     : ''
 
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -151,7 +155,7 @@ function classicTemplate(opts: TemplateOpts): string {
 <body class="uv-bg" style="margin:0;padding:24px 12px;background:#EFEAE1;font-family:Helvetica,Arial,sans-serif;color:#2C2222">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FBF8F3;border-radius:12px;overflow:hidden">
-${logoBand}
+${headerBand}
 <tr><td style="padding:24px 26px 10px">
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
@@ -167,18 +171,19 @@ function modernTemplate(opts: TemplateOpts): string {
   const ac = escH(opts.accentColor)
   const paras = buildParas(opts.text, ac)
 
-  const logoBand = opts.showLogo
-    ? `<tr><td align="center" style="padding:20px 0 14px;border-bottom:1px solid #EBEBEB">
-<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="100" alt="UnionVault" style="display:block;width:100px;height:auto;border:0"></picture>
-</td></tr>` : ''
+  const headerBand = opts.headerImage
+    ? `<tr><td style="padding:0"><img src="${opts.headerImage}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>` : ''
 
-  const brandingFooter = opts.showBranding
-    ? `<tr><td style="padding:0 26px 6px"><hr style="border:none;border-top:1px solid #EBEBEB;margin:0 0 14px"></td></tr>
-<tr><td align="center" style="padding:0 26px 10px">
+  const logoFooter = opts.showLogo
+    ? `<tr><td align="center" style="padding:0 26px 10px">
 <a href="https://unionvault.app" style="text-decoration:none">
 <picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="80" alt="Union Vault" style="display:block;width:80px;height:auto;border:0;margin:0 auto"></picture>
-</a></td></tr>
-<tr><td align="center" class="uv-muted" style="padding:0 26px 20px;font-size:11px;color:#999">Planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>`
+</a></td></tr>` : ''
+
+  const brandingFooter = (opts.showBranding || opts.showLogo)
+    ? `<tr><td style="padding:0 26px 6px"><hr style="border:none;border-top:1px solid #EBEBEB;margin:0 0 14px"></td></tr>
+${logoFooter}
+${opts.showBranding ? `<tr><td align="center" class="uv-muted" style="padding:0 26px 20px;font-size:11px;color:#999">Planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>` : ''}`
     : ''
 
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -187,7 +192,7 @@ function modernTemplate(opts: TemplateOpts): string {
 <body class="uv-bg" style="margin:0;padding:24px 12px;background:#F5F5F5;font-family:Helvetica,Arial,sans-serif;color:#1A1A1A">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FFFFFF;border-radius:8px;overflow:hidden;border-left:4px solid ${ac}">
-${logoBand}
+${headerBand}
 <tr><td style="padding:24px 26px 10px">
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:600;letter-spacing:.1em;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:22px;font-weight:600;line-height:1.25;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
@@ -205,20 +210,20 @@ function botanicalTemplate(opts: TemplateOpts): string {
 
   const leafSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="24" viewBox="0 0 80 24" fill="none" style="display:block;margin:0 auto 6px"><path d="M40 22C30 18 22 12 20 4c6 2 14 6 20 14C46 10 54 6 60 4c-2 8-10 14-20 18z" fill="${ac}" opacity=".18"/><path d="M40 22V4" stroke="${ac}" stroke-width=".7" opacity=".25"/></svg>`
 
-  const logoBand = opts.showLogo
-    ? `<tr><td class="uv-band" align="center" style="background:#E8EDE6;padding:18px 0 12px">
-${leafSvg}
-<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="110" alt="UnionVault" style="display:block;width:110px;height:auto;border:0"></picture>
-</td></tr>`
+  const headerBand = opts.headerImage
+    ? `<tr><td style="padding:0"><img src="${opts.headerImage}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>`
     : `<tr><td class="uv-band" align="center" style="background:#E8EDE6;padding:14px 0 10px">${leafSvg}</td></tr>`
 
-  const brandingFooter = opts.showBranding
-    ? `<tr><td style="padding:0 26px 6px"><hr style="border:none;border-top:1px solid #D4DCD2;margin:0 0 14px"></td></tr>
-<tr><td align="center" style="padding:0 26px 10px">
+  const logoFooter = opts.showLogo
+    ? `<tr><td align="center" style="padding:0 26px 10px">
 <a href="https://unionvault.app" style="text-decoration:none">
 <picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="85" alt="Union Vault" style="display:block;width:85px;height:auto;border:0;margin:0 auto"></picture>
-</a></td></tr>
-<tr><td align="center" class="uv-muted" style="padding:0 26px 22px;font-size:11px;color:#7A8B78">Planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>`
+</a></td></tr>` : ''
+
+  const brandingFooter = (opts.showBranding || opts.showLogo)
+    ? `<tr><td style="padding:0 26px 6px"><hr style="border:none;border-top:1px solid #D4DCD2;margin:0 0 14px"></td></tr>
+${logoFooter}
+${opts.showBranding ? `<tr><td align="center" class="uv-muted" style="padding:0 26px 22px;font-size:11px;color:#7A8B78">Planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>` : ''}`
     : ''
 
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -227,7 +232,7 @@ ${leafSvg}
 <body class="uv-bg" style="margin:0;padding:24px 12px;background:#F4F7F2;font-family:Helvetica,Arial,sans-serif;color:#2C332C">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FFFFFF;border-radius:16px;overflow:hidden">
-${logoBand}
+${headerBand}
 <tr><td style="padding:24px 26px 10px">
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
