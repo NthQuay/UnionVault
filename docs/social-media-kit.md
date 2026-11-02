@@ -348,3 +348,182 @@ Paste your URL and the tool scrapes your page, writes a script and renders a vid
 **Recommendation for Union Vault:** Start with **Creatify** or **HeyGen** since they handle general websites (not just e-commerce product pages). Most tools are optimised for Shopify/Amazon product pages, but these two work with any URL.
 
 **Important:** Always review AI-generated drafts before publishing — the URL scraper can sometimes pull the wrong image, misread pricing, or grab the wrong content from your page.
+
+---
+
+## Pricing Reference
+
+| Duration | Per month | Discount | Total |
+|----------|----------|----------|-------|
+| 1 month | $12.99 | — | $12.99 |
+| 3 months | $10.39 | 20% off | $31.18 |
+| 6 months | $9.09 | 30% off | $54.56 |
+| 12 months | $6.50 | 50% off | $77.94 |
+
+Free to start (no credit card). Paid plans unlock premium features.
+
+---
+
+## Paid Ad Copy
+
+Use these for Facebook Ads, Instagram Ads and TikTok Ads. Each has a short (story/reel overlay) and long (feed) version. Lead with value, close with price.
+
+### Ad 1 — Value Stack (Best for cold audiences)
+
+**Headline:** Plan your entire wedding for $6.50/month
+**Short (story/reel overlay):**
+```
+Guest list
+RSVPs
+Seating chart
+Budget tracker
+Wishing well
+Wedding website
+Day-of timeline
+
+All in one app. $6.50/month.
+```
+**Long (feed):**
+```
+Plan your entire wedding in one place — for less than a coffee a week.
+
+Guest list with family groupings and plus-ones. Online RSVPs with meal choices. Visual seating chart with drag-and-drop. Budget tracker across 12 categories. Wishing well with PayID and bank details. Free wedding website with QR code. Day-of timeline with music cues.
+
+All of it. One app. From $6.50/month.
+
+Free to start — no credit card required.
+
+unionvault.app
+```
+
+---
+
+### Ad 2 — Price Anchor (Best for price-conscious couples)
+
+**Headline:** Your whole wedding. Under $78.
+**Short (story/reel overlay):**
+```
+12 months of wedding planning
+Every tool you need
+One app
+
+$77.94 for the year. That's it.
+```
+**Long (feed):**
+```
+Wedding planning apps charge $20-40 a month. We don't.
+
+Union Vault gives you everything — guest list, RSVPs, seating chart, budget, wishing well, wedding website and day-of timeline — for $6.50/month on a 12-month plan.
+
+That's $77.94 for your entire engagement. Less than one centrepiece.
+
+Start free. Upgrade when you're ready.
+
+unionvault.app
+```
+
+---
+
+### Ad 3 — Problem/Solution (Best for engaged couples actively planning)
+
+**Headline:** Stop juggling spreadsheets
+**Short (story/reel overlay):**
+```
+Spreadsheet for the guest list
+Another for the budget
+A doc for the timeline
+Notes app for vendor contacts
+
+Or just use Union Vault. From $6.50/mo.
+```
+**Long (feed):**
+```
+You have a spreadsheet for the guest list. Another one for the budget. A Google Doc for the timeline. Notes app for vendor contacts. A folder of screenshots for seating ideas.
+
+Sound familiar?
+
+Union Vault puts it all in one place. Guest list, RSVPs, seating chart, budget, wishing well, wedding website and run sheet — connected, so when a guest RSVPs, your headcount updates, your seating plan flags the gap, and your caterer numbers adjust.
+
+From $6.50/month. Free to start.
+
+unionvault.app
+```
+
+---
+
+### Ad 4 — Social Proof / Comparison (Best for retargeting)
+
+**Headline:** Less than a coffee a week
+**Short (story/reel overlay):**
+```
+A coffee: $5-6
+Union Vault per week: $1.50
+
+Plan your entire wedding for less than your morning flat white.
+```
+**Long (feed):**
+```
+Your morning coffee costs more than a week of Union Vault.
+
+For $6.50 a month, you get a guest list manager, online RSVPs, visual seating chart, budget tracker, wishing well, wedding website and day-of timeline. Built for Australian couples.
+
+No contracts. Cancel anytime. Start free.
+
+3 months — $10.39/mo
+6 months — $9.09/mo
+12 months — $6.50/mo (50% off)
+
+unionvault.app
+```
+
+---
+
+### Ad 5 — Urgency / Timeline (Best for recently engaged)
+
+**Headline:** Just got engaged? Start here.
+**Short (story/reel overlay):**
+```
+Step 1: Sign up (free)
+Step 2: Add your guest list
+Step 3: Turn on RSVPs
+Step 4: Build your website
+
+Done in 10 minutes. From $6.50/mo.
+```
+**Long (feed):**
+```
+You just got engaged. Everyone is asking for the date, the venue, the details.
+
+Before you open a spreadsheet — try Union Vault. Import your guest list from a spreadsheet (or start fresh), turn on online RSVPs, build a wedding website with a QR code for your save-the-dates, and track your budget from day one.
+
+Set up takes 10 minutes. The app does the rest.
+
+Free to start. Plans from $6.50/month.
+
+unionvault.app
+```
+
+---
+
+### Ad 6 — Australian Angle (Best for geo-targeted AU campaigns)
+
+**Headline:** Made for Aussie weddings
+**Short (story/reel overlay):**
+```
+PayID wishing well
+BSB + account number support
+Built in Australia
+From $6.50/mo
+```
+**Long (feed):**
+```
+Most wedding apps are built for the US. Union Vault is built for Australian couples.
+
+Wishing well with PayID and BSB/account support. No payment processing fees — your guests transfer directly to your bank. Budget in AUD. Vendor management with Australian categories.
+
+Guest list, RSVPs, seating chart, budget, wedding website and day-of timeline — all in one app.
+
+From $6.50/month. Free to start.
+
+unionvault.app
+```
