@@ -197,10 +197,10 @@ function _uvGetDefaultPriceId(){
 // Each plan: { months, label, priceId, monthly (AUD cents), discount }
 // Price IDs are filled once Stripe products are created.
 const _UV_PLANS = [
-  { months:1,  label:'Monthly',     short:'1 mo',  priceId:'price_1UX9FTBK4MlrXpHgK17oYLx5', monthly:1299, discount:0 },
-  { months:3,  label:'3 months',    short:'3 mo',  priceId:'price_1UX9FTBK4MlrXpHg1FirJDO2', monthly:1039, discount:20 },
-  { months:6,  label:'6 months',    short:'6 mo',  priceId:'price_1UX9FTBK4MlrXpHgk8QJRQyv', monthly:909,  discount:30 },
-  { months:12, label:'12 months',   short:'12 mo', priceId:'price_1UX9FTBK4MlrXpHgL8ZGtiFA', monthly:650,  discount:50 },
+  { months:1,  label:'Monthly',     short:'1 mo',  priceId:'price_1UX9tMBK4MlrXpHgcRbeguBi', monthly:1299, discount:0 },
+  { months:3,  label:'3 months',    short:'3 mo',  priceId:'price_1UX9tMBK4MlrXpHgTfuW75et', monthly:1039, discount:20 },
+  { months:6,  label:'6 months',    short:'6 mo',  priceId:'price_1UX9tMBK4MlrXpHg7WJjW4gm', monthly:909,  discount:30 },
+  { months:12, label:'12 months',   short:'12 mo', priceId:'price_1UX9tMBK4MlrXpHgbx6Kad5c', monthly:650,  discount:50 },
 ];
 
 function _uvPlanByPrice(priceId){
