@@ -337,7 +337,7 @@ async function _uvOpenSubPage(){
     ${plansHtml}
     ${actionsHtml}
     ${!isGranted?`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-      ${isFree||isTrial?'<div style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green,#3D9454)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Cancel anytime on month-to-month plans. Save up to 50% on upfront terms.</div>':''}
+      ${isFree||isTrial?'<div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.5">Cancel anytime on month-to-month plans.<br>Save up to 50% on upfront terms.</div>':''}
       <div style="font-size:11px;color:var(--muted)"><a href="#" onclick="event.preventDefault();_openTermsModal()" style="color:var(--gold-deep);text-decoration:none">Terms &amp; Privacy</a></div>
     </div>`:''}
   </div>`;
