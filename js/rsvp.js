@@ -34,7 +34,9 @@ function _rsvpGuestStats(){
   // Contact coverage (whole list, matches Send-to-guests card).
   const withEmail=gs.filter(g=>(g.email||'').trim()).length;
   const withPhone=gs.filter(g=>(g.phone||'').trim()).length;
-  const missingBoth=gs.filter(g=>!(g.email||'').trim() && !(g.phone||'').trim()).length;
+  const withAddress=gs.filter(g=>(g.address||'').trim()).length;
+  const withHandle=gs.filter(g=>(g.handle||'').trim()).length;
+  const notContactable=gs.filter(g=>!(g.email||'').trim()&&!(g.phone||'').trim()&&!(g.address||'').trim()&&!(g.handle||'').trim()).length;
   // Seating: how many ATTENDING guests are placed at a table.
   let seated=0;
   const seatedIds=new Set();
@@ -45,7 +47,7 @@ function _rsvpGuestStats(){
     total:gs.length,
     attending:att.length,
     adults,children,infants,highChairs,coverCount,
-    withEmail,withPhone,missingBoth,
+    withEmail,withPhone,withAddress,withHandle,notContactable,
     seated,unseated
   };
 }
@@ -73,24 +75,12 @@ function _rsvpWidgetHeadcount(){
     <div style="font-size:11.5px;color:var(--muted);margin-top:11px">Per-head cover count: <strong style="color:var(--ink)">${st.coverCount}</strong></div>
   </div>`;
 }
-function _rsvpWidgetAwaiting(){
+function _rsvpWidgetInvitesAndResponses(){
   const awaitingGuests=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B' && (!g.rsvp||g.rsvp==='awaiting'));
   const awaiting=awaitingGuests.length;
   const days=_rsvpDaysToRsvpBy();
   const byRaw=STATE.settings&&STATE.settings.rsvpBy;
-  const overrideCount=awaitingGuests.filter(g=>g.rsvpByOverride).length;
   const byLine = byRaw ? `RSVP by ${fmtDate(byRaw)}${days!=null?` &middot; ${days>=0?`${days} day${days===1?'':'s'} left`:`${-days} day${days===-1?'':'s'} ago`}`:''}` : 'Set an RSVP-by date in templates';
-  const overrideLine = overrideCount ? `<div style="font-size:11px;color:var(--muted);margin-top:5px">${overrideCount} guest${overrideCount===1?'':'s'} have individual RSVP dates</div>` : '';
-  return `<div class="card">
-    <div class="section-eyebrow" style="margin-bottom:12px">Awaiting Response</div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:38px;color:var(--gold-deep);line-height:1">${awaiting}</div>
-    <div style="font-size:13px;color:var(--ink);margin-top:4px">haven't replied yet</div>
-    <div style="font-size:11.5px;color:var(--muted);margin-top:12px">${byLine}</div>
-    ${overrideLine}
-  </div>`;
-}
-function _rsvpWidgetInviteProgress(){
-  // Build invite slots (households) from A-list guests
   const gs=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B');
   const allGuests=STATE.guests||[];
   const inviteKeys=new Set(STATE.invites||[]);
@@ -100,27 +90,9 @@ function _rsvpWidgetInviteProgress(){
   gs.forEach(g=>{
     if(seen.has(g.id)) return;
     const fam=(STATE.families||[]).find(f=>f.memberIds.includes(g.id));
-    if(fam){
-      fam.memberIds.forEach(id=>seen.add(id));
-      slots.push({type:'group',sent:inviteKeys.has('fam:'+fam.id)});
-      return;
-    }
-    if(g.coupleId){
-      const partner=allGuests.find(x=>x.id===g.coupleId);
-      if(partner&&!seen.has(partner.id)){
-        seen.add(g.id); seen.add(partner.id);
-        slots.push({type:'couple',sent:inviteKeys.has('couple:'+g.id)||inviteKeys.has('couple:'+partner.id)});
-        return;
-      }
-    }
-    if(g.plusOneId){
-      const plus=allGuests.find(x=>x.id===g.plusOneId);
-      if(plus&&!seen.has(plus.id)){
-        seen.add(g.id); seen.add(plus.id);
-        slots.push({type:'couple',sent:inviteKeys.has('plusone:'+g.id)||inviteKeys.has('plusone:'+plus.id)});
-        return;
-      }
-    }
+    if(fam){ fam.memberIds.forEach(id=>seen.add(id)); slots.push({type:'group',sent:inviteKeys.has('fam:'+fam.id)}); return; }
+    if(g.coupleId){ const partner=allGuests.find(x=>x.id===g.coupleId); if(partner&&!seen.has(partner.id)){ seen.add(g.id); seen.add(partner.id); slots.push({type:'couple',sent:inviteKeys.has('couple:'+g.id)||inviteKeys.has('couple:'+partner.id)}); return; } }
+    if(g.plusOneId){ const plus=allGuests.find(x=>x.id===g.plusOneId); if(plus&&!seen.has(plus.id)){ seen.add(g.id); seen.add(plus.id); slots.push({type:'couple',sent:inviteKeys.has('plusone:'+g.id)||inviteKeys.has('plusone:'+plus.id)}); return; } }
     seen.add(g.id);
     slots.push({type:'single',sent:inviteKeys.has('solo:'+g.id)});
   });
@@ -128,29 +100,32 @@ function _rsvpWidgetInviteProgress(){
   const sentSlots=slots.filter(x=>x.sent).length;
   const notSentSlots=totalSlots-sentSlots;
   const pct=totalSlots?Math.round((sentSlots/totalSlots)*100):0;
-  // Breakdown of not-yet-sent by type
   const singles=slots.filter(x=>x.type==='single'&&!x.sent).length;
   const couples=slots.filter(x=>x.type==='couple'&&!x.sent).length;
   const groups=slots.filter(x=>x.type==='group'&&!x.sent).length;
   const subRow=(lbl,n)=>n>0?`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0 3px 14px;font-size:11.5px;color:var(--muted)"><span>${lbl}</span><span>${n}</span></div>`:'';
   const breakdownHtml=notSentSlots>0?`<div style="border-left:2px solid var(--border);margin:3px 0 2px">${subRow('Singles',singles)}${subRow('Couples',couples)}${subRow('Groups / families',groups)}</div>`:'';
   return `<div class="card">
-    <div class="section-eyebrow" style="margin-bottom:12px">Invite Progress</div>
+    <div class="section-eyebrow" style="margin-bottom:14px">Invites &amp; Responses</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)"><span style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--gold-deep);line-height:1">${awaiting}</span><span style="font-size:13px;color:var(--sub);font-weight:500">awaiting response</span></div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Sent</span><span style="font-weight:600;color:var(--green)">${sentSlots} invite${sentSlots===1?'':'s'}</span></div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0 4px;font-size:13px"><span>Not yet sent</span><span style="font-weight:600;color:var(--muted)">${notSentSlots} invite${notSentSlots===1?'':'s'}</span></div>
     ${breakdownHtml}
     <div style="height:6px;border-radius:3px;background:var(--surface);margin-top:9px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--gold)"></div></div>
     <div style="font-size:11.5px;color:var(--muted);margin-top:7px">${pct}% of households invited &middot; ${totalSlots} total</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">${byLine}</div>
   </div>`;
 }
 function _rsvpWidgetContactable(){
   const st=_rsvpGuestStats();
   const row=(lbl,n,col)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${lbl}</span><span style="font-weight:600;color:${col}">${n}</span></div>`;
   return `<div class="card">
-    <div class="section-eyebrow" style="margin-bottom:12px">Contactable</div>
-    ${row('Have email',st.withEmail,'var(--gold-deep)')}
-    ${row('Have mobile',st.withPhone,'var(--gold-deep)')}
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>Missing both</span><span style="font-weight:600;color:${st.missingBoth>0?'var(--red)':'var(--muted)'}">${st.missingBoth}</span></div>
+    <div class="section-eyebrow" style="margin-bottom:12px">Guests Contactable Via</div>
+    ${row('Email',st.withEmail,'var(--gold-deep)')}
+    ${row('Mobile',st.withPhone,'var(--gold-deep)')}
+    ${row('Address',st.withAddress,'var(--gold-deep)')}
+    ${row('Social @',st.withHandle,'var(--gold-deep)')}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>Not contactable</span><span style="font-weight:600;color:${st.notContactable>0?'var(--red)':'var(--muted)'}">${st.notContactable}</span></div>
   </div>`;
 }
 function _rsvpSetField(key,prop,val){
@@ -321,9 +296,8 @@ const _RSVP_SECTIONS=[
   ['plusones','Plus-ones'],
   ['mealcount','Meal counts'],
   ['headcount','Guest headcount'],
-  ['awaiting','Awaiting response'],
-  ['inviteprogress','Invite progress'],
-  ['contactable','Contactable'],
+  ['invites','Invites & responses'],
+  ['contactable','Guests contactable via'],
   ['seatingstatus','Seating status'],
   ['onlinersvps','Online RSVPs'],
   ['formfields','RSVP form fields']
@@ -333,8 +307,12 @@ const _RSVP_SECTION_KEYS=_RSVP_SECTIONS.map(s=>s[0]);
 // Legacy: the old single 'invite' section became two ('invitation' + 'sendguests').
 // Any saved order / hidden entry that still says 'invite' expands to both, in place.
 function _rsvpExpandLegacyInvite(arr){
-  const out=[];
-  arr.forEach(k=>{ if(k==='invite'){ out.push('invitation','sendguests'); } else { out.push(k); } });
+  const out=[];const seen=new Set();
+  arr.forEach(k=>{
+    if(k==='invite'){ out.push('invitation','sendguests'); }
+    else if(k==='awaiting'||k==='inviteprogress'){ if(!seen.has('invites')){ out.push('invites'); seen.add('invites'); } }
+    else { out.push(k); }
+  });
   return out;
 }
 function _rsvpHiddenSet(){
@@ -374,7 +352,7 @@ function _rsvpTrackerHeight(){
 // extra Dock choices are refused. Row breaks split the GRID cards into rows: STATE.settings
 // .rsvpRowBreaks is a set of section keys that START a new row (a break sits BEFORE them).
 // The tracker itself is never dockable/hideable — it's the host everything docks to.
-const _RSVP_DOCKABLE=['link','summary','dietary','plusones','invitation','sendguests','headcount','awaiting','inviteprogress','contactable','seatingstatus'];
+const _RSVP_DOCKABLE=['link','summary','dietary','plusones','invitation','sendguests','headcount','invites','contactable','seatingstatus'];
 // Large widgets are tall and fill the dock column on their own.
 // When one is docked the effective cap tightens to prevent empty gaps.
 const _RSVP_LARGE_DOCK=['invitation','sendguests','link'];
@@ -399,6 +377,11 @@ function _rsvpPlacements(){
     legacyHidden.forEach(k=>{ pm[k]='hide'; });
     const legacyDock=STATE.settings&&STATE.settings.rsvpDockWidget;
     if(legacyDock&&legacyDock!=='off'&&_RSVP_DOCKABLE.includes(legacyDock)) pm[legacyDock]='dock';
+  }
+  // Migrate: merge old awaiting/inviteprogress → invites
+  if(!pm['invites']&&(pm['awaiting']||pm['inviteprogress'])){
+    const a=pm['awaiting'],b=pm['inviteprogress'];
+    pm['invites']=(a==='hide'&&b==='hide')?'hide':(a==='dock'||b==='dock')?'dock':'grid';
   }
   // Normalise: tracker is always grid (host); unknown keys default to grid.
   const out={};
@@ -1139,6 +1122,44 @@ function _orsvpToggleHistory(btn){
   if(panel){panel.hidden=!panel.hidden;btn.style.color=panel.hidden?'var(--muted)':'var(--gold-deep)';}
 }
 
+// ── Online RSVPs: repopulate from cache (after navigate re-render) ──
+function _orsvpRepopulateFromCache(){
+  const rows=window._orsvpCachedRows;
+  if(!rows||!rows.length) return;
+  const body=document.getElementById('online-rsvps-body');
+  if(!body) return;
+  const yes=rows.filter(r=>r.attending==='yes').length;
+  const no =rows.filter(r=>r.attending==='no').length;
+  const total=rows.length;
+  const dietMap={};
+  rows.filter(r=>r.attending==='yes'&&Array.isArray(r.dietary)).forEach(r=>{
+    r.dietary.forEach(d=>{ dietMap[d]=(dietMap[d]||0)+1; });
+  });
+  const dietLabels={vegetarian:'Veg',pescatarian:'Pesc',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose int.',gluten:'Gluten int.',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut'};
+  const dietSummary=Object.entries(dietMap).map(([k,v])=>`${dietLabels[k]||k} ×${v}`).join(' · ')||'None noted';
+  window._orsvpFilter = window._orsvpFilter || 'all';
+  try { window._orsvpView = localStorage.getItem('uv_orsvp_view') || 'card'; } catch(e) { window._orsvpView = 'card'; }
+  _orsvpGroups = _orsvpBuildGroups(rows);
+  const statsEl=document.getElementById('orsvp-stats');
+  if(statsEl){
+    const yEl=document.getElementById('orsvp-stat-yes');
+    const nEl=document.getElementById('orsvp-stat-no');
+    const tEl=document.getElementById('orsvp-stat-total');
+    if(yEl) yEl.textContent=yes;
+    if(nEl) nEl.textContent=no;
+    if(tEl) tEl.textContent=total;
+    statsEl.style.display='flex';
+  }
+  const dietEl=document.getElementById('orsvp-diet-line');
+  if(dietEl){
+    dietEl.innerHTML=`<strong style="color:var(--ink)">Dietary (attending):</strong> ${dietSummary}`;
+    dietEl.style.display='';
+  }
+  const msgEl=document.getElementById('orsvp-msg');
+  if(msgEl) msgEl.style.display='none';
+  _orsvpRender();
+}
+
 // ── Online RSVPs: fetch submitted responses from Supabase ────────────────────
 async function _loadOnlineRsvps(){
   const body   = document.getElementById('online-rsvps-body');
@@ -1157,6 +1178,7 @@ async function _loadOnlineRsvps(){
     });
     if(!res.ok){ throw new Error('HTTP '+res.status); }
     const rows = await res.json();
+    window._orsvpCachedRows = rows;
 
     if(!rows.length){
       body.innerHTML='<span style="color:var(--muted);font-style:italic">No responses yet — share your RSVP link to get started.</span>';
@@ -1398,7 +1420,12 @@ function renderRsvpMgr(c, actions){
       sendguests:!hidden.has('sendguests')?_invitationSectionHtml('sendguests'):'',
       mealcount:!hidden.has('mealcount')?`<div class="card" id="rsvp-mealcount-card" style="padding:22px 20px 20px">${_mealCountCardHtml()}</div>`:'',
       link:!hidden.has('link')?`<div class="card">
-        <div class="section-eyebrow" style="margin-bottom:12px">Your RSVP Link</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="section-eyebrow" style="margin:0">Your RSVP Link</div>
+          <button onclick="_rsvpSettingsPopup()" title="RSVP settings" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--muted);line-height:0" aria-label="RSVP settings">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input class="form-input" value="${url}" readonly style="flex:1;font-size:11.5px"/>
           <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${url}').then(()=>alert('Copied!'))">Copy</button>
@@ -1414,30 +1441,6 @@ function renderRsvpMgr(c, actions){
             </button>
           </div>
         </div>
-        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px">
-        <div class="section-eyebrow" style="margin-bottom:10px">When a guest RSVPs</div>
-        <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
-          <input type="checkbox" ${(STATE.settings&&STATE.settings.rsvpEmailOn!==false)?'checked':''} onchange="_rsvpSetEmailNotif(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
-          Email me
-        </label>
-        <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Notifications are sent to your account email.</div>
-        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 12px">
-        <div class="section-eyebrow" style="margin-bottom:10px">Guest RSVP Lock</div>
-        <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
-          <input type="checkbox" ${(STATE.settings&&STATE.settings.rsvpLockEnabled!==false)?'checked':''} onchange="_rsvpSetLockEnabled(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
-          Password protect RSVP
-        </label>
-        <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Guests must enter this password before they can RSVP.</div>
-        ${(STATE.settings&&STATE.settings.rsvpLockEnabled!==false)?`<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-          <input type="text" id="rsvp-lock-pw" class="form-input" value="${_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'')}" placeholder="Set a password" oninput="_rsvpSetLockPassword(this.value)" style="flex:1;font-size:13px"/>
-        </div>`:''}
-        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 12px">
-        <div class="section-eyebrow" style="margin-bottom:10px">High-Chair Tracking</div>
-        <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
-          <input type="checkbox" ${hcOn?'checked':''} onchange="_highChairSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
-          Offer high chairs to children &amp; infants
-        </label>
-        <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Adds a high-chair option on the RSVP form for child and infant guests.</div>
       </div>`:'',
       summary:!hidden.has('summary')?`<div class="card" style="position:relative">
         <div class="rsvp-style-switch">
@@ -1466,8 +1469,7 @@ function renderRsvpMgr(c, actions){
         <div style="font-size:11.5px;color:var(--muted);margin-top:12px">Headcounts here are handy for your caterer and venue.</div>
       </div>`:'',
       headcount:!hidden.has('headcount')?_rsvpWidgetHeadcount():'',
-      awaiting:!hidden.has('awaiting')?_rsvpWidgetAwaiting():'',
-      inviteprogress:!hidden.has('inviteprogress')?_rsvpWidgetInviteProgress():'',
+      invites:!hidden.has('invites')?_rsvpWidgetInvitesAndResponses():'',
       contactable:!hidden.has('contactable')?_rsvpWidgetContactable():'',
       seatingstatus:!hidden.has('seatingstatus')?_rsvpWidgetSeating():'',
       // ── Stage 5: Online RSVPs card (submissions received via public link) ──
@@ -1586,6 +1588,7 @@ function renderRsvpMgr(c, actions){
     if(el&&typeof QRCode!=='undefined'){ el.innerHTML=''; new QRCode(el,{text:url,width:160,height:160,colorDark:'#1A1A18',colorLight:'#ffffff'}); }
     if(typeof _rsvpAttachPan==='function') _rsvpAttachPan();
     if(!window._orsvpSkipNextLoad) _loadOnlineRsvps();
+    else if(window._orsvpCachedRows) _orsvpRepopulateFromCache();
     window._orsvpSkipNextLoad=false;
   },80);
 }
@@ -2079,12 +2082,50 @@ function _rsvpSetLockEnabled(on){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpLockEnabled=!!on;
   saveToStorage();
-  renderRsvp();
+  if(!document.getElementById('rsvp-settings-overlay')) navigate('rsvp-mgr');
 }
 function _rsvpSetLockPassword(pw){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpLockPassword=String(pw||'');
   saveToStorage();
+}
+function _rsvpSettingsPopup(){
+  const hcOn=STATE.settings&&STATE.settings.highChairOn!==false;
+  const lockOn=STATE.settings&&!!STATE.settings.rsvpLockEnabled;
+  const emailOn=STATE.settings&&STATE.settings.rsvpEmailOn!==false;
+  const pw=_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'');
+  const ol=document.createElement('div');
+  ol.id='rsvp-settings-overlay';
+  ol.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)';
+  ol.innerHTML=`<div style="background:var(--card-bg,var(--bg));border-radius:14px;padding:28px 24px 22px;max-width:380px;width:92%;box-shadow:0 8px 30px rgba(0,0,0,.18);position:relative">
+    <button onclick="document.getElementById('rsvp-settings-overlay').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1" aria-label="Close">&times;</button>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:18px">RSVP Settings</div>
+    <div class="section-eyebrow" style="margin-bottom:10px">When a guest RSVPs</div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
+      <input type="checkbox" ${emailOn?'checked':''} onchange="_rsvpSetEmailNotif(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+      Email me
+    </label>
+    <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Notifications are sent to your account email.</div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 12px">
+    <div class="section-eyebrow" style="margin-bottom:10px">Guest RSVP Lock</div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
+      <input type="checkbox" id="rsvp-settings-lock-cb" ${lockOn?'checked':''} onchange="_rsvpSetLockEnabled(this.checked);var p=document.getElementById('rsvp-settings-pw-row');if(p)p.style.display=this.checked?'flex':'none'" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+      Password protect RSVP
+    </label>
+    <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Guests must enter this password before they can RSVP.</div>
+    <div id="rsvp-settings-pw-row" style="display:${lockOn?'flex':'none'};align-items:center;gap:8px;margin-top:8px">
+      <input type="text" class="form-input" autocomplete="off" data-lpignore="true" value="${pw}" placeholder="Set a password" oninput="_rsvpSetLockPassword(this.value)" style="flex:1;font-size:13px"/>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 12px">
+    <div class="section-eyebrow" style="margin-bottom:10px">High-Chair Tracking</div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
+      <input type="checkbox" ${hcOn?'checked':''} onchange="_highChairSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+      Offer high chairs to children &amp; infants
+    </label>
+    <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Adds a high-chair option on the RSVP form for child and infant guests.</div>
+  </div>`;
+  ol.addEventListener('click',function(e){ if(e.target===ol) ol.remove(); });
+  document.body.appendChild(ol);
 }
 
 // The unified guest table. Keeps inline status editing; respects column choices + order.

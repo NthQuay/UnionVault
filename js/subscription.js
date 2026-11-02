@@ -238,6 +238,7 @@ async function _uvOpenSubPage(){
     statusHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
       <span style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green,#3D9454)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Full Access</span>
       <span style="font-size:12px;color:var(--gold-deep);background:rgba(196,168,130,.15);padding:2px 8px;border-radius:6px;font-weight:600">Beta Access</span>
+      <span style="margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 10px;border-radius:6px;background:rgba(61,148,84,.12);color:var(--green)">Current</span>
     </div>
     <div style="font-size:12px;color:var(--muted)">All features unlocked.${grantEnd?' Access until '+grantEnd+'.':''}</div>`;
   } else if(isFull){
@@ -247,7 +248,8 @@ async function _uvOpenSubPage(){
     statusHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
       <span style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green,#3D9454)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Full Access</span>
       <span style="font-size:12px;color:var(--gold-deep);background:rgba(196,168,130,.15);padding:2px 8px;border-radius:6px;font-weight:600">${_escH(planLabel)}</span>
-      ${!d?.cancelAtPeriodEnd?'<button class="btn btn-sm btn-outline" onclick="_uvOpenPortal()" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Manage billing</button>':''}
+      <span style="margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 10px;border-radius:6px;background:rgba(61,148,84,.12);color:var(--green)">Current</span>
+      ${!d?.cancelAtPeriodEnd?'<button class="btn btn-sm btn-outline" onclick="_uvOpenPortal()" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Manage billing</button>':''}
     </div>
     <div style="font-size:12px;color:var(--muted)">${monthlyStr?monthlyStr+' · ':''}${periodEnd?'Renews '+periodEnd:''}</div>`;
   } else if(isTrial){
@@ -255,10 +257,11 @@ async function _uvOpenSubPage(){
     statusHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
       <span style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold,#B8965A)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Free Trial</span>
       <span style="font-size:12px;color:var(--gold-deep);background:rgba(196,168,130,.15);padding:2px 8px;border-radius:6px;font-weight:600">${daysLeft} day${daysLeft===1?'':'s'} left</span>
+      <span style="margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 10px;border-radius:6px;background:rgba(61,148,84,.12);color:var(--green)">Current</span>
     </div>
     <div style="font-size:12px;color:var(--muted)">All features unlocked during your trial.</div>`;
   } else {
-    statusHtml=`<div style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Free Tier</div>
+    statusHtml=`<div style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Free Tier<span style="margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 10px;border-radius:6px;background:rgba(196,168,130,.15);color:var(--gold-deep)">Current</span></div>
     <div style="font-size:12px;color:var(--muted)">Upgrade for unlimited guests, seating plans, print &amp; more.</div>`;
   }
 
