@@ -4072,10 +4072,10 @@ function _wbBuildSite(forDownload){
   const homeLink = sections.includes('home') ? `<a href="#home">Home</a>` : '';
   const navLinks = homeLink + sections.filter(k=>k!=='home').map(k=>
     `<a href="#${k}">${_escHtml(_wbNavLabel(k))}</a>`).join('');
-  const sideToggle = t2.navPos==='side'
+  const sideToggle = t.navPos==='side'
     ? `<button type="button" class="navtoggle" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>`
     : '';
-  const topToggle = t2.navPos!=='side'
+  const topToggle = t.navPos!=='side'
     ? `<button type="button" class="navtoggle" aria-expanded="false" aria-controls="navlinks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>Menu</button>`
     : '';
   const nav = navLinks
