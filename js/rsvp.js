@@ -66,22 +66,11 @@ function _rsvpWidgetHeadcount(){
   const row=(lbl,n)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${lbl}</span><span style="font-weight:600;color:var(--gold-deep)">${n}</span></div>`;
   return `<div class="card">
     <div class="section-eyebrow" style="margin-bottom:12px">Guest Headcount</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)"><span style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--gold-deep);line-height:1">${st.attending}</span><span style="font-size:13px;color:var(--sub);font-weight:500">attending</span></div>
     ${row('Adults',st.adults)}
     ${row('Children',st.children)}
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;${st.highChairs?'border-bottom:1px solid var(--border);':''}font-size:13px"><span>Infants</span><span style="font-weight:600;color:var(--gold-deep)">${st.infants}</span></div>
-    ${st.highChairs?`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>High chairs needed</span><span style="font-weight:600;color:var(--gold-deep)">${st.highChairs}</span></div>`:''}
-    <div style="font-size:11.5px;color:var(--muted);margin-top:11px">Among ${st.attending} attending &middot; per-head cover count: <strong style="color:var(--ink)">${st.coverCount}</strong></div>
-  </div>`;
-}
-function _rsvpWidgetFinalNumbers(){
-  const st=_rsvpGuestStats();
-  const awaiting=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B' && (!g.rsvp||g.rsvp==='awaiting')).length;
-  const declined=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B' && g.rsvp==='declined').length;
-  return `<div class="card">
-    <div class="section-eyebrow" style="margin-bottom:12px">Final Numbers</div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:38px;color:var(--green);line-height:1">${st.attending}</div>
-    <div style="font-size:13px;color:var(--ink);margin-top:4px">confirmed attending</div>
-    <div style="font-size:11.5px;color:var(--muted);margin-top:12px">${awaiting} still awaiting &middot; ${declined} declined</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span>Infants</span><span style="font-weight:600;color:var(--gold-deep)">${st.infants}</span></div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:11px">Per-head cover count: <strong style="color:var(--ink)">${st.coverCount}</strong></div>
   </div>`;
 }
 function _rsvpWidgetAwaiting(){
@@ -332,7 +321,6 @@ const _RSVP_SECTIONS=[
   ['plusones','Plus-ones'],
   ['mealcount','Meal counts'],
   ['headcount','Guest headcount'],
-  ['finalnumbers','Final numbers'],
   ['awaiting','Awaiting response'],
   ['inviteprogress','Invite progress'],
   ['contactable','Contactable'],
@@ -386,7 +374,7 @@ function _rsvpTrackerHeight(){
 // extra Dock choices are refused. Row breaks split the GRID cards into rows: STATE.settings
 // .rsvpRowBreaks is a set of section keys that START a new row (a break sits BEFORE them).
 // The tracker itself is never dockable/hideable — it's the host everything docks to.
-const _RSVP_DOCKABLE=['link','summary','dietary','plusones','invitation','sendguests','headcount','finalnumbers','awaiting','inviteprogress','contactable','seatingstatus'];
+const _RSVP_DOCKABLE=['link','summary','dietary','plusones','invitation','sendguests','headcount','awaiting','inviteprogress','contactable','seatingstatus'];
 // Large widgets are tall and fill the dock column on their own.
 // When one is docked the effective cap tightens to prevent empty gaps.
 const _RSVP_LARGE_DOCK=['invitation','sendguests','link'];
@@ -1281,7 +1269,7 @@ async function _loadOnlineRsvps(){
       if(changed){
         STATE.guests=baseGuests; // commit the cloud-merged list back to STATE
         saveToStorage();
-        // Re-render the page so all stat cards (Response Summary, Final Numbers, etc.)
+        // Re-render the page so all stat cards (Response Summary, Guest Headcount, etc.)
         // reflect the newly synced data. The auto-reload will fire again but changed
         // will be 0 on that second pass, breaking the cycle.
         window._orsvpSkipNextLoad=true; // suppress the redundant second fetch from renderRsvpMgr's setTimeout
@@ -1478,7 +1466,6 @@ function renderRsvpMgr(c, actions){
         <div style="font-size:11.5px;color:var(--muted);margin-top:12px">Headcounts here are handy for your caterer and venue.</div>
       </div>`:'',
       headcount:!hidden.has('headcount')?_rsvpWidgetHeadcount():'',
-      finalnumbers:!hidden.has('finalnumbers')?_rsvpWidgetFinalNumbers():'',
       awaiting:!hidden.has('awaiting')?_rsvpWidgetAwaiting():'',
       inviteprogress:!hidden.has('inviteprogress')?_rsvpWidgetInviteProgress():'',
       contactable:!hidden.has('contactable')?_rsvpWidgetContactable():'',
