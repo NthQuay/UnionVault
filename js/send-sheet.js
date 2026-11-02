@@ -933,6 +933,16 @@ function _inviteMethodsBodyHtml(){
 // The RSVP-by date + invite/reminder message templates, opened as an L1 modal
 // from the tracker's invite/reminder cog. (Relocated out of App Settings so all
 // the send-related setup lives beside the tracker that uses it.)
+// The RSVP-by date is edited from this modal but displayed on the RSVP & Invites page
+// underneath it (the Invites & Responses widget's "RSVP by …" line, and any per-guest
+// cells using it as the placeholder). Re-rendering that page in place — same pattern as
+// setRsvpSummaryStyle() — keeps those in sync instead of leaving them showing the value
+// that was current when the page was first drawn.
+function _setRsvpByDate(v){
+  STATE.settings.rsvpBy=v;
+  saveToStorage();
+  if(typeof navigate==='function' && typeof _currentPage!=='undefined' && _currentPage==='rsvp-mgr') navigate('rsvp-mgr');
+}
 function _openInviteTemplatesModal(){
   const tokenChips=['{guest}','{names}','{date}','{rsvp_by}','{link}']
     .map(t=>`<code style="font-size:11px;background:var(--chip);border:.5px solid var(--border);border-radius:5px;padding:2px 7px;color:var(--gold-deep)">${t}</code>`).join('');
@@ -941,7 +951,7 @@ function _openInviteTemplatesModal(){
       <div>
         <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">RSVP by date</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:10px">The date guests should respond by. Fills the <code style="font-size:11px">{rsvp_by}</code> token in your messages.</div>
-        <input type="date" class="form-input" id="tpl-rsvpby" value="${(STATE.settings.rsvpBy||'').replace(/"/g,'&quot;')}" onchange="STATE.settings.rsvpBy=this.value;saveToStorage()" style="max-width:220px"/>
+        <input type="date" class="form-input" id="tpl-rsvpby" value="${(STATE.settings.rsvpBy||'').replace(/"/g,'&quot;')}" onchange="_setRsvpByDate(this.value)" style="max-width:220px"/>
       </div>
       <div style="background:var(--surface);border-radius:12px;padding:16px 18px;border:1px solid var(--border)">
         <div style="font-size:12.5px;color:var(--muted);line-height:1.6">Templates fill these tokens automatically when you send from the tracker:

@@ -5330,7 +5330,7 @@ body.sidenav .sidebar-brand{text-align:center;padding-top:${sp(12)}px}
 body.sidenav nav:not(:has(.sidebar-names)) .sidebar-brand{margin-top:auto}
 .site-content{flex:1;min-width:0}
 @media(max-width:620px) and (min-width:481px){body.sidenav nav{width:${scb(160)}px;padding:${sp(16)}px ${sp(10)}px}body.sidenav nav a{font-size:${scb(11)}px;padding:${sp(7)}px ${sp(4)}px}.sidebar-names{font-size:${scb(13)}px}}
-@media(max-width:480px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{flex-direction:row;flex-wrap:wrap;justify-content:center;margin-top:0}body.sidenav nav a{display:inline;padding:0}body.sidenav .sidebar-brand{display:none}body.sidenav .sidebar-names{display:none}body.sidenav header h1{display:block}body.sidenav .navtoggle{display:none}}
+@media(max-width:480px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{flex-direction:row;flex-wrap:wrap;justify-content:center;margin-top:0;gap:6px 16px}body.sidenav nav a{display:inline;padding:0}body.sidenav .sidebar-brand{display:none}body.sidenav .sidebar-names{display:none}body.sidenav header h1{display:block}body.sidenav .navtoggle{display:none}}
 header{text-align:center;padding:${sp(72)}px 24px ${sp(60)}px}
 /* v125: min-height is set INLINE (it depends on hero.height), so the padding here is only
    breathing room, not the thing that sizes the box. Before, padding WAS the height — and
