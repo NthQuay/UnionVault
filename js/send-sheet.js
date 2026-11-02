@@ -886,28 +886,6 @@ function _inviteChanMenuHtml(){
       </span>
       <span style="margin-left:auto;color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
     </button>
-    <div style="height:8px"></div>
-    <button type="button" onclick="event.stopPropagation();${closeMenuJs}_openInviteTemplatesModal()" style="${btnStyle}">
-      <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      </span>
-      <span style="min-width:0;flex:1">
-        <span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">RSVP date &amp; message templates</span>
-        <span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Set your deadline and edit invite / reminder text</span>
-      </span>
-      <span style="margin-left:auto;color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
-    </button>
-    <div style="height:8px"></div>
-    <button type="button" onclick="event.stopPropagation();${closeMenuJs}_openEmailDesignModal()" style="${btnStyle}">
-      <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
-      </span>
-      <span style="min-width:0;flex:1">
-        <span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">Email design</span>
-        <span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Choose template, colours &amp; fonts for guest emails</span>
-      </span>
-      <span style="margin-left:auto;color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
-    </button>
     <div style="border-top:1px solid var(--border);margin:10px 0 8px"></div>
     <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:7px">Display</div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">

@@ -123,6 +123,18 @@ function _invitationSectionHtml(which){
       <div class="section-eyebrow" style="margin-bottom:4px">Your Invitation</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:18px">Upload your invitation file or link to a design in Canva, Google Drive, or elsewhere.</div>
       ${content}
+      <div style="display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <button type="button" onclick="_openInviteTemplatesModal()" style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
+          <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">RSVP date &amp; templates</span><span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Deadline and invite / reminder text</span></span>
+          <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
+        </button>
+        <button type="button" onclick="_openEmailDesignModal()" style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
+          <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
+          <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">Email design</span><span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Template, colours &amp; fonts</span></span>
+          <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
+        </button>
+      </div>
     </div>`;
   }
 
