@@ -233,7 +233,10 @@ function _tlOpenMasterView(){
   const actions = document.getElementById('topbar-actions');
   const te=document.getElementById('topbar-title'); if(te) te.textContent='Master Timeline';
   const eb=document.getElementById('topbar-eyebrow'); if(eb) eb.textContent='Combined';
-  actions.innerHTML = '';
+  actions.innerHTML = `
+    <button class="btn btn-outline btn-sm tl-tb-btn" onclick="_tlBackToList()" title="Back to timelines" style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span class="tl-tb-label">All</span></button>
+    <button class="btn btn-outline btn-sm tl-tb-btn" onclick="_tlPrintMaster()" title="Print master timeline" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span class="tl-tb-label">Print</span></button>
+    ${_sbSession ? `<button class="btn btn-outline btn-sm tl-tb-btn" onclick="_tlShareMaster()" title="Share master timeline" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="tl-tb-label">Share</span></button>` : ''}`;
 
   const pills = active.map(tl=>{
     const col = TL_COLORS[tl.colorIdx] || TL_COLORS[0];
@@ -254,8 +257,92 @@ function _tlOpenMasterView(){
   });
 
   c.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${pills}</div>
-    <div style="margin-top:4px">${rows||'<div style="text-align:center;padding:30px;color:var(--muted)">No moments in selected timelines.</div>'}</div>
-    <div style="margin-top:20px;text-align:center"><button class="btn btn-outline btn-sm" onclick="_tlBackToList()" style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Back to Timelines</button></div>`;
+    <div style="margin-top:4px">${rows||'<div style="text-align:center;padding:30px;color:var(--muted)">No moments in selected timelines.</div>'}</div>`;
+}
+
+function _tlPrintMaster(){
+  _tlEnsureTimelines();
+  const active = STATE.timelines.filter(t=>t.inMaster);
+  const all = [];
+  active.forEach(tl=>{
+    const col = TL_COLORS[tl.colorIdx] || TL_COLORS[0];
+    tl.items.forEach(it=>{ all.push(Object.assign({}, it, { _source:tl.name, _color:col.hex })); });
+  });
+  all.sort((a,b)=>{ const ma=tlMinutes(a.time), mb=tlMinutes(b.time); if(ma===null)return 1; if(mb===null)return -1; return ma-mb; });
+  const rows = all.map(it=>{
+    const cat=TL_CATS[it.cat]||TL_CATS.other;
+    const meta=[it.location,it.who].filter(Boolean).join(' · ');
+    return `<tr>
+      <td style="padding:10px 14px 10px 0;white-space:nowrap;vertical-align:top;font-weight:600;font-size:13px;border-bottom:1px solid #eee">${tlTo12h(it.time)||'—'}</td>
+      <td style="padding:10px 0;vertical-align:top;border-bottom:1px solid #eee">
+        <div style="font-size:15px;font-weight:600;margin-bottom:2px">${_escHtml(it.title||'Untitled')} <span style="font-size:10px;font-weight:600;color:${cat.color};text-transform:uppercase;letter-spacing:.05em;margin-left:6px">${cat.label}</span></div>
+        ${meta?`<div style="font-size:12px;color:#666">${_escHtml(meta)}</div>`:''}
+        <div style="font-size:10px;font-weight:600;color:${it._color};margin-top:3px">${_escHtml(it._source)}</div>
+        ${it.notes?`<div style="font-size:12px;color:#888;margin-top:2px">${_escHtml(it.notes)}</div>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+  const win=window.open('','_blank');
+  if(!win){ alert('Please allow pop-ups to print the timeline.'); return; }
+  win.document.write(`<!DOCTYPE html><html><head><title>Master Timeline</title>
+    <style>
+      @media print{@page{margin:18mm}}
+      body{font-family:Georgia,'Times New Roman',serif;color:#1a1a18;max-width:640px;margin:30px auto;padding:0 20px}
+      h1{font-size:30px;font-weight:500;text-align:center;margin:0 0 4px;letter-spacing:.02em}
+      .sub{text-align:center;color:#777;font-size:13px;margin-bottom:6px}
+      .eyebrow{text-align:center;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#b08d5b;margin-bottom:24px}
+      .pills{text-align:center;margin-bottom:20px}
+      .pill{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin:2px 3px}
+      table{width:100%;border-collapse:collapse}
+    </style></head><body>
+    <div class="eyebrow">Master Timeline</div>
+    <h1>${_tlPrintNames()}</h1>
+    <div class="sub">${_tlPrintSubLine()}</div>
+    <div class="pills">${active.map(tl=>{const col=TL_COLORS[tl.colorIdx]||TL_COLORS[0];return `<span class="pill" style="background:${col.bg};color:${col.hex}">${_escHtml(tl.name)}</span>`;}).join('')}</div>
+    <table>${rows||'<tr><td style="padding:20px;text-align:center;color:#999">No moments in selected timelines.</td></tr>'}</table>
+    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#999"><a href="https://unionvault.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px"><img src="${WB_CREST_DARK}" alt="" width="20" height="18" style="vertical-align:middle">Timeline created with <strong>Union Vault</strong></a></div>
+    </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ win.print(); }, 350);
+}
+
+function _tlShareMaster(){
+  if(!_sbSession) return;
+  const uid = _sbSession.user.id;
+  const url = window.location.origin + window.location.pathname + '?runsheet=' + encodeURIComponent(uid);
+  const active = STATE.timelines.filter(t=>t.inMaster);
+  const pubCount = active.reduce((s,t)=>s+t.items.filter(x=>x.pub).length, 0);
+  const existing = document.getElementById('_prs-share-overlay');
+  if(existing) existing.remove();
+
+  const ov = document.createElement('div');
+  ov.id = '_prs-share-overlay';
+  ov.className = 'prs-overlay';
+  ov.innerHTML = `
+    <div class="prs-panel" role="dialog" aria-modal="true" aria-label="Share master timeline">
+      <div class="prs-head">
+        <button class="prs-close" onclick="document.getElementById('_prs-share-overlay').remove()" aria-label="Close">×</button>
+        <div class="prs-names" style="font-size:18px">Share master timeline</div>
+        <div class="prs-sub">${active.length} timeline${active.length!==1?'s':''} · ${pubCount} visible moment${pubCount!==1?'s':''}</div>
+      </div>
+      <div style="padding:18px 22px">
+        <div style="background:var(--soft,var(--cream));border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Link</div>
+          <div style="font-size:13px;color:var(--gold-deep);word-break:break-all;line-height:1.5" id="_prs-url-display">${_escHtml(url)}</div>
+        </div>
+        ${pubCount === 0 ? `<div style="background:rgba(180,90,60,.08);border:.5px solid rgba(180,90,60,.3);border-radius:9px;padding:11px 14px;font-size:13px;color:var(--muted);margin-bottom:14px">No moments are marked visible yet. Edit each moment and turn on <strong>"Guests can see this"</strong>.</div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="prs-copy-btn" id="_prs-copy-btn" onclick="_prsDoCopy('${_escHtml(url)}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy link
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('_prs-share-overlay').remove()" style="flex:1;min-width:80px">Done</button>
+        </div>
+      </div>
+    </div>`;
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
 }
 
 // Which timeline view is showing: 'run' (run-sheet) or 'music' (DJ/band sheet).
