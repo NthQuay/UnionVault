@@ -44,7 +44,7 @@ function navigate(page){
     document.getElementById('sidebar').classList.add('collapsed');
     document.getElementById('sidebar-overlay').classList.remove('visible');
   }
-  const titles={dashboard:'Dashboard',details:'Event Details',timeline:'Day-of Timeline',guests:'Guest List','rsvp-mgr':'RSVP & Invites',
+  const titles={dashboard:'Dashboard',details:'Event Details',timeline:'Timelines',guests:'Guest List','rsvp-mgr':'RSVP & Invites',
     checklist:'Checklist',calendar:'Calendar',budget:'Budget',vendors:'Vendors',seating:'Seating Plan',inspo:'Inspiration',
     visionboard:'Vision Board',wishingwell:'Wishing Well',invitation:'RSVP & Invites',settings:'Settings',events:'Events',website:'Website'};
   const eyebrows={dashboard:'Overview',details:'Your Event',timeline:'Schedule',guests:'Guests','rsvp-mgr':'Guests',
