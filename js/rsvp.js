@@ -2097,7 +2097,7 @@ function _rsvpSettingsPopup(){
   const ol=document.createElement('div');
   ol.id='rsvp-settings-overlay';
   ol.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)';
-  ol.innerHTML=`<div style="background:var(--card-bg,var(--bg));border-radius:14px;padding:28px 24px 22px;max-width:380px;width:92%;box-shadow:0 8px 30px rgba(0,0,0,.18);position:relative">
+  ol.innerHTML=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:14px;padding:28px 24px 22px;max-width:380px;width:92%;box-shadow:0 8px 30px rgba(0,0,0,.18);position:relative">
     <button onclick="document.getElementById('rsvp-settings-overlay').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1" aria-label="Close">&times;</button>
     <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:18px">RSVP Settings</div>
     <div class="section-eyebrow" style="margin-bottom:10px">When a guest RSVPs</div>

@@ -1083,6 +1083,15 @@ function _wbThemeBody(){
         <button type="button" class="${t.navPos==='side'?'active':''}" onclick="_wbSet('navPos','side')">Side bar</button>
       </span>
     </div>
+    <div style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <label class="tl-pub-row" for="wb-adv-brandoff" style="padding:9px 10px${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?' ;opacity:.55':''}">
+        <span class="tl-pub-title" style="display:flex;flex-direction:column;gap:1px"><span>Show &ldquo;Made with Union Vault&rdquo; badge</span><span style="font-size:11px;color:var(--muted);font-weight:400">${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?'Upgrade to Full Access to remove':'Toggle the footer badge on your wedding website'}</span></span>
+        <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
+          <input type="checkbox" id="wb-adv-brandoff" ${w.brandOff?'':'checked'} onchange="_wbToggleBrand(this.checked)"/>
+          <span class="toggle-track"></span>
+        </span>
+      </label>
+    </div>
     <div style="margin-bottom:14px">
       <div class="wb-slot-lbl" style="margin-bottom:6px">Website password</div>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
@@ -1477,6 +1486,15 @@ function _wbRepaintTheme(){
         <button type="button" class="${t.navPos==='side'?'active':''}" onclick="_wbSet('navPos','side')">Side bar</button>
       </span>
     </div>
+    <div style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <label class="tl-pub-row" for="wb-adv-brandoff2" style="padding:9px 10px${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?' ;opacity:.55':''}">
+        <span class="tl-pub-title" style="display:flex;flex-direction:column;gap:1px"><span>Show &ldquo;Made with Union Vault&rdquo; badge</span><span style="font-size:11px;color:var(--muted);font-weight:400">${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?'Upgrade to Full Access to remove':'Toggle the footer badge on your wedding website'}</span></span>
+        <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
+          <input type="checkbox" id="wb-adv-brandoff2" ${w.brandOff?'':'checked'} onchange="_wbToggleBrand(this.checked)"/>
+          <span class="toggle-track"></span>
+        </span>
+      </label>
+    </div>
     <div style="margin-bottom:14px">
       <div class="wb-slot-lbl" style="margin-bottom:6px">Website password</div>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
@@ -1707,15 +1725,6 @@ function openWbHome(){
         </span>
       </div>
       <div id="wb-cta-hint" style="font-size:12px;color:var(--muted);margin-top:-6px">${ctaMode==='ics'?'Adds a Save the date calendar download.':ctaMode==='rsvp'?'Links guests to your RSVP form.':''}</div>
-      <div style="margin-top:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
-        <label class="tl-pub-row" for="wb-h-brandoff" style="padding:9px 10px${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?' ;opacity:.55':''}">
-          <span class="tl-pub-title" style="display:flex;flex-direction:column;gap:1px"><span>Show &ldquo;Made with Union Vault&rdquo; badge</span><span style="font-size:11px;color:var(--muted);font-weight:400">${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?'Upgrade to Full Access to remove':'Toggle the footer badge on your wedding website'}</span></span>
-          <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
-            <input type="checkbox" id="wb-h-brandoff" ${_wbSite().brandOff?'':'checked'} onchange="_wbToggleBrand(this.checked)"/>
-            <span class="toggle-track"></span>
-          </span>
-        </label>
-      </div>
     </div>`,
     `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbHomeCancel()">Cancel</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
@@ -1729,7 +1738,7 @@ function _wbSaveHome(){
 }
 function _wbToggleBrand(showBadge){
   if(!showBadge && _sbSession && typeof _uvRequirePaid==='function' && !_uvRequirePaid('brandOff')){
-    const cb=document.getElementById('wb-h-brandoff'); if(cb) cb.checked=true;
+    const cb=document.getElementById('wb-adv-brandoff')||document.getElementById('wb-adv-brandoff2'); if(cb) cb.checked=true;
     return;
   }
   _wbSite().brandOff=!showBadge;
@@ -4063,8 +4072,14 @@ function _wbBuildSite(forDownload){
   const homeLink = sections.includes('home') ? `<a href="#home">Home</a>` : '';
   const navLinks = homeLink + sections.filter(k=>k!=='home').map(k=>
     `<a href="#${k}">${_escHtml(_wbNavLabel(k))}</a>`).join('');
+  const sideToggle = t2.navPos==='side'
+    ? `<button type="button" class="navtoggle" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>`
+    : '';
+  const topToggle = t2.navPos!=='side'
+    ? `<button type="button" class="navtoggle" aria-expanded="false" aria-controls="navlinks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>Menu</button>`
+    : '';
   const nav = navLinks
-    ? `<button type="button" class="navtoggle" aria-expanded="false" aria-controls="navlinks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>Menu</button><span class="navlinks" id="navlinks">${navLinks}</span>`
+    ? `${sideToggle}${topToggle}<span class="navlinks" id="navlinks">${navLinks}</span>`
     : '';
 
   // Every section is wrapped the same way, built-in or custom. Heading, intro, align and
@@ -4820,9 +4835,9 @@ function _wbBuildSite(forDownload){
       ${_uvHasStep3?`<div class="rf-step-panel" id="rf-step3">
         ${_fPhone.show?`<div class="contact-field"><p class="contact-label">Phone${_fPhone.required?' <span class="required-star">*</span>':''}</p><input class="contact-input" id="f-phone" type="tel" placeholder="+61 400 000 000" autocomplete="tel" oninput="window._uvCheckStep3&&window._uvCheckStep3()"></div>`:''}
         ${_fEmail.show?`<div class="contact-field"><p class="contact-label">Email${_fEmail.required?' <span class="required-star">*</span>':''}</p><input class="contact-input" id="f-email" type="email" placeholder="email@example.com" autocomplete="email" oninput="window._uvCheckStep3&&window._uvCheckStep3()"></div>`:''}
-        ${_fAddr.show?`<div class="contact-field"><p class="contact-label">Mailing address${_fAddr.required?' <span class="required-star">*</span>':''}</p><input class="contact-input" id="f-street" type="text" placeholder="Street address" style="margin-bottom:8px" oninput="window._uvCheckStep3&&window._uvCheckStep3()"><div class="addr-row"><input class="contact-input" type="text" id="f-suburb" placeholder="Suburb"><input class="contact-input" type="text" id="f-state" placeholder="State"><input class="contact-input" type="text" id="f-post" placeholder="Post"></div></div>`:''}
-        ${_fSong.show?`<div class="contact-field"><p class="contact-label">Song request</p><input class="contact-input" id="f-song" type="text" placeholder="Artist \\u2014 Song title"></div>`:''}
-        ${_fNotes.show?`<div class="contact-field"><p class="contact-label">Message for the couple</p><textarea class="contact-textarea" id="f-notes" placeholder="A note, a wish\\u2026"></textarea></div>`:''}
+        ${_fAddr.show?`<div class="contact-field"><p class="contact-label">Mailing address${_fAddr.required?' <span class="required-star">*</span>':''}</p><input class="contact-input" id="f-street" type="text" placeholder="Street address" autocomplete="address-line1" name="street-address" style="margin-bottom:8px" oninput="window._uvCheckStep3&&window._uvCheckStep3()"><div class="addr-row"><input class="contact-input" type="text" id="f-suburb" placeholder="Suburb" autocomplete="address-level2" name="city"><input class="contact-input" type="text" id="f-state" placeholder="State" autocomplete="address-level1" name="state"><input class="contact-input" type="text" id="f-post" placeholder="Post" autocomplete="postal-code" name="postal-code"></div></div>`:''}
+        ${_fSong.show?`<div class="contact-field"><p class="contact-label">Song request</p><input class="contact-input" id="f-song" type="text" placeholder="Artist — Song title"></div>`:''}
+        ${_fNotes.show?`<div class="contact-field"><p class="contact-label">Message for the couple</p><textarea class="contact-textarea" id="f-notes" placeholder="A note, a wish…"></textarea></div>`:''}
         <div id="rf-custom-fields"></div>
         ${_fEmail.show?'<label class="rsvp-copy-label"><input type="checkbox" id="f-email-copy" checked> Email me a copy of my RSVP confirmation</label>':''}
       </div>`:''}
@@ -5305,10 +5320,17 @@ body.sidenav{display:flex;align-items:flex-start}
 body.sidenav nav{position:sticky;top:0;height:100dvh;overflow-y:auto;width:${scb(200)}px;flex-shrink:0;border-bottom:none;border-right:1px solid ${t2.heading}1A;padding:${sp(24)}px ${sp(16)}px;display:flex;flex-direction:column}
 body.sidenav .navlinks{flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;gap:0;margin-top:${sp(8)}px}
 body.sidenav nav a{display:block;padding:${sp(9)}px ${sp(6)}px;opacity:.7}
-body.sidenav .navtoggle{display:none}
-body.sidenav .sidebar-brand{margin-top:auto;text-align:center;padding-top:${sp(16)}px}
+body.sidenav .navtoggle{display:flex;align-items:center;gap:6px;background:none;border:0;padding:${sp(6)}px ${sp(4)}px;cursor:pointer;color:${t2.heading};font-family:inherit;font-size:${scb(10)}px;letter-spacing:.1em;text-transform:uppercase;opacity:.65;margin-bottom:${sp(4)}px;width:100%}
+body.sidenav .navtoggle svg{width:14px;height:14px;flex-shrink:0;transition:transform .2s}
+body.sidenav.collapsed .navtoggle svg{transform:rotate(180deg)}
+body.sidenav.collapsed .navlinks,body.sidenav.collapsed .sidebar-brand,body.sidenav.collapsed .sidebar-names{display:none}
+body.sidenav.collapsed nav{width:auto;min-width:48px;padding:${sp(16)}px ${sp(8)}px;align-items:center}
+body.sidenav .sidebar-names{margin-top:auto;padding-top:${sp(16)}px}
+body.sidenav .sidebar-brand{text-align:center;padding-top:${sp(12)}px}
+body.sidenav nav:not(:has(.sidebar-names)) .sidebar-brand{margin-top:auto}
 .site-content{flex:1;min-width:0}
-@media(max-width:620px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{flex-direction:row;flex-wrap:wrap;justify-content:center;margin-top:0}body.sidenav nav a{display:inline;padding:0}}
+@media(max-width:620px) and (min-width:481px){body.sidenav nav{width:${scb(160)}px;padding:${sp(16)}px ${sp(10)}px}body.sidenav nav a{font-size:${scb(11)}px;padding:${sp(7)}px ${sp(4)}px}.sidebar-names{font-size:${scb(13)}px}}
+@media(max-width:480px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{flex-direction:row;flex-wrap:wrap;justify-content:center;margin-top:0}body.sidenav nav a{display:inline;padding:0}body.sidenav .sidebar-brand{display:none}body.sidenav .sidebar-names{display:none}body.sidenav header h1{display:block}body.sidenav .navtoggle{display:none}}
 header{text-align:center;padding:${sp(72)}px 24px ${sp(60)}px}
 /* v125: min-height is set INLINE (it depends on hero.height), so the padding here is only
    breathing room, not the thing that sizes the box. Before, padding WAS the height — and
@@ -5526,12 +5548,18 @@ footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-
    not a mark; it is a label, and it is a different label on every site. Only the LABEL
    above it ("Website made with") is theirs, because that is their sentence, not our name. */
 .madewith{margin-top:${sp(22)}px;display:flex;flex-direction:column;align-items:center;gap:8px;text-transform:none;letter-spacing:0}
+body:not(.sidenav) .madewith{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:50;margin-top:0;background:${t2.background||t2.page}CC;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:8px 18px;border-radius:20px;border:1px solid ${t2.heading}14}
+@media(max-height:400px){body:not(.sidenav) .madewith{position:static;transform:none;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;border:none;border-radius:0;margin-top:${sp(22)}px}}
 .mw-lbl{font-family:${t2.bodyFont};font-size:${scb(10)}px;letter-spacing:.08em;color:${t2.text};opacity:.75}
 .mw-lock{display:inline-flex;align-items:center;gap:7px}
 .mw-crest{width:${scb(26)}px;height:auto;display:block;flex-shrink:0}
 .mw-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;font-family:'Cinzel',serif;font-weight:400}
 .mw-txt b{font-size:${scb(13)}px;letter-spacing:.1em;font-weight:400;color:${brand.main}}
 .mw-txt i{font-size:${scb(9)}px;letter-spacing:.18em;font-style:normal;color:${brand.sub}}
+.sidebar-names{font-family:${t2.headFont};font-size:${scb(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em}
+body.sidenav header h1{display:none}
+body.sidenav .sidebar-brand{display:flex;flex-direction:column;align-items:center}
+body.sidenav .mw-lock{display:flex;align-items:center;justify-content:center;gap:7px}
 @media(max-width:520px){
   dl div{flex-direction:column;gap:2px}
   dt{width:auto;padding-top:0}
@@ -5582,7 +5610,7 @@ ${w.passwordEnabled&&w.password?`<div class="wb-pw-gate" id="wb-pw-gate">
     <p class="lock-err" id="wb-pw-err"></p>
   </div>
 </div>`:''}
-${nav?`<nav>${nav}${t2.navPos==='side'&&!w.brandOff?`<div class="madewith sidebar-brand">
+${nav?`<nav>${nav}${t2.navPos==='side'?`<div class="sidebar-names">${_escHtml(_wbCouple())}</div>`:''}${t2.navPos==='side'&&!w.brandOff?`<div class="madewith sidebar-brand">
     <span class="mw-lbl">Website made with</span>
     <a class="mw-lock" href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault" style="text-decoration:none">
       <img class="mw-crest" src="${brand.crest==='dark'?WB_CREST_DARK:WB_CREST_LIGHT}" alt="" width="26" height="24"/>
@@ -5626,12 +5654,12 @@ ${_uvModal}
     if(inp)inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();window._wbUnlockSite();}});
   })();
   `:''}
-  var n=document.querySelector('nav'), b=n&&n.querySelector('.navtoggle');
-  // The .js class is what ARMS the collapsed-nav CSS. It is added here, at runtime, so a
-  // guest with JS disabled never sees a menu button that cannot open — they get the plain
-  // wrapping nav instead. The button exists in the markup either way; only the CSS that
-  // hides the links behind it is conditional.
-  if(n&&b){
+  var n=document.querySelector('nav'), b=n&&n.querySelector('.navtoggle'), isSide=document.body.classList.contains('sidenav');
+  if(isSide&&n&&b){
+    b.addEventListener('click',function(){
+      document.body.classList.toggle('collapsed');
+    });
+  }else if(n&&b){
     n.className='js';
     b.addEventListener('click',function(){
       var open=n.classList.toggle('open');
