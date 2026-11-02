@@ -105,6 +105,8 @@ const STATE = {
     { id:'tl8', time:'19:30', title:'First Dance', location:'Dance floor', who:'', notes:'', cat:'reception' },
     { id:'tl9', time:'23:00', title:'Last Dance & Send-off', location:'Ballroom', who:'', notes:'Sparkler exit.', cat:'reception' }
   ],
+  timelines: [],
+  activeTimelineId: null,
   events: [],
   families: [],
   // Starter guest tags (name → colour + icon) for new accounts; users edit or delete freely.

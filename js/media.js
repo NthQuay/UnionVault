@@ -812,6 +812,11 @@ function loadFromStorage(){
     if(saved.wishingwell)Object.assign(STATE.wishingwell, saved.wishingwell);
     if(saved.website)    STATE.website = saved.website;
     if(saved.timeline)   STATE.timeline = saved.timeline;
+    if(saved.timelines && saved.timelines.length){
+      STATE.timelines = saved.timelines;
+      STATE.activeTimelineId = saved.activeTimelineId || null;
+    }
+    if(typeof _tlEnsureTimelines==='function') _tlEnsureTimelines();
     if(saved.events)STATE.events = saved.events;
     if(!Array.isArray(STATE.events)) STATE.events = [];
     // Migrate any legacy events (old Details-page shape: title/venue, no rsvps)

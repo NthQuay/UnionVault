@@ -27,6 +27,8 @@ function saveToStorage(){
     wishingwell: STATE.wishingwell,
     website: STATE.website,
     timeline: STATE.timeline||[],
+    timelines: STATE.timelines||[],
+    activeTimelineId: STATE.activeTimelineId||null,
     events: STATE.events,
     tagDefs: STATE.tagDefs||{},
     families: STATE.families||[],

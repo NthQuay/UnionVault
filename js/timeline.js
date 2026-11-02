@@ -9,6 +9,255 @@ const TL_CATS = {
   other:     { label:'Other',         color:'var(--muted)', dot:'#8A8A88' }
 };
 
+// ── Multiple timelines ───────────────────────────────────────
+const TL_COLORS = [
+  { name:'green',  hex:'#3a8a5c', bg:'rgba(58,138,92,.10)' },
+  { name:'blue',   hex:'#4a7fb5', bg:'rgba(74,127,181,.10)' },
+  { name:'purple', hex:'#7a5bb5', bg:'rgba(122,91,181,.10)' },
+  { name:'rose',   hex:'#b55b7a', bg:'rgba(181,91,122,.10)' },
+  { name:'orange', hex:'#b57a4a', bg:'rgba(181,122,74,.10)' },
+  { name:'gold',   hex:'#b08d5b', bg:'rgba(176,141,91,.10)' }
+];
+
+function _tlEnsureTimelines(){
+  if(STATE.timelines && STATE.timelines.length) return;
+  STATE.timelines = [{
+    id: uid(), name: 'Wedding Day', colorIdx: 5, inMaster: true,
+    items: STATE.timeline && STATE.timeline.length ? STATE.timeline.slice() : []
+  }];
+  STATE.activeTimelineId = null;
+  STATE.timeline = STATE.timelines[0].items;
+}
+
+function _tlActiveTimeline(){
+  _tlEnsureTimelines();
+  if(STATE.activeTimelineId){
+    const tl = STATE.timelines.find(t=>t.id===STATE.activeTimelineId);
+    if(tl) return tl;
+  }
+  return null;
+}
+
+function _tlOpenTimeline(id){
+  _tlEnsureTimelines();
+  const tl = STATE.timelines.find(t=>t.id===id);
+  if(!tl) return;
+  STATE.activeTimelineId = id;
+  STATE.timeline = tl.items;
+  saveToStorage();
+  navigate('timeline');
+}
+
+function _tlBackToList(){
+  STATE.activeTimelineId = null;
+  saveToStorage();
+  navigate('timeline');
+}
+
+function _tlAddTimeline(){
+  if(typeof _uvRequirePaid==='function' && !_uvRequirePaid('timeline')) return;
+  _tlEnsureTimelines();
+  const colorIdx = STATE.timelines.length % TL_COLORS.length;
+  openModal('New Timeline', `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group"><label class="form-label">Timeline Name</label>
+        <input class="form-input" id="tl-new-name" placeholder="e.g. Rehearsal Dinner, Morning Prep…"/>
+      </div>
+      <div class="form-group"><label class="form-label">Colour</label>
+        <div id="tl-color-picker" style="display:flex;gap:10px;margin-top:4px">
+          ${TL_COLORS.map((c,i)=>`<div onclick="_tlPickColor(${i})" style="width:28px;height:28px;border-radius:50%;background:${c.hex};cursor:pointer;border:2px solid ${i===colorIdx?'var(--ink)':'transparent'};transition:all .15s" data-tl-color="${i}"></div>`).join('')}
+        </div>
+      </div>
+      <label class="tl-pub-row" for="tl-new-master" style="margin-top:4px">
+        <span><span class="tl-pub-title">Include in Master Timeline</span><span class="tl-pub-sub">Merges into the combined schedule view</span></span>
+        <span class="toggle-switch"><input type="checkbox" id="tl-new-master" checked/><span class="toggle-track"></span></span>
+      </label>
+    </div>`,
+    `<button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
+     <button class="btn btn-primary" onclick="_tlSaveNewTimeline()">Create Timeline</button>`);
+  window._tlNewColorIdx = colorIdx;
+}
+
+function _tlPickColor(i){
+  window._tlNewColorIdx = i;
+  document.querySelectorAll('#tl-color-picker > div').forEach((el,idx)=>{
+    el.style.borderColor = idx===i ? 'var(--ink)' : 'transparent';
+  });
+}
+
+function _tlSaveNewTimeline(){
+  const name = (document.getElementById('tl-new-name')||{}).value?.trim();
+  if(!name) return;
+  const inMaster = !!(document.getElementById('tl-new-master')||{}).checked;
+  const colorIdx = window._tlNewColorIdx || 0;
+  const tl = { id: uid(), name, colorIdx, inMaster, items: [] };
+  STATE.timelines.push(tl);
+  closeModalDirect();
+  _tlOpenTimeline(tl.id);
+}
+
+function _tlEditTimeline(id){
+  const tl = STATE.timelines.find(t=>t.id===id);
+  if(!tl) return;
+  openModal('Edit Timeline', `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group"><label class="form-label">Timeline Name</label>
+        <input class="form-input" id="tl-edit-name" value="${(tl.name||'').replace(/"/g,'&quot;')}"/>
+      </div>
+      <div class="form-group"><label class="form-label">Colour</label>
+        <div id="tl-color-picker" style="display:flex;gap:10px;margin-top:4px">
+          ${TL_COLORS.map((c,i)=>`<div onclick="_tlPickColor(${i})" style="width:28px;height:28px;border-radius:50%;background:${c.hex};cursor:pointer;border:2px solid ${i===tl.colorIdx?'var(--ink)':'transparent'};transition:all .15s" data-tl-color="${i}"></div>`).join('')}
+        </div>
+      </div>
+      <label class="tl-pub-row" for="tl-edit-master" style="margin-top:4px">
+        <span><span class="tl-pub-title">Include in Master Timeline</span><span class="tl-pub-sub">Merges into the combined schedule view</span></span>
+        <span class="toggle-switch"><input type="checkbox" id="tl-edit-master" ${tl.inMaster?'checked':''}/><span class="toggle-track"></span></span>
+      </label>
+    </div>`,
+    `<button class="btn btn-danger" onclick="_tlConfirmDeleteTimeline('${id}')" style="margin-right:auto">Delete</button>
+     <button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
+     <button class="btn btn-primary" onclick="_tlSaveEditTimeline('${id}')">Save</button>`);
+  window._tlNewColorIdx = tl.colorIdx;
+}
+
+function _tlSaveEditTimeline(id){
+  const tl = STATE.timelines.find(t=>t.id===id);
+  if(!tl) return;
+  tl.name = (document.getElementById('tl-edit-name')||{}).value?.trim() || tl.name;
+  tl.colorIdx = window._tlNewColorIdx ?? tl.colorIdx;
+  tl.inMaster = !!(document.getElementById('tl-edit-master')||{}).checked;
+  saveToStorage(); closeModalDirect(); navigate('timeline');
+}
+
+function _tlConfirmDeleteTimeline(id){
+  const tl = STATE.timelines.find(t=>t.id===id);
+  if(!tl) return;
+  if(STATE.timelines.length <= 1){ _cloudToast('Cannot delete your only timeline', true); return; }
+  _confirmDeleteDialog({title:'Delete Timeline', question:'Delete this timeline and all its moments?', name:tl.name, verb:'Delete', onConfirmJs:`_tlDoDeleteTimeline('${id}')`});
+}
+
+function _tlDoDeleteTimeline(id){
+  STATE.timelines = STATE.timelines.filter(t=>t.id!==id);
+  if(STATE.activeTimelineId===id) STATE.activeTimelineId=null;
+  if(STATE.timelines.length) STATE.timeline = STATE.timelines[0].items;
+  saveToStorage(); closeModalDirect(); navigate('timeline');
+}
+
+function _tlSyncActiveItems(){
+  if(!STATE.activeTimelineId) return;
+  const tl = STATE.timelines.find(t=>t.id===STATE.activeTimelineId);
+  if(tl) tl.items = STATE.timeline;
+}
+
+function _tlToggleMaster(id, ev){
+  if(ev) ev.stopPropagation();
+  const tl = STATE.timelines.find(t=>t.id===id);
+  if(tl){ tl.inMaster = !tl.inMaster; saveToStorage(); navigate('timeline'); }
+}
+
+// ── Timeline list view ───────────────────────────────────────
+function _tlRenderListView(c, actions){
+  _tlEnsureTimelines();
+  const tls = STATE.timelines;
+  actions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="_tlAddTimeline()" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="tl-tb-label">Add Timeline</span></button>`;
+
+  const dateLine = STATE.event.date ? fmtDate(STATE.event.date) : '';
+  const venueLine = STATE.event.venue || '';
+  let header = `<div style="color:var(--muted);font-size:14px;margin-bottom:20px">${[dateLine,venueLine].filter(Boolean).join(' &nbsp;·&nbsp; ')||'Manage your wedding day schedules'}</div>`;
+
+  let cardsHtml = '';
+  tls.forEach(tl=>{
+    const col = TL_COLORS[tl.colorIdx] || TL_COLORS[0];
+    const n = tl.items.length;
+    const sorted = tl.items.slice().sort((a,b)=>{ const ma=tlMinutes(a.time), mb=tlMinutes(b.time); if(ma===null)return 1; if(mb===null)return -1; return ma-mb; });
+    const first = sorted[0], last = sorted[sorted.length-1];
+    const span = first&&last&&first!==last ? `${tlTo12h(first.time)} – ${tlTo12h(last.time)}` : (first ? tlTo12h(first.time) : '—');
+    cardsHtml += `<div onclick="_tlOpenTimeline('${tl.id}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface,var(--cream));border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="width:4px;height:40px;border-radius:3px;background:${col.hex};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px">${_escHtml(tl.name)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${n} moment${n!==1?'s':''} · ${span}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()">
+        <button onclick="_tlToggleMaster('${tl.id}',event)" title="${tl.inMaster?'Remove from master':'Add to master'}" style="width:36px;height:20px;border-radius:11px;border:none;background:${tl.inMaster?'var(--gold)':'var(--border)'};cursor:pointer;position:relative;transition:background .2s;flex-shrink:0"><span style="position:absolute;top:2px;left:${tl.inMaster?'18px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.15)"></span></button>
+        <button onclick="event.stopPropagation();_tlEditTimeline('${tl.id}')" title="Edit timeline" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+      </div>
+    </div>`;
+  });
+
+  const masterActive = tls.filter(t=>t.inMaster);
+  const masterPills = masterActive.map(tl=>{
+    const col = TL_COLORS[tl.colorIdx] || TL_COLORS[0];
+    return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:14px;font-size:11px;font-weight:600;background:${col.bg};color:${col.hex}"><span style="width:6px;height:6px;border-radius:50%;background:${col.hex}"></span>${_escHtml(tl.name)}</span>`;
+  }).join('');
+  const masterTotal = masterActive.reduce((s,t)=>s+t.items.length, 0);
+  const masterDesc = masterActive.length === 0
+    ? 'No timelines selected. Toggle timelines on above to build your master schedule.'
+    : `${masterActive.length} timeline${masterActive.length!==1?'s':''} · ${masterTotal} moments combined.`;
+
+  const masterHtml = `<div style="margin-top:24px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--gold-deep);font-weight:600;margin-bottom:8px">Master Timeline</div>
+    <div style="background:var(--surface,var(--cream));border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+      <div style="font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Master Timeline</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5">${masterDesc}</div>
+      ${masterPills?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${masterPills}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary btn-sm" onclick="_tlOpenMasterView()" style="display:inline-flex;align-items:center;gap:5px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Master
+        </button>
+      </div>
+    </div>
+  </div>`;
+
+  c.innerHTML = header
+    + `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--gold-deep);font-weight:600;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">Individual Timelines<span style="font-size:12px;color:var(--muted);font-weight:400;letter-spacing:normal;text-transform:none">${tls.length} timeline${tls.length!==1?'s':''}</span></div>`
+    + `<div style="display:flex;flex-direction:column;gap:10px">${cardsHtml}</div>`
+    + masterHtml;
+}
+
+// Placeholder for Phase 2 master view
+function _tlOpenMasterView(){
+  _tlEnsureTimelines();
+  const active = STATE.timelines.filter(t=>t.inMaster);
+  if(!active.length){ _cloudToast('Toggle at least one timeline on to view the master.', true); return; }
+  // Merge all active timeline items, sorted by time
+  const all = [];
+  active.forEach(tl=>{
+    const col = TL_COLORS[tl.colorIdx] || TL_COLORS[0];
+    tl.items.forEach(it=>{ all.push(Object.assign({}, it, { _source:tl.name, _color:col.hex, _bg:col.bg })); });
+  });
+  all.sort((a,b)=>{ const ma=tlMinutes(a.time), mb=tlMinutes(b.time); if(ma===null)return 1; if(mb===null)return -1; return ma-mb; });
+
+  STATE.activeTimelineId = '__master__';
+  const c = document.getElementById('main-content');
+  const actions = document.getElementById('topbar-actions');
+  const te=document.getElementById('topbar-title'); if(te) te.textContent='Master Timeline';
+  const eb=document.getElementById('topbar-eyebrow'); if(eb) eb.textContent='Combined';
+  actions.innerHTML = '';
+
+  const pills = active.map(tl=>{
+    const col = TL_COLORS[tl.colorIdx] || TL_COLORS[0];
+    return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:14px;font-size:11px;font-weight:600;background:${col.bg};color:${col.hex}"><span style="width:6px;height:6px;border-radius:50%;background:${col.hex}"></span>${_escHtml(tl.name)}</span>`;
+  }).join('');
+
+  let rows = '';
+  all.forEach((it,idx)=>{
+    const cat = TL_CATS[it.cat] || TL_CATS.other;
+    rows += `<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:600;white-space:nowrap;min-width:60px">${tlTo12h(it.time)||'—'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px">${_escHtml(it.title||'Untitled')}</div>
+        ${it.location?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${_escHtml(it.location)}</div>`:''}
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:1px 7px;border-radius:8px;margin-top:4px;background:${it._bg};color:${it._color}">${_escHtml(it._source)}</span>
+      </div>
+    </div>`;
+  });
+
+  c.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${pills}</div>
+    <div style="margin-top:4px">${rows||'<div style="text-align:center;padding:30px;color:var(--muted)">No moments in selected timelines.</div>'}</div>
+    <div style="margin-top:20px;text-align:center"><button class="btn btn-outline btn-sm" onclick="_tlBackToList()" style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Back to Timelines</button></div>`;
+}
+
 // Which timeline view is showing: 'run' (run-sheet) or 'music' (DJ/band sheet).
 let _tlView = 'run';
 function tlSetView(v){ if(v==='music'&&typeof _uvRequirePaid==='function'&&!_uvRequirePaid('timeline')) return; _tlView = (v==='music'?'music':'run'); const c=document.getElementById('main-content'); const a=document.getElementById('topbar-actions'); if(c) renderTimeline(c, a||document.createElement('div')); }
@@ -112,8 +361,26 @@ function tlRenderMusicView(){
 }
 
 function renderTimeline(c, actions){
+  _tlEnsureTimelines();
+  // If no active timeline selected (or __master__), show list view
+  if(!STATE.activeTimelineId || STATE.activeTimelineId === '__master__'){
+    if(STATE.activeTimelineId === '__master__'){
+      _tlOpenMasterView(); return;
+    }
+    const te=document.getElementById('topbar-title'); if(te) te.textContent='Timelines';
+    const eb=document.getElementById('topbar-eyebrow'); if(eb) eb.textContent='Schedule';
+    _tlRenderListView(c, actions); return;
+  }
+  // Detail view — set title to timeline name
+  const _activeTL = _tlActiveTimeline();
+  if(_activeTL){
+    const te=document.getElementById('topbar-title'); if(te) te.textContent=_activeTL.name;
+    const eb=document.getElementById('topbar-eyebrow'); if(eb) eb.textContent='Timeline';
+    STATE.timeline = _activeTL.items;
+  }
   const _pubCount = (STATE.timeline||[]).filter(x=>x.pub).length;
   actions.innerHTML = `
+    <button class="btn btn-outline btn-sm tl-tb-btn" onclick="_tlBackToList()" title="Back to timelines" style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span class="tl-tb-label">All</span></button>
     <button class="btn btn-outline btn-sm tl-tb-btn" onclick="printTimeline(_tlView==='music'?'music':'')" title="${_tlView==='music'?'Print the music sheet':'Print or save as PDF'}" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span class="tl-tb-label">Print${_tlView==='music'?' music':''}</span>
     </button>
@@ -339,6 +606,7 @@ function saveTimelineItem(editId){
   } else {
     STATE.timeline.push({ id:uid(), time, title, cat, location, who, notes, vendorId, songs, pub });
   }
+  _tlSyncActiveItems();
   saveToStorage(); closeModalDirect(); navigate('timeline');
 }
 function deleteTimelineItem(id){
@@ -346,7 +614,9 @@ function deleteTimelineItem(id){
   const _label=_t0?(_t0.title||_t0.time||'moment'):'moment';
   closeModalDirect();
   _undoableDelete(_label, ()=>{
-    STATE.timeline = STATE.timeline.filter(x=>x.id!==id);
+    const idx=STATE.timeline.findIndex(x=>x.id===id);
+    if(idx!==-1) STATE.timeline.splice(idx,1);
+    _tlSyncActiveItems();
   }, 'timeline');
 }
 function confirmDeleteTimelineItem(id){

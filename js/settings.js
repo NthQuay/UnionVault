@@ -734,6 +734,8 @@ async function _exportDataJsonInner(){
     wishingwell: STATE.wishingwell,
     website: STATE.website,
     timeline: STATE.timeline||[],
+    timelines: STATE.timelines||[],
+    activeTimelineId: STATE.activeTimelineId||null,
     events: STATE.events||[],
     families: STATE.families||[],
     tagDefs: STATE.tagDefs||{},
@@ -1050,6 +1052,8 @@ function _applyStartFromScratch(){
   }
   if(sel.has('timeline')){
     STATE.timeline=[];
+    STATE.timelines=[];
+    STATE.activeTimelineId=null;
   }
   if(sel.has('inspo')){
     // Clear inspiration (colours + images) and the vision board that references them.
