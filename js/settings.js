@@ -204,16 +204,16 @@ function renderSettings(c, actions){
         <div style="font-size:13.5px;font-weight:500">When you tick linked checklist and budget items</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">What happens when a task and a payment are linked, or a task sounds like a cost.</div>
         <div class="lk-mode-opts">
-          ${[[1,'Automatic + Undo','Linked items update by themselves. A short message says what changed, with Undo. Unlinked money tasks show a small “Add to budget” chip.'],
+          ${[[1,'Automatic + Undo','Linked items update by themselves. A short message says what changed, with Undo. Unlinked money tasks show a small "Add to budget" chip.'],
              [2,'One sheet','One short pop-up lists anything else that could change, with the likely ones ticked. Pick, then Save.'],
              [3,'Automatic, ask about new costs','Linked items update by themselves, with Undo. Ticking an unlinked money task opens one short sheet to add it to your budget.']]
             .map(o=>`<button type="button" class="lk-mode-opt${_linkedMode()===o[0]?' sel':''}" onclick="setLinkedMode(${o[0]})" aria-pressed="${_linkedMode()===o[0]}"><span class="lk-mn">Option ${o[0]}</span><span class="lk-mt">${o[1]}</span><span class="lk-md">${o[2]}</span></button>`).join('')}
         </div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:8px">Balance tasks and invoices are always in the item’s ⋯ menu.</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:8px">Balance tasks and invoices are always in the item's ⋯ menu.</div>
       </div>
 
       <div style="margin-bottom:8px">
-        <div style="font-size:13.5px;font-weight:600;margin-bottom:4px">Set “Due Soon” Alert</div>
+        <div style="font-size:13.5px;font-weight:600;margin-bottom:4px">Set "Due Soon" Alert</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Choose how early upcoming due dates are flagged.</div>
         <div style="background:transparent;border:1px solid var(--border);border-radius:12px;padding:14px 16px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
@@ -347,7 +347,7 @@ function renderSettings(c, actions){
       <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
           <div style="font-size:13.5px;font-weight:500">Suggest Budget-Link Message</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show the “link this to a Payment?” message on a completed task.</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Show the "link this to a Payment?" message on a completed task.</div>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" ${!STATE.settings.hideBuyLinkPrompt?'checked':''} onchange="STATE.settings.hideBuyLinkPrompt=!this.checked;saveToStorage()"/>
@@ -388,7 +388,7 @@ function renderSettings(c, actions){
       <div class="dark-toggle-row" style="margin-bottom:16px">
         <div>
           <div style="font-size:13.5px;font-weight:500">Suggest emailing appointments to me</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">If you add an appointment without ticking “email to myself”, ask at save.</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">If you add an appointment without ticking "email to myself", ask at save.</div>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" ${STATE.settings.suggestEmailAppointment!==false?'checked':''} onchange="STATE.settings.suggestEmailAppointment=this.checked;saveToStorage()"/>
@@ -519,7 +519,7 @@ const _SETTINGS_PAGE_MAP={
   'Show Year on Budget Dates':'budget',
   'Show Paid / Left to pay on Budget Categories':'budget',
   'Auto-mark passed installments paid':'budget',
-  'Set “Due Soon” Alert':'appointments',
+  'Set "Due Soon" Alert':'appointments',
   'Category Jump Bar':'budget',
   'Calmer Category Cards':'budget',
   'Countdown Format':'general',

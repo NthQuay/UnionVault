@@ -214,7 +214,7 @@ async function _submitSupportForm(btn){
     const res=await fetch(_SB_URL+'/functions/v1/send-support-email',{method:'POST',headers:{'Content-Type':'application/json','apikey':_SB_KEY,'Authorization':_sbAuthHdr()},body:JSON.stringify({email:email.trim(),coupleName:coupleName||'',subject,message:msg.trim(),screenshotUrls})});
     const data=await res.json();
     if(!res.ok||data.error) throw new Error(data.error||'Submission failed');
-    _suppStatus('Message sent ✔ We’ll get back to you shortly.',true);
+    _suppStatus('Message sent ✔ We\'ll get back to you shortly.',true);
     btn.textContent='Sent ✔';
     setTimeout(function(){const o=document.getElementById('_supp-overlay');if(o)o.remove();},2200);
   }catch(e){
@@ -242,7 +242,7 @@ async function _submitLandingContact(btn){
     const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({access_key:_W3F_KEY,subject:'Contact from '+name.trim(),from_name:name.trim(),name:name.trim(),email:email.trim(),message:msg.trim(),redirect:'false'})});
     const data=await res.json();
     if(!data.success) throw new Error(data.message||'Failed');
-    if(status){status.textContent='Message sent ✔ We’ll get back to you shortly.';status.style.cssText='display:block;font-size:13px;padding:10px 14px;border-radius:8px;background:rgba(100,180,100,.1);color:#4c4';}
+    if(status){status.textContent='Message sent ✔ We\'ll get back to you shortly.';status.style.cssText='display:block;font-size:13px;padding:10px 14px;border-radius:8px;background:rgba(100,180,100,.1);color:#4c4';}
     ['lp-contact-name','lp-contact-email','lp-contact-msg'].forEach(function(id){const el=document.getElementById(id);if(el)el.value='';});
     btn.textContent='Sent ✔';
   }catch(e){

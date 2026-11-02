@@ -214,7 +214,7 @@ function _addVendorFromAppt(taskId, apptId){
   const dup=STATE.vendors.find(v=>_vendorMatches(v, a));
   if(typeof _closeConfirm2Direct==='function') _closeConfirm2Direct();
   if(dup){
-    _vendorFlash='“'+(dup.business||'This vendor')+'” is already in your vendor list';
+    _vendorFlash='"'+(dup.business||'This vendor')+'" is already in your vendor list';
   } else {
     const nv=_vendorFromAppt(a);
     STATE.vendors.push(nv);
@@ -325,7 +325,7 @@ function renderVendors(c, actions){
   if(!STATE.vendors.length){
     listHtml=`<div style="font-size:13px;color:var(--muted);padding:26px 16px;text-align:center;border:.5px solid var(--border);border-radius:12px">No vendors yet. Add one with <strong>New vendor</strong>, or pull contacts in from your appointments above.</div>`;
   } else if(!_filteredVendors.length){
-    listHtml=`<div style="font-size:13px;color:var(--muted);padding:26px 16px;text-align:center;border:.5px solid var(--border);border-radius:12px">No vendors match “${_escHtml(_vendorSearch)}”.</div>`;
+    listHtml=`<div style="font-size:13px;color:var(--muted);padding:26px 16px;text-align:center;border:.5px solid var(--border);border-radius:12px">No vendors match "${_escHtml(_vendorSearch)}".</div>`;
   } else {
     const groups={};
     _filteredVendors.forEach(v=>{ const k=v.category||'Other'; (groups[k]=groups[k]||[]).push(v); });
@@ -426,7 +426,7 @@ function _vendorRelationsPanel(v){
   if(!rows.length){
     const msg = hidePassed
       ? 'No upcoming links. Passed-date items are hidden.'
-      : 'Nothing linked yet. Use “+ Link task” or attach this vendor to a Payment.';
+      : 'Nothing linked yet. Use "+ Link task" or attach this vendor to a Payment.';
     return `<div style="margin-top:11px;border-top:.5px solid var(--border);padding-top:9px">
       <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">Planner Links</div>
       <div style="font-size:11.5px;color:var(--muted);padding:3px 0 2px">${msg}</div>
@@ -812,7 +812,7 @@ function _vendorCardHtml(v){
       </div>
     </div>
     ${lines.join('')}
-    ${v.notes?`<div style="font-size:11.5px;color:var(--muted);font-style:italic;margin-top:7px">“${esc(v.notes)}”</div>`:''}
+    ${v.notes?`<div style="font-size:11.5px;color:var(--muted);font-style:italic;margin-top:7px">"${esc(v.notes)}"</div>`:''}
     ${_vendorRelationsPanel(v)}
     ${(()=>{ const _op=_vendorOwedPillHtml(v.id); return _op?`<div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">${_op}</div>`:''; })()}
     <div style="display:flex;gap:6px;margin-top:11px;flex-wrap:wrap">
@@ -947,7 +947,7 @@ function _vendorLinkTaskPicker(vendorId){
     <div id="vlt-list" style="max-height:340px;overflow-y:auto;border:.5px solid var(--border);border-radius:9px">${rowsHtml}</div>
   </div>`;
   const footer=`<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Done</button>`;
-  openModal('Link “'+(v.business||'vendor')+'” to a task', body, footer);
+  openModal('Link "'+(v.business||'vendor')+'" to a task', body, footer);
 }
 function _vendorLinkTaskFilter(){
   const q=(document.getElementById('vlt-search')?.value||'').trim().toLowerCase();
@@ -971,7 +971,7 @@ function _maybeMirrorVendorToBudget(taskId, vendorId){
   const tg=targets[0];
   const name=tg.sid ? `${tg.b.name} › ${tg.s.name}` : tg.b.name;
   const body=`<div style="font-size:13px;color:var(--ink);line-height:1.5">
-      “${_escHtml(v.business||'This vendor')}” is now linked to this task, which is also tied to the Payment <b>${_escHtml(name)}</b>.<br><br>Link the vendor to that Payment too?
+      "${_escHtml(v.business||'This vendor')}" is now linked to this task, which is also tied to the Payment <b>${_escHtml(name)}</b>.<br><br>Link the vendor to that Payment too?
     </div>`;
   const footer=`<button class="btn btn-outline btn-sm" onclick="_closeConfirm2Direct&&_closeConfirm2Direct()">Skip</button>
     <button class="btn btn-primary btn-sm" onclick="_mirrorVendorToBudgetDo('${vendorId}','${tg.bid}','${tg.sid||''}')">Link it</button>`;
@@ -1433,7 +1433,7 @@ function _vendorAutofillFromPaste(){
   if(msg){
     msg.style.display='block';
     if(filled.length){ msg.style.color='var(--green)'; msg.textContent='Filled: '+filled.join(', ')+'. Check the fields before saving.'; }
-    else { msg.style.color='var(--muted)'; msg.textContent='Couldn’t recognise any fields — please enter them manually.'; }
+    else { msg.style.color='var(--muted)'; msg.textContent='Couldn\'t recognise any fields — please enter them manually.'; }
   }
 }
 function _vendorSaveForm(id){
@@ -1483,7 +1483,7 @@ function _vendorApplyToAppt(id){
   }).join('');
   const newBtn=`<button type="button" class="btn btn-primary btn-sm" onclick="_vendorNewApptTask('${id}')" style="width:100%;justify-content:center;gap:6px;margin-bottom:12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create a new appointment</button>`;
   const existing = all.length
-    ? `<div style="font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 4px 6px">Or apply to an existing appointment</div><div style="font-size:12px;color:var(--muted);line-height:1.5;margin:0 4px 9px">Fill an appointment with <strong>${_escHtml(v.business||'this vendor')}</strong>’s details (you’ll preview first).</div><div style="border:.5px solid var(--border);border-radius:11px;overflow:hidden">${rows}</div>`
+    ? `<div style="font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 4px 6px">Or apply to an existing appointment</div><div style="font-size:12px;color:var(--muted);line-height:1.5;margin:0 4px 9px">Fill an appointment with <strong>${_escHtml(v.business||'this vendor')}</strong>'s details (you'll preview first).</div><div style="border:.5px solid var(--border);border-radius:11px;overflow:hidden">${rows}</div>`
     : `<div style="font-size:12px;color:var(--muted);text-align:center;padding:6px 4px">No appointments yet — create one above.</div>`;
   const body=`<div style="padding:2px">${newBtn}${existing}</div>`;
   openModal('Appointments', body, '');
@@ -1566,7 +1566,7 @@ function _vendorApplySave(vendorId, taskId, apptId){
   a.vendorId=v.id;
   saveToStorage();
   closeModalDirect();
-  _vendorFlash='Applied “'+(v.business||'vendor')+'” to the appointment';
+  _vendorFlash='Applied "'+(v.business||'vendor')+'" to the appointment';
   navigate('vendors');
 }
 function _vendorApplyEdit(vendorId, taskId, apptId){
@@ -1752,7 +1752,7 @@ function _vendorHubPullExisting(){
   const rows = pool.length ? pool.map(({f,source})=>`<button type="button" onclick="_vendorHubLinkDoc('${f.id}')" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;border-bottom:.5px solid var(--border);padding:10px 11px;cursor:pointer">
       <span style="width:26px;height:26px;border-radius:7px;background:var(--surface);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;pointer-events:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${_fileKindIcon(f)}</svg></span>
       <span style="flex:1;min-width:0;pointer-events:none"><span style="display:block;font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(f.name)}</span><span style="display:block;font-size:10px;color:var(--muted)">${_escHtml(source)}</span></span>
-    </button>`).join('') : `<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">No uploaded documents found. Upload files on a Payment first, or use “Attach new”.</div>`;
+    </button>`).join('') : `<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">No uploaded documents found. Upload files on a Payment first, or use "Attach new".</div>`;
   const body=`<div style="padding:2px"><div style="font-size:12px;color:var(--muted);margin:2px 4px 10px">Pick a file already uploaded elsewhere to reference here. It stays where it is — only a link is added.</div><div style="border:.5px solid var(--border);border-radius:11px;overflow:hidden;max-height:300px;overflow-y:auto">${rows}</div><div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn btn-outline btn-sm" onclick="_vendorReopenHub()">Back</button></div></div>`;
   openModal('Pull a document', body, '');
 }
@@ -2453,7 +2453,7 @@ function _apptShowDetails(ctx, a){
       <div><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="font-size:14px;font-weight:600;color:var(--ink)">${esc(a.business||a.type||'Appointment')}</span>${virtualPill}</div>${(a.business&&a.type)?`<div style="font-size:11px;color:var(--gold-deep)">${esc(a.type)}</div>`:''}${when?`<div style="font-size:11.5px;color:var(--muted)">${esc(when)}</div>`:''}</div>
     </div>
     <div style="font-size:12.5px;color:var(--ink);line-height:1.9;${detailRows?'border-top:.5px solid var(--border);padding-top:9px':''}">${detailRows}</div>
-    ${a.notes?`<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:6px">“${esc(a.notes)}”</div>`:''}
+    ${a.notes?`<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:6px">"${esc(a.notes)}"</div>`:''}
     ${_inVendorList?'':`<button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;gap:5px;margin-top:12px;color:var(--green);border-color:rgba(29,158,117,.4)" onclick="_addVendorFromAppt(${idArg},'${a.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>Add Vendor to List</button>`}
     <div style="display:flex;gap:7px;margin-top:14px">
       <button class="btn btn-outline btn-sm" style="flex:1;justify-content:center;gap:5px" onclick="_apptEditFromDetails(${idArg},'${a.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>
@@ -2497,7 +2497,7 @@ function _apptDeleteFromDetails(taskId, apptId){
       <span style="width:26px;height:26px;border-radius:50%;background:rgba(192,57,43,.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
       <div style="font-size:13.5px;color:var(--ink);font-weight:500">Delete this appointment?</div>
     </div>
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">“${_escHtml(name)}” will be permanently removed. This can’t be undone.</div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">"${_escHtml(name)}" will be permanently removed. This can't be undone.</div>
   </div>`;
   const footer=`<button class="btn btn-outline btn-sm" onclick="_apptOpenDetailsAfterCancelDelete(${idArg},'${apptId}')">Cancel</button>
     <button class="btn btn-sm" onclick="_apptConfirmDelete(${idArg},'${apptId}')" style="background:var(--red);color:#fff;border:1px solid var(--red)">Delete</button>`;
@@ -2960,7 +2960,7 @@ function _askIsAppointment(task){
   const body=`<div style="display:flex;flex-direction:column;gap:12px">
     <div style="display:flex;align-items:flex-start;gap:10px">
       <span style="width:28px;height:28px;border-radius:50%;background:rgba(196,168,130,.18);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold-deep)">${_apptCalSvg}</span>
-      <div style="font-size:13.5px;color:var(--ink);font-weight:500;line-height:1.4">“${(task.text||'').replace(/</g,'&lt;')}” looks like an appointment</div>
+      <div style="font-size:13.5px;color:var(--ink);font-weight:500;line-height:1.4">"${(task.text||'').replace(/</g,'&lt;')}" looks like an appointment</div>
     </div>
     <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Add appointment details like date, time, location and contact?</div>
     <div style="display:flex;gap:7px">
@@ -2981,7 +2981,7 @@ function _askFollowUp(task){
   const body=`<div style="display:flex;flex-direction:column;gap:12px">
     <div style="display:flex;align-items:flex-start;gap:10px">
       <span style="width:28px;height:28px;border-radius:50%;background:rgba(196,168,130,.18);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold-deep)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span>
-      <div style="font-size:13.5px;color:var(--ink);font-weight:500;line-height:1.4">“${safe}” is done — add a follow-up task?</div>
+      <div style="font-size:13.5px;color:var(--ink);font-weight:500;line-height:1.4">"${safe}" is done — add a follow-up task?</div>
     </div>
     <div style="font-size:12.5px;color:var(--muted);line-height:1.55">e.g. confirm details, pay the balance, or send final numbers.</div>
     <div><label class="form-label" style="margin-bottom:5px">Due date <span style="color:var(--muted);font-weight:400">(optional)</span></label><input class="form-input" type="date" id="followup-date" value=""/></div>
@@ -3660,7 +3660,7 @@ function _askLinkedBudgetStatus(bid, sid, taskId){
         <input id="lsd-amount" class="form-input" inputmode="decimal" value="${hasDep?(_curSym()+(s?Number(s.deposit||0):Number(b.deposit||0))):(seedAmt?(_curSym()+seedAmt):'')}" placeholder="${_curSym()}0" style="font-size:12.5px;height:34px;margin-bottom:10px"/>
         <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Deposit due date</div>
         <input id="lsd-date" class="form-input" type="date" value="${hasDep?((s?s.depositDueDate:b.depositDueDate)||''):defaultDue}" style="font-size:12.5px;height:34px;margin-bottom:${(!hasDep&&fromBooked)?'4px':'8px'}"/>
-        ${(!hasDep&&fromBooked)?`<div style="font-size:10.5px;color:var(--gold-deep);margin-bottom:8px;display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><path d="M9 15l2 2 4-4"/></svg>Prefilled from the task’s booked date</div>`:''}
+        ${(!hasDep&&fromBooked)?`<div style="font-size:10.5px;color:var(--gold-deep);margin-bottom:8px;display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><path d="M9 15l2 2 4-4"/></svg>Prefilled from the task's booked date</div>`:''}
         <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer;margin-bottom:11px"><input type="checkbox" id="lsd-nodate" onchange="_linkedStatusDepNoDate()" style="width:15px;height:15px;cursor:pointer"/> No deposit due date</label>
         ${hasDep && !_targetDepositPaid(b,s) ? `<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer;margin-bottom:11px"><input type="checkbox" id="lsd-markpaid" style="width:15px;height:15px;cursor:pointer"/> Mark deposit as paid</label>` : ''}
         <button class="btn btn-primary btn-sm" style="width:100%;font-size:12.5px" onclick="_linkedStatusDepositSave('${bid}','${sid||''}','${taskId||''}')">${hasDep?'Save changes':'Save deposit'}</button>`;

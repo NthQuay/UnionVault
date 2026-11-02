@@ -5959,7 +5959,7 @@ function _wwRowHtml(x){
     return '';
   };
   const addr=_resolveContribAddr(x);
-  const noteLine = x.note?`<span style="display:block;font-size:11px;color:var(--muted);font-style:italic;margin-top:2px">"${_wwEsc(x.note)}”</span>`:'';
+  const noteLine = x.note?`<span style="display:block;font-size:11px;color:var(--muted);font-style:italic;margin-top:2px">"${_wwEsc(x.note)}"</span>`:'';
   const addrLine = addr
     ? `<span style="display:block;font-size:11px;color:var(--muted);margin-top:3px"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${_wwEsc(addr)}</span>`
     : `<span style="display:block;font-size:11px;color:var(--gold-deep);margin-top:3px;cursor:pointer" onclick="closeDots();openWwContribution('${x.id}')"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Add address</span>`;

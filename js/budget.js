@@ -760,15 +760,15 @@ function _renderChecklistAlertsBar(){
     let parentClass, parentIcon, parentText, parentStyle;
     const isAppt=!!a.appt;
     if(a.taskState==='overdue'){
-      parentText=`${apptPrefix(a)}“${a.text}” overdue (${fmtBudgetDate(a.taskDate)}${apptTimeSuffix(a)})`;
+      parentText=`${apptPrefix(a)}"${a.text}" overdue (${fmtBudgetDate(a.taskDate)}${apptTimeSuffix(a)})`;
       if(isAppt){ parentClass=''; parentIcon=`<span style="color:var(--gold-deep);display:inline-flex">${apptCalSvg}</span>`; parentStyle='color:var(--red-deep);background:rgba(196,168,130,.14);border:1px solid rgba(196,168,130,.42);border-left:3px solid var(--gold);border-radius:6px'; }
       else { parentClass=cls('overdue'); parentIcon=triSvg; parentStyle=''; }
     } else if(a.taskState==='soon'){
-      parentText=`${apptPrefix(a)}“${a.text}” due — ${fmtBudgetDate(a.taskDate)}${apptTimeSuffix(a)}`;
+      parentText=`${apptPrefix(a)}"${a.text}" due — ${fmtBudgetDate(a.taskDate)}${apptTimeSuffix(a)}`;
       if(isAppt){ parentClass=''; parentIcon=`<span style="color:var(--gold-deep);display:inline-flex">${apptCalSvg}</span>`; parentStyle='color:var(--gold-deep);background:rgba(196,168,130,.11);border:1px solid rgba(196,168,130,.32);border-left:3px solid var(--gold);border-radius:6px'; }
       else { parentClass=cls('soon'); parentIcon=infoSvg; parentStyle=''; }
     } else {
-      parentText=`${apptPrefix(a)}“${a.text}”`;
+      parentText=`${apptPrefix(a)}"${a.text}"`;
       if(isAppt){ parentClass=''; parentIcon=`<span style="color:var(--gold-deep);display:inline-flex">${apptCalSvg}</span>`; parentStyle='color:var(--muted);background:rgba(196,168,130,.10);border:1px solid rgba(196,168,130,.30);border-left:3px solid var(--gold);border-radius:6px'; }
       else { parentClass=''; parentIcon=clockSvg; parentStyle='color:var(--muted);background:var(--surface);border:1px solid var(--border)'; }
     }
@@ -1030,7 +1030,7 @@ function _setBudgetJumpBar(mode){
 }
 function _budgetItemsListHtml(){
   const _bItems = STATE.budget.items.filter(b=>_budgetItemMatchesSearch(b,_budgetSearch));
-  if(_budgetSearch && !_bItems.length){ return `<div class="empty-state"><div class="empty-state-text">No Payments match “${_escHtml(_budgetSearch)}”</div></div>`; }
+  if(_budgetSearch && !_bItems.length){ return `<div class="empty-state"><div class="empty-state-text">No Payments match "${_escHtml(_budgetSearch)}"</div></div>`; }
   return _bItems.map(b=>{
     if(!budgetReorderMode) return budgetItemHtml(b);
     return `<div class="budget-drag-wrap" data-bid="${b.id}" draggable="true"
@@ -1837,7 +1837,7 @@ function renderBudgetSummaryBody(){
   const F=_budgetFourFigures(totalCost, totalPaid, budgetTotal);
   const allocBtn=_budgetBreakdownBtn('openAllocatedSummary()','View committed breakdown');
   const depBtn=_budgetBreakdownBtn('openPaidSummary()','View payments (incl. deposits)');
-  const dueBtn=_budgetBreakdownBtn('openOwedSummary()','View what’s still owed');
+  const dueBtn=_budgetBreakdownBtn('openOwedSummary()','View what\'s still owed');
   const serif="font-family:'Cormorant Garamond',serif";
   const pct=(a,b)=>b>0?Math.max(0,Math.min(100,a/b*100)):0;
   const base=Math.max(budgetTotal,totalCost);
@@ -1845,7 +1845,7 @@ function renderBudgetSummaryBody(){
   const val=(v,c,size)=>`<span style="${serif};font-size:${size||18}px;font-weight:600;color:${c};line-height:1.15;white-space:nowrap">${v}</span>`;
   const fig=(t,v,c,btn,sw)=>`<div style="min-width:0;display:flex;flex-direction:column;gap:2px">${lbl(t,btn,sw)}${val(v,c)}</div>`;
   const gTitle=(t,v)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px"><span style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">${t}</span>${val(v,'var(--ink)',15)}</div>`;
-  const G1='Your budget', G2='Of what’s committed';
+  const G1='Your budget', G2='Of what\'s committed';
   const meter=(segs)=>`<div style="height:7px;border-radius:5px;background:var(--border);overflow:hidden;display:flex">${segs.map(s=>`<div style="width:${s[0]}%;background:${s[1]}"></div>`).join('')}</div>`;
   const wrapAB=(a,b)=>`<div class="bsum-a">${a}</div><div class="bsum-b">${b}</div>`;
 
@@ -3597,7 +3597,7 @@ function saveNewSubItem(pid){
 // "Auto-calculate the total?" prompt, shown after the first sub-item is added.
 function _askAutoCalcOnFirstSub(pid){
   const b=STATE.budget.items.find(x=>x.id===pid); if(!b)return;
-  const body=`<div style="font-size:13px;color:var(--ink);line-height:1.55">You added a sub-item to <strong>${_escHtml(b.name)}</strong>. Would you like this category’s total and deposit to roll up automatically from its sub-items?</div>`;
+  const body=`<div style="font-size:13px;color:var(--ink);line-height:1.55">You added a sub-item to <strong>${_escHtml(b.name)}</strong>. Would you like this category's total and deposit to roll up automatically from its sub-items?</div>`;
   const footer=`<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">No, keep manual</button>
     <button class="btn btn-primary btn-sm" onclick="_applyAutoCalcFromSub('${pid}')">Yes, auto-calc</button>`;
   openModal('Auto-calculate the total?', body, footer);
@@ -3758,7 +3758,7 @@ function _editSubItem(pid, sid){
   const taskBlock = _existingTask
     ? `<div style="display:flex;align-items:center;gap:8px;background:rgba(74,124,89,.10);border:.5px solid var(--border);border-radius:9px;padding:9px 11px">
          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-         <span style="font-size:12px;color:var(--ink)">Linked to task <strong>“${_escHtml(_existingTask.text||'Untitled task')}”</strong></span>
+         <span style="font-size:12px;color:var(--ink)">Linked to task <strong>"${_escHtml(_existingTask.text||'Untitled task')}"</strong></span>
          <button type="button" onclick="closeModalDirect();_focusChecklistTask('${_existingTask.id}')" style="margin-left:auto;border:none;background:none;color:var(--gold-deep);font-size:11.5px;cursor:pointer;padding:0;font-family:inherit">View</button>
        </div>`
     : _beAddTaskBlockHtml('sub-title-edit', {dateField:'sub-edit-due', urlField:'si-edit-url'});

@@ -420,7 +420,7 @@ function renderChecklist(c,actions){
   if(!_activeChecklist().length){
     html += `<div class="empty-state"><div class="empty-state-text">No tasks yet — add your first item to get started</div></div>`;
   } else if(_checklistSearch && !_activeChecklist().some(i=>_taskMatchesSearch(i,_checklistSearch))){
-    html += `<div class="empty-state"><div class="empty-state-text">No tasks match “${_escHtml(_checklistSearch)}”</div></div>`;
+    html += `<div class="empty-state"><div class="empty-state-text">No tasks match "${_escHtml(_checklistSearch)}"</div></div>`;
   }
 
   html += `</div>`;
@@ -1786,7 +1786,7 @@ function _askUnpin(task){
   const body=`<div style="display:flex;flex-direction:column;gap:12px">
     <div style="display:flex;align-items:flex-start;gap:10px">
       <span style="width:28px;height:28px;border-radius:50%;background:rgba(196,168,130,.18);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold-deep)"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg></span>
-      <div style="font-size:13.5px;color:var(--ink);font-weight:500;line-height:1.4">“${safe}” is done — remove it from the dashboard?</div>
+      <div style="font-size:13.5px;color:var(--ink);font-weight:500;line-height:1.4">"${safe}" is done — remove it from the dashboard?</div>
     </div>
     <div style="font-size:12.5px;color:var(--muted);line-height:1.55">It's pinned to your dashboard. Completed tasks usually don't need to stay pinned.</div>
     <div style="display:flex;gap:7px">
@@ -1854,13 +1854,13 @@ function _askBookedPlacement(taskId){
   }).join('');
   const targetName = s ? s.name : b.name;
   const body=`<div style="padding:2px">
-    <div style="font-size:13px;color:var(--ink);line-height:1.55;margin-bottom:13px">“${_escHtml(i.text)}” is done. Which part of <strong>${_escHtml(b.name)}</strong> should carry the ${bookedBadge} badge?</div>
+    <div style="font-size:13px;color:var(--ink);line-height:1.55;margin-bottom:13px">"${_escHtml(i.text)}" is done. Which part of <strong>${_escHtml(b.name)}</strong> should carry the ${bookedBadge} badge?</div>
     <div style="display:flex;flex-direction:column;gap:7px">${rows}</div>
-    <label style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);margin-top:12px;cursor:pointer"><input type="checkbox" id="bp-always-item" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold)"/> Always use the item — don’t ask again</label>
+    <label style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);margin-top:12px;cursor:pointer"><input type="checkbox" id="bp-always-item" style="width:14px;height:14px;cursor:pointer;accent-color:var(--gold)"/> Always use the item — don't ask again</label>
   </div>`;
   const footer=`<button class="btn btn-outline btn-sm" onclick="_bpCancel()">Cancel</button>
     <button class="btn btn-primary btn-sm" onclick="_bpApply()">Place badge</button>`;
-  openModal('Where should “Booked” appear?', body, footer);
+  openModal('Where should "Booked" appear?', body, footer);
 }
 function _bpSelect(val){
   _bpChoice=val;
@@ -1952,7 +1952,7 @@ function _unlinkIcon(sz){ return `<svg width="${sz}" height="${sz}" viewBox="0 0
 // clicking opens the link-management menu.
 function _chainSpan(side, sz, id1, id2){
   const partner = _resolveLinkPartnerName(side, id1, id2);
-  const title = partner ? `Linked to “${partner}” · click to manage` : 'Linked · click to manage';
+  const title = partner ? `Linked to "${partner}" · click to manage` : 'Linked · click to manage';
   const args = id2!==undefined && id2!==null && id2!=='' ? `'${side}','${id1}','${id2}'` : `'${side}','${id1}'`;
   return `<span onclick="event.stopPropagation();_openLinkMenu(${args})" style="color:var(--gold-deep);display:inline-flex;align-items:center;flex-shrink:0;cursor:pointer" title="${title}">${_chainIcon(sz)}</span>`;
 }
@@ -2138,7 +2138,7 @@ function _linkMenuAdjust(){
   _popupBackPending=()=>_openLinkMenu(c.side,c.id1,c.id2);
   _adoptPopupBack();
   const body=`<div style="display:flex;flex-direction:column;gap:8px">
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">Linking <strong style="color:var(--ink)">“${task.text}”</strong> to a budget item or sub-item.</div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">Linking <strong style="color:var(--ink)">"${task.text}"</strong> to a budget item or sub-item.</div>
     ${budgetLinkHtml(task.budgetId||'', task.budgetSubId||'')}
   </div>`;
   openModal('Adjust link', body,
@@ -2365,7 +2365,7 @@ function _ltSuggestHtml(b, s){
     newSec=`<div style="height:.5px;background:var(--border);margin:9px 0 2px"></div>
       <button type="button" onclick="_ltNewTaskInCategory('${matchedCat.replace(/'/g,"\\'")}')" style="font-size:11px;padding:5px 0;border:none;background:none;color:var(--gold-deep);font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New task in “${matchedCat.replace(/</g,'&lt;')}”…
+        New task in "${matchedCat.replace(/</g,'&lt;')}"…
       </button>`;
   }
   return `<div style="background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:9px 11px;margin-bottom:2px">
@@ -2399,7 +2399,7 @@ function _ltNewTaskInCategory(cat){
   const inp=document.getElementById('lt-newname');
   if(inp){ if(!inp.value.trim()) inp.value=_taskTitleFromBudget(nm)||nm; inp.focus(); }
   const hint=document.getElementById('lt-new-cat-hint');
-  if(hint) hint.textContent = cat ? `Will be filed under “${cat}”.` : '';
+  if(hint) hint.textContent = cat ? `Will be filed under "${cat}".` : '';
 }
 function _ltSetMode(mode){
   if(_linkToCtx) _linkToCtx.mode=mode;
@@ -2453,7 +2453,7 @@ function _saveLinkToChecklist(){
     if(_taskIsLinked(task) && !(task.budgetId===c.bid && (task.budgetSubId||'')===(c.sid||''))){
       _pendingLinkTaskId=task.id;
       const cur=_resolveLinkPartnerName('task', task.id, '');
-      const body=`<div style="font-size:13px;line-height:1.55;color:var(--ink)">“<strong>${task.text}</strong>” is already linked to <strong>${cur||'another Payment'}</strong>. Re-link it to this one instead?</div>`;
+      const body=`<div style="font-size:13px;line-height:1.55;color:var(--ink)">"<strong>${task.text}</strong>" is already linked to <strong>${cur||'another Payment'}</strong>. Re-link it to this one instead?</div>`;
       openModal('Re-link task?', body,
         `<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
          <button class="btn btn-primary btn-sm" onclick="_confirmReLink()">Re-link</button>`);
@@ -2665,7 +2665,7 @@ function _beToggleAddTask(nameFieldId){
     if(_beSubCtx){ extra.push(_beSubCtx.parentName||'', _beSubCtx.parentNote||'', _beSubCtx.subNote||''); }
     const cat=_resolveTaskCategory(nm, extra);
     const hint=document.getElementById('be-addtask-cat-hint');
-    if(hint) hint.textContent = (cat && cat!=='General') ? `Will be filed under “${cat}”.` : 'Will be filed under “General”.';
+    if(hint) hint.textContent = (cat && cat!=='General') ? `Will be filed under "${cat}".` : 'Will be filed under "General".';
     _beAddTaskRefreshUrlRow();
     _beAddTaskDateToggle();
   }
@@ -2759,7 +2759,7 @@ function _beNewTaskInCategory(cat){
   if(inp){ if(!inp.value.trim()) inp.value=_taskTitleFromBudget(nm)||nm; inp.focus(); }
   // Show which category it'll file under.
   const hint=document.getElementById('be-addtask-cat-hint');
-  if(hint) hint.textContent = cat ? `Will be filed under “${cat}”.` : '';
+  if(hint) hint.textContent = cat ? `Will be filed under "${cat}".` : '';
   _beAddTaskRefreshUrlRow();
   _beAddTaskDateToggle();
 }
@@ -2815,7 +2815,7 @@ function _openDateConflict(task, target, taskDate, budDate, cb){
       <span>${label}</span>
     </div>`;
   const body=`<div style="display:flex;flex-direction:column;gap:12px">
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">“<strong style="color:var(--ink)">${tName}</strong>” and <strong style="color:var(--ink)">${gName}</strong> have different dates. Which would you like to keep?</div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">"<strong style="color:var(--ink)">${tName}</strong>" and <strong style="color:var(--ink)">${gName}</strong> have different dates. Which would you like to keep?</div>
     <div style="display:flex;gap:10px">
       <div style="flex:1;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:9px;text-align:center">
         <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:3px">Task</div>
@@ -3008,7 +3008,7 @@ function _budgetDetailBox(b, s){
   const note = s ? (s.note||'') : (b.note||'');
   if(!rows.length && !note) return '';
   const metaLine = rows.length?`<div style="font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:5px 14px;align-items:center">${rows.join('')}</div>`:'';
-  const noteLine = note?`<div style="font-size:11.5px;color:var(--muted);font-style:italic;margin-top:3px">“${note}”</div>`:'';
+  const noteLine = note?`<div style="font-size:11.5px;color:var(--muted);font-style:italic;margin-top:3px">"${note}"</div>`:'';
   return `<div style="background:var(--surface);border-radius:8px;padding:9px 11px;margin:8px 0 0">${metaLine}${noteLine}</div>`;
 }
 // Build a small detail box for a checklist task (due date + linked budget amount + category/notes)
@@ -3025,7 +3025,7 @@ function _taskDetailBox(t){
   if(t.category) rows.push(`<span>${tag}${t.category}</span>`);
   if(!rows.length && !t.notes) return '';
   const metaLine = rows.length?`<div style="font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:5px 14px;align-items:center">${rows.join('')}</div>`:'';
-  const noteLine = t.notes?`<div style="font-size:11.5px;color:var(--muted);font-style:italic;margin-top:3px">“${t.notes}”</div>`:'';
+  const noteLine = t.notes?`<div style="font-size:11.5px;color:var(--muted);font-style:italic;margin-top:3px">"${t.notes}"</div>`:'';
   return `<div style="background:var(--surface);border-radius:8px;padding:9px 11px;margin:8px 0 0">${metaLine}${noteLine}</div>`;
 }
 // ── Visual row previews for link pop-ups ─────────────────────────────────────
@@ -3596,7 +3596,7 @@ function _askAddSubDeposit(b, s, task){
   const fromBooked = !!(bookedMention && task.dueDate);
   const defaultDue = fromBooked ? task.dueDate : today;
   const body=`<div style="padding:2px">
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px">“${task.text}” mentions a deposit, but <strong style="color:var(--ink)">${name}</strong> has none set.</div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:14px">"${task.text}" mentions a deposit, but <strong style="color:var(--ink)">${name}</strong> has none set.</div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--cream);border:.5px solid var(--border);border-radius:9px;margin-bottom:14px">
       <span style="font-size:12.5px;color:var(--ink)">Add a deposit</span>
       <span style="display:inline-flex;align-items:center;gap:8px">
@@ -3611,7 +3611,7 @@ function _askAddSubDeposit(b, s, task){
       <input id="adep-amount" class="form-input" inputmode="decimal" value="${amt?(_curSym()+amt):''}" placeholder="${_curSym()}0" style="font-size:12.5px;height:34px;margin-bottom:10px"/>
       <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Due date</div>
       <input id="adep-date" class="form-input" type="date" value="${defaultDue}" style="font-size:12.5px;height:34px;margin-bottom:${fromBooked?'4px':'8px'}"/>
-      ${fromBooked?`<div style="font-size:10.5px;color:var(--gold-deep);margin-bottom:8px;display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><path d="M9 15l2 2 4-4"/></svg>Prefilled from the task’s booked date</div>`:''}
+      ${fromBooked?`<div style="font-size:10.5px;color:var(--gold-deep);margin-bottom:8px;display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><path d="M9 15l2 2 4-4"/></svg>Prefilled from the task's booked date</div>`:''}
       <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);cursor:pointer"><input type="checkbox" id="adep-nodate" onchange="_adepNoDate()" style="width:15px;height:15px;cursor:pointer"/> No due date</label>
     </div>
     ${s?`<div style="border-top:.5px dashed var(--border);margin:13px 0 11px"></div>
@@ -3620,7 +3620,7 @@ function _askAddSubDeposit(b, s, task){
       <span style="flex:1;min-width:0"><span style="font-size:12.5px;color:var(--ink);font-weight:500">Pay in installments instead</span><br><span style="font-size:10.5px;color:var(--muted)">Set up a payment plan with due dates</span></span>
       <span style="color:var(--muted);flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
     </div>`:''}
-    <label id="adep-noask-row" style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-top:14px;cursor:pointer"><input type="checkbox" id="adep-noask" style="width:15px;height:15px;cursor:pointer"/> Don’t ask again</label>
+    <label id="adep-noask-row" style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-top:14px;cursor:pointer"><input type="checkbox" id="adep-noask" style="width:15px;height:15px;cursor:pointer"/> Don't ask again</label>
   </div>`;
   const footer=`${_popupBackBtnHtml()}<button class="btn btn-outline btn-sm" onclick="_adepCancel()">Skip</button>
     <button class="btn btn-primary btn-sm" onclick="_adepSave()">Save</button>`;
@@ -3776,7 +3776,7 @@ function _askAddBalanceTask(bid, sid, taskId){
   const linkNoun=s?'sub-item':'item';
   const newTitle=`Pay balance — ${targetName}`;
   const body=`<div style="padding:2px">
-    <div style="font-size:13px;color:var(--ink);line-height:1.55;margin-bottom:12px">You added a deposit for <strong>${_escHtml(path)}</strong>. Would you like a separate checklist task to track paying the remaining balance? It’ll link to the same ${linkNoun}.</div>
+    <div style="font-size:13px;color:var(--ink);line-height:1.55;margin-bottom:12px">You added a deposit for <strong>${_escHtml(path)}</strong>. Would you like a separate checklist task to track paying the remaining balance? It'll link to the same ${linkNoun}.</div>
     <div style="background:var(--cream);border:.5px solid var(--border);border-radius:9px;padding:9px 11px">
       <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink);margin-bottom:5px"><span style="width:15px;height:15px;border:1.5px solid var(--gold);border-radius:4px;flex-shrink:0"></span>${_escHtml(newTitle)}</div>
       <div style="font-size:10.5px;color:var(--gold-deep);display:flex;align-items:center;gap:4px;padding-left:22px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Links to ${_escHtml(path)}</div>
@@ -3784,7 +3784,7 @@ function _askAddBalanceTask(bid, sid, taskId){
   </div>`;
   const footer=`<button class="btn btn-outline btn-sm" onclick="_balanceTaskSkip()">No thanks</button>
     <button class="btn btn-primary btn-sm" onclick="_createBalanceTask('${bid}','${sid}','${taskId}')">Add task</button>`;
-  openModal('Add a “Balance paid” task?', body, footer);
+  openModal('Add a "Balance paid" task?', body, footer);
 }
 function _balanceTaskSkip(){ closeModalDirect(); if(_flushFollowUp()) return; navigate(_popupReturn()); }
 function _createBalanceTask(bid, sid, taskId){
@@ -3917,7 +3917,7 @@ function _askDepositOrBalance(b, s, nowDone, task){
   const hasDep = _targetHasDeposit(b, s);
   const kw = task ? (task.text||'') : '';
   const verb = nowDone ? 'mark paid' : 'un-mark';
-  const intro = `“${kw}” might mean a deposit. For <strong>${name}</strong>, which would you like to ${verb}?`;
+  const intro = `"${kw}" might mean a deposit. For <strong>${name}</strong>, which would you like to ${verb}?`;
   const body = `<div style="font-size:13px;line-height:1.55;color:var(--ink)">${intro}</div>${_budgetPreviewCard(b, s, 'deposit')}`;
   // Deposit button: if a deposit exists → mark it; if not (sub-item) → add one.
   const depLabel = nowDone
@@ -4039,7 +4039,7 @@ function _taskPreviewMeta(t){
   if(Number(amt)>0) parts.push(`${cash}${fmt(amt)}`);
   if(t.category) parts.push(`${tag}${t.category}`);
   const metaLine = parts.length?`<div style="font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:3px 12px;margin-top:2px">${parts.map(p=>`<span>${p}</span>`).join('')}</div>`:'';
-  const noteLine = t.notes?`<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:2px">“${t.notes}”</div>`:'';
+  const noteLine = t.notes?`<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:2px">"${t.notes}"</div>`:'';
   return metaLine+noteLine;
 }
 // When a deposit is marked paid and the target has NO linked task, but an unlinked
@@ -4363,9 +4363,9 @@ function _lkLine(id, checked, title, sub, extraHtml){
 function _lkExtras(task){
   const out=[];
   if(task && task.done && !(STATE.settings && STATE.settings.suggestFollowUp===false))
-    out.push(_lkLine('lk-x-follow', false, 'Add a follow-up task', `“Follow up: ${_escHtml(task.text||'')}”`));
+    out.push(_lkLine('lk-x-follow', false, 'Add a follow-up task', `"Follow up: ${_escHtml(task.text||'')}"`));
   if(task && task.done && task.pinned && !(STATE.settings && STATE.settings.askUnpinOnComplete===false))
-    out.push(_lkLine('lk-x-unpin', true, 'Remove from the dashboard', 'It’s pinned there'));
+    out.push(_lkLine('lk-x-unpin', true, 'Remove from the dashboard', 'It\'s pinned there'));
   return out;
 }
 function _lkApplyExtras(task){
@@ -4384,7 +4384,7 @@ function _lkTaskSheet(task, b, s, P){
       ? (P.kind==='deposit' ? `Mark the deposit paid — ${fmt(amt)}` : `Mark ${_escHtml(s?s.name:b.name)} paid — ${fmt(amt)}`)
       : (P.kind==='deposit' ? 'Mark the deposit as not paid' : `Mark ${_escHtml(s?s.name:b.name)} as not paid`);
     const dateHtml = P.done ? `<span class="lk-date">Paid on <input type="date" id="lk-pay-date" value="${_todayISO()}"/></span>` : '';
-    lines.push(_lkLine('lk-pay', P.auto, title, P.auto?'':'This task doesn’t say it’s a payment, so it’s not ticked', dateHtml));
+    lines.push(_lkLine('lk-pay', P.auto, title, P.auto?'':'This task doesn\'t say it\'s a payment, so it\'s not ticked', dateHtml));
   }
   if(P.kind==='nodeposit') lines.push(_lkLine('lk-adddep', false, `Record a deposit for ${_escHtml(P.name)}`, 'No deposit is set up yet'));
   if(P.done && P.kind==='deposit'){
@@ -4392,7 +4392,7 @@ function _lkTaskSheet(task, b, s, P){
     const hasBalTask=STATE.checklist.some(t=>t.id!==task.id && t.budgetId===b.id && (t.budgetSubId||'')===(s?s.id:'') && !_taskDepositKeyword(t));
     if(balOwed>0 && !hasBalTask) lines.push(_lkLine('lk-baltask', false, `Add a task to pay the balance — ${fmt(balOwed)}`, (s?s.balanceDueDate:b.balanceDueDate)?`Due ${fmtDate(s?s.balanceDueDate:b.balanceDueDate)}`:''));
   }
-  if(P.done && (P.kind==='deposit' || P.kind==='paid')) lines.push(_lkLine('lk-invoice', false, 'Attach an invoice or receipt', 'Opens the item’s documents'));
+  if(P.done && (P.kind==='deposit' || P.kind==='paid')) lines.push(_lkLine('lk-invoice', false, 'Attach an invoice or receipt', 'Opens the item\'s documents'));
   _lkExtras(task).forEach(x=>lines.push(x));
   if(!lines.length) return;
   _lkSheetCtx={type:'task', taskId:task.id, bid:b.id, sid:s?s.id:'', kind:P.kind, done:!!task.done, label:task.text||''};
@@ -4411,7 +4411,7 @@ function _lkAskKeep(){
   const title = isPay ? 'Keep the payment change?' : (c.done ? 'Keep the task ticked?' : 'Keep the task unticked?');
   const what = isPay
     ? `<b>${_escHtml(c.label)}</b> is marked ${c.makeDone?'paid':'not paid'}.`
-    : `“${_escHtml(c.label)}” is ${c.done?'ticked':'unticked'}.`;
+    : `"${_escHtml(c.label)}" is ${c.done?'ticked':'unticked'}.`;
   openModal(title, `<div style="font-size:13px;color:var(--ink);line-height:1.5">${what} Nothing else has changed.</div>`,
     `<button class="btn btn-outline btn-sm" onclick="_lkKeepUndo()">${isPay?'Undo it':'Undo the tick'}</button><button class="btn btn-primary btn-sm" onclick="_lkKeepYes()">${isPay?'Keep it':(c.done?'Keep it ticked':'Keep it unticked')}</button>`);
 }
@@ -4484,7 +4484,7 @@ function _lkUnlinkedSheet(taskId){
     + radio('notcost', 'Not a cost', 'Stop suggesting this for this task', false);
   const extras=_lkExtras(task).join('');
   _lkSheetCtx={type:'unlinked', taskId, matches, done:true, label:task.text||''};
-  openModal('Add this to your budget?', `<div class="lk-sheet"><div class="lk-intro">“${_escHtml(task.text||'')}” sounds like a cost.</div>${rows}${extras?`<div class="lk-sep"></div>${extras}`:''}</div>`,
+  openModal('Add this to your budget?', `<div class="lk-sheet"><div class="lk-intro">"${_escHtml(task.text||'')}" sounds like a cost.</div>${rows}${extras?`<div class="lk-sep"></div>${extras}`:''}</div>`,
     `<button class="btn btn-outline btn-sm" onclick="_lkSheetSkip()">Skip</button><button class="btn btn-primary btn-sm" onclick="_lkSheetSave()">Save</button>`);
 }
 function _lkChipHtml(i){
@@ -4501,8 +4501,8 @@ function _lkPaymentChanged(tasks, makeDone, contextName, revertFn){
   const pending=(tasks||[]).filter(t=>t && !!t.done!==makeDone && !seen.has(t.id) && seen.add(t.id));
   if(!pending.length) return;
   if(_linkedMode()===2){
-    const lines=pending.map((t,ix)=>_lkLine('lk-t-'+ix, true, `${makeDone?'Tick':'Untick'} “${_escHtml(t.text||'')}”`, 'The linked checklist task'));
-    if(makeDone && invoice) lines.push(_lkLine('lk-invoice', false, 'Attach an invoice or receipt', 'Opens the item’s documents'));
+    const lines=pending.map((t,ix)=>_lkLine('lk-t-'+ix, true, `${makeDone?'Tick':'Untick'} "${_escHtml(t.text||'')}"`, 'The linked checklist task'));
+    if(makeDone && invoice) lines.push(_lkLine('lk-invoice', false, 'Attach an invoice or receipt', 'Opens the item\'s documents'));
     _lkSheetCtx={type:'pay', tasks:pending.map(t=>t.id), makeDone, invoice, revert:revertFn||null, label:contextName||'Payment'};
     openModal(`${_escHtml(contextName||'Payment')} — also update?`, `<div class="lk-sheet">${lines.join('')}</div>`,
       `<button class="btn btn-primary btn-sm" onclick="_lkSheetSave()">Save</button>`);
@@ -4511,7 +4511,7 @@ function _lkPaymentChanged(tasks, makeDone, contextName, revertFn){
   const sn=_lkSnap(null, pending);
   pending.forEach(t=>{ t.done=makeDone; });
   saveToStorage(); navigate(_currentPage);
-  const what = pending.length===1 ? `“${_escHtml(pending[0].text||'')}”` : `${pending.length} linked tasks`;
+  const what = pending.length===1 ? `"${_escHtml(pending[0].text||'')}"` : `${pending.length} linked tasks`;
   _lkToast(`Also ${makeDone?'ticked':'unticked'} ${what}`, {undo:()=>_lkRestore(sn)});
 }
 
@@ -4519,10 +4519,10 @@ function _lkPaymentChanged(tasks, makeDone, contextName, revertFn){
 function _itemMenuAddBalanceTask(bid){
   const b=STATE.budget.items.find(x=>x.id===bid); if(!b) return;
   const text=`Pay balance — ${b.name}`;
-  if(STATE.checklist.some(t=>t.budgetId===bid && !t.budgetSubId && (t.text||'')===text)){ _lkToast(`“${_escHtml(text)}” is already on your checklist`); return; }
+  if(STATE.checklist.some(t=>t.budgetId===bid && !t.budgetSubId && (t.text||'')===text)){ _lkToast(`"${_escHtml(text)}" is already on your checklist`); return; }
   const t={id:'cl'+Date.now(), text, done:false, dueDate:b.balanceDueDate||'', category:'', notes:'', pinned:false, budgetId:bid, budgetSubId:''};
   STATE.checklist.push(t); saveToStorage(); navigate(_currentPage);
-  _lkToast(`Added “${_escHtml(text)}” to your checklist`, {undo:()=>{ STATE.checklist=STATE.checklist.filter(x=>x.id!==t.id); saveToStorage(); navigate(_currentPage); }});
+  _lkToast(`Added "${_escHtml(text)}" to your checklist`, {undo:()=>{ STATE.checklist=STATE.checklist.filter(x=>x.id!==t.id); saveToStorage(); navigate(_currentPage); }});
 }
 
 // v179: budget-side ticks now go through _lkPaymentChanged (one sheet / auto + Undo).
@@ -4854,7 +4854,7 @@ function _askDepositUncheckCascade(b, s){
   const lt=_findPayDepositTask(b, s);
   if(lt && lt.done){
     questions.push({
-      id:'task', text:`Also uncheck linked task “${lt.text}”?`,
+      id:'task', text:`Also uncheck linked task "${lt.text}"?`,
       yesLabel:'Uncheck', noLabel:'Keep checked',
       apply:()=>{ const t=STATE.checklist.find(x=>x.id===lt.id); if(t) t.done=false; }
     });
