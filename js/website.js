@@ -419,7 +419,18 @@ function _wbDaysLeft(){
 }
 // The timeline moments guests are allowed to see. `pub` defaults false — see saveTimelineItem.
 function _wbPublicMoments(){
-  return (STATE.timeline||[]).filter(x=>x.pub).slice().sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+  return _wbWebsiteItems().filter(x=>x.pub).slice().sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+}
+function _wbWebsiteTimelines(){
+  if(typeof _tlEnsureTimelines==='function') _tlEnsureTimelines();
+  return (STATE.timelines||[]).filter(t=>t.showOnWebsite!==false);
+}
+function _wbWebsiteItems(){
+  const tls=_wbWebsiteTimelines();
+  if(!tls.length) return STATE.timeline||[];
+  const items=[];
+  tls.forEach(t=>items.push(...(t.items||[])));
+  return items;
 }
 // Gallery images: inspo items OR gallery-uploaded photos the user has picked, IN the order
 // of w.gallery (so a future reorder is honoured). Each resolves to an object carrying `image`.
@@ -452,7 +463,7 @@ function _wbSubline(key){
   const w=_wbSite(), e=STATE.event||{};
   if(key==='home')      return [_wbCouple(), e.date?fmtDate(e.date):'No date set'].filter(Boolean).join(' · ');
   if(key==='details')   return e.venue || 'No venue set';
-  if(key==='schedule'){ const n=_wbPublicMoments().length, t=(STATE.timeline||[]).length;
+  if(key==='schedule'){ const n=_wbPublicMoments().length, t=_wbWebsiteItems().length;
                         return n===0 ? 'No moments shared yet' : (n+' of '+t+' moment'+(t===1?'':'s')+' visible to guests'); }
   if(key==='gallery'){  const n=_wbGalleryItems().length, t=(STATE.inspo&&STATE.inspo.items?STATE.inspo.items:[]).filter(i=>i.image).length;
                         return n===0 ? 'No images chosen' : (n+' of '+t+' image'+(t===1?'':'s')+' chosen'); }
@@ -2221,20 +2232,30 @@ function openWbSchedule(){
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbScheduleBody(){
-  const all=(STATE.timeline||[]).slice().sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
-  if(!all.length) return `<div id="wb-sched-list" style="font-size:13px;color:var(--muted);line-height:1.6">Your timeline is empty. Add moments on the Day-of Timeline page first.</div>`;
-  const shown=all.filter(x=>x.pub).length;
-  return `<div id="wb-sched-list"><div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:6px">Your timeline holds vendor load-ins and supplier notes, so moments start <b>hidden</b>. Tick the ones guests should see.</div>
-    <div style="margin-bottom:14px"><button type="button" class="btn btn-outline btn-sm" onclick="_wbScheduleAll(${shown<all.length?'true':'false'})">${shown<all.length?'Show all on website':'Hide all from website'}</button></div>
-    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
-      ${all.map((it,ix)=>`<label style="display:flex;align-items:center;gap:11px;padding:11px 13px;${ix<all.length-1?'border-bottom:1px solid var(--border);':''}cursor:pointer">
+  const tls=_wbWebsiteTimelines();
+  if(!tls.length) return `<div id="wb-sched-list" style="font-size:13px;color:var(--muted);line-height:1.6">No timelines are set to show on website. Edit a timeline and enable "Show on Website".</div>`;
+  const allItems=_wbWebsiteItems();
+  if(!allItems.length) return `<div id="wb-sched-list" style="font-size:13px;color:var(--muted);line-height:1.6">Your website timelines have no moments yet. Add moments on the Timelines page first.</div>`;
+  const shown=allItems.filter(x=>x.pub).length;
+  let rows='';
+  tls.forEach(tl=>{
+    const items=(tl.items||[]).slice().sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+    if(!items.length) return;
+    const col=(typeof TL_COLORS!=='undefined'&&TL_COLORS[tl.colorIdx])?TL_COLORS[tl.colorIdx]:{hex:'var(--gold)'};
+    if(tls.length>1) rows+=`<div style="display:flex;align-items:center;gap:8px;padding:10px 13px;background:var(--bg-raised,var(--cream));border-bottom:1px solid var(--border)"><span style="width:8px;height:8px;border-radius:50%;background:${col.hex};flex-shrink:0"></span><span style="font-size:12px;font-weight:600;color:var(--ink)">${_escHtml(tl.name)}</span></div>`;
+    items.forEach((it,ix)=>{
+      rows+=`<label style="display:flex;align-items:center;gap:11px;padding:11px 13px;${(tls.length>1||ix<items.length-1)?'border-bottom:1px solid var(--border);':''}cursor:pointer">
         <input type="checkbox" ${it.pub?'checked':''} onchange="_wbSchedulePick('${it.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--gold)"/>
         <span style="flex:1;min-width:0">
           <span style="display:block;font-size:13px;color:var(--ink)">${_escHtml(it.title||'Untitled')}</span>
           <span style="display:block;font-size:11.5px;color:var(--muted)">${_escHtml(tlTo12h(it.time)||'—')}${it.location?' · '+_escHtml(it.location):''}</span>
         </span>
-      </label>`).join('')}
-    </div></div>`;
+      </label>`;
+    });
+  });
+  return `<div id="wb-sched-list"><div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:6px">Timelines set to "Show on Website" appear here. Tick the moments guests should see.</div>
+    <div style="margin-bottom:14px"><button type="button" class="btn btn-outline btn-sm" onclick="_wbScheduleAll(${shown<allItems.length?'true':'false'})">${shown<allItems.length?'Show all on website':'Hide all from website'}</button></div>
+    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">${rows}</div></div>`;
 }
 // Repaint ONLY the schedule list, not #modal-body — the slots block lives in the same
 // modal and rewriting the whole body would destroy it.
@@ -2244,12 +2265,12 @@ function _wbSchedRepaint(){
   _wbLiveSoon();
 }
 function _wbSchedulePick(id, on){
-  const it=(STATE.timeline||[]).find(x=>x.id===id);
+  const it=_wbWebsiteItems().find(x=>x.id===id);
   if(it){ it.pub=!!on; saveToStorage(); }
   _wbSchedRepaint();
 }
 function _wbScheduleAll(on){
-  (STATE.timeline||[]).forEach(x=>{ x.pub=!!on; });
+  _wbWebsiteItems().forEach(x=>{ x.pub=!!on; });
   saveToStorage();
   _wbSchedRepaint();
 }
@@ -4371,11 +4392,24 @@ function _wbBuildSite(forDownload){
       return wrap(k, rows.length?`<dl>${rows.map(r=>`<div><dt>${_escHtml(r[0])}</dt><dd>${r[1]}</dd></div>`).join('')}</dl>`:'');
     }
     if(k==='schedule'){
-      const ms=_wbPublicMoments();
-      return wrap(k, ms.length?`<ol class="sched">${ms.map(m=>`<li>
+      const tls=_wbWebsiteTimelines();
+      const visTls=tls.filter(t=>(t.items||[]).some(m=>m.pub));
+      if(!visTls.length) return wrap(k,'');
+      const renderItems=ms=>ms.map(m=>`<li>
           <span class="t">${_escHtml(tlTo12h(m.time)||'')}</span>
           <span class="d"><b>${_escHtml(m.title||'')}</b>${m.location?`<i>${_escHtml(m.location)}</i>`:''}</span>
-        </li>`).join('')}</ol>`:'');
+        </li>`).join('');
+      if(visTls.length===1){
+        const ms=visTls[0].items.filter(m=>m.pub).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+        return wrap(k,`<ol class="sched">${renderItems(ms)}</ol>`);
+      }
+      let html='';
+      visTls.forEach(tl=>{
+        const ms=(tl.items||[]).filter(m=>m.pub).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+        if(!ms.length) return;
+        html+=`<div class="sched-group"><div class="sched-label">${_escHtml(tl.name)}</div><ol class="sched">${renderItems(ms)}</ol></div>`;
+      });
+      return wrap(k,html);
     }
     if(k==='gallery'){
       const gs=_wbGalleryItems();
@@ -5353,6 +5387,11 @@ section.b-center .sched li{flex-direction:column;gap:2px;text-align:center}
 section.b-center .sched .t{width:auto;padding-top:0}
 .sched .d b{display:block;font-family:${t2.headFont};font-size:${sch(20)}px;font-weight:500;color:${t2.item}}
 .sched .d i{display:block;font-style:normal;font-size:${scs(13)}px;color:${t2.text};opacity:.75;margin-top:1px}
+.sched-group{margin-bottom:${sp(24)}px}
+.sched-group:last-child{margin-bottom:0}
+.sched-label{font-family:${t2.headFont};font-size:${sch(18)}px;font-weight:500;color:${t2.accent};margin-bottom:${sp(6)}px;letter-spacing:.02em}
+section:not(.lft) .sched-label{max-width:520px;margin-left:auto;margin-right:auto}
+section.b-center .sched-label{text-align:center}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .grid img{width:100%;aspect-ratio:1;object-fit:cover;display:block;border-radius:${imgRad}}
 /* v148 gallery grid layouts. Centre: fixed-width tiles that keep their size and sit centred
