@@ -651,7 +651,7 @@ function _grCardHtml(s){
     const tickB=acc?'var(--gold)':'var(--border)';
     const pTick=`<div onclick="_grToggleAccept('${s.id}')" style="width:18px;height:18px;border-radius:5px;border:2px solid ${tickB};background:${acc?'var(--gold)':'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">${acc?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>`;
     const pIcon=`<span style="width:22px;height:22px;border-radius:50%;background:rgba(196,168,130,.18);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9.5px;font-weight:700;color:var(--gold-deep)">+1</span>`;
-    const why=p.src==='suffix'?'Marked “+1” in the name':p.src==='rel'?'Relationship “Plus One”':'Plus-one entry';
+    const why=p.src==='suffix'?'Marked "+1" in the name':p.src==='rel'?'Relationship "Plus One"':'Plus-one entry';
     const high=s.confidence==='high';
     const pBadge=high
       ? `<span style="margin-left:auto;font-size:10px;font-weight:600;color:var(--green);background:rgba(74,124,89,.12);padding:2px 8px;border-radius:9px">${_escHtml(why)}</span>`

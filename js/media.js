@@ -679,14 +679,14 @@ function openOrphanSweep(){
   const stale = (days===null) || (days >= _BACKUP_STALE_DAYS);
 
   if(stale){
-    const ageTxt = (days===null) ? 'you haven’t backed up yet'
+    const ageTxt = (days===null) ? 'you haven\'t backed up yet'
                  : ('your last backup was '+days+' day'+(days===1?'':'s')+' ago');
     const body = `<div style="display:flex;flex-direction:column;gap:8px">
       <div style="display:flex;align-items:center;gap:9px">
         <span style="width:26px;height:26px;border-radius:50%;background:rgba(192,101,62,.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
         <div style="font-size:13.5px;color:var(--ink);font-weight:500">Back up first</div>
       </div>
-      <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Found <b style="color:var(--ink)">${nLabel}</b> (${szLabel}), but ${ageTxt}. Export a fresh copy before clearing, so nothing’s lost if a file turns out to matter.</div>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Found <b style="color:var(--ink)">${nLabel}</b> (${szLabel}), but ${ageTxt}. Export a fresh copy before clearing, so nothing's lost if a file turns out to matter.</div>
     </div>`;
     const footer = `<button class="btn btn-outline btn-sm" onclick="closeModalDirect();exportDataJson()">Export first</button>
       <button class="btn btn-sm" onclick="_doOrphanSweep()" style="background:var(--sw-bg,#FBF8F3);color:var(--gold-deep,#8B7355);border:1px solid var(--sw-idle,#C9B89C)">Clear anyway</button>`;
@@ -699,7 +699,7 @@ function openOrphanSweep(){
       <span style="width:26px;height:26px;border-radius:50%;background:rgba(196,168,130,.22);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold-deep)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span>
       <div style="font-size:13.5px;color:var(--ink);font-weight:500">Clear unused files?</div>
     </div>
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Found <b style="color:var(--ink)">${nLabel}</b> taking <b style="color:var(--ink)">${szLabel}</b>. These aren’t linked to any photo, receipt or website image. Clearing them frees the space and can’t affect anything you can see.</div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Found <b style="color:var(--ink)">${nLabel}</b> taking <b style="color:var(--ink)">${szLabel}</b>. These aren't linked to any photo, receipt or website image. Clearing them frees the space and can't affect anything you can see.</div>
   </div>`;
   const footer = `<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
     <button class="btn btn-sm" onclick="_doOrphanSweep()" style="background:var(--gold-deep);color:#fff;border:1px solid var(--gold-deep)">Clear ${n} file${n===1?'':'s'}</button>`;

@@ -208,8 +208,8 @@ async function _invBatchSend(){
     const msg=_fillTemplate(_inviteTpl(kind), grp);
     const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
     const names=_ssCoupleNames();
-    const payload={ to:[(g.email||'').trim()], subject:'You’re invited'+(names?' — '+names:''), body:msg,
-      fromName:names||'UnionVault', kicker:names?names+'’s wedding':'', title:'You’re invited',
+    const payload={ to:[(g.email||'').trim()], subject:'You\'re invited'+(names?' — '+names:''), body:msg,
+      fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:'You\'re invited',
       replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
       templateId:ed.templateId||'classic',
       designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
@@ -1241,13 +1241,13 @@ function _quoteToBudget(id){
     : '';
   const subBlock=items.length
     ? `<label class="form-label" style="margin-top:10px">Under which item?</label><select id="qb-parent" class="form-input">${itemOpts}</select>`
-    : `<div style="font-size:11.5px;color:var(--muted);margin-top:6px">You have no Payments yet — create one first by choosing “New Payment”.</div>`;
+    : `<div style="font-size:11.5px;color:var(--muted);margin-top:6px">You have no Payments yet — create one first by choosing "New Payment".</div>`;
   const body=`<div style="display:flex;flex-direction:column;gap:4px">
-    ${linked?`<div style="font-size:11.5px;color:var(--gold-deep);background:rgba(156,122,60,.08);border:.5px solid var(--gold-deep);border-radius:8px;padding:8px 10px;margin-bottom:6px">Already linked to “${_escHtml(linked.name||'a Payment')}”. Adding again will create a new entry.</div>`:''}
+    ${linked?`<div style="font-size:11.5px;color:var(--gold-deep);background:rgba(156,122,60,.08);border:.5px solid var(--gold-deep);border-radius:8px;padding:8px 10px;margin-bottom:6px">Already linked to "${_escHtml(linked.name||'a Payment')}". Adding again will create a new entry.</div>`:''}
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${_escHtml(q.vendor||'Vendor')} · ${price>0?fmt(price):'no price'} — how should this be added?</div>
     <label style="display:flex;align-items:center;gap:10px;border:.5px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;cursor:pointer;background:var(--surface)">
       <input type="radio" name="qb-mode" value="new" checked onchange="_qbModeChange()" style="accent-color:var(--gold-deep)"/>
-      <span><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">New Payment</span><span style="display:block;font-size:11px;color:var(--muted)">Creates “${_escHtml([q.vendor||'Vendor',q.category||''].filter(Boolean).join(' — '))}”</span></span>
+      <span><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">New Payment</span><span style="display:block;font-size:11px;color:var(--muted)">Creates "${_escHtml([q.vendor||'Vendor',q.category||''].filter(Boolean).join(' — '))}"</span></span>
     </label>
     <label style="display:flex;align-items:center;gap:10px;border:.5px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;background:var(--surface);${items.length?'':'opacity:.55'}">
       <input type="radio" name="qb-mode" value="sub" onchange="_qbModeChange()" ${items.length?'':'disabled'} style="accent-color:var(--gold-deep)"/>

@@ -161,7 +161,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v430';
+const APP_BUILD='v431';
 const APP_BUILD_DATE='2026-11-02';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -901,7 +901,7 @@ function randomFillSeating(){
   let msg = `Seated ${seatedCount} guest${seatedCount!==1?'s':''}`;
   const extras = [];
   if(couplesKept) extras.push(`${couplesKept} couple${couplesKept!==1?'s':''} kept together`);
-  if(leftover) extras.push(`${leftover} couldn’t fit, left in pool`);
+  if(leftover) extras.push(`${leftover} couldn't fit, left in pool`);
   // Be explicit about the surprising case: seats ARE free, but not side by side.
   // Without this the user sees empty chairs and a couple in the pool and assumes a bug.
   if(couplesUnseatable) extras.push(`${couplesUnseatable} couple${couplesUnseatable!==1?'s':''} had no two seats together`);
@@ -910,7 +910,7 @@ function randomFillSeating(){
 }
 
 // ── Generic info toast (mirrors the undo-delete toast styling). When a snapshot
-// is supplied, an Undo button restores it; otherwise it’s a plain notice.
+// is supplied, an Undo button restores it; otherwise it's a plain notice.
 function _showInfoToast(message, snap, navPage){
   _commitUndoToast();
   const wrap=document.getElementById('undo-toast-wrap');

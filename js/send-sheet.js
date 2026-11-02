@@ -379,10 +379,10 @@ function _ssRender(open){
       if(mode==='email-direct'||mode==='share'){
         attachHtml+=`<div style="${lab}">${mode==='share'?'Attached':'Include'}</div>
         <label style="${rowStyle};cursor:pointer">${thumb}<span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">${mode==='email-direct'?'Attach invitation file':esc(f.name||'Invitation')}</span><span style="display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mode==='email-direct'?esc((f.name||'')+' · '):''}${esc(f.sizeLabel||'')}</span></span>${sw(s.attach,"_ssToggle('attach')",'Attach invitation file')}</label>`;
-        if(s.asset.viewUrl) attachHtml+=`<label style="${rowStyle};cursor:pointer;margin-top:7px"><span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">Add “View invitation” link</span><span style="display:block;font-size:11.5px;color:var(--muted)">${mode==='email-direct'?'For guests whose email blocks attachments':'In case the file doesn’t come through'}</span></span>${sw(s.addLink,"_ssToggle('addLink')",'Add view invitation link')}</label>`;
+        if(s.asset.viewUrl) attachHtml+=`<label style="${rowStyle};cursor:pointer;margin-top:7px"><span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">Add "View invitation" link</span><span style="display:block;font-size:11.5px;color:var(--muted)">${mode==='email-direct'?'For guests whose email blocks attachments':'In case the file doesn\'t come through'}</span></span>${sw(s.addLink,"_ssToggle('addLink')",'Add view invitation link')}</label>`;
       } else if(s.asset.viewUrl){
         attachHtml+=`<div style="${lab}">Include</div>
-        <label style="${rowStyle};cursor:pointer">${thumb}<span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">Include invitation link</span><span style="display:block;font-size:11.5px;color:var(--muted)">${esc(_ssMethodLabel(s.method))} can’t take a file from here, so guests get a link to view it</span></span>${sw(s.addLink,"_ssToggle('addLink')",'Include invitation link')}</label>`;
+        <label style="${rowStyle};cursor:pointer">${thumb}<span style="flex:1;min-width:0"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink)">Include invitation link</span><span style="display:block;font-size:11.5px;color:var(--muted)">${esc(_ssMethodLabel(s.method))} can't take a file from here, so guests get a link to view it</span></span>${sw(s.addLink,"_ssToggle('addLink')",'Include invitation link')}</label>`;
       }
       if(!s.asset.viewUrl && !s.signedIn) attachHtml+=`<div style="font-size:11.5px;color:var(--muted);margin-top:6px">Sign in to share your invitation file with guests.</div>`;
     } else if(s.asset.link){
@@ -403,7 +403,7 @@ function _ssRender(open){
     <div style="${lab}">Message</div>
     <div id="ss-msg" style="border:.5px solid var(--border);border-radius:11px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--ink);background:var(--surface);white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto">${esc(msg)}</div>
     ${mode==='share'?`<div style="font-size:11.5px;color:var(--muted);line-height:1.5">Your phone's share menu opens with the invitation attached and the message ready — choose ${esc(_ssMethodLabel(s.method))}, then the guest's chat.</div>`:''}
-    ${mode==='email-direct'?`<div style=”display:flex;align-items:center;gap:10px;margin-top:2px”><div style=”font-size:11.5px;color:var(--muted);flex:1”>Sent from invites@unionvault.app as “${esc(_ssCoupleNames()||'UnionVault')}” — replies come to you.</div><button type=”button” class=”btn btn-outline btn-sm” onclick=”_ssPreviewEmail()” style=”flex-shrink:0;font-size:11px”>Preview email</button></div>`:''}
+    ${mode==='email-direct'?`<div style="display:flex;align-items:center;gap:10px;margin-top:2px"><div style="font-size:11.5px;color:var(--muted);flex:1">Sent from invites@unionvault.app as "${esc(_ssCoupleNames()||'UnionVault')}" — replies come to you.</div><button type="button" class="btn btn-outline btn-sm" onclick="_ssPreviewEmail()" style="flex-shrink:0;font-size:11px">Preview email</button></div>`:''}
   </div>`;
   const primary = mode==='email-direct' ? 'Send email'
     : mode==='share' ? 'Share to '+_ssMethodLabel(s.method)
@@ -437,22 +437,22 @@ async function _ssGo(){
     _ssDone('Shared — finish sending in '+_ssMethodLabel(s.method)+'.');
     return;
   }
-  if(mode===’email-direct’){
-    if(!s.to){ if(typeof _showInfoToast===’function’) _showInfoToast(‘No email address on file for this guest.’, null, null); return; }
-    if(btn){ btn.disabled=true; btn.textContent=’Sending…’; }
+  if(mode==='email-direct'){
+    if(!s.to){ if(typeof _showInfoToast==='function') _showInfoToast('No email address on file for this guest.', null, null); return; }
+    if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
     if(s.asset.file && (s.attach||s.addLink)) await _ssEnsureUploaded();
     const payload=_ssBuildPayload(s, msg);
     let ok=false;
     try{
       await _sbEnsureFreshToken();
-      const r=await fetch(_SB_URL+’/functions/v1/send-guest-email’,{ method:’POST’,
-        headers:{‘Content-Type’:’application/json’,’Authorization’:’Bearer ‘+_sbSession.access_token,’apikey’:_SB_KEY},
+      const r=await fetch(_SB_URL+'/functions/v1/send-guest-email',{ method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+_sbSession.access_token,'apikey':_SB_KEY},
         body:JSON.stringify(payload) });
       ok = r.ok && (await r.json()).ok===true;
     }catch(_){ ok=false; }
-    if(ok){ _ssDone(‘Email sent to ‘+s.to+’.’); return; }
-    if(btn){ btn.disabled=false; btn.textContent=’Send email’; }
-    if(typeof _showInfoToast===’function’) _showInfoToast(‘Couldn’t send from UnionVault — opening your mail app instead.’, null, null);
+    if(ok){ _ssDone('Email sent to '+s.to+'.'); return; }
+    if(btn){ btn.disabled=false; btn.textContent='Send email'; }
+    if(typeof _showInfoToast==='function') _showInfoToast('Couldn\'t send from UnionVault — opening your mail app instead.', null, null);
     _ssFallback(msg); return;
   }
   if(s.asset.file && s.addLink) await _ssEnsureUploaded();
@@ -2277,8 +2277,8 @@ function _ssBuildPayload(s, msg){
   if(!s) s=_ss; if(!msg) msg=_ssMessage();
   const names=_ssCoupleNames();
   const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
-  const payload={ to:s&&s.to?[s.to]:[], subject:(s&&s.kind==='invite'?'You’re invited':'Save the date')+(names?' — '+names:''), body:msg,
-    fromName:names||'UnionVault', kicker:names?names+'’s wedding':'', title:s&&s.kind==='invite'?'You’re invited':'Save the date',
+  const payload={ to:s&&s.to?[s.to]:[], subject:(s&&s.kind==='invite'?'You\'re invited':'Save the date')+(names?' — '+names:''), body:msg,
+    fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:s&&s.kind==='invite'?'You\'re invited':'Save the date',
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
     templateId:ed.templateId||'classic',
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,

@@ -529,8 +529,8 @@ function _confirmDeleteDialog(opts){
   const verb=o.verb||'Delete';
   const noteVerb=o.noteVerb||'permanently removed';
   const detail = name
-    ? `“${_escHtml(name)}” will be ${noteVerb}. This can’t be undone.`
-    : `This will be ${noteVerb} and can’t be undone.`;
+    ? `"${_escHtml(name)}" will be ${noteVerb}. This can't be undone.`
+    : `This will be ${noteVerb} and can't be undone.`;
   const body=`<div style="display:flex;flex-direction:column;gap:8px">
     <div style="display:flex;align-items:center;gap:9px">
       <span style="width:26px;height:26px;border-radius:50%;background:rgba(192,57,43,.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
@@ -552,7 +552,7 @@ function _confirmDeleteAttach(attId){
       <span style="width:26px;height:26px;border-radius:50%;background:rgba(192,57,43,.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
       <div style="font-size:13.5px;color:var(--ink);font-weight:500">Delete this file?</div>
     </div>
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">“${_escHtml(f.name)}” will be permanently removed. This can’t be undone.</div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">"${_escHtml(f.name)}" will be permanently removed. This can't be undone.</div>
   </div>`;
   const footer = `<button class="btn btn-outline btn-sm" onclick="_closeConfirm2Direct()">Cancel</button>
     <button class="btn btn-sm" onclick="_doDeleteAttach('${attId}')" style="background:var(--red);color:#fff;border:1px solid var(--red)">Delete</button>`;
@@ -1231,7 +1231,7 @@ function _buildBudgetSummaryDoc(autoPrint){
   // For the "PDF" path: a Save-as-PDF button + auto-open the print dialog on load.
   // (Direct print()/window.open are blocked in some sandboxed views, so the file
   //  is downloaded first, then prints itself reliably when opened.)
-  const printBar = autoPrint ? `<div class="printbar no-print"><button onclick="window.print()">Save as PDF</button><span>Use your browser's print dialog and choose “Save as PDF”.</span></div>` : '';
+  const printBar = autoPrint ? `<div class="printbar no-print"><button onclick="window.print()">Save as PDF</button><span>Use your browser's print dialog and choose "Save as PDF".</span></div>` : '';
   const printCss = autoPrint ? `.printbar{max-width:620px;margin:0 auto 14px;display:flex;align-items:center;gap:12px}
 .printbar button{font-family:inherit;font-size:13px;font-weight:600;color:#fff;background:var(--gold-deep);border:none;border-radius:8px;padding:9px 16px;cursor:pointer}
 .printbar span{font-size:12px;color:var(--muted)}
