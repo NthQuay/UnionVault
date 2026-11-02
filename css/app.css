@@ -2342,7 +2342,7 @@ body.dark .music-card .mc-start{background:rgba(196,168,130,.18);color:var(--gol
 .song-block-title{font-size:12px;font-weight:600;color:var(--gold-deep);display:inline-flex;align-items:center;gap:6px}
 .song-rm{border:none;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;border-radius:5px}
 .song-rm:hover{color:var(--red)}
-.add-song-btn{margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gold-deep);background:#FBF8F3;border:.5px solid #E3D7C4;border-radius:8px;padding:8px 14px;cursor:pointer}
+.add-song-btn{margin-top:4px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gold-deep);background:#FBF8F3;border:.5px solid #E3D7C4;border-radius:8px;padding:8px 14px;cursor:pointer}
 body.dark .add-song-btn{background:#24242A;border-color:#6E6450;color:var(--gold)}
 .add-song-btn svg{width:13px;height:13px}
 
