@@ -23,14 +23,23 @@ async function _forceAppUpdate(){
   try{
     if('serviceWorker' in navigator){
       const regs=await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r=>r.update().catch(()=>null)));
+      // unregister(), not update(): update() only STARTS installing a new worker in the
+      // background and returns immediately, without waiting for it to finish. The cache
+      // wipe below would then race that in-progress install — which populates the new
+      // cache via caches.addAll(SHELL), all-or-nothing — and could delete it mid-write.
+      // That leaves the OLD worker still in control but with no cache to serve from, so
+      // the reload has to fetch every shell file fresh over the network with no fallback;
+      // on a weak connection one dropped request is enough to leave the page half-loaded.
+      // Unregistering removes the old worker outright, so the reload below is a normal,
+      // uncontrolled network load — sw-register.js registers a fresh worker afterwards.
+      await Promise.all(regs.map(r=>r.unregister().catch(()=>null)));
     }
     if(window.caches){
       const keys=await caches.keys();
       await Promise.all(keys.map(k=>caches.delete(k)));
     }
     _showInfoToast('Cleared the stored copy — reloading…', null, null);
-    setTimeout(()=>location.reload(true), 700);
+    setTimeout(()=>location.reload(), 700);
   }catch(e){
     _showInfoToast('Could not clear it automatically. Close the app fully and reopen it twice.', null, null);
   }
