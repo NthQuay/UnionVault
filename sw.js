@@ -1,4 +1,4 @@
-const CACHE = 'union-vault-v417';
+const CACHE = 'union-vault-v418';
 const SHELL = [
   '/', '/index.html',
   '/css/fonts.css', '/css/app.css', '/css/landing.css',
