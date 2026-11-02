@@ -883,14 +883,14 @@ function _wbThemeBody(){
     const fmtStyle = `<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
       <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:4px">FORMAT STYLE</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div onclick="_wbSet('format','modern')" style="cursor:pointer;border:1.5px solid ${t.format==='modern'?'var(--gold)':'var(--border)'};background:${t.format==='modern'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+        <div onclick="_wbSet('format','modern')" style="cursor:pointer;border:1.5px solid ${t.format==='modern'?'var(--gold)':'var(--border)'};background:${t.format==='modern'?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
           <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;padding:2px">
             <span style="font-size:5.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
             <span style="font-size:12px;font-weight:700;color:#3A302A;font-family:Inter,sans-serif;letter-spacing:-.01em">Event Details</span>
           </div>
           <div style="font-size:11px;font-weight:500;color:${t.format==='modern'?'var(--gold)':'var(--sub)'}">Modern${t.format==='modern'?' ✓':''}</div>
         </div>
-        <div onclick="_wbSet('format','editorial')" style="cursor:pointer;border:1.5px solid ${t.format==='editorial'?'var(--gold)':'var(--border)'};background:${t.format==='editorial'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+        <div onclick="_wbSet('format','editorial')" style="cursor:pointer;border:1.5px solid ${t.format==='editorial'?'var(--gold)':'var(--border)'};background:${t.format==='editorial'?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
           <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;padding:2px">
             <span style="font-size:4.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
             <div style="width:16px;height:0.5px;background:#C4A882;margin:1px 0"></div>
@@ -1281,14 +1281,14 @@ function _wbRepaintTheme(){
       const fmtStyle=`<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
       <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:4px">FORMAT STYLE</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div onclick="_wbSet('format','modern')" style="cursor:pointer;border:1.5px solid ${t.format==='modern'?'var(--gold)':'var(--border)'};background:${t.format==='modern'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+        <div onclick="_wbSet('format','modern')" style="cursor:pointer;border:1.5px solid ${t.format==='modern'?'var(--gold)':'var(--border)'};background:${t.format==='modern'?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
           <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;padding:2px">
             <span style="font-size:5.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
             <span style="font-size:12px;font-weight:700;color:#3A302A;font-family:Inter,sans-serif;letter-spacing:-.01em">Event Details</span>
           </div>
           <div style="font-size:11px;font-weight:500;color:${t.format==='modern'?'var(--gold)':'var(--sub)'}">Modern${t.format==='modern'?' ✓':''}</div>
         </div>
-        <div onclick="_wbSet('format','editorial')" style="cursor:pointer;border:1.5px solid ${t.format==='editorial'?'var(--gold)':'var(--border)'};background:${t.format==='editorial'?'rgba(196,168,130,.1)':'var(--card)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+        <div onclick="_wbSet('format','editorial')" style="cursor:pointer;border:1.5px solid ${t.format==='editorial'?'var(--gold)':'var(--border)'};background:${t.format==='editorial'?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
           <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;padding:2px">
             <span style="font-size:4.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
             <div style="width:16px;height:0.5px;background:#C4A882;margin:1px 0"></div>
@@ -1835,14 +1835,14 @@ function openWbRsvp(){
 
   const styleCard=(id,label,svgBody)=>`<button type="button" id="rsvp-style-${id}" data-style="${id}"
     onclick="_wbRsvpSetStyle('${id}')"
-    style="flex:1;min-width:0;padding:8px 6px;border-radius:9px;border:2px solid ${sSel===id?'var(--gold)':'var(--border)'};background:${sSel===id?'color-mix(in srgb,var(--gold) 10%,var(--card) 90%)':'var(--card)'};cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .15s">
+    style="flex:1;min-width:0;padding:8px 6px;border-radius:9px;border:2px solid ${sSel===id?'var(--gold)':'var(--border)'};background:${sSel===id?'color-mix(in srgb,var(--gold) 10%,var(--cream) 90%)':'var(--cream)'};cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .15s">
     <div style="width:100%;max-width:60px;height:36px;border-radius:5px;overflow:hidden;border:1px solid var(--border)">${svgBody}</div>
     <div style="font-size:10.5px;font-weight:${sSel===id?'600':'400'};color:${sSel===id?'var(--gold)':'var(--fg)'}">${label}</div>
   </button>`;
 
   const palBtn=(id,label,[bg,ac])=>{const on=pSel===id;return`<button type="button" id="rsvp-pal-${id}" data-pal="${id}"
     onclick="_wbRsvpSetPalette('${id}')"
-    style="flex:1;min-width:0;padding:7px 4px;border-radius:9px;border:2px solid ${on?'var(--gold)':'var(--border)'};background:${on?'color-mix(in srgb,var(--gold) 10%,var(--card) 90%)':'var(--card)'};cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
+    style="flex:1;min-width:0;padding:7px 4px;border-radius:9px;border:2px solid ${on?'var(--gold)':'var(--border)'};background:${on?'color-mix(in srgb,var(--gold) 10%,var(--cream) 90%)':'var(--cream)'};cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
     <div style="display:flex;gap:3px"><div style="width:14px;height:14px;border-radius:3px;background:${bg}"></div><div style="width:14px;height:14px;border-radius:3px;background:${ac}"></div></div>
     <div style="font-size:10px;font-weight:${on?'600':'400'};color:${on?'var(--gold)':'var(--muted)'};white-space:nowrap">${label}</div>
   </button>`;};
@@ -1905,11 +1905,11 @@ function openWbRsvp(){
         ${palBtn('blush','Blush',['#F5EDE9','#C0745A'])}
         ${palBtn('midnight','Midnight',['#1A1E2A','#7B95C8'])}
         ${palBtn('slate','Slate',['#1E2226','#8AA4A8'])}
-        ${palBtn('custom','Custom',['var(--card)','var(--gold)'])}
+        ${palBtn('custom','Custom',['var(--cream)','var(--gold)'])}
       </div>
     </div>
 
-    <div id="rsvp-custom-colors" style="display:${pSel==='custom'?'flex':'none'};flex-direction:column;gap:4px;padding:10px;background:var(--card);border-radius:10px;border:1px solid var(--border)">
+    <div id="rsvp-custom-colors" style="display:${pSel==='custom'?'flex':'none'};flex-direction:column;gap:4px;padding:10px;background:var(--cream);border-radius:10px;border:1px solid var(--border)">
       <div class="wb-slot-lbl" style="margin-bottom:4px">Custom colours</div>
       <div id="rsvp-custom-rows">${pSel==='custom'?renderCustomRows():''}</div>
     </div>
@@ -1958,7 +1958,7 @@ function _wbRsvpSetStyle(s){
   document.querySelectorAll('#rsvp-style-grid button').forEach(b=>{
     const on=b.dataset.style===s;
     b.style.borderColor=on?'var(--gold)':'var(--border)';
-    b.style.background=on?'color-mix(in srgb,var(--gold) 10%,var(--card) 90%)':'var(--card)';
+    b.style.background=on?'color-mix(in srgb,var(--gold) 10%,var(--cream) 90%)':'var(--cream)';
     const lbl=b.querySelector('div:last-child');
     if(lbl){lbl.style.fontWeight=on?'600':'400';lbl.style.color=on?'var(--gold)':'var(--fg)';}
   });
@@ -1971,7 +1971,7 @@ function _wbRsvpSetPalette(id){
   document.querySelectorAll('#rsvp-pal-grid button').forEach(b=>{
     const on=b.dataset.pal===id;
     b.style.borderColor=on?'var(--gold)':'var(--border)';
-    b.style.background=on?'color-mix(in srgb,var(--gold) 10%,var(--card) 90%)':'var(--card)';
+    b.style.background=on?'color-mix(in srgb,var(--gold) 10%,var(--cream) 90%)':'var(--cream)';
     const lbl=b.querySelector('div:last-child');
     if(lbl){lbl.style.fontWeight=on?'600':'400';lbl.style.color=on?'var(--gold)':'var(--muted)';}
   });

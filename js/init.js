@@ -70,8 +70,7 @@ window.addEventListener('resize',(function(){
 // from the dashboard onward.
 try{ if(_autoCheckPassedInstallments()) saveToStorage(); }catch(e){}
 
-// Load subscription tier state and detect checkout return
-if(typeof _uvLoadSubscription==='function') _uvLoadSubscription();
+// Detect checkout return (subscription tier loaded later in boot after session exists)
 if(typeof _uvCheckReturn==='function') _uvCheckReturn();
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -648,6 +647,9 @@ function _showVendorError(type){
 
   // Load session before public site render so the owner can generate signed URLs for their own photos
   _sbLoadSession();
+
+  // Load subscription tier now that session exists (must be awaited before dashboard renders)
+  if(typeof _uvLoadSubscription==='function') await _uvLoadSubscription();
 
   const _hashSlug=window.location.hash.slice(1);
   // Reserved landing-page anchors that must never be treated as wedding site slugs

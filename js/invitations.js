@@ -77,7 +77,7 @@ function _invitationSectionHtml(which){
       <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden">
         <div style="height:120px;background:var(--surface);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);position:relative">
           <svg width="56" height="56" viewBox="0 0 60 60" fill="none" opacity=".2"><rect x="8" y="10" width="44" height="40" rx="4" stroke="var(--gold)" stroke-width="1.5"/><line x1="15" y1="22" x2="45" y2="22" stroke="var(--gold)" stroke-width="1"/><line x1="20" y1="28" x2="40" y2="28" stroke="var(--gold)" stroke-width="1"/><line x1="18" y1="34" x2="42" y2="34" stroke="var(--gold)" stroke-width="1"/><line x1="22" y1="40" x2="38" y2="40" stroke="var(--gold)" stroke-width="1"/></svg>
-          ${lp?`<div style="position:absolute;top:10px;left:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:600;background:var(--card);border:1px solid var(--border);color:var(--ink)">${_escHtml(lp.label)}</div>`:''}
+          ${lp?`<div style="position:absolute;top:10px;left:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:600;background:var(--cream);border:1px solid var(--border);color:var(--ink)">${_escHtml(lp.label)}</div>`:''}
           <div style="position:absolute;bottom:8px;right:10px;font-size:11px;color:var(--muted);font-style:italic">Opens externally</div>
         </div>
         <div style="padding:12px 14px">

@@ -2044,7 +2044,7 @@ function _mealSettingsPopup(){
   ov.onclick=e=>{if(e.target===ov)_mealSettingsPopupClose();};
   const inner=document.createElement('div');
   inner.id='rsvp-meal-card';
-  inner.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 22px 22px;width:100%;max-width:380px;max-height:min(560px,80vh);overflow-y:auto;box-shadow:0 8px 40px rgba(26,26,24,.18);animation:mealPopUp .2s ease;position:relative';
+  inner.style.cssText='background:var(--cream);border:1px solid var(--border);border-radius:16px;padding:24px 22px 22px;width:100%;max-width:380px;max-height:min(560px,80vh);overflow-y:auto;box-shadow:0 8px 40px rgba(26,26,24,.18);animation:mealPopUp .2s ease;position:relative';
   inner.innerHTML=`<button onclick="_mealSettingsPopupClose()" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`+_mealSetupHtml();
   ov.appendChild(inner);
   if(!document.getElementById('meal-popup-keyframes')){const s=document.createElement('style');s.id='meal-popup-keyframes';s.textContent='@keyframes mealPopFadeIn{from{opacity:0}}@keyframes mealPopUp{from{transform:translateY(8px);opacity:0}}';document.head.appendChild(s);}
