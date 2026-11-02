@@ -16,6 +16,8 @@ const CURRENCIES = {
   CHF:{label:'Swiss franc',       symbol:'CHF ',locale:'de-CH'},
   AED:{label:'UAE dirham',        symbol:'AED ',locale:'en-AE'}
 };
+const _REGION_TO_CURRENCY={AU:'AUD',US:'USD',GB:'GBP',NZ:'NZD',CA:'CAD',SG:'SGD',ZA:'ZAR',IN:'INR',JP:'JPY',CH:'CHF',AE:'AED',IE:'EUR',DE:'EUR',FR:'EUR',IT:'EUR',ES:'EUR',NL:'EUR',PT:'EUR',AT:'EUR',BE:'EUR',FI:'EUR',GR:'EUR',LU:'EUR',MT:'EUR',SK:'EUR',SI:'EUR',EE:'EUR',LV:'EUR',LT:'EUR',CY:'EUR',HR:'EUR'};
+function _detectCurrencyFromLocale(){try{const t=(navigator.languages||[navigator.language||'']).find(l=>/[-_]/.test(l))||'';const r=(t.split(/[-_]/).pop()||'').toUpperCase();return _REGION_TO_CURRENCY[r]||null;}catch(_){return null;}}
 function _curCode(){ const c=STATE.settings && STATE.settings.currencyCode; return (c && CURRENCIES[c]) ? c : 'AUD'; }
 function _curMeta(){ return CURRENCIES[_curCode()]; }
 function _curSym(){ return _curMeta().symbol; }

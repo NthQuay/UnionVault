@@ -13,6 +13,9 @@ _sbOnAuthChange(function(){ if(typeof _currentPage!=='undefined'&&_currentPage==
 // Load persisted data before first render
 const alreadySetUp = loadFromStorage();
 
+// On a fresh device, detect currency from browser locale
+if(!alreadySetUp){const dc=_detectCurrencyFromLocale();if(dc&&CURRENCIES[dc])STATE.settings.currencyCode=dc;}
+
 // On a fresh device with no saved preference, honour the OS dark-mode setting
 if(!alreadySetUp && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
   document.body.classList.add('dark');
