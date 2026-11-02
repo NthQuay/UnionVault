@@ -283,15 +283,25 @@ async function _uvOpenSubPage(){
       const bg=isCur||isSel?'rgba(196,168,130,.12)':isPopular?'rgba(196,168,130,.05)':'transparent';
       const ms=p.monthly?_uvFormatMoney(p.monthly)+'/mo':'';
       const ts=p.monthly&&p.months>1?_uvFormatMoney(p.monthly*p.months):'';
+      const pill=isCur?'Current':isSel&&!isCur?'Selected':isPopular&&!isCur&&!isSel?'Popular':'';
+      if(p.months===1){
+        return `<div data-plan-months="${p.months}" style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCur?'default':'pointer'};transition:all .15s;position:relative"
+          ${isCur?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='${isSel?'var(--gold)':'var(--border)'}'" `}>
+          ${pill?`<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">${pill}</div>`:''}
+          <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${ms||'Price TBC'}</div>
+        </div>`;
+      }
       return `<div data-plan-months="${p.months}" style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCur?'default':'pointer'};transition:all .15s;position:relative"
         ${isCur?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='${isSel?'var(--gold)':'var(--border)'}'" `}>
-        ${isCur?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Current</div>':''}
-        ${isSel&&!isCur?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Selected</div>':''}
-        ${isPopular&&!isCur&&!isSel?'<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">Popular</div>':''}
-        ${p.discount?`<div style="font-size:10px;font-weight:700;color:var(--green,#3D9454);margin-bottom:4px">Save ${p.discount}%</div>`:''}
-        <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${ms||'Price TBC'}</div>
-        ${p.months>1&&ts?`<div style="font-size:11px;color:var(--muted);margin-top:1px">${ts} total</div>`:''}
+        ${pill?`<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">${pill}</div>`:''}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${ms||'Price TBC'}${ts?' &middot; '+ts+' total':''}</div>
+          </div>
+          ${p.discount?`<div style="font-size:11px;font-weight:700;color:var(--green,#3D9454);flex-shrink:0">Save ${p.discount}%</div>`:''}
+        </div>
       </div>`;
     };
     plansHtml=`<div style="margin-top:4px">
@@ -299,9 +309,7 @@ async function _uvOpenSubPage(){
         <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Month-to-month flexibility</div>
         ${monthly?_pc(monthly):''}
         <div style="font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:12px">Upfront multi-month packages</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          ${longer.map(_pc).join('')}
-        </div>
+        ${longer.map(_pc).join('')}
       </div>
     </div>`;
   }
