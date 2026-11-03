@@ -51,14 +51,111 @@ function _rsvpGuestStats(){
     seated,unseated
   };
 }
-// Days until the RSVP-by date (or null if not set).
-// Pass a guest object to use their per-guest override (falls back to global).
-function _rsvpDaysToRsvpBy(g){
-  const d=(g&&g.rsvpByOverride)||(STATE.settings&&STATE.settings.rsvpBy);
-  if(!d) return null;
-  const by=new Date(d+'T00:00:00'); if(isNaN(by)) return null;
-  const now=new Date(); now.setHours(0,0,0,0);
-  return Math.round((by-now)/86400000);
+
+// ── RSVP Deadline widget ──
+// Was buried in the "RSVP date & templates" modal with no sense of where it sat against
+// the wedding date — which is exactly how a deadline ended up set for after the wedding.
+// Pulled out to its own card: the resting state is just the date, a "N weeks before"
+// readout and a bar from today to the wedding, with a warning if the deadline doesn't
+// land before the wedding. The exact-date picker and weeks-before presets both live
+// behind one icon so the card doesn't carry a form when you're not editing it.
+function _rsvpWidgetDeadline(){
+  const wedRaw=STATE.event&&STATE.event.date;
+  const byRaw=STATE.settings&&STATE.settings.rsvpBy;
+  const wed=wedRaw?new Date(wedRaw+'T00:00:00'):null;
+  const by=byRaw?new Date(byRaw+'T00:00:00'):null;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const validWed=!!(wed&&!isNaN(wed));
+  const validBy=!!(by&&!isNaN(by));
+
+  let dateLabel='Not set yet', metaLabel=validWed?'Choose a date to see it against your wedding':'Set your wedding date in Event Details to compare';
+  let barHtml='', warnHtml='';
+  if(validBy){
+    dateLabel=fmtDate(byRaw);
+    if(validWed){
+      const toWed=Math.round((wed-by)/86400000);
+      if(toWed<0){
+        metaLabel='After your wedding date';
+        warnHtml=`<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--red);margin-top:11px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          This lands after your wedding date.
+        </div>`;
+      } else {
+        const wk=Math.round(toWed/7);
+        metaLabel=(toWed>=7?`${wk} week${wk===1?'':'s'}`:`${toWed} day${toWed===1?'':'s'}`)+' before the wedding';
+      }
+      const span=Math.max(1,Math.round((wed-today)/86400000));
+      const fromStart=Math.round((by-today)/86400000);
+      const pct=Math.max(0,Math.min(100,(fromStart/span)*100));
+      barHtml=`<div style="position:relative;padding:4px 0 22px;margin-top:16px">
+        <div style="height:5px;border-radius:3px;background:var(--border);position:relative">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:var(--gold);border-radius:3px"></div>
+          <div style="position:absolute;top:50%;left:${pct}%;width:14px;height:14px;border-radius:50%;background:var(--gold-deep);border:2px solid var(--cream);box-shadow:0 1px 4px rgba(0,0,0,.25);transform:translate(-50%,-50%)"></div>
+        </div>
+        <span style="position:absolute;top:15px;left:0;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Today</span>
+        <span style="position:absolute;top:15px;right:0;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;text-align:right">${fmtDate(wedRaw)} &middot; Wedding</span>
+      </div>`;
+    }
+  }
+
+  const curWeeks=(validBy&&validWed)?Math.round((wed-by)/(86400000*7)):null;
+  const pillsHtml=[4,6,8,12].map(n=>{
+    const on=curWeeks===n;
+    return `<button type="button" onclick="_rsvpDlPreset(${n})" ${validWed?'':'disabled'}
+      style="font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:9px 6px;border-radius:8px;
+      border:1px solid ${on?'var(--gold-deep)':'var(--border)'};background:${on?'var(--gold-deep)':'var(--surface)'};
+      color:${on?'#fff':'var(--ink)'};cursor:${validWed?'pointer':'not-allowed'};opacity:${validWed?'1':'.5'};text-align:center">${n} weeks before</button>`;
+  }).join('');
+
+  return `<div class="card">
+    <div class="section-eyebrow" style="margin-bottom:13px">RSVP Deadline</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;line-height:1">${dateLabel}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">${metaLabel}</div>
+      </div>
+      <div style="position:relative;flex-shrink:0">
+        <button type="button" onclick="_rsvpDlToggle(event)" title="Change RSVP deadline" aria-haspopup="true" aria-expanded="false" id="rsvp-dl-btn"
+          style="background:none;border:1px solid var(--border);border-radius:9px;width:33px;height:33px;display:inline-flex;align-items:center;justify-content:center;color:var(--gold-deep);cursor:pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+        </button>
+        <div id="rsvp-dl-pop" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:250px;max-width:calc(100vw - 64px);
+          background:var(--cream);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 32px rgba(26,26,24,.16);padding:15px;z-index:30">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Exact date</div>
+          <input type="date" value="${(byRaw||'').replace(/"/g,'&quot;')}" onchange="_setRsvpByDate(this.value)"
+            style="width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);font-family:'Inter',sans-serif;font-size:13px"/>
+          <div style="display:flex;align-items:center;gap:9px;margin:14px 0;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">
+            <span style="flex:1;height:1px;background:var(--border)"></span>or set relative to the wedding<span style="flex:1;height:1px;background:var(--border)"></span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">${pillsHtml}</div>
+          ${validWed?'':'<div style="font-size:11px;color:var(--muted);margin-top:10px">Set your wedding date in Event Details to use these.</div>'}
+        </div>
+      </div>
+    </div>
+    ${barHtml}
+    ${warnHtml}
+  </div>`;
+}
+function _rsvpDlToggle(e){
+  e.stopPropagation();
+  const pop=document.getElementById('rsvp-dl-pop');
+  const btn=document.getElementById('rsvp-dl-btn');
+  if(!pop) return;
+  const showing=pop.style.display!=='none';
+  pop.style.display=showing?'none':'block';
+  if(btn) btn.setAttribute('aria-expanded',showing?'false':'true');
+  if(!showing){
+    const close=(ev)=>{ if(!pop.contains(ev.target)&&ev.target!==btn){ pop.style.display='none'; if(btn)btn.setAttribute('aria-expanded','false'); document.removeEventListener('click',close); } };
+    setTimeout(()=>document.addEventListener('click',close),0);
+  }
+}
+function _rsvpDlPreset(weeks){
+  const wedRaw=STATE.event&&STATE.event.date;
+  if(!wedRaw) return;
+  const wed=new Date(wedRaw+'T00:00:00');
+  if(isNaN(wed)) return;
+  wed.setDate(wed.getDate()-weeks*7);
+  _setRsvpByDate(wed.toISOString().slice(0,10));
 }
 
 // ── New dockable widget renderers ──
@@ -78,9 +175,6 @@ function _rsvpWidgetHeadcount(){
 function _rsvpWidgetInvitesAndResponses(){
   const awaitingGuests=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B' && (!g.rsvp||g.rsvp==='awaiting'));
   const awaiting=awaitingGuests.length;
-  const days=_rsvpDaysToRsvpBy();
-  const byRaw=STATE.settings&&STATE.settings.rsvpBy;
-  const byLine = byRaw ? `RSVP by ${fmtDate(byRaw)}${days!=null?` &middot; ${days>=0?`${days} day${days===1?'':'s'} left`:`${-days} day${days===-1?'':'s'} ago`}`:''}` : 'Set an RSVP-by date in templates';
   const gs=(STATE.guests||[]).filter(g=>(g.listType||'A')!=='B');
   const allGuests=STATE.guests||[];
   const inviteKeys=new Set(STATE.invites||[]);
@@ -113,7 +207,6 @@ function _rsvpWidgetInvitesAndResponses(){
     ${breakdownHtml}
     <div style="height:6px;border-radius:3px;background:var(--surface);margin-top:9px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--gold)"></div></div>
     <div style="font-size:11.5px;color:var(--muted);margin-top:7px">${pct}% of households invited &middot; ${totalSlots} total</div>
-    <div style="font-size:11.5px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">${byLine}</div>
   </div>`;
 }
 function _rsvpWidgetContactable(){
@@ -287,6 +380,7 @@ function setRsvpSummaryStyle(n){
 // ── RSVP & Invites: per-section show/hide ──
 // Section keys + labels, in page order. Stored as a hidden-list in settings.
 const _RSVP_SECTIONS=[
+  ['deadline','RSVP deadline'],
   ['invitation','Your invitation'],
   ['sendguests','Send to guests'],
   ['tracker','Guest response tracker'],
@@ -352,7 +446,7 @@ function _rsvpTrackerHeight(){
 // extra Dock choices are refused. Row breaks split the GRID cards into rows: STATE.settings
 // .rsvpRowBreaks is a set of section keys that START a new row (a break sits BEFORE them).
 // The tracker itself is never dockable/hideable — it's the host everything docks to.
-const _RSVP_DOCKABLE=['link','summary','dietary','plusones','invitation','sendguests','headcount','invites','contactable','seatingstatus'];
+const _RSVP_DOCKABLE=['link','summary','dietary','plusones','invitation','sendguests','headcount','invites','contactable','seatingstatus','deadline'];
 // Large widgets are tall and fill the dock column on their own.
 // When one is docked the effective cap tightens to prevent empty gaps.
 const _RSVP_LARGE_DOCK=['invitation','sendguests','link'];
@@ -1469,6 +1563,7 @@ function renderRsvpMgr(c, actions){
         <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0"></span>Declined</span><span style="font-weight:600;color:var(--red)">${plusDeclined}</span></div>
         <div style="font-size:11.5px;color:var(--muted);margin-top:12px">Headcounts here are handy for your caterer and venue.</div>
       </div>`:'',
+      deadline:!hidden.has('deadline')?_rsvpWidgetDeadline():'',
       headcount:!hidden.has('headcount')?_rsvpWidgetHeadcount():'',
       invites:!hidden.has('invites')?_rsvpWidgetInvitesAndResponses():'',
       contactable:!hidden.has('contactable')?_rsvpWidgetContactable():'',
