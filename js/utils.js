@@ -37,7 +37,7 @@ function _todayISO(){ const d=new Date(); const o=d.getTimezoneOffset(); const l
 // Recommended lead time (in days) before the wedding for each DEFAULT checklist task.
 // Used to suggest a due date once a wedding date is set. Keyed by seed task id.
 const SEED_CHECKLIST_LEAD_DAYS = {
-  cl0:420,  // Research venues — ~14 months
+  cl0:420,  // Research & visit venues — ~14 months
   cl1:390,  // Book venue — ~13 months
   cl8:365,  // Send save the dates — ~12 months
   cl2:300,  // Hire celebrant / officiant — ~10 months
