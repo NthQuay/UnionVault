@@ -5409,7 +5409,7 @@ body.sidenav nav:not(:has(.sidebar-names)) .sidebar-brand{margin-top:auto}
    toggle used for the desktop icon-strip, instead of trying to fit every link on screen
    at once, is the fix: hidden by default, one tap reveals it as a dropdown list, exactly
    how the top-nav layout already behaves at this width (see the nav.js rules below). */
-@media(max-width:480px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{display:none;flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;margin-top:${sp(8)}px;gap:0}body.sidenav.mnav-open .navlinks{display:flex}body.sidenav nav a{display:block;padding:${sp(9)}px ${sp(6)}px}body.sidenav .sidebar-brand{display:none}body.sidenav .sidebar-names{display:none}body.sidenav header h1{display:block}body.sidenav.mnav-open .navtoggle svg{transform:rotate(180deg)}}
+@media(max-width:480px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{display:none;flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;margin-top:${sp(8)}px;gap:0}body.sidenav.mnav-open .navlinks{display:flex}body.sidenav nav a{display:block;padding:${sp(9)}px ${sp(6)}px}body.sidenav .sidebar-brand{display:none}body.sidenav .sidebar-names{display:none}body.sidenav.mnav-open .navtoggle svg{transform:rotate(180deg)}}
 header{text-align:center;padding:${sp(72)}px 24px ${sp(60)}px}
 /* v125: min-height is set INLINE (it depends on hero.height), so the padding here is only
    breathing room, not the thing that sizes the box. Before, padding WAS the height — and
@@ -5636,7 +5636,6 @@ body:not(.sidenav) .madewith{position:fixed;bottom:16px;left:50%;transform:trans
 .mw-txt b{font-size:${scb(13)}px;letter-spacing:.1em;font-weight:400;color:${brand.main}}
 .mw-txt i{font-size:${scb(9)}px;letter-spacing:.18em;font-style:normal;color:${brand.sub}}
 .sidebar-names{font-family:${t2.headFont};font-size:${scb(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em}
-body.sidenav header h1{display:none}
 body.sidenav .sidebar-brand{display:flex;flex-direction:column;align-items:center}
 body.sidenav .mw-lock{display:flex;align-items:center;justify-content:center;gap:7px}
 @media(max-width:520px){
@@ -5696,17 +5695,17 @@ ${nav?`<nav>${nav}${t2.navPos==='side'?`<div class="sidebar-names">${_escHtml(_w
       <span class="mw-txt"><b>UNION</b><i>VAULT</i></span>
     </a>
   </div>`:''}</nav>`:''}
-${t2.navPos==='side'?`<div class="site-content"><main>${blocks}</main></div>`:`<main>${blocks}</main>`}
+${t2.navPos==='side'?`<div class="site-content"><main>${blocks}</main></div>`:`<main>${blocks}</main>
 <footer>
   ${_escHtml(_wbCouple())}
-  ${w.brandOff||t2.navPos==='side' ? '' : `<div class="madewith">
+  ${w.brandOff ? '' : `<div class="madewith">
     <span class="mw-lbl">Website made with</span>
     <a class="mw-lock" href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault" style="text-decoration:none">
       <img class="mw-crest" src="${brand.crest==='dark'?WB_CREST_DARK:WB_CREST_LIGHT}" alt="" width="26" height="24"/>
       <span class="mw-txt"><b>UNION</b><i>VAULT</i></span>
     </a>
   </div>`}
-</footer>
+</footer>`}
 ${_uvModal}
 <script>
 (function(){
