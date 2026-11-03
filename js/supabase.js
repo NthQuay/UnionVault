@@ -188,6 +188,27 @@ async function _cloudSave(silent,keepalive){
   // Stamp the last-save timestamp so conflict check can compare
   if(!STATE.settings) STATE.settings={};
   STATE.settings._lastCloudSave=new Date().toISOString();
+  // Guests can add wishing-well contributions directly server-side (the public
+  // ww-contribute edge function, with no admin session involved). A blind overwrite of
+  // this section below would silently erase any contribution added that way since our
+  // last load. Pull the current server copy in first and merge it with our local one by
+  // id — local wins for anything we already know about (e.g. marking one "thanked"),
+  // anything server-only (a guest's new contribution) gets added. Skipped for the
+  // keepalive (tab-closing) save so that fast path isn't held up by an extra round trip.
+  if(!keepalive){
+    try{
+      const wwRows=await _sbSelect('planner_data',`user_id=eq.${uid}&section=eq.wishingwell&select=data`);
+      const serverContribs=(wwRows&&wwRows[0]&&Array.isArray(wwRows[0].data&&wwRows[0].data.contributions))?wwRows[0].data.contributions:[];
+      if(serverContribs.length){
+        if(!STATE.wishingwell) STATE.wishingwell={};
+        const localContribs=Array.isArray(STATE.wishingwell.contributions)?STATE.wishingwell.contributions:[];
+        const byId={};
+        serverContribs.forEach(c=>{ if(c&&c.id) byId[c.id]=c; });
+        localContribs.forEach(c=>{ if(c&&c.id) byId[c.id]=c; });
+        STATE.wishingwell.contributions=Object.values(byId);
+      }
+    }catch(e){ console.warn('Could not merge wishing well contributions before save',e); }
+  }
   const pay={
     event:STATE.event, settings:Object.assign({},STATE.settings,{_ownerUid:uid}), guests:STATE.guests,
     checklist:STATE.checklist, vendors:STATE.vendors||[], quotes:STATE.quotes||[],

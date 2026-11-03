@@ -19,6 +19,41 @@ function fmtDate(iso: string): string {
   return d.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
+const DIET_LABELS: Record<string, string> = {
+  vegetarian: "Vegetarian", pescatarian: "Pescatarian", vegan: "Vegan", halal: "Halal",
+  kosher: "Kosher", lactose: "Lactose intolerant", gluten: "Gluten intolerant",
+  allergy: "Allergy", other: "Other", glutenfree: "GF", dairyfree: "DF", nutallergy: "Nut allergy",
+};
+function describeDiet(d: string): string {
+  if (d.startsWith("other:")) return "Other" + (d.slice(6) ? ` (${d.slice(6)})` : "");
+  if (d.startsWith("allergy:")) return "Allergy" + (d.slice(8) ? `: ${d.slice(8)}` : "");
+  return DIET_LABELS[d] || d;
+}
+function mergeDiet(items: string[]): string[] {
+  const detail: Record<string, string> = {};
+  items.forEach((d) => {
+    if (d.startsWith("allergy:")) detail.allergy = d.slice(8);
+    else if (d.startsWith("other:")) detail.other = d.slice(6);
+  });
+  const seen = new Set<string>();
+  const base: string[] = [];
+  items.forEach((d) => {
+    if (!d || d.startsWith("allergy:") || d.startsWith("other:")) return;
+    if (seen.has(d)) return;
+    seen.add(d);
+    base.push(d);
+  });
+  // A detail can in principle arrive with no matching bare token (e.g. a legacy row) —
+  // don't let it silently vanish, surface it as its own entry.
+  if (detail.allergy && !base.includes("allergy")) base.push("allergy");
+  if (detail.other && !base.includes("other")) base.push("other");
+  return base.map((d) => {
+    if (d === "allergy" && detail.allergy) return `allergy:${detail.allergy}`;
+    if (d === "other" && detail.other) return `other:${detail.other}`;
+    return d;
+  });
+}
+
 function base64Encode(text: string): string {
   // TextEncoder + manual base64, not a plain btoa(text) — couple/guest names can contain
   // non-ASCII characters, and btoa only handles latin1.
@@ -32,12 +67,12 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const { to, couple_id, couple_names, wedding_date, wedding_time, venue, site_url, members, dietary, ics_text } = await req.json();
+    const { to, couple_id, couple_names, wedding_date, wedding_time, venue, site_url, members, ics_text } = await req.json();
 
     const toEmail = EMAIL_RE.test(String(to || "")) ? String(to).trim() : "";
     if (!toEmail) return json(400, { error: "missing or invalid 'to'" });
 
-    const memberList: Array<{ name: string; attending: string }> = Array.isArray(members) ? members : [];
+    const memberList: Array<{ name: string; attending: string; dietary?: unknown }> = Array.isArray(members) ? members : [];
     if (!memberList.length) return json(400, { error: "missing members" });
 
     const coupleNames = String(couple_names || "").trim() || "the couple";
@@ -73,8 +108,19 @@ Deno.serve(async (req: Request) => {
     if (attendingNames.length) lines.push(`${joinN(attendingNames)} confirmed attending.`);
     if (declinedNames.length) lines.push(`${joinN(declinedNames)} let ${coupleNames} know they can't make it.`);
 
-    const dietList = Array.isArray(dietary) ? dietary.filter(Boolean) : [];
-    if (dietList.length) lines.push(`Dietary notes: ${dietList.join(", ")}.`);
+    // Each member can carry both the bare checkbox token ("allergy") and its free-text
+    // detail ("allergy:<note>") as two separate array entries — merge them into one
+    // ("allergy:<note>") before describing, same as the admin Online RSVPs card does, and
+    // attribute each requirement to the guest who has it instead of one flat unlabelled list.
+    const dietaryLines = memberList
+      .map((m) => {
+        const items = (Array.isArray(m.dietary) ? m.dietary : []).filter((d): d is string => typeof d === "string" && !!d);
+        const merged = mergeDiet(items);
+        if (!merged.length) return null;
+        return `${m.name}: ${merged.map(describeDiet).join(", ")}`;
+      })
+      .filter((l): l is string => !!l);
+    if (dietaryLines.length) lines.push(`Dietary notes:\n${dietaryLines.join("\n")}`);
 
     if (wedding_date) {
       const dateTime = [fmtDate(String(wedding_date)), wedding_time || null].filter(Boolean).join(" at ");
