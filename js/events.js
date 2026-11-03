@@ -338,7 +338,7 @@ function _evOpenPicker(evId){
     <span id="evp-count" style="font-size:12px;color:var(--muted)">0 selected</span>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="closeModalDirect()">Cancel</button>
-      <button class="btn btn-primary" id="evp-go" onclick="_evPickConfirm()" disabled style="opacity:.45">Add guests</button>
+      <button class="btn btn-primary evp-go-btn" id="evp-go" onclick="_evPickConfirm()" disabled style="opacity:.45;display:inline-flex;align-items:center;gap:5px">${_evPickGoBtnHtml(0)}</button>
     </div>
   </div>`;
 
@@ -347,6 +347,11 @@ function _evOpenPicker(evId){
   _evPickUpdateSelAllBtn();
 }
 
+// "Add N guests" footer button content — icon always shows; the label text collapses
+// to icon-only on narrow viewports (see .evp-go-btn .evp-go-label in app.css).
+function _evPickGoBtnHtml(n){
+  return `${_plusIcon(13)}<span class="evp-go-label">${n?`Add ${n} guest${n!==1?'s':''}`:'Add guests'}</span>`;
+}
 function _evPickListHtml(q, inSet){
   const ql=(q||'').toLowerCase();
   const CHK_ON=`<span style="width:18px;height:18px;border-radius:5px;background:var(--gold-deep);border:1.5px solid var(--gold-deep);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>`;
@@ -384,7 +389,7 @@ function _evPickListHtml(q, inSet){
       gl=s.members.map(g=>_esc(g.name)).join(' & ');
       gb=`<span style="font-size:10px;font-weight:600;color:var(--gold-deep);background:rgba(196,168,130,.18);border-radius:4px;padding:1px 5px;margin-left:5px">${s.kind==='couple'?'couple':'+1'}</span>`;
     } else {
-      gl=_esc(s.famName||s.members.map(g=>g.name).join(', '));
+      gl=_esc(s.famName||`The ${_surnameDisp(s.members[0].name)||s.members[0].name} Family`);
       gb=`<span style="font-size:10px;font-weight:600;color:#5B7BA0;background:rgba(91,123,160,.13);border-radius:4px;padding:1px 5px;margin-left:5px">${s.kind==='household'?'household':'family'} \u00b7 ${s.members.length}</span>`;
     }
     const isFamily=s.kind==='family'||s.kind==='household';
@@ -429,7 +434,7 @@ function _evPickToggle(gid){
   const gEl=document.getElementById('evp-go');
   if(gEl){
     gEl.disabled=!n; gEl.style.opacity=n?'1':'.45';
-    gEl.textContent=n?`Add ${n} guest${n!==1?'s':''}`:'Add guests';
+    gEl.innerHTML=_evPickGoBtnHtml(n);
   }
   _evPickUpdateSelAllBtn();
 }
@@ -494,7 +499,7 @@ function _evPickUpdateSelectionUi(){
   const n=_evPickSel.size;
   const cEl=document.getElementById('evp-count'); if(cEl) cEl.textContent=n?`${n} selected`:'0 selected';
   const gEl=document.getElementById('evp-go');
-  if(gEl){gEl.disabled=!n;gEl.style.opacity=n?'1':'.45';gEl.textContent=n?`Add ${n} guest${n!==1?'s':''}`:'Add guests';}
+  if(gEl){gEl.disabled=!n;gEl.style.opacity=n?'1':'.45';gEl.innerHTML=_evPickGoBtnHtml(n);}
   _evPickUpdateSelAllBtn();
 }
 
