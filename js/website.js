@@ -1237,6 +1237,13 @@ function _wbCrest(pageHex){
 function _wbPreset(k){
   const p=WB_PRESETS[k]; if(!p) return;
   const t=_wbSite().theme;
+  // `background` is its own role in the Advanced colour editor (the "Background" swatch,
+  // separate from "Section" = page) — most sites never touch it, and _wbSite()'s migration
+  // just defaults it to whatever `page` currently is. Capture that BEFORE we overwrite
+  // `page` below, so we can tell "still tracking page" (follow the preset, same as every
+  // other untouched role) from "deliberately set to something else" (leave it alone, same
+  // as any other manual override would survive a preset switch).
+  const wasTrackingPage = t.background===t.page;
   t.preset=k;
   ['page','band','accent','heading','text','button'].forEach(r=>{ t[r]=p[r]; });
   // No preset defines `item` — a preset is a palette, and its opinion about item titles is
@@ -1244,6 +1251,7 @@ function _wbPreset(k){
   // `undefined`, and an undefined colour drops the CSS declaration entirely: the titles
   // would fall back to inherited black, silently, on every preset click.
   t.item = p.heading;
+  if(wasTrackingPage) t.background = p.page;
   saveToStorage();
   _wbRepaintTheme();
 }
