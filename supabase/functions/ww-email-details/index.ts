@@ -51,12 +51,15 @@ Deno.serve(async (req: Request) => {
     if (!resendKey) return json(500, { error: "RESEND_API_KEY not set" });
 
     const amtNum = Number(amount);
-    const amountLine = Number.isFinite(amtNum) && amtNum > 0 ? `You pledged $${amtNum.toFixed(2)}.` : "";
+    const hasAmount = Number.isFinite(amtNum) && amtNum > 0;
+    const amountBlock = hasAmount
+      ? `We can't wait to celebrate with you!\nYou can send your selected gift amount of $${amtNum.toFixed(2)} using the payment info below.`
+      : `We can't wait to celebrate with you!\nYou can find our payment info below.`;
 
     const payLines = payRows.map(([label, value]) => `${label}: ${value}`).join("\n");
     const text = [
+      amountBlock,
       `Here are ${coupleNames}'s wishing well details:`,
-      amountLine,
       payLines,
       "Thanks so much for your generosity!",
     ].filter(Boolean).join("\n\n");

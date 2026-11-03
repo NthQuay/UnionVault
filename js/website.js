@@ -4531,7 +4531,9 @@ function _wbBuildSite(forDownload){
                   ww.accountName?['Account name', ww.accountName]:null,
                   (ww.bankBsb&&ww.bankAcc)?['Bank', 'BSB '+ww.bankBsb+' · Acc '+ww.bankAcc]:null,
                   ww.paypal?['PayPal', ww.paypal]:null,
-                  ww.reference?['Reference', ww.reference]:null ].filter(Boolean);
+                  ww.reference?['Reference', ww.reference]:null,
+                  ww.acceptCash?['Cash', 'Accepted in person']:null,
+                  ww.acceptCheque?['Make cheque out to', ww.chequeTo||'(ask the couple)']:null ].filter(Boolean);
       const payNote=(ww.payNote||'').trim()||'We greatly appreciate your generosity!';
       const wwCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
 
@@ -5555,7 +5557,7 @@ function _wbBuildSite(forDownload){
           var heading=anyYes?'See you there!':'Thanks for letting us know.';
           var msg='';
           if(yNames.length)msg+='Thank you '+joinN(yNames)+' for your RSVP. We\\'ll see you on '+dayMonth+'!';
-          if(noNames.length)msg+=(msg?' ':'')+'We\\'ll miss '+joinN(noNames)+'.';
+          if(noNames.length)msg+=(msg?'<br><br>':'')+'We\\'ll miss having you there '+joinN(noNames)+'.';
           sd.innerHTML='<div class="rf-msg-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${_uvPal.accent}" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><div style="font-size:17px;font-weight:600;margin:10px 0 6px;color:${t2.heading}">'+heading+'</div><div style="font-size:13.5px;line-height:1.5;opacity:.8">'+msg+'</div></div>';
           sd.classList.add('active');
         }
@@ -7269,6 +7271,16 @@ function openWwSettings(){
           </div>
           <div><label class="form-label">PayPal link <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" id="ww-s-paypal" class="form-input" placeholder="paypal.me/yourname" value="${_wwEsc(ww.paypal)}"/></div>
           <div><label class="form-label">Payment reference</label><input type="text" id="ww-s-ref" class="form-input" placeholder="Your name" value="${_wwEsc(ww.reference)}"/></div>
+          <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer">
+            <input type="checkbox" id="ww-s-cash" ${ww.acceptCash?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)"/> Also accept cash
+          </label>
+          <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer">
+            <input type="checkbox" id="ww-s-cheque" ${ww.acceptCheque?'checked':''} onchange="document.getElementById('ww-s-cheque-to-wrap').style.display=this.checked?'block':'none'" style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)"/> Also accept cheque
+          </label>
+          <div id="ww-s-cheque-to-wrap" style="display:${ww.acceptCheque?'block':'none'}">
+            <label class="form-label">Make cheque out to</label>
+            <input type="text" id="ww-s-cheque-to" class="form-input" placeholder="Your name(s)" value="${_wwEsc(ww.chequeTo)}"/>
+          </div>
           <div><label class="form-label">Note shown under the payment details</label><input type="text" id="ww-s-paynote" class="form-input" placeholder="We greatly appreciate your generosity!" value="${_wwEsc(ww.payNote)}"/></div>
         </div>
       </div>
@@ -7291,6 +7303,9 @@ function saveWwSettings(){
   ww.bankAcc = (document.getElementById('ww-s-acc').value||'').trim();
   ww.paypal = (document.getElementById('ww-s-paypal').value||'').trim();
   ww.reference = (document.getElementById('ww-s-ref').value||'').trim();
+  ww.acceptCash = document.getElementById('ww-s-cash').checked;
+  ww.acceptCheque = document.getElementById('ww-s-cheque').checked;
+  ww.chequeTo = (document.getElementById('ww-s-cheque-to').value||'').trim();
   ww.payNote = (document.getElementById('ww-s-paynote').value||'').trim();
   STATE.settings.showWishingWellOnDash = document.getElementById('ww-s-dash').checked;
   saveToStorage();

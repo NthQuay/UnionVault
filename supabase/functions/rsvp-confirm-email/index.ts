@@ -138,7 +138,7 @@ Deno.serve(async (req: Request) => {
 
     const text = lines.join("\n\n");
     const subject = `Your RSVP to ${coupleNames}'s wedding`;
-    const html = brandedHtml({ kicker: "RSVP confirmed", title: `Thanks, ${coupleNames} has your reply`, text });
+    const html = brandedHtml({ kicker: "RSVP confirmed", title: `${coupleNames} have received your reply.`, text });
 
     const payload: Record<string, unknown> = { from: "UnionVault <notifications@unionvault.app>", to: [toEmail], subject, text, html };
     if (replyTo) payload.reply_to = replyTo;
