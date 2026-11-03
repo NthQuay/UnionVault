@@ -4565,13 +4565,17 @@ function _wbBuildSite(forDownload){
       <div id="ww-pay" style="display:none">
         <div class="ww-pay-box">${payHtml}</div>
         <p class="sub" style="text-align:center;margin-top:12px">Please transfer the amount above using the details shown.</p>
-        ${pay.length?`<div style="text-align:center;margin-top:14px"><button id="ww-email-btn" class="ww-store-btn" onclick="window._wwOpenEmailPopup()" style="background:none;cursor:pointer;font-family:inherit">Email me these details →</button></div>`:''}
+        <div style="text-align:center;margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          ${pay.length?`<button id="ww-email-btn" class="ww-store-btn" onclick="window._wwOpenEmailPopup()" style="background:none;cursor:pointer;font-family:inherit">Email me these details →</button>`:''}
+          <button id="ww-pay-next-btn" class="ww-store-btn" onclick="window._wwGoToThanks()" style="background:none;cursor:pointer;font-family:inherit">Next →</button>
+        </div>
       </div>
       <div id="ww-thanks" style="display:none">
         <div style="text-align:center;padding:20px 0">
           <div style="font-size:28px;margin-bottom:8px">❤️</div>
           <p class="lead">Thank you for your generous gift!</p>
           <p class="sub">Your contribution has been recorded.</p>
+          <div style="margin-top:14px"><button id="ww-back-to-pay-btn" class="ww-store-btn" onclick="window._wwBackToDetails()" style="background:none;cursor:pointer;font-family:inherit">← Back to details</button></div>
         </div>
       </div>
       <div id="ww-email-overlay" class="ww-email-overlay" style="display:none">
@@ -4655,6 +4659,14 @@ function _wbBuildSite(forDownload){
       if(errEl)errEl.textContent="Something went wrong \\u2014 please try again.";
       if(btn){btn.disabled=false;btn.textContent='Send';}
     });
+  };
+  window._wwGoToThanks=function(){
+    document.getElementById('ww-pay').style.display='none';
+    document.getElementById('ww-thanks').style.display='block';
+  };
+  window._wwBackToDetails=function(){
+    document.getElementById('ww-thanks').style.display='none';
+    document.getElementById('ww-pay').style.display='block';
   };
 })();
 <\/script>`;
