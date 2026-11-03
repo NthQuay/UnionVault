@@ -5434,22 +5434,47 @@ body.sidenav.collapsed nav{width:auto;min-width:48px;padding:${sp(16)}px ${sp(8)
    wide for a 48px strip, so it's hidden above — but that left the collapsed state with no
    credit at all. This is the crest alone, hidden until collapsed, pinned to the bottom the
    same way .sidebar-brand is when expanded. */
-.sb-collapsed-crest{display:none}
+/* Scoped to body.sidenav (not left bare) so this beats "body.sidenav nav
+   a{display:block}" above, which also matches this element (it's an <a>
+   inside nav) and used to win on specificity regardless of state —
+   the crest showed everywhere, expanded or collapsed. */
+body.sidenav .sb-collapsed-crest{display:none}
 body.sidenav.collapsed .sb-collapsed-crest{display:block;margin-top:auto;padding-top:${sp(12)}px}
 body.sidenav.collapsed .sb-collapsed-crest img{width:20px;height:auto;display:block}
 body.sidenav .sidebar-names{margin-top:auto;padding-top:${sp(16)}px}
 body.sidenav .sidebar-brand{text-align:center;padding-top:${sp(12)}px}
 body.sidenav nav:not(:has(.sidebar-names)) .sidebar-brand{margin-top:auto}
-.site-content{flex:1;min-width:0}
-@media(max-width:620px) and (min-width:481px){body.sidenav nav{width:${scb(160)}px;padding:${sp(16)}px ${sp(10)}px}body.sidenav nav a{font-size:${scb(11)}px;padding:${sp(7)}px ${sp(4)}px}.sidebar-names{font-size:${scb(13)}px}}
-/* Below 480px a vertical sidebar has nowhere to go, so it becomes a sticky top bar —
-   but a full link list wrapped into that bar is what used to run every label together
-   with no room to breathe (gap:0 and zero link padding, both inherited from the desktop
-   vertical layout, which supplies spacing a different way). Collapsing behind the same
-   toggle used for the desktop icon-strip, instead of trying to fit every link on screen
-   at once, is the fix: hidden by default, one tap reveals it as a dropdown list, exactly
-   how the top-nav layout already behaves at this width (see the nav.js rules below). */
-@media(max-width:480px){body.sidenav{display:block}body.sidenav nav{position:sticky;top:0;height:auto;width:auto;border-right:none;border-bottom:1px solid ${t2.heading}1A;padding:${sp(16)}px;display:block;overflow-y:visible}body.sidenav .navlinks{display:none;flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;margin-top:${sp(8)}px;gap:0}body.sidenav.mnav-open .navlinks{display:flex}body.sidenav nav a{display:block;padding:${sp(9)}px ${sp(6)}px}body.sidenav .sidebar-brand{display:none}body.sidenav .sidebar-names{display:none}body.sidenav.mnav-open .navtoggle svg{transform:rotate(180deg)}}
+/* The content column is only ever centred in whatever's left beside the
+   sidebar, so it visually drifts off-centre by half the sidebar's width.
+   Mirroring the sidebar's own current width as right padding here makes the
+   centred content inside (section{max-width;margin:0 auto}) symmetric
+   around the page's true centre instead, in every width/collapsed state. */
+.site-content{flex:1;min-width:0;padding-right:${scb(200)}px}
+body.sidenav.collapsed .site-content{padding-right:48px}
+@media(max-width:620px) and (min-width:481px){body.sidenav nav{width:${scb(160)}px;padding:${sp(16)}px ${sp(10)}px}body.sidenav nav a{font-size:${scb(11)}px;padding:${sp(7)}px ${sp(4)}px}.sidebar-names{font-size:${scb(13)}px}.site-content{padding-right:${scb(160)}px}}
+/* Below 480px the sidebar stays a sidebar — a slim rail pinned to the LEFT,
+   the same look as the desktop collapsed icon-strip (toggle + crest only),
+   never a bar across the top. Tapping it opens the full nav — links, names,
+   full lockup — as a panel anchored to that SAME left edge, layered over
+   the content (position:fixed) instead of squeezing a 200px sidebar into a
+   375px phone or giving up the left edge entirely. */
+@media(max-width:480px){
+  body.sidenav nav{width:auto;min-width:48px;padding:${sp(16)}px ${sp(8)}px;align-items:center;border-bottom:none}
+  body.sidenav .navlinks{display:none}
+  body.sidenav .sidebar-brand{display:none}
+  body.sidenav .sidebar-names{display:none}
+  body.sidenav .sb-collapsed-crest{display:block;margin-top:auto;padding-top:${sp(12)}px}
+  body.sidenav .site-content{padding-right:48px}
+  body.sidenav.mnav-open nav{position:fixed;top:0;left:0;bottom:0;height:100dvh;width:${scb(220)}px;min-width:0;align-items:stretch;padding:${sp(24)}px ${sp(16)}px;box-shadow:0 0 28px rgba(0,0,0,.28);z-index:40;background:${t2.background||t2.page}}
+  body.sidenav.mnav-open .navlinks{display:flex;flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;gap:0;margin-top:${sp(8)}px}
+  body.sidenav.mnav-open nav a{display:block;padding:${sp(9)}px ${sp(6)}px}
+  body.sidenav.mnav-open .sidebar-brand{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:${sp(12)}px}
+  body.sidenav.mnav-open .sidebar-names{display:block;margin-top:auto;padding-top:${sp(16)}px}
+  body.sidenav.mnav-open .sb-collapsed-crest{display:none}
+  body.sidenav.mnav-open .site-content{padding-right:0px}
+  body.sidenav.mnav-open .navtoggle svg{transform:rotate(180deg)}
+  body.sidenav.mnav-open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:39}
+}
 header{text-align:center;padding:${sp(72)}px 24px ${sp(60)}px}
 /* v125: min-height is set INLINE (it depends on hero.height), so the padding here is only
    breathing room, not the thing that sizes the box. Before, padding WAS the height — and
@@ -5676,7 +5701,6 @@ body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;m
 .mw-txt b{font-size:${scb(13)}px;letter-spacing:.1em;font-weight:400;color:${brand.main}}
 .mw-txt i{font-size:${scb(9)}px;letter-spacing:.18em;font-style:normal;color:${brand.sub}}
 .sidebar-names{font-family:${t2.headFont};font-size:${scb(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em}
-body.sidenav .sidebar-brand{display:flex;flex-direction:column;align-items:center}
 body.sidenav .mw-lock{display:flex;align-items:center;justify-content:center;gap:7px}
 @media(max-width:520px){
   dl div{flex-direction:column;gap:2px}
@@ -5775,10 +5799,10 @@ ${_uvModal}
   var n=document.querySelector('nav'), b=n&&n.querySelector('.navtoggle'), isSide=document.body.classList.contains('sidenav');
   if(isSide&&n&&b){
     // Same button, two jobs by width: above 480px it shrinks the sidebar to an icon
-    // strip (.collapsed); at or below it, the sidebar is already a top bar with its
-    // links hidden by default, and this reveals them as a dropdown (.mnav-open) —
-    // checked live, not cached, since a tablet rotating through 480px should get the
-    // behaviour for whichever width it's actually at.
+    // strip (.collapsed); at or below it, the sidebar is already a slim icon rail
+    // pinned to the left, and this opens the full nav as a panel on that same left
+    // edge (.mnav-open) — checked live, not cached, since a tablet rotating through
+    // 480px should get the behaviour for whichever width it's actually at.
     b.addEventListener('click',function(){
       if(window.innerWidth<=480){
         var open=document.body.classList.toggle('mnav-open');
@@ -5794,6 +5818,15 @@ ${_uvModal}
           b.setAttribute('aria-expanded','false');
         }
       });
+    });
+    // Tapping the dimmed page behind the open panel closes it, same as tapping
+    // outside any other drawer — only reachable on mobile since the panel is only
+    // position:fixed (and so only intercepts taps) inside the <=480px breakpoint.
+    document.addEventListener('click',function(e){
+      if(document.body.classList.contains('mnav-open')&&!n.contains(e.target)){
+        document.body.classList.remove('mnav-open');
+        b.setAttribute('aria-expanded','false');
+      }
     });
   }else if(n&&b){
     n.className='js';
