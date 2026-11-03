@@ -5241,7 +5241,7 @@ function _wbBuildSite(forDownload){
     group.forEach(function(m,i){
       if(m.isPlus1)return;
       var yc='rf-pill'+(m.att===true?' yes':''),nc='rf-pill'+(m.att===false?' no':'');
-      html+='<div class="member-row" data-idx="'+i+'"><span class="member-name">'+_esc(m.n)+'</span><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Yes</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">&#10007; No</button></div></div>';
+      html+='<div class="member-row" data-idx="'+i+'"><span class="member-name">'+_esc(m.n)+'</span><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Accept</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">&#10007; Decline</button></div></div>';
     });
     var hasP1Slot=group.some(function(m){return m.isPlus1;});
     var hasUnnamedP1=GG.some(function(g){return g.p1&&!byId[g.p1]&&group.some(function(m2){return m2.id===g.id;});});
@@ -5250,7 +5250,7 @@ function _wbBuildSite(forDownload){
         if(!m.isPlus1)return;
         var pn=_esc(plus1Names[m.id]||'');
         var yc='rf-pill'+(m.att===true?' yes':''),nc='rf-pill'+(m.att===false?' no':'');
-        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><input class="plus-one-name-input" type="text" placeholder="Enter their full name\\u2026" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" style="flex:1;min-width:0;width:auto;margin-bottom:0"><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Yes</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">&#10007; No</button></div></div></div>';
+        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><input class="plus-one-name-input" type="text" placeholder="Enter their full name\\u2026" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" style="flex:1;min-width:0;width:auto;margin-bottom:0"><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Accept</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">&#10007; Decline</button></div></div></div>';
       });
     }
     container.innerHTML=html;
@@ -5457,7 +5457,7 @@ function _wbBuildSite(forDownload){
         var errBox=document.getElementById('attend-error');
         if(!errBox){
           errBox=document.createElement('p');errBox.id='attend-error';errBox.className='attend-error';
-          errBox.textContent='Please select Yes or No for all guests';
+          errBox.textContent='Please select Accept or Decline for all guests';
           document.getElementById('attend-members').appendChild(errBox);
         }
         return;
