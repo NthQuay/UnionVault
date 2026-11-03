@@ -4870,6 +4870,17 @@ function _wbBuildSite(forDownload){
 .meal-error,.field-error{font-size:12px;color:#DC2626;margin:4px 0 8px}
 .attend-error{font-size:12px;color:#DC2626;margin:8px 0 0;text-align:center}
 #contact-couple{font-size:12.5px;color:${t2.text};margin-top:16px;text-align:center}
+.uv-contact-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.uv-contact-card{background:${t2.background||t2.page};color:${t2.text};border-radius:16px;max-width:380px;width:100%;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.32)}
+.uv-contact-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16px}
+.uv-contact-title{font-family:${t2.headFont};font-size:17px;font-weight:600;color:${t2.heading}}
+.uv-contact-close{background:none;border:none;cursor:pointer;color:${t2.text};opacity:.55;font-size:22px;line-height:1;padding:0 2px;flex-shrink:0}
+.uv-contact-close:hover{opacity:1}
+.uv-contact-send{margin-top:14px;width:100%;padding:11px;border:none;border-radius:8px;background:${_uvPal.accent};color:${_uvPal.ink};font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity .15s}
+.uv-contact-send:disabled{opacity:.5;cursor:default}
+.uv-contact-err{font-size:12px;color:#DC2626;min-height:16px;margin:2px 0 0}
+.uv-contact-done{text-align:center;padding:8px 2px 2px}
+.uv-contact-done-icon{font-size:30px;color:${_uvPal.accent};margin-bottom:10px}
 .rsvp-copy-label{display:flex;align-items:flex-start;gap:10px;padding:12px 0 4px;cursor:pointer;font-size:13px;color:${t2.text};line-height:1.4}
 .rsvp-copy-label input{width:16px;height:16px;accent-color:${_uvPal.accent};cursor:pointer;margin-top:1px;flex-shrink:0}
 .rf-lock{text-align:center;padding:48px 24px;position:relative}
@@ -4913,7 +4924,7 @@ function _wbBuildSite(forDownload){
           </div>
           <p class="search-hint" id="search-hint">Enter at least 3 characters of your first or last name</p>
           <div class="group-results" id="search-results" hidden></div>
-          <p id="contact-couple" hidden>Can&#39;t find your name? <span style="color:${_uvPal.accent};cursor:pointer;text-decoration:underline" onclick="void 0">Contact ${_escHtml(_wbCouple())}</span></p>
+          <p id="contact-couple" hidden>Can&#39;t find your name? <span style="color:${_uvPal.accent};cursor:pointer;text-decoration:underline" onclick="window._uvOpenContact&&window._uvOpenContact()">Contact ${_escHtml(_wbCouple())}</span></p>
         </div>
         <div id="s1-attend" hidden>
           <div class="selected-banner">
@@ -4966,6 +4977,55 @@ function _wbBuildSite(forDownload){
   var CHK='<svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg>';
   var CHEVRON='<svg class="diet-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,5 7,9 11,5"/></svg>';
   function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  /* ── "Can't find your name? Contact us" — a guest who can't find their
+     invite sends a short message, which emails the couple (reply-to the
+     guest's own address, if they gave one) via guest-contact-notify, the
+     same pattern rsvp-notify already uses for the submission itself. ── */
+  window._uvOpenContact=function(){
+    if(document.getElementById('uv-contact-overlay'))return;
+    var searched=(document.getElementById('rf-name')||{value:''}).value.trim();
+    var ov=document.createElement('div');
+    ov.id='uv-contact-overlay';
+    ov.className='uv-contact-overlay';
+    ov.innerHTML='<div class="uv-contact-card">'
+      +'<div class="uv-contact-hdr"><span class="uv-contact-title">Message ${_escHtml(_wbCouple())}</span>'
+      +'<button type="button" class="uv-contact-close" onclick="window._uvCloseContact&&window._uvCloseContact()" aria-label="Close">&times;</button></div>'
+      +'<div class="contact-field"><p class="contact-label">Your name <span class="required-star">*</span></p><input class="contact-input" id="uv-contact-name" type="text" placeholder="Your name" autocomplete="name"></div>'
+      +'<div class="contact-field"><p class="contact-label">Your email <span style="opacity:.6;font-weight:400;text-transform:none;letter-spacing:0">(optional, so they can reply)</span></p><input class="contact-input" id="uv-contact-email" type="email" placeholder="email@example.com" autocomplete="email"></div>'
+      +'<div class="contact-field"><p class="contact-label">Message <span class="required-star">*</span></p><textarea class="contact-textarea" id="uv-contact-msg" placeholder="A note…"></textarea></div>'
+      +'<p class="uv-contact-err" id="uv-contact-err"></p>'
+      +'<button type="button" class="uv-contact-send" id="uv-contact-send" onclick="window._uvSendContact&&window._uvSendContact()">Send</button>'
+      +'</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click',function(e){ if(e.target===ov) window._uvCloseContact(); });
+    var msgInp=document.getElementById('uv-contact-msg');
+    if(searched&&msgInp) msgInp.value='I searched for "'+searched+'" but couldn\\'t find my invite.';
+    var nameInp=document.getElementById('uv-contact-name');
+    if(nameInp) nameInp.focus();
+  };
+  window._uvCloseContact=function(){
+    var ov=document.getElementById('uv-contact-overlay');
+    if(ov) ov.remove();
+  };
+  window._uvSendContact=function(){
+    var nameInp=document.getElementById('uv-contact-name'),emailInp=document.getElementById('uv-contact-email'),msgInp=document.getElementById('uv-contact-msg'),errEl=document.getElementById('uv-contact-err'),btn=document.getElementById('uv-contact-send');
+    var nm=(nameInp&&nameInp.value||'').trim(),em=(emailInp&&emailInp.value||'').trim(),ms=(msgInp&&msgInp.value||'').trim();
+    if(!nm||!ms){ if(errEl) errEl.textContent='Please add your name and a message.'; return; }
+    if(errEl) errEl.textContent='';
+    if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+    var gd3=document.getElementById('uv-rf-data'),cid3=gd3?gd3.dataset.couple:'';
+    fetch(_su+'/functions/v1/guest-contact-notify',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({couple_id:cid3,guest_name:nm,guest_email:em||null,message:ms})})
+      .then(function(res){ if(!res.ok) throw new Error('send failed'); })
+      .then(function(){
+        var card=document.querySelector('#uv-contact-overlay .uv-contact-card');
+        if(card) card.innerHTML='<div class="uv-contact-done"><div class="uv-contact-done-icon">&#10003;</div><div class="uv-contact-title" style="margin-bottom:6px">Message sent</div><div style="font-size:13px;opacity:.75;margin-bottom:18px">${_escHtml(_wbCouple())} will get back to you soon.</div><button type="button" class="uv-contact-send" style="width:auto;padding:10px 26px" onclick="window._uvCloseContact&&window._uvCloseContact()">Close</button></div>';
+      })
+      .catch(function(){
+        if(errEl) errEl.textContent='Something went wrong — please try again.';
+        if(btn){ btn.disabled=false; btn.textContent='Send'; }
+      });
+  };
 
   /* ── Custom fields ── */
   var _customFields=_gd?JSON.parse(_gd.dataset.custom||'[]'):[];
