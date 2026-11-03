@@ -6482,6 +6482,174 @@ function _wwRegistryPreviewHtml(ww){
 
 // ── Contribution add/edit modal ──
 let _wwEditId = null;
+// Groups the guest list the same way invites/dashboards already do —
+// household first, then couple (a linked pair, OR a host with a named
+// plus-one once that plus-one is confirmed attending: either way a guest
+// reads it as one couple, not two separate names), then whoever's left over
+// as individuals. Every guest is included regardless of RSVP — a decline or
+// an unanswered invite doesn't stop a gift arriving, so there's nothing to
+// filter out, only to label.
+function _wwContribGroups(){
+  const byId={}; (STATE.guests||[]).forEach(g=>{ byId[g.id]=g; });
+  const seen=new Set();
+  const households=[], couples=[], individuals=[];
+
+  (STATE.families||[]).forEach(f=>{
+    const members=(f.memberIds||[]).map(id=>byId[id]).filter(Boolean);
+    if(!members.length) return;
+    members.forEach(m=>seen.add(m.id));
+    const statuses=members.map(m=>m.rsvp||'awaiting');
+    const attCount=statuses.filter(s=>s==='attending').length;
+    const allSame=statuses.every(s=>s===statuses[0]);
+    households.push({
+      name:(f.name||'').trim(), address:(f.address||'').trim(),
+      search:(f.name||'')+' '+members.map(m=>m.name||'').join(' '),
+      status: attCount===members.length?'attending':(allSame?statuses[0]:'mixed'),
+      kind:'household', attCount, total:members.length
+    });
+  });
+
+  (STATE.guests||[]).forEach(g=>{
+    if(!g||seen.has(g.id)) return;
+    if(g.coupleId && byId[g.coupleId] && !seen.has(g.coupleId)){
+      const partner=byId[g.coupleId];
+      seen.add(g.id); seen.add(partner.id);
+      const st = _wwCombinedStatus(g.rsvp, partner.rsvp);
+      couples.push({
+        name:_pairName(g.name, partner.name), address:(g.address||partner.address||'').trim(),
+        search:(g.name||'')+' '+(partner.name||''),
+        status:st, kind: st==='mixed'?'mixedCouple':null, a:g, b:partner
+      });
+      return;
+    }
+    if(g.plusOneId && byId[g.plusOneId] && !seen.has(g.plusOneId)){
+      const plus=byId[g.plusOneId];
+      if(plus.rsvp==='attending'){
+        seen.add(g.id); seen.add(plus.id);
+        couples.push({
+          name:_pairName(g.name, plus.name), address:(g.address||'').trim(),
+          search:(g.name||'')+' '+(plus.name||''),
+          status:'attending', kind:'plusone'
+        });
+        return;
+      }
+      // Plus-one not attending (declined/awaiting/unnamed) — host stands alone;
+      // the plus-one still gets their own entry below if they're a real, named
+      // guest (not a placeholder), so they're never un-pickable.
+    }
+    seen.add(g.id);
+    const n=(g.name||'').trim();
+    if(!n) return;
+    individuals.push({ name:n, address:(g.address||'').trim(), search:n, status:g.rsvp||'awaiting', kind:null });
+  });
+
+  const byName=(a,b)=>a.name.localeCompare(b.name);
+  households.sort(byName); couples.sort(byName); individuals.sort(byName);
+  return {households, couples, individuals};
+}
+function _wwCombinedStatus(a,b){ a=a||'awaiting'; b=b||'awaiting'; return a===b?a:'mixed'; }
+
+// Tense: read off the contribution's OWN date against the wedding date, not
+// "today" — a contribution backfilled after the wedding should read as past
+// tense even if someone's filling the guest list in well beforehand.
+function _wwIsPastWedding(dateStr){
+  const wd=STATE.event&&STATE.event.date;
+  return !!(wd && dateStr && dateStr > wd);
+}
+function _wwStatusWord(status, past){
+  if(status==='attending') return past?'Attended':'Attending';
+  if(status==='declined') return 'Declined';
+  if(status==='mixed') return 'Mixed';
+  return 'Awaiting';
+}
+const _WW_STATUS_COLOR = { attending:'var(--green)', declined:'var(--red)', awaiting:'var(--gold-deep)' };
+function _wwPickerStatusPill(status, past){
+  const label=_wwStatusWord(status, past);
+  if(status==='mixed') return `<span style="font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:999px;flex-shrink:0;white-space:nowrap;background:var(--surface);color:var(--muted);border:1px solid var(--border)">${label}</span>`;
+  const col=_WW_STATUS_COLOR[status]||_WW_STATUS_COLOR.awaiting;
+  return `<span style="font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:999px;flex-shrink:0;white-space:nowrap;background:color-mix(in srgb, ${col} 16%, transparent);color:${col}">${label}</span>`;
+}
+function _wwPickerSubLabel(g, past){
+  if(g.kind==='household') return `${g.attCount} of ${g.total} ${_wwStatusWord('attending',past).toLowerCase()}`;
+  if(g.kind==='plusone') return `Plus-one ${_wwStatusWord('attending',past).toLowerCase()}`;
+  if(g.kind==='mixedCouple') return `${_wwEsc(g.a.name||'')}: ${_wwStatusWord(g.a.rsvp||'awaiting',past)} &middot; ${_wwEsc(g.b.name||'')}: ${_wwStatusWord(g.b.rsvp||'awaiting',past)}`;
+  return '';
+}
+
+// Wires the "From" field's picker: opens on focus with every household,
+// couple and individual already listed (not only once you start typing),
+// filters live as you search, and fills the same plain-text ww-name value a
+// typed name always has — the existing address auto-fill below keeps
+// working unchanged, since picked names use the same "First & First
+// Surname" reconstruction _guestNameList() already relies on.
+function _wwContribPickerInit(){
+  const shell=document.getElementById('ww-pick-shell');
+  const input=document.getElementById('ww-name');
+  const avatar=document.getElementById('ww-pick-avatar');
+  const clearBtn=document.getElementById('ww-pick-clear');
+  const dd=document.getElementById('ww-pick-dd');
+  const dateInp=document.getElementById('ww-date');
+  if(!shell||!input||!dd) return;
+
+  const groups=_wwContribGroups();
+  let filtered=[];
+
+  const rowHtml=(g, idx, past)=>{
+    const sub=_wwPickerSubLabel(g, past);
+    return `<div data-idx="${idx}" tabindex="0" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;cursor:pointer"
+      onmouseenter="this.style.background='var(--surface)'" onmouseleave="this.style.background=''" onmousedown="event.preventDefault()">
+      <span style="width:28px;height:28px;border-radius:50%;background:var(--surface);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${_wwEsc(_wwInitials(g.name))}</span>
+      <span style="flex:1;min-width:0"><span style="display:block;font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wwEsc(g.name)}</span>${sub?`<span style="display:block;font-size:11px;color:var(--muted);margin-top:1px">${sub}</span>`:''}</span>
+      ${_wwPickerStatusPill(g.status, past)}
+    </div>`;
+  };
+  const sectionHtml=(label, list, offset, past)=>{
+    if(!list.length) return '';
+    return `<div style="font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:9px 10px 4px">${label}</div>`
+      + list.map((g,i)=>rowHtml(g, offset+i, past)).join('');
+  };
+  const renderDD=()=>{
+    const q=(input.value||'').trim().toLowerCase();
+    const past=_wwIsPastWedding(dateInp?dateInp.value:'');
+    const match=(list)=>!q?list:list.filter(g=>g.search.toLowerCase().indexOf(q)!==-1);
+    const hh=match(groups.households), cc=match(groups.couples), ii=match(groups.individuals);
+    filtered=hh.concat(cc,ii);
+    let html = sectionHtml('Households',hh,0,past) + sectionHtml('Couples',cc,hh.length,past) + sectionHtml('Individuals',ii,hh.length+cc.length,past);
+    if(!filtered.length) html='<div style="padding:18px 10px;text-align:center;font-size:12.5px;color:var(--muted)">No one matches that search.</div>';
+    dd.innerHTML=html;
+    dd.querySelectorAll('[data-idx]').forEach(row=>{
+      row.addEventListener('click', ()=>pick(filtered[Number(row.getAttribute('data-idx'))]));
+    });
+  };
+  const openDD=()=>{ dd.style.display='block'; renderDD(); };
+  const closeDD=()=>{ dd.style.display='none'; };
+  const pick=(g)=>{
+    if(!g) return;
+    input.value=g.name;
+    avatar.textContent=_wwInitials(g.name);
+    avatar.style.display='flex';
+    clearBtn.style.display='flex';
+    input.dispatchEvent(new Event('change'));
+    closeDD();
+  };
+
+  if((input.value||'').trim()){ avatar.textContent=_wwInitials(input.value); avatar.style.display='flex'; clearBtn.style.display='flex'; }
+
+  input.addEventListener('focus', openDD);
+  input.addEventListener('input', ()=>{ avatar.style.display='none'; clearBtn.style.display='none'; openDD(); });
+  clearBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    input.value='';
+    avatar.style.display='none'; clearBtn.style.display='none';
+    input.dispatchEvent(new Event('change'));
+    input.focus(); openDD();
+  });
+  document.addEventListener('click', function(e){
+    if(shell.parentElement && !shell.parentElement.contains(e.target)) closeDD();
+  });
+  if(dateInp) dateInp.addEventListener('input', ()=>{ if(dd.style.display==='block') renderDD(); });
+}
+
 function openWwContribution(id){
   _wwEditId = id || null;
   const x = id ? (STATE.wishingwell.contributions||[]).find(c=>c.id===id) : null;
@@ -6490,7 +6658,14 @@ function openWwContribution(id){
   const body = `<div style="display:flex;flex-direction:column;gap:14px">
       <div>
         <label class="form-label">From</label>
-        <input type="text" id="ww-name" class="form-input" placeholder="Guest name" value="${x?_wwEsc(x.name):''}"/>
+        <div style="position:relative">
+          <div id="ww-pick-shell" style="display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--cream);cursor:text">
+            <span id="ww-pick-avatar" style="display:none;width:26px;height:26px;border-radius:50%;background:var(--surface);color:var(--gold-deep);align-items:center;justify-content:center;font-size:10.5px;font-weight:600;flex-shrink:0"></span>
+            <input type="text" id="ww-name" placeholder="Search households, couples, guests…" autocomplete="off" style="border:none;outline:none;background:none;font:inherit;font-size:13.5px;color:var(--ink);flex:1;min-width:0;padding:0" value="${x?_wwEsc(x.name):''}"/>
+            <button type="button" id="ww-pick-clear" style="display:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:2px;flex-shrink:0" aria-label="Clear">&times;</button>
+          </div>
+          <div id="ww-pick-dd" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;background:var(--cream);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 34px rgba(0,0,0,.16);max-height:280px;overflow-y:auto;padding:6px"></div>
+        </div>
       </div>
       <div style="display:flex;gap:12px">
         <div style="flex:1">
@@ -6522,8 +6697,8 @@ function openWwContribution(id){
   const footer = `<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveWwContribution()">${id?'Save':'Add contribution'}</button>`;
   openModal(id?'Edit contribution':'Log a contribution', body, footer);
   setTimeout(()=>{
-    _nameAutocomplete('ww-name');
-    // When a name is picked from autocomplete, try to auto-fill address from guest profile
+    _wwContribPickerInit();
+    // When a name is picked from the picker, try to auto-fill address from guest profile
     const nameInp=document.getElementById('ww-name');
     const addrInp=document.getElementById('ww-address');
     const addrHint=document.getElementById('ww-address-hint');

@@ -1,5 +1,26 @@
 // GUEST NAME AUTOCOMPLETE (reusable)
 // ══════════════════════════════════════════════
+// Shared by _guestNameList() below and the Wishing Well contributor picker
+// (_wwContribGroups() in website.js): "First1 & First2 Surname" when both
+// names share a trailing surname, else a plain "First1 Last1 & First2 Last2".
+function _pairName(n1, n2){
+  n1=(n1||'').trim(); n2=(n2||'').trim();
+  if(!n1||!n2) return n1||n2||'';
+  const w1=n1.split(/\s+/), w2=n2.split(/\s+/);
+  const minLen=Math.min(w1.length,w2.length);
+  let suffixLen=0;
+  for(let s=1;s<minLen;s++){
+    if(w1.slice(-s).join(' ').toLowerCase()===w2.slice(-s).join(' ').toLowerCase()) suffixLen=s;
+  }
+  if(suffixLen>0){
+    const f1=w1.slice(0,-suffixLen).join(' ');
+    const f2=w2.slice(0,-suffixLen).join(' ');
+    const sur=w1.slice(-suffixLen).join(' ');
+    return (f1+' & '+f2+' '+sur).trim();
+  }
+  return (n1+' & '+n2).trim();
+}
+
 function _guestNameList(){
   // Returns sorted array of plain-text names: individuals, couples, families/households
   const names=new Set();
@@ -16,51 +37,15 @@ function _guestNameList(){
     if(!g||!g.coupleId) return;
     const partner=(STATE.guests||[]).find(x=>x.id===g.coupleId);
     if(!partner) return;
-    if(g.id < g.coupleId){
-      const n1=(g.name||'').trim(), n2=(partner.name||'').trim();
-      if(!n1||!n2){ if(n1||n2) names.add(n1||n2); return; }
-      const w1=n1.split(/\s+/), w2=n2.split(/\s+/);
-      const minLen=Math.min(w1.length,w2.length);
-      let suffixLen=0;
-      for(let s=1;s<minLen;s++){
-        if(w1.slice(-s).join(' ').toLowerCase()===w2.slice(-s).join(' ').toLowerCase()) suffixLen=s;
-      }
-      let coupleName;
-      if(suffixLen>0){
-        const f1=w1.slice(0,-suffixLen).join(' ');
-        const f2=w2.slice(0,-suffixLen).join(' ');
-        const sur=w1.slice(-suffixLen).join(' ');
-        coupleName=f1+' & '+f2+' '+sur;
-      } else {
-        coupleName=n1+' & '+n2;
-      }
-      names.add(coupleName.trim());
-    }
+    if(g.id < g.coupleId){ const pn=_pairName(g.name, partner.name); if(pn) names.add(pn); }
   });
 
   // Named +1 pairs — "Host Name & +1 Name" (host→plusOneId link, one-directional)
   (STATE.guests||[]).forEach(g=>{
     if(!g||!g.plusOneId) return;
     const plus=(STATE.guests||[]).find(x=>x.id===g.plusOneId);
-    if(!plus) return;
-    const n1=(g.name||'').trim(), n2=(plus.name||'').trim();
-    if(!n1||!n2) return; // only add pair if +1 has a name
-    const w1=n1.split(/\s+/), w2=n2.split(/\s+/);
-    const minLen=Math.min(w1.length,w2.length);
-    let suffixLen=0;
-    for(let s=1;s<minLen;s++){
-      if(w1.slice(-s).join(' ').toLowerCase()===w2.slice(-s).join(' ').toLowerCase()) suffixLen=s;
-    }
-    let pairName;
-    if(suffixLen>0){
-      const f1=w1.slice(0,-suffixLen).join(' ');
-      const f2=w2.slice(0,-suffixLen).join(' ');
-      const sur=w1.slice(-suffixLen).join(' ');
-      pairName=f1+' & '+f2+' '+sur;
-    } else {
-      pairName=n1+' & '+n2;
-    }
-    names.add(pairName.trim());
+    if(!plus||!(g.name||'').trim()||!(plus.name||'').trim()) return; // only add pair once both are named
+    names.add(_pairName(g.name, plus.name));
   });
 
   // Families / households
@@ -161,7 +146,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v445';
+const APP_BUILD='v446';
 const APP_BUILD_DATE='2026-11-03';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
