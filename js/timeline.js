@@ -728,32 +728,27 @@ function _tlCatDelete(id){
 function timelineFormBody(it){
   it = it || { time:'', title:'', location:'', who:'', notes:'', cat:'reception' };
   return `
-  <div style="display:flex;flex-direction:column;gap:14px">
+  <div style="display:flex;flex-direction:column;gap:2px">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:-2px"><button type="button" onclick="_tlManageCats()" style="font-size:11px;color:var(--gold-deep);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Manage categories</button></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Time</label><input class="form-input" type="time" id="tl-time" value="${it.time||''}"/></div>
       <div class="form-group"><label class="form-label">Category</label>
-        <div style="position:relative">
-          <select class="form-input" id="tl-cat" style="appearance:none;-webkit-appearance:none;padding-right:32px">${tlCatOptions(it.cat||'reception')}</select>
-        </div>
-        <div style="margin-top:4px;text-align:right"><button type="button" onclick="_tlManageCats()" style="font-size:11px;color:var(--gold-deep);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Manage categories</button></div>
+        <select class="form-input" id="tl-cat" style="appearance:none;-webkit-appearance:none;padding-right:32px">${tlCatOptions(it.cat||'reception')}</select>
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Moment</label><input class="form-input" id="tl-title" placeholder="e.g. First Dance" value="${(it.title||'').replace(/"/g,'&quot;')}"/></div>
-    <div class="form-row">
+    <div class="form-group" style="margin-top:6px"><label class="form-label">Moment</label><input class="form-input" id="tl-title" placeholder="e.g. First Dance" value="${(it.title||'').replace(/"/g,'&quot;')}"/></div>
+    <div class="form-row" style="margin-top:6px">
       <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tl-loc" placeholder="e.g. Ballroom" value="${(it.location||'').replace(/"/g,'&quot;')}"/></div>
       <div class="form-group"><label class="form-label">Who / Vendor</label><input class="form-input" id="tl-who" placeholder="e.g. Photographer" value="${(it.who||'').replace(/"/g,'&quot;')}"/></div>
     </div>
-    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="tl-notes" rows="2" placeholder="Optional details…" style="resize:vertical">${(it.notes||'').replace(/</g,'&lt;')}</textarea></div>
-    <div class="form-group"><label class="form-label">Link a vendor</label>
-      <div style="position:relative">
-        <select class="form-input" id="tl-vendor" style="appearance:none;-webkit-appearance:none;padding-right:32px">
-          <option value="">— None —</option>
-          ${(STATE.vendors||[]).slice().sort((a,b)=>String(a.business||'').localeCompare(String(b.business||''))).map(v=>`<option value="${v.id}" ${it.vendorId===v.id?'selected':''}>${_escHtml(v.business||'Untitled vendor')}${v.category?' · '+_escHtml(v.category):''}</option>`).join('')}
-        </select>
-        
-      </div>
+    <div class="form-group" style="margin-top:6px"><label class="form-label">Notes</label><textarea class="form-input" id="tl-notes" rows="2" placeholder="Optional details..." style="resize:vertical">${(it.notes||'').replace(/</g,'&lt;')}</textarea></div>
+    <div class="form-group" style="margin-top:6px"><label class="form-label">Link a vendor</label>
+      <select class="form-input" id="tl-vendor" style="appearance:none;-webkit-appearance:none;padding-right:32px">
+        <option value="">— None —</option>
+        ${(STATE.vendors||[]).slice().sort((a,b)=>String(a.business||'').localeCompare(String(b.business||''))).map(v=>`<option value="${v.id}" ${it.vendorId===v.id?'selected':''}>${_escHtml(v.business||'Untitled vendor')}${v.category?' · '+_escHtml(v.category):''}</option>`).join('')}
+      </select>
     </div>
-    <div class="form-group">
+    <div class="form-group" style="margin-top:6px">
       <label class="form-label">Songs for this moment</label>
       <div id="tl-song-list">${(Array.isArray(it.songs)?it.songs:[]).map((s,i)=>tlSongBlockHtml(s,i+1)).join('')}</div>
       <button type="button" class="add-song-btn" onclick="tlAddSongBlock()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Add ${(Array.isArray(it.songs)&&it.songs.length)?'another ':''}song</button>
