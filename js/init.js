@@ -374,7 +374,25 @@ async function _showRsvpForm(coupleId){
     }
   }catch(e){ console.warn('RSVP data fetch failed',e); }
 
-  _wbSite();
+  // Check publish gate — unpublished sites are private to the owner. This link (?rsvp=uid)
+  // is the one actually sent to guests via invites (the {link} token resolves to it), so it
+  // needs the same gate _showPublicWeddingSite() applies to the #slug link — without this,
+  // "Site published" OFF only hid the site from the hash-based URL, not from the RSVP link
+  // guests are actually given, which still rendered the full site unconditionally.
+  const _isOwner = _sbSession && _sbSession.user && _sbSession.user.id === coupleId;
+  _wbSite(); // normalise STATE.website (ensures w.published defaults to false)
+  if(!STATE.website.published && !_isOwner){
+    const ev=STATE.event||{};
+    const names=[ev.partner1,ev.partner2].filter(Boolean).join(' & ')||'This wedding site';
+    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Inter',sans-serif;flex-direction:column;gap:18px;text-align:center;padding:40px;background:#FBF8F3">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="1.2" stroke-linecap="round" opacity=".7"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <div style="font-size:17px;font-weight:500;color:#4A3F35">${_escHtml(names)}</div>
+      <div style="font-size:13.5px;color:#9A8C7A;max-width:280px;line-height:1.6">This site is coming soon. Check back later!</div>
+    </div>`;
+    STATE.guests = _fullGuests;
+    return;
+  }
+
   _wbPublicOwnerUid = coupleId;
   const html=_wbBuildSite();
   _wbPublicOwnerUid = null;
