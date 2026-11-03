@@ -2175,12 +2175,20 @@ function _rsvpSetEmailNotif(on){
   saveToStorage();
 }
 function _rsvpSetLockEnabled(on){
+  if(on && _sbSession && typeof _uvRequirePaid==='function' && !_uvRequirePaid('rsvpLock')){
+    const cb=document.getElementById('rsvp-settings-lock-cb'); if(cb) cb.checked=false;
+    return;
+  }
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpLockEnabled=!!on;
   saveToStorage();
   if(!document.getElementById('rsvp-settings-overlay')) navigate('rsvp-mgr');
 }
 function _rsvpSetLockPassword(pw){
+  // The checkbox above defaults to ON for every account (see state.js), so the password
+  // field — not the checkbox — is what actually turns the lock on. Gate it here too, or a
+  // free account could type a password straight in without ever touching the checkbox.
+  if(pw && _sbSession && typeof _uvRequirePaid==='function' && !_uvRequirePaid('rsvpLock')) return;
   if(!STATE.settings) STATE.settings={};
   STATE.settings.rsvpLockPassword=String(pw||'');
   saveToStorage();

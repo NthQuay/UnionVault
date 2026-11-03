@@ -148,6 +148,11 @@ function _wbSite(){
   if(typeof w.brandOff!=='boolean') w.brandOff=false;
   // Free-tier users cannot hide the badge — force it back on
   if(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()) w.brandOff=false;
+  if(typeof w.passwordEnabled!=='boolean') w.passwordEnabled=false;
+  // Free-tier users cannot password-protect their site — force it back off, same as the
+  // badge above. This runs on every _wbSite() call (editor, preview, and the owner's own
+  // view of the live guest link), so a downgrade takes effect immediately for the owner.
+  if(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()) w.passwordEnabled=false;
   const t = w.theme;
   if(!t.page) t.page='#E8DDD0';
   if(!t.band) t.band='#DDD3C4';
@@ -1164,13 +1169,13 @@ function _wbThemeBody(){
         </span>
       </label>
     </div>
-    <div style="margin-bottom:14px">
+    <div style="margin-bottom:14px${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?';opacity:.55':''}">
       <div class="wb-slot-lbl" style="margin-bottom:6px">Website password</div>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
-        <input type="checkbox" ${w.passwordEnabled?'checked':''} onchange="_wbSetPassword(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+        <input type="checkbox" id="wb-adv-pw" ${w.passwordEnabled?'checked':''} onchange="_wbSetPassword(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
         Password protect website
       </label>
-      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:6px">Visitors must enter this password to view your wedding website.</div>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:6px">${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?'Upgrade to Full Access to use':'Visitors must enter this password to view your wedding website.'}</div>
       ${w.passwordEnabled?`<input type="text" class="form-input" value="${_escHtml(w.password||'')}" placeholder="Set a password" oninput="_wbSetPasswordValue(this.value)" style="font-size:13px;width:100%"/>`:''}
     </div>
     <div class="wb-slot-lbl" style="margin-bottom:6px">Custom CSS <span style="color:var(--red);font-weight:400;text-transform:none;letter-spacing:0">· advanced</span></div>
@@ -1331,6 +1336,10 @@ function _wbCssClear(){
   _wbRepaintTheme();
 }
 function _wbSetPassword(on){
+  if(on && _sbSession && typeof _uvRequirePaid==='function' && !_uvRequirePaid('wbPassword')){
+    const cb=document.getElementById('wb-adv-pw')||document.getElementById('wb-adv-pw2'); if(cb) cb.checked=false;
+    return;
+  }
   const w=_wbSite();
   w.passwordEnabled=!!on;
   saveToStorage();
@@ -1575,13 +1584,13 @@ function _wbRepaintTheme(){
         </span>
       </label>
     </div>
-    <div style="margin-bottom:14px">
+    <div style="margin-bottom:14px${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?';opacity:.55':''}">
       <div class="wb-slot-lbl" style="margin-bottom:6px">Website password</div>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:6px">
-        <input type="checkbox" ${w.passwordEnabled?'checked':''} onchange="_wbSetPassword(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+        <input type="checkbox" id="wb-adv-pw2" ${w.passwordEnabled?'checked':''} onchange="_wbSetPassword(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
         Password protect website
       </label>
-      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:6px">Visitors must enter this password to view your wedding website.</div>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:6px">${_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()?'Upgrade to Full Access to use':'Visitors must enter this password to view your wedding website.'}</div>
       ${w.passwordEnabled?`<input type="text" class="form-input" value="${_escHtml(w.password||'')}" placeholder="Set a password" oninput="_wbSetPasswordValue(this.value)" style="font-size:13px;width:100%"/>`:''}
     </div>
     <div class="wb-slot-lbl" style="margin-bottom:6px">Custom CSS <span style="color:var(--red);font-weight:400;text-transform:none;letter-spacing:0">· advanced</span></div>
@@ -4748,7 +4757,10 @@ function _wbBuildSite(forDownload){
   const _fNotes=(f=>{if(!f)return{show:false};return{show:!!f.show};})(_flds.notes);
   const _uvCustomFields=(STATE.settings.rsvpCustomFields||[]).filter(f=>f.show!==false);
   const _uvCustomJson=JSON.stringify(_uvCustomFields.map(f=>({id:f.id,l:f.label||'',r:!!f.required}))).replace(/'/g,'&#39;');
-  const _uvLockEnabled=!!(STATE.settings&&STATE.settings.rsvpLockEnabled)&&!!(STATE.settings.rsvpLockPassword);
+  // Free-tier owners cannot lock the RSVP form — same safety net as w.passwordEnabled
+  // above, in case a password was set while on a paid plan and the account later downgraded.
+  const _uvLockPaidOk = !(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid());
+  const _uvLockEnabled=!!(STATE.settings&&STATE.settings.rsvpLockEnabled)&&!!(STATE.settings.rsvpLockPassword)&&_uvLockPaidOk;
   const _uvLockPw=_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'');
   const _uvDietaryOn=!(_uvRfields.dietary===false);
   const _uvHasStep2=_uvMealOn||_uvDietaryOn;
