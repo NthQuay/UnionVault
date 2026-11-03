@@ -1199,6 +1199,17 @@ function _orsvpRender(){
     </div>`;
   }
   const _pdi=function(d){if(d&&d.startsWith('other:'))return'Other'+(d.slice(6)?' ('+d.slice(6)+')':'');if(d&&d.startsWith('allergy:'))return'Allergy'+(d.slice(8)?': '+d.slice(8):'');const m={vegetarian:'Vegetarian',pescatarian:'Pescatarian',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose int.',gluten:'Gluten int.',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut allergy'};return m[d]||d;};
+  // A submitted row can carry both the bare checkbox token ('allergy') and its free-text
+  // detail ('allergy:<note>') as two separate array entries — merge them into one token
+  // (detailed when a note was given) so the card/list views render a single chip instead
+  // of a duplicate bare one next to the detailed one.
+  const _mergeDietItems=function(items){
+    const detail={};
+    items.forEach(d=>{ if(d&&d.startsWith('allergy:'))detail.allergy=d.slice(8); else if(d&&d.startsWith('other:'))detail.other=d.slice(6); });
+    const seen=new Set();const base=[];
+    items.forEach(d=>{ if(!d||d.startsWith('allergy:')||d.startsWith('other:'))return; if(seen.has(d))return; seen.add(d); base.push(d); });
+    return base.map(d=>{ if(d==='allergy'&&detail.allergy)return'allergy:'+detail.allergy; if(d==='other'&&detail.other)return'other:'+detail.other; return d; });
+  };
   const _fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
   const _badge=st=>st==='yes'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(74,124,89,.1);color:var(--green);font-size:11px;font-weight:600;white-space:nowrap">✓ Attending</span>`:st==='no'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(192,57,43,.07);color:var(--red);font-size:11px;font-weight:600;white-space:nowrap">✗ Declined</span>`:'';
 
@@ -1223,18 +1234,20 @@ function _orsvpRender(){
     if(view==='card'){
       const memberRows=vis.map(m=>{
         const row=m._rows[0]||{};
-        const dietItems=Array.isArray(row.dietary)?row.dietary:[];
-        const dietHtml=dietItems.length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('')}</div>`:'';
-        const mealHtml=row.meal?`<span style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink);margin-top:4px">${row.meal}</span>`:'';
-        const hcHtml=row.high_chair?`<span style="display:inline-block;font-size:10.5px;color:var(--muted);margin-top:4px">🪑 High chair</span>`:'';
-        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">
-          <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink)">${m.name}</div>${mealHtml}${hcHtml}${dietHtml}</div>
-          <div style="flex-shrink:0;padding-top:1px">${_badge(row.attending)}</div>
+        const dietItems=_mergeDietItems(Array.isArray(row.dietary)?row.dietary:[]);
+        const dietChips=dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('');
+        const mealHtml=row.meal?`<span style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
+        const hcHtml=row.high_chair?`<span style="display:inline-block;font-size:10.5px;color:var(--muted)">🪑 High chair</span>`:'';
+        return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border)">
+          <span style="font-size:13px;font-weight:500;color:var(--ink);flex-shrink:0;margin-right:2px">${m.name}</span>
+          ${mealHtml}${hcHtml}${dietChips}
+          <span style="flex:1;min-width:8px"></span>
+          <span style="flex-shrink:0">${_badge(row.attending)}</span>
         </div>`;
       }).join('');
       const c=grp.contact;
       const ci=[c.email?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.email}</span>`:'',c.phone?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0">${c.phone}</span>`:'',c.address?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.address}</span>`:''].filter(Boolean);
-      const contactHtml=ci.length?`<div style="background:var(--surface);border-top:1px solid var(--border);padding:9px 14px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0"><span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span>${ci.join('<span style="color:var(--border);flex-shrink:0">·</span>')}</div>`:'';
+      const contactHtml=ci.length?`<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0"><span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span>${ci.join('<span style="color:var(--border);flex-shrink:0">·</span>')}</div>`:'';
       const msgHtml=grp.message?`<div style="border-top:1px solid var(--border);padding:9px 14px;font-size:12px;color:var(--muted);font-style:italic">"${grp.message}"</div>`:'';
       const histSection=grp.hasHistory?`<div id="${histId}" hidden style="border-top:1px solid var(--border);padding:10px 14px"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Submission history</div>${histRowsHtml}</div>`:'';
       html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
@@ -1243,14 +1256,14 @@ function _orsvpRender(){
           <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${grp.householdName}</div><div style="font-size:11.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${summaryLine}</div></div>
           <div style="font-size:11px;color:var(--muted);flex-shrink:0;display:flex;align-items:center;gap:6px;white-space:nowrap">${histBtn}<span>${_fmt(grp.submittedDate)}</span></div>
         </div>
-        ${memberRows}${contactHtml}${msgHtml}${histSection}
+        ${contactHtml}${memberRows}${msgHtml}${histSection}
       </div>`;
     } else {
       // List view
       const memberRows=vis.map(m=>{
         const row=m._rows[0]||{};
-        const dietItems=Array.isArray(row.dietary)?row.dietary:[];
-        const chips=dietItems.length?dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 6px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join(''):'';
+        const dietItems=_mergeDietItems(Array.isArray(row.dietary)?row.dietary:[]);
+        const chips=dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 6px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('');
         const meal=row.meal?`<span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
         return `<div style="display:flex;align-items:center;gap:8px;padding:7px 14px 7px 46px;border-bottom:1px solid var(--border);flex-wrap:wrap">
           <span style="font-size:12.5px;font-weight:500;color:var(--ink);flex-shrink:0">${m.name}</span>
