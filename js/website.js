@@ -4747,7 +4747,9 @@ function _wbBuildSite(forDownload){
     coupleId:_uvCoupleId,
     coupleNames:_wbCouple()||'',
     weddingDate:(STATE.event&&STATE.event.date)||'',
+    weddingTime:(STATE.event&&STATE.event.time)||'',
     venue:[STATE.event&&STATE.event.venue,STATE.event&&STATE.event.venueAddress].filter(Boolean).join(', '),
+    siteUrl:_wbSiteUrl(),
     icsText:_uvIcsText
   }).replace(/<\/script/gi,'<\\/script');
   const _uvMealOn=!!(STATE.settings&&STATE.settings.mealChoiceOn)&&Array.isArray(STATE.settings.mealOptions)&&(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()).length>0;
@@ -5479,7 +5481,7 @@ function _wbBuildSite(forDownload){
         if(ecb2&&ecb2.checked&&email&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
           var allDietary=[];
           payloads.forEach(function(p){if(p.dietary)allDietary=allDietary.concat(p.dietary);});
-          fetch(_su+'/functions/v1/rsvp-confirm-email',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_uvConfirmCtx.coupleId,couple_names:_uvConfirmCtx.coupleNames,wedding_date:_uvConfirmCtx.weddingDate,venue:_uvConfirmCtx.venue,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending};}),dietary:allDietary,ics_text:_uvConfirmCtx.icsText||null})}).catch(function(){});
+          fetch(_su+'/functions/v1/rsvp-confirm-email',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_uvConfirmCtx.coupleId,couple_names:_uvConfirmCtx.coupleNames,wedding_date:_uvConfirmCtx.weddingDate,wedding_time:_uvConfirmCtx.weddingTime,venue:_uvConfirmCtx.venue,site_url:_uvConfirmCtx.siteUrl,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending};}),dietary:allDietary,ics_text:_uvConfirmCtx.icsText||null})}).catch(function(){});
         }
 
         _rfWizPanels.forEach(function(pid){var p=document.getElementById('rf-'+pid);if(p)p.classList.remove('active');});

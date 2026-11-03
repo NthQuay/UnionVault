@@ -32,7 +32,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const { to, couple_id, couple_names, wedding_date, venue, members, dietary, ics_text } = await req.json();
+    const { to, couple_id, couple_names, wedding_date, wedding_time, venue, site_url, members, dietary, ics_text } = await req.json();
 
     const toEmail = EMAIL_RE.test(String(to || "")) ? String(to).trim() : "";
     if (!toEmail) return json(400, { error: "missing or invalid 'to'" });
@@ -77,12 +77,16 @@ Deno.serve(async (req: Request) => {
     if (dietList.length) lines.push(`Dietary notes: ${dietList.join(", ")}.`);
 
     if (wedding_date) {
-      const whenWhere = [fmtDate(String(wedding_date)), venue || null].filter(Boolean).join(" at ");
+      const dateTime = [fmtDate(String(wedding_date)), wedding_time || null].filter(Boolean).join(" at ");
+      const whenWhere = [dateTime, venue || null].filter(Boolean).join(" at ");
       lines.push(`The wedding is ${whenWhere}.`);
     }
 
     const hasIcs = typeof ics_text === "string" && ics_text.trim().length > 0;
     if (hasIcs) lines.push("We've attached a calendar invite so it's easy to save the date.");
+
+    const siteUrl = /^https?:\/\//i.test(String(site_url || "")) ? String(site_url).trim() : "";
+    if (siteUrl) lines.push(`You can revisit the wedding website any time here: ${siteUrl}`);
 
     lines.push("If anything above isn't right, just reply to this email and let them know.");
 
