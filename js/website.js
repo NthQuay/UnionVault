@@ -490,6 +490,75 @@ function _wbImgCount(key){
   },0);
 }
 
+// ── Website top-bar button fitter (collapse labels → icons when narrow) ──
+// Mirrors the Seating/Vendors fitters: measure the group's natural label-shown width on
+// an offscreen clone, compare to the topbar's free space (reading the title block's real
+// min-width, not its current — possibly already-crushed — rendered width), and toggle
+// .icons-only with hysteresis so it can't flicker. Without this the QR Code/Preview
+// buttons never shrink and the page title truncates behind them instead.
+function _fitWebsiteBtns(){
+  const group=document.getElementById('wb-btn-group');
+  const tb=document.getElementById('topbar-actions');
+  if(!group||!tb||!group.isConnected) return;
+  const header=tb.parentElement;
+  if(!header) return;
+  const wasIcons=group.classList.contains('icons-only');
+  const cs=getComputedStyle(group);
+  const gap=parseFloat(cs.columnGap||cs.gap)||5;
+  const clone=group.cloneNode(true);
+  clone.classList.remove('icons-only');
+  clone.removeAttribute('id');
+  clone.style.cssText += ';position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;display:inline-flex';
+  group.parentElement.appendChild(clone);
+  let natural=0; const btns=Array.from(clone.children);
+  btns.forEach(b=>natural+=b.scrollWidth);
+  natural+=gap*Math.max(0,btns.length-1);
+  clone.remove();
+  const hcs=getComputedStyle(header);
+  const hGap=parseFloat(hcs.columnGap||hcs.gap)||12;
+  const padX=(parseFloat(hcs.paddingLeft)||0)+(parseFloat(hcs.paddingRight)||0);
+  let used=0, kids=Array.from(header.children);
+  kids.forEach(ch=>{
+    if(ch===tb) return;
+    const mw=parseFloat(getComputedStyle(ch).minWidth)||0;
+    used+= mw>0 ? mw : ch.getBoundingClientRect().width;
+  });
+  const free=header.clientWidth - padX - used - hGap*Math.max(0,kids.length-1);
+  const want = wasIcons ? (natural > free-10+1) : (natural > free+1);
+  group.classList.toggle('icons-only', want);
+}
+let _wbBtnRO=null, _wbBtnRoLastW=new WeakMap(), _fitWbBtnsPending=null, _fitWbBtnsSettling=false;
+function _fitWebsiteBtnsScheduled(){
+  if(_fitWbBtnsPending) return;
+  _fitWbBtnsPending=requestAnimationFrame(()=>{
+    _fitWbBtnsPending=null;
+    _fitWbBtnsSettling=true;
+    try{ _fitWebsiteBtns(); }
+    finally{ setTimeout(()=>{ _fitWbBtnsSettling=false; }, 0); }
+  });
+}
+function _ensureWebsiteBtnObserver(){
+  if(typeof ResizeObserver!=='function') return;
+  if(_wbBtnRO){ _wbBtnRO.disconnect(); }
+  _wbBtnRO=new ResizeObserver((entries)=>{
+    if(!document.getElementById('wb-btn-group')) return;
+    if(_fitWbBtnsSettling || _fitWbBtnsPending) return;
+    let meaningful=false;
+    for(const e of entries){
+      const w=e.contentRect.width;
+      const prev=_wbBtnRoLastW.get(e.target);
+      if(prev===undefined || Math.abs(w-prev)>=6){ meaningful=true; }
+      _wbBtnRoLastW.set(e.target, w);
+    }
+    if(!meaningful) return;
+    _fitWebsiteBtnsScheduled();
+  });
+  const tb=document.getElementById('topbar-actions');
+  const header=tb&&tb.parentElement;
+  if(header) _wbBtnRO.observe(header);
+}
+window.addEventListener('resize', ()=>{ if(document.getElementById('wb-btn-group')) _fitWebsiteBtns(); });
+
 // ── The builder page ──
 function renderWebsite(c, actions){
   const w = _wbSite();
@@ -498,10 +567,11 @@ function renderWebsite(c, actions){
   _wbQrBuilt=false; // reset so popover rebuilds with current slug on next open
   const wSlug = (w.slug||'our-wedding');
   actions.innerHTML = `
+    <div id="wb-btn-group" class="gbtn-group" style="display:inline-flex;align-items:center;gap:5px">
     <div style="position:relative;display:inline-block">
-      <button id="wb-qr-btn" class="btn btn-outline btn-sm" onclick="_wbQrToggle(event)" style="display:inline-flex;align-items:center;gap:6px" title="QR Code &amp; share link">
+      <button id="wb-qr-btn" class="btn btn-outline btn-sm gbtn" onclick="_wbQrToggle(event)" style="display:inline-flex;align-items:center;gap:6px" title="QR Code &amp; share link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="10" y="10" width="2" height="2"/><rect x="14" y="14" width="2" height="2"/><rect x="18" y="14" width="2" height="2"/><rect x="14" y="18" width="2" height="2"/><rect x="18" y="18" width="2" height="2"/><rect x="10" y="14" width="2" height="2"/><rect x="10" y="18" width="2" height="2"/></svg>
-        QR Code
+        <span class="gbtn-label">QR Code</span>
       </button>
       <div id="wb-qr-pop" hidden style="position:absolute;right:0;top:calc(100% + 8px);z-index:9999;width:260px;background:var(--cream);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.16);padding:16px;display:flex;flex-direction:column;gap:12px">
         <div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Wedding Website QR</div>
@@ -524,8 +594,10 @@ function renderWebsite(c, actions){
         </div>
       </div>
     </div>
-    <button class="btn btn-outline btn-sm" onclick="openWbPreview()" style="display:inline-flex;align-items:center;gap:6px">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>`;
+    <button class="btn btn-outline btn-sm gbtn" onclick="openWbPreview()" title="Preview your website" style="display:inline-flex;align-items:center;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="gbtn-label">Preview</span></button>
+    </div>`;
+  setTimeout(()=>{ _ensureWebsiteBtnObserver(); requestAnimationFrame(_fitWebsiteBtns); }, 0);
 
   const presetLabel = (WB_PRESETS[t.preset]||{}).label || 'Custom';
   const fontLabel = (t.heading||'').replace(/['"]/g,'').split(',')[0];

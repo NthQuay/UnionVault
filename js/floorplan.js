@@ -1924,7 +1924,7 @@ function renderSeatingFloor(c,actions){
   actions.innerHTML=`<div id="seating-btn-group" class="gbtn-group${_seatIconsOnly?' icons-only':''}" style="display:inline-flex;align-items:center;justify-content:flex-end;gap:5px">
       <button class="btn btn-outline btn-sm gbtn" onclick="openAddTable()" title="Add Table" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        <span class="gbtn-label gbtn-label-long">Add Table</span><span class="gbtn-label gbtn-label-short">+ Table</span>
+        <span class="gbtn-label gbtn-label-long">Add Table</span><span class="gbtn-label gbtn-label-short">Table</span>
       </button>
       <button class="btn btn-outline btn-sm gbtn" onclick="openSeatingPrintPreview()" title="Export or print the seating plan — PDF, PNG image, CSV spreadsheet, or send to a printer" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
