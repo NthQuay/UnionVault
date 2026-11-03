@@ -105,7 +105,7 @@ Deno.serve(async (req: Request) => {
       arr.length <= 1 ? (arr[0] || "") : arr.slice(0, -1).join(", ") + " & " + arr[arr.length - 1];
 
     const lines: string[] = [`Thanks for RSVPing to ${coupleNames}'s wedding! Here's what we've got:`];
-    if (attendingNames.length) lines.push(`${joinN(attendingNames)} confirmed attending.`);
+    if (attendingNames.length) lines.push(`${joinN(attendingNames)} confirmed as attending.`);
     if (declinedNames.length) lines.push(`${joinN(declinedNames)} let ${coupleNames} know they can't make it.`);
 
     // Each member can carry both the bare checkbox token ("allergy") and its free-text

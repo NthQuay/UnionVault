@@ -56,7 +56,13 @@ Deno.serve(async (req: Request) => {
       ? `We can't wait to celebrate with you!\nYou can send your selected gift amount of $${amtNum.toFixed(2)} using the payment info below.`
       : `We can't wait to celebrate with you!\nYou can find our payment info below.`;
 
-    const payLines = payRows.map(([label, value]) => `${label}: ${value}`).join("\n");
+    // Extra blank line after the PayID, Bank, and Cash rows, so the list reads as
+    // grouped blocks (PayID / account+bank / paypal+reference+cash / cheque) instead
+    // of one unbroken list.
+    const GROUP_BREAK_AFTER = new Set(["PayID", "Bank", "Cash"]);
+    const payLines = payRows
+      .map(([label, value]) => `${label}: ${value}${GROUP_BREAK_AFTER.has(label) ? "\n" : ""}`)
+      .join("\n");
     const text = [
       amountBlock,
       `Here are ${coupleNames}'s wishing well details:`,

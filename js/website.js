@@ -4532,7 +4532,7 @@ function _wbBuildSite(forDownload){
                   (ww.bankBsb&&ww.bankAcc)?['Bank', 'BSB '+ww.bankBsb+' · Acc '+ww.bankAcc]:null,
                   ww.paypal?['PayPal', ww.paypal]:null,
                   ww.reference?['Reference', ww.reference]:null,
-                  ww.acceptCash?['Cash', 'Accepted in person']:null,
+                  ww.acceptCash?['Cash', 'Accepted in person on the day']:null,
                   ww.acceptCheque?['Make cheque out to', ww.chequeTo||'(ask the couple)']:null ].filter(Boolean);
       const payNote=(ww.payNote||'').trim()||'We greatly appreciate your generosity!';
       const wwCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
