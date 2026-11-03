@@ -5054,7 +5054,7 @@ function _wbBuildSite(forDownload){
   // Same placeholder format as _plusOneHostLabel/_plusOnePlaceholderHost in the admin
   // app's js/import.js — duplicated here because this embedded script is the standalone
   // public site's own page and has no access to the admin app's scripts.
-  function _uvIsPlaceholderName(n){return /^\+\s*1\s*\((.+)\)\s*$/.test(String(n||'').trim());}
+  function _uvIsPlaceholderName(n){return /^\\+\\s*1\\s*\\((.+)\\)\\s*$/.test(String(n||'').trim());}
 
   /* ── "Can't find your name? Contact us" — a guest who can't find their
      invite sends a short message, which emails the couple (reply-to the
