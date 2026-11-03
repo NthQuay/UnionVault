@@ -17,7 +17,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const { to, couple_id, couple_names, pay } = await req.json();
+    const { to, couple_id, couple_names, pay, amount } = await req.json();
 
     const toEmail = EMAIL_RE.test(String(to || "")) ? String(to).trim() : "";
     if (!toEmail) return json(400, { error: "missing or invalid 'to'" });
@@ -50,12 +50,16 @@ Deno.serve(async (req: Request) => {
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) return json(500, { error: "RESEND_API_KEY not set" });
 
+    const amtNum = Number(amount);
+    const amountLine = Number.isFinite(amtNum) && amtNum > 0 ? `You pledged $${amtNum.toFixed(2)}.` : "";
+
     const payLines = payRows.map(([label, value]) => `${label}: ${value}`).join("\n");
     const text = [
       `Here are ${coupleNames}'s wishing well details:`,
+      amountLine,
       payLines,
       "Thanks so much for your generosity!",
-    ].join("\n\n");
+    ].filter(Boolean).join("\n\n");
     const subject = `${coupleNames}'s wishing well details`;
     const html = brandedHtml({ kicker: "Wishing well details", title: `${coupleNames}'s gift details`, text });
 

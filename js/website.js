@@ -4528,9 +4528,11 @@ function _wbBuildSite(forDownload){
       if(!ww.enabled) return '';
       const suggested=(ww.suggested||[]).filter(n=>Number(n)>0);
       const pay=[ ww.payId?['PayID', ww.payId]:null,
+                  ww.accountName?['Account name', ww.accountName]:null,
                   (ww.bankBsb&&ww.bankAcc)?['Bank', 'BSB '+ww.bankBsb+' · Acc '+ww.bankAcc]:null,
                   ww.paypal?['PayPal', ww.paypal]:null,
                   ww.reference?['Reference', ww.reference]:null ].filter(Boolean);
+      const payNote=(ww.payNote||'').trim()||'We greatly appreciate your generosity!';
       const wwCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
 
       const chips=suggested.length?`<div class="ww-chips" id="ww-chips">${suggested.map(n=>`<button class="ww-chip" data-amt="${n}" onclick="window._wwPick(this)">${fmt(Number(n))}</button>`).join('')}<button class="ww-chip" data-amt="other" onclick="window._wwPick(this)">Other</button></div>`:'';
@@ -4564,9 +4566,9 @@ function _wbBuildSite(forDownload){
       </div>
       <div id="ww-pay" style="display:none">
         <div class="ww-pay-box">${payHtml}</div>
-        <p class="sub" style="text-align:center;margin-top:12px">Please transfer the amount above using the details shown.</p>
+        <p class="sub" style="text-align:center;margin-top:12px">${_escHtml(payNote)}</p>
         <div style="text-align:center;margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-          ${pay.length?`<button id="ww-email-btn" class="ww-store-btn" onclick="window._wwOpenEmailPopup()" style="background:none;cursor:pointer;font-family:inherit">Email me these details →</button>`:''}
+          ${pay.length?`<button id="ww-email-btn" class="ww-store-btn" onclick="window._wwOpenEmailPopup()" style="background:none;cursor:pointer;font-family:inherit"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg> Email me these details</button>`:''}
           <button id="ww-pay-next-btn" class="ww-store-btn" onclick="window._wwGoToThanks()" style="background:none;cursor:pointer;font-family:inherit">Next →</button>
         </div>
       </div>
@@ -4648,7 +4650,7 @@ function _wbBuildSite(forDownload){
     if(errEl)errEl.textContent='';
     var btn=document.getElementById('ww-email-send');
     if(btn){btn.disabled=true;btn.textContent='Sending\\u2026';}
-    fetch(_su+'/functions/v1/ww-email-details',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_cid,couple_names:_wwCoupleNames,pay:_wwPayRows})})
+    fetch(_su+'/functions/v1/ww-email-details',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_cid,couple_names:_wwCoupleNames,pay:_wwPayRows,amount:sel})})
     .then(function(r){return r.json();})
     .then(function(){
       window._wwCloseEmailPopup();
@@ -5534,9 +5536,7 @@ function _wbBuildSite(forDownload){
 
         var ecb2=document.getElementById('f-email-copy');
         if(ecb2&&ecb2.checked&&email&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
-          var allDietary=[];
-          payloads.forEach(function(p){if(p.dietary)allDietary=allDietary.concat(p.dietary);});
-          fetch(_su+'/functions/v1/rsvp-confirm-email',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_uvConfirmCtx.coupleId,couple_names:_uvConfirmCtx.coupleNames,wedding_date:_uvConfirmCtx.weddingDate,wedding_time:_uvConfirmCtx.weddingTime,venue:_uvConfirmCtx.venue,site_url:_uvConfirmCtx.siteUrl,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending};}),dietary:allDietary,ics_text:_uvConfirmCtx.icsText||null})}).catch(function(){});
+          fetch(_su+'/functions/v1/rsvp-confirm-email',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_uvConfirmCtx.coupleId,couple_names:_uvConfirmCtx.coupleNames,wedding_date:_uvConfirmCtx.weddingDate,wedding_time:_uvConfirmCtx.weddingTime,venue:_uvConfirmCtx.venue,site_url:_uvConfirmCtx.siteUrl,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending,dietary:p.dietary||[]};}),ics_text:_uvConfirmCtx.icsText||null})}).catch(function(){});
         }
 
         _rfWizPanels.forEach(function(pid){var p=document.getElementById('rf-'+pid);if(p)p.classList.remove('active');});
@@ -5545,16 +5545,17 @@ function _wbBuildSite(forDownload){
         var sd=document.getElementById('rf-step-done');
         if(sd){
           function joinN(arr){if(!arr.length)return '';if(arr.length===1)return arr[0];return arr.slice(0,-1).join(', ')+' & '+arr[arr.length-1];}
-          var yNames=group.filter(function(m){return m.att===true;}).map(function(m){return m.isPlus1?(plus1Names[m.id]||'Guest').trim():m.n;});
-          var noNames=group.filter(function(m){return m.att===false&&!m.isPlus1;}).map(function(m){return m.n;});
+          function firstName(n){var t=(n||'').trim();return t?t.split(/\\s+/)[0]:n;}
+          var yNames=group.filter(function(m){return m.att===true;}).map(function(m){return firstName(m.isPlus1?(plus1Names[m.id]||'Guest').trim():m.n);});
+          var noNames=group.filter(function(m){return m.att===false&&!m.isPlus1;}).map(function(m){return firstName(m.n);});
           var wDateStr=_gd?_gd.dataset.wdate||'':'';
           var wDate=wDateStr?new Date(wDateStr):null;
           function ord(n2){var s2=['th','st','nd','rd'],v2=n2%100;return n2+(s2[(v2-20)%10]||s2[v2]||s2[0]);}
           var dayMonth=wDate&&!isNaN(wDate.getTime())?'the '+ord(wDate.getDate())+' of '+wDate.toLocaleString('default',{month:'long'}):'the big day';
           var heading=anyYes?'See you there!':'Thanks for letting us know.';
           var msg='';
-          if(yNames.length)msg+='We\\'ll see '+joinN(yNames)+' on '+dayMonth+'!';
-          if(noNames.length)msg+=(msg?' ':'')+'\\'We\\'ll miss '+joinN(noNames)+'.';
+          if(yNames.length)msg+='Thank you '+joinN(yNames)+' for your RSVP. We\\'ll see you on '+dayMonth+'!';
+          if(noNames.length)msg+=(msg?' ':'')+'We\\'ll miss '+joinN(noNames)+'.';
           sd.innerHTML='<div class="rf-msg-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${_uvPal.accent}" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><div style="font-size:17px;font-weight:600;margin:10px 0 6px;color:${t2.heading}">'+heading+'</div><div style="font-size:13.5px;line-height:1.5;opacity:.8">'+msg+'</div></div>';
           sd.classList.add('active');
         }
@@ -7261,12 +7262,14 @@ function openWwSettings(){
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Payment details</div>
         <div style="display:flex;flex-direction:column;gap:12px">
           <div><label class="form-label">PayID</label><input type="text" id="ww-s-payid" class="form-input" placeholder="email or phone" value="${_wwEsc(ww.payId)}"/></div>
+          <div><label class="form-label">Account name</label><input type="text" id="ww-s-accname" class="form-input" placeholder="Jane Smith" value="${_wwEsc(ww.accountName)}"/></div>
           <div style="display:flex;gap:12px">
             <div style="flex:1"><label class="form-label">BSB</label><input type="text" id="ww-s-bsb" class="form-input" placeholder="123-456" value="${_wwEsc(ww.bankBsb)}"/></div>
             <div style="flex:1.4"><label class="form-label">Account number</label><input type="text" id="ww-s-acc" class="form-input" placeholder="1234 5678" value="${_wwEsc(ww.bankAcc)}"/></div>
           </div>
           <div><label class="form-label">PayPal link <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" id="ww-s-paypal" class="form-input" placeholder="paypal.me/yourname" value="${_wwEsc(ww.paypal)}"/></div>
           <div><label class="form-label">Payment reference</label><input type="text" id="ww-s-ref" class="form-input" placeholder="Your name" value="${_wwEsc(ww.reference)}"/></div>
+          <div><label class="form-label">Note shown under the payment details</label><input type="text" id="ww-s-paynote" class="form-input" placeholder="We greatly appreciate your generosity!" value="${_wwEsc(ww.payNote)}"/></div>
         </div>
       </div>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer;border-top:1px solid var(--border);padding-top:14px">
@@ -7283,10 +7286,12 @@ function saveWwSettings(){
   ww.message = document.getElementById('ww-s-message').value||'';
   ww.closing = document.getElementById('ww-s-closing').value||'';
   ww.payId = (document.getElementById('ww-s-payid').value||'').trim();
+  ww.accountName = (document.getElementById('ww-s-accname').value||'').trim();
   ww.bankBsb = (document.getElementById('ww-s-bsb').value||'').trim();
   ww.bankAcc = (document.getElementById('ww-s-acc').value||'').trim();
   ww.paypal = (document.getElementById('ww-s-paypal').value||'').trim();
   ww.reference = (document.getElementById('ww-s-ref').value||'').trim();
+  ww.payNote = (document.getElementById('ww-s-paynote').value||'').trim();
   STATE.settings.showWishingWellOnDash = document.getElementById('ww-s-dash').checked;
   saveToStorage();
   closeModalDirect();

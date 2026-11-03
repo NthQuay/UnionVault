@@ -1208,6 +1208,10 @@ function _orsvpRender(){
     items.forEach(d=>{ if(d&&d.startsWith('allergy:'))detail.allergy=d.slice(8); else if(d&&d.startsWith('other:'))detail.other=d.slice(6); });
     const seen=new Set();const base=[];
     items.forEach(d=>{ if(!d||d.startsWith('allergy:')||d.startsWith('other:'))return; if(seen.has(d))return; seen.add(d); base.push(d); });
+    // A detail can in principle arrive with no matching bare token (e.g. a legacy row) —
+    // don't let it silently vanish, surface it as its own entry.
+    if(detail.allergy&&!base.includes('allergy'))base.push('allergy');
+    if(detail.other&&!base.includes('other'))base.push('other');
     return base.map(d=>{ if(d==='allergy'&&detail.allergy)return'allergy:'+detail.allergy; if(d==='other'&&detail.other)return'other:'+detail.other; return d; });
   };
   const _fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
@@ -1238,11 +1242,12 @@ function _orsvpRender(){
         const dietChips=dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('');
         const mealHtml=row.meal?`<span style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
         const hcHtml=row.high_chair?`<span style="display:inline-block;font-size:10.5px;color:var(--muted)">🪑 High chair</span>`:'';
-        return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border)">
-          <span style="font-size:13px;font-weight:500;color:var(--ink);flex-shrink:0;margin-right:2px">${m.name}</span>
-          ${mealHtml}${hcHtml}${dietChips}
-          <span style="flex:1;min-width:8px"></span>
-          <span style="flex-shrink:0">${_badge(row.attending)}</span>
+        return `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0">
+            <span style="font-size:13px;font-weight:500;color:var(--ink);flex-shrink:0;margin-right:2px">${m.name}</span>
+            ${mealHtml}${hcHtml}${dietChips}
+          </div>
+          <span style="flex-shrink:0;padding-top:1px">${_badge(row.attending)}</span>
         </div>`;
       }).join('');
       const c=grp.contact;
@@ -1265,7 +1270,7 @@ function _orsvpRender(){
         const dietItems=_mergeDietItems(Array.isArray(row.dietary)?row.dietary:[]);
         const chips=dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 6px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('');
         const meal=row.meal?`<span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
-        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 14px 7px 46px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+        return `<div class="orsvp-lv-member" style="display:flex;align-items:center;gap:8px;padding:7px 14px 7px 46px;border-bottom:1px solid var(--border);flex-wrap:wrap">
           <span style="font-size:12.5px;font-weight:500;color:var(--ink);flex-shrink:0">${m.name}</span>
           ${_badge(row.attending)}
           ${meal}
@@ -1273,12 +1278,12 @@ function _orsvpRender(){
         </div>`;
       }).join('');
       const c=grp.contact;const ci=[c.email,c.phone,c.address].filter(Boolean);
-      const contactRow=ci.length?`<div style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 14px 7px calc(14px + 28px + 8px);font-size:11px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border)">${ci.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
-      const histSection=grp.hasHistory?`<div id="${histId}" hidden style="padding:6px 14px 8px 46px;border-bottom:1px solid var(--border)"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">History</div>${histRowsHtml}</div>`:'';
+      const contactRow=ci.length?`<div class="orsvp-lv-contact" style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 14px 7px calc(14px + 28px + 8px);font-size:11px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border)">${ci.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
+      const histSection=grp.hasHistory?`<div id="${histId}" hidden class="orsvp-lv-hist" style="padding:6px 14px 8px 46px;border-bottom:1px solid var(--border)"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">History</div>${histRowsHtml}</div>`:'';
       html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:0">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 14px ${ci.length?'4px':'9px'};${ci.length?'':'border-bottom:1px solid var(--border);'}background:var(--surface)">
           <div style="width:28px;height:28px;border-radius:50%;background:var(--cream);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${grp.initials}</div>
-          <div style="flex:1;min-width:0"><span style="font-size:13px;font-weight:600;color:var(--ink)">${grp.householdName}</span> <span style="font-size:11.5px;color:var(--muted)">— ${summaryLine}</span></div>
+          <div style="flex:1;min-width:0"><span style="font-size:13px;font-weight:600;color:var(--ink)">${grp.householdName}</span> <span class="orsvp-lv-dash" style="font-size:11.5px;color:var(--muted)">—</span> <span class="orsvp-lv-summary" style="font-size:11.5px;color:var(--muted)">${summaryLine}</span></div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${histBtn}<span style="font-size:11px;color:var(--muted)">${_fmt(grp.submittedDate)}</span></div>
         </div>
         ${contactRow}${memberRows}${histSection}
