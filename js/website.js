@@ -4555,14 +4555,17 @@ function _wbBuildSite(forDownload){
 
       const formHtml=`<div id="ww-form">
         ${chips}
-        <div id="ww-custom-wrap" style="display:none;margin:12px 0"><input type="number" id="ww-custom-amt" class="ww-input" placeholder="Enter amount" min="1" step="1"/></div>
-        <div style="margin:12px 0"><input type="text" id="ww-name" class="ww-input" placeholder="Your name (optional)"/></div>
-        <div style="margin:0 0 12px"><input type="text" id="ww-msg" class="ww-input" placeholder="Leave a message (optional)"/></div>
-        <button id="ww-submit" class="ww-btn" disabled onclick="window._wwSubmit()">Contribute</button>
+        <div class="ww-narrow">
+          <div id="ww-custom-wrap" style="display:none;margin:12px 0"><input type="number" id="ww-custom-amt" class="ww-input" placeholder="Enter amount" min="1" step="1"/></div>
+          <div style="margin:12px 0"><input type="text" id="ww-name" class="ww-input" placeholder="Your name (optional)"/></div>
+          <div style="margin:0 0 12px"><input type="text" id="ww-msg" class="ww-input" placeholder="Leave a message (optional)"/></div>
+          <button id="ww-submit" class="ww-btn" disabled onclick="window._wwSubmit()">Contribute</button>
+        </div>
       </div>
       <div id="ww-pay" style="display:none">
         <div class="ww-pay-box">${payHtml}</div>
         <p class="sub" style="text-align:center;margin-top:12px">Please transfer the amount above using the details shown.</p>
+        ${pay.length?`<div style="text-align:center;margin-top:14px"><button id="ww-email-btn" class="ww-store-btn" onclick="window._wwOpenEmailPopup()" style="background:none;cursor:pointer;font-family:inherit">Email me these details →</button></div>`:''}
       </div>
       <div id="ww-thanks" style="display:none">
         <div style="text-align:center;padding:20px 0">
@@ -4570,11 +4573,24 @@ function _wbBuildSite(forDownload){
           <p class="lead">Thank you for your generous gift!</p>
           <p class="sub">Your contribution has been recorded.</p>
         </div>
+      </div>
+      <div id="ww-email-overlay" class="ww-email-overlay" style="display:none">
+        <div class="ww-email-card">
+          <div class="ww-email-hdr">
+            <div class="ww-email-title">Email me these details</div>
+            <button type="button" class="ww-email-close" onclick="window._wwCloseEmailPopup()" aria-label="Close">&times;</button>
+          </div>
+          <input type="email" id="ww-email-input" class="ww-input" placeholder="you@example.com"/>
+          <div class="ww-email-err" id="ww-email-err"></div>
+          <button id="ww-email-send" class="ww-btn" style="margin-top:10px" onclick="window._wwSendEmailDetails()">Send</button>
+        </div>
       </div>`;
 
       const script=`<script>
 (function(){
   var _su='${_SB_URL}',_sk='${_SB_KEY}',_cid='${wwCoupleId}';
+  var _wwCoupleNames=${JSON.stringify(_wbCouple()||'').replace(/<\/script/gi,'<\\/script')};
+  var _wwPayRows=${JSON.stringify(pay).replace(/<\/script/gi,'<\\/script')};
   var sel=null;
   window._wwPick=function(el){
     var chips=document.querySelectorAll('.ww-chip');
@@ -4603,14 +4619,41 @@ function _wbBuildSite(forDownload){
     .then(function(){
       document.getElementById('ww-form').style.display='none';
       document.getElementById('ww-pay').style.display='block';
-      setTimeout(function(){
-        document.getElementById('ww-pay').style.display='none';
-        document.getElementById('ww-thanks').style.display='block';
-      },8000);
     })
     .catch(function(){
       document.getElementById('ww-form').style.display='none';
       document.getElementById('ww-pay').style.display='block';
+    });
+  };
+  window._wwOpenEmailPopup=function(){
+    var ov=document.getElementById('ww-email-overlay');
+    if(!ov)return;
+    ov.style.display='flex';
+    var inp=document.getElementById('ww-email-input');
+    if(inp)inp.focus();
+  };
+  window._wwCloseEmailPopup=function(){
+    var ov=document.getElementById('ww-email-overlay');
+    if(ov)ov.style.display='none';
+  };
+  window._wwSendEmailDetails=function(){
+    var inp=document.getElementById('ww-email-input');
+    var email=((inp&&inp.value)||'').trim();
+    var errEl=document.getElementById('ww-email-err');
+    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){ if(errEl)errEl.textContent='Please enter a valid email address.'; return; }
+    if(errEl)errEl.textContent='';
+    var btn=document.getElementById('ww-email-send');
+    if(btn){btn.disabled=true;btn.textContent='Sending\\u2026';}
+    fetch(_su+'/functions/v1/ww-email-details',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_cid,couple_names:_wwCoupleNames,pay:_wwPayRows})})
+    .then(function(r){return r.json();})
+    .then(function(){
+      window._wwCloseEmailPopup();
+      document.getElementById('ww-pay').style.display='none';
+      document.getElementById('ww-thanks').style.display='block';
+    })
+    .catch(function(){
+      if(errEl)errEl.textContent="Something went wrong \\u2014 please try again.";
+      if(btn){btn.disabled=false;btn.textContent='Send';}
     });
   };
 })();
@@ -5757,11 +5800,19 @@ section.b-center .stays{text-align:center}
 .ww-chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0}
 .ww-chip{font-size:${scb(13)}px;padding:8px 18px;border-radius:22px;border:1px solid ${t2.accent}66;color:${t2.text};background:transparent;cursor:pointer;transition:all .15s;font-family:inherit}
 .ww-chip.active,.ww-chip:hover{background:${t2.accent};color:#fff;border-color:${t2.accent}}
+.ww-narrow{max-width:420px;margin:0 auto}
 .ww-input{width:100%;padding:10px 14px;border:1px solid ${t2.heading}22;border-radius:8px;font-size:${scb(14)}px;font-family:inherit;background:${t2.page};color:${t2.text};outline:none;box-sizing:border-box}
 .ww-input:focus{border-color:${t2.accent}}
 .ww-btn{display:block;width:100%;padding:12px;border:none;border-radius:8px;background:${t2.accent};color:#fff;font-size:${scb(14)}px;font-family:inherit;cursor:pointer;transition:opacity .15s}
 .ww-btn:disabled{opacity:.4;cursor:default}
 .ww-pay-box{background:${t2.heading}08;border-radius:10px;padding:14px 18px;margin-top:16px}
+.ww-email-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.ww-email-card{background:${t2.page};color:${t2.text};border-radius:16px;max-width:360px;width:100%;padding:22px;box-shadow:0 8px 40px rgba(0,0,0,.32);text-align:left}
+.ww-email-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
+.ww-email-title{font-family:${t2.headFont};font-size:16px;font-weight:600;color:${t2.heading}}
+.ww-email-close{background:none;border:none;cursor:pointer;color:${t2.text};opacity:.55;font-size:22px;line-height:1;padding:0 2px;flex-shrink:0}
+.ww-email-close:hover{opacity:1}
+.ww-email-err{font-size:12px;color:#DC2626;min-height:16px;margin:6px 0 0}
 .ww-pay-row{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid ${t2.heading}10;font-size:${scb(14)}px}
 .ww-pay-row:last-child{border-bottom:none}
 .ww-pay-label{font-size:${scb(11)}px;letter-spacing:.1em;text-transform:uppercase;color:${t2.accent};flex-shrink:0}
