@@ -5397,6 +5397,13 @@ body.sidenav .navtoggle svg{width:14px;height:14px;flex-shrink:0;transition:tran
 body.sidenav.collapsed .navtoggle svg{transform:rotate(180deg)}
 body.sidenav.collapsed .navlinks,body.sidenav.collapsed .sidebar-brand,body.sidenav.collapsed .sidebar-names{display:none}
 body.sidenav.collapsed nav{width:auto;min-width:48px;padding:${sp(16)}px ${sp(8)}px;align-items:center}
+/* Collapsed strip: the full lockup (crest + "UNION VAULT" text) in .sidebar-brand is too
+   wide for a 48px strip, so it's hidden above — but that left the collapsed state with no
+   credit at all. This is the crest alone, hidden until collapsed, pinned to the bottom the
+   same way .sidebar-brand is when expanded. */
+.sb-collapsed-crest{display:none}
+body.sidenav.collapsed .sb-collapsed-crest{display:block;margin-top:auto;padding-top:${sp(12)}px}
+body.sidenav.collapsed .sb-collapsed-crest img{width:20px;height:auto;display:block}
 body.sidenav .sidebar-names{margin-top:auto;padding-top:${sp(16)}px}
 body.sidenav .sidebar-brand{text-align:center;padding-top:${sp(12)}px}
 body.sidenav nav:not(:has(.sidebar-names)) .sidebar-brand{margin-top:auto}
@@ -5627,8 +5634,8 @@ footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-
    not a mark; it is a label, and it is a different label on every site. Only the LABEL
    above it ("Website made with") is theirs, because that is their sentence, not our name. */
 .madewith{margin-top:${sp(22)}px;display:flex;flex-direction:column;align-items:center;gap:8px;text-transform:none;letter-spacing:0}
-body:not(.sidenav) .madewith{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:50;margin-top:0;background:${t2.background||t2.page}CC;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:8px 18px;border-radius:20px;border:1px solid ${t2.heading}14}
-@media(max-height:400px){body:not(.sidenav) .madewith{position:static;transform:none;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;border:none;border-radius:0;margin-top:${sp(22)}px}}
+body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;margin-top:0;padding:34px 18px 16px;background:linear-gradient(to top, ${t2.background||t2.page} 0, ${t2.background||t2.page} calc(100% - 34px), transparent 100%)}
+@media(max-height:400px){body:not(.sidenav) .madewith{position:static;background:none;padding:0;margin-top:${sp(22)}px}}
 .mw-lbl{font-family:${t2.bodyFont};font-size:${scb(10)}px;letter-spacing:.08em;color:${t2.text};opacity:.75}
 .mw-lock{display:inline-flex;align-items:center;gap:7px}
 .mw-crest{width:${scb(26)}px;height:auto;display:block;flex-shrink:0}
@@ -5694,7 +5701,7 @@ ${nav?`<nav>${nav}${t2.navPos==='side'?`<div class="sidebar-names">${_escHtml(_w
       <img class="mw-crest" src="${brand.crest==='dark'?WB_CREST_DARK:WB_CREST_LIGHT}" alt="" width="26" height="24"/>
       <span class="mw-txt"><b>UNION</b><i>VAULT</i></span>
     </a>
-  </div>`:''}</nav>`:''}
+  </div><a class="sb-collapsed-crest" href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault"><img src="${brand.crest==='dark'?WB_CREST_DARK:WB_CREST_LIGHT}" alt="" width="20" height="18"/></a>`:''}</nav>`:''}
 ${t2.navPos==='side'?`<div class="site-content"><main>${blocks}</main></div>`:`<main>${blocks}</main>
 <footer>
   ${_escHtml(_wbCouple())}
