@@ -6066,12 +6066,21 @@ function _wwTrackerHtml(ww, total, count, thanksDue){
       </select>
       ${colToggle}
     </div>` : '';
-  const gridCols = wwCols===3?'repeat(3,1fr)':wwCols===2?'repeat(2,1fr)':'1fr';
   let listHtml;
   if(!list.length){
     listHtml = `<div class="empty-state"><div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div><div class="empty-state-text">No contributions logged yet.<br>Add one as gifts arrive.</div></div>`;
   } else {
-    listHtml = sortBar+`<div style="display:grid;grid-template-columns:${gridCols};gap:8px">${list.map(_wwRowHtml).join('')}</div>`;
+    // flex-wrap + justify-content:center (not grid-template-columns:repeat(n,1fr)):
+    // a plain grid places an incomplete last row's card(s) in the first track(s),
+    // flush left against empty tracks on the right. Flexbox centres each wrapped
+    // row independently, so a full row still looks identical but a short last row
+    // centres instead of hugging the left edge. The explicit min-width:0 on each
+    // card's wrapper also keeps a long name from forcing the row to overflow —
+    // a plain 1fr track won't shrink below its content's natural width.
+    const n = wwCols===3?3:wwCols===2?2:1;
+    const basis = n===1?'100%':`calc((100% - ${8*(n-1)}px)/${n})`;
+    listHtml = sortBar+`<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px">${list.map(x=>
+      `<div style="flex:0 0 ${basis};min-width:0">${_wwRowHtml(x)}</div>`).join('')}</div>`;
   }
 
   return header + listHtml;
