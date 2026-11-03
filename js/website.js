@@ -4797,7 +4797,7 @@ function _wbBuildSite(forDownload){
 .rf-nav-next:disabled{opacity:.35;cursor:not-allowed}
 .rf-msg-box{text-align:center;padding:40px 16px}
 .search-row{display:flex;gap:8px;margin-bottom:6px}
-.search-row input{flex:1;padding:12px 14px;font-size:15px;font-family:inherit;color:${t2.text};background:${t2.background||t2.page};border:1.5px solid ${t2.heading}28;border-radius:10px;outline:none;box-sizing:border-box}
+.search-row input{flex:1;min-width:0;padding:12px 14px;font-size:15px;font-family:inherit;color:${t2.text};background:${t2.background||t2.page};border:1.5px solid ${t2.heading}28;border-radius:10px;outline:none;box-sizing:border-box}
 .search-row input:focus{border-color:${_uvPal.accent};box-shadow:0 0 0 3px ${_uvPal.accent}33}
 .search-row input::placeholder{color:${t2.text};opacity:.55}
 .search-btn{padding:12px 20px;background:${_uvPal.accent};color:${_uvPal.ink};border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
@@ -4809,9 +4809,10 @@ function _wbBuildSite(forDownload){
 .group-card-name{font-family:${t2.headFont};font-size:17px;font-weight:500;color:${t2.heading};margin:0 0 2px}
 .group-card-type{font-size:11.5px;color:${t2.text};opacity:.7}
 .group-card-members{font-size:12px;color:${t2.text};margin-top:4px}
-.selected-banner{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:${t2.background||t2.page};border-radius:10px;border:1.5px solid ${t2.heading}22;margin-bottom:16px}
-.selected-name{font-size:14px;font-weight:500;color:${t2.heading}}
-.change-btn{background:none;border:none;font-size:12px;color:${_uvPal.accent};cursor:pointer;font-family:inherit}
+.selected-banner{margin:0 0 16px}
+.selected-name{display:none}
+.not-you{font-size:12px;font-style:italic;color:${t2.text};opacity:.65}
+.change-btn{background:none;border:none;padding:0;margin-left:2px;font-size:12px;text-decoration:underline;color:${_uvPal.accent};cursor:pointer;font-family:inherit}
 .attend-label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:${t2.text};margin:0 0 12px}
 .member-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid ${t2.heading}10}
 .member-row:last-child{border-bottom:none}
@@ -4910,14 +4911,14 @@ function _wbBuildSite(forDownload){
             <input type="text" id="rf-name" placeholder="Enter your name…" autocomplete="off" oninput="window._uvCheckSearchBtn()" onkeydown="if(event.key==='Enter'&&this.value.trim().length>=3){event.preventDefault();window._uvDoSearch()}">
             <button class="search-btn" id="search-btn" disabled onclick="window._uvDoSearch()">Search</button>
           </div>
-          <p class="search-hint">Enter at least 3 characters of your first or last name</p>
+          <p class="search-hint" id="search-hint">Enter at least 3 characters of your first or last name</p>
           <div class="group-results" id="search-results" hidden></div>
           <p id="contact-couple" hidden>Can&#39;t find your name? <span style="color:${_uvPal.accent};cursor:pointer;text-decoration:underline" onclick="void 0">Contact ${_escHtml(_wbCouple())}</span></p>
         </div>
         <div id="s1-attend" hidden>
           <div class="selected-banner">
             <span class="selected-name" id="attend-group-name"></span>
-            <button class="change-btn" onclick="window._uvResetSearch()">Change</button>
+            <span class="not-you">Not you? <button class="change-btn" onclick="window._uvResetSearch()">Change</button></span>
           </div>
           <p class="attend-label">Will you be attending?</p>
           <div id="attend-members"></div>
@@ -5014,6 +5015,10 @@ function _wbBuildSite(forDownload){
     var v=(document.getElementById('rf-name')||{value:''}).value.trim();
     var btn=document.getElementById('search-btn');
     if(btn)btn.disabled=v.length<3;
+    if(v.length<3){
+      var sh=document.getElementById('search-hint');if(sh)sh.hidden=false;
+      var sr=document.getElementById('search-results');if(sr){sr.hidden=true;sr.innerHTML='';}
+    }
   };
   window._uvDoSearch=function(){
     var q=(document.getElementById('rf-name')||{value:''}).value.trim().toLowerCase();
@@ -5052,6 +5057,7 @@ function _wbBuildSite(forDownload){
     }
     container.innerHTML=html;
     container.hidden=false;
+    var sh=document.getElementById('search-hint');if(sh)sh.hidden=true;
     var cc=document.getElementById('contact-couple');if(cc)cc.hidden=false;
   };
 
@@ -5123,6 +5129,7 @@ function _wbBuildSite(forDownload){
     _groupSelected=false;group=[];plus1Names={};
     document.getElementById('s1-search').hidden=false;
     document.getElementById('s1-attend').hidden=true;
+    var sh=document.getElementById('search-hint');if(sh)sh.hidden=false;
     var nav=document.getElementById('rf-nav');if(nav)nav.hidden=true;
     var nx=document.getElementById('rf-next');if(nx){nx.disabled=true;nx.textContent='Next \\u2192';}
   };
@@ -5143,6 +5150,7 @@ function _wbBuildSite(forDownload){
     var ni=document.getElementById('rf-name');if(ni)ni.value='';
     var sb=document.getElementById('search-btn');if(sb)sb.disabled=true;
     var sr=document.getElementById('search-results');if(sr){sr.hidden=true;sr.innerHTML='';}
+    var sh=document.getElementById('search-hint');if(sh)sh.hidden=false;
     var cc=document.getElementById('contact-couple');if(cc)cc.hidden=true;
     var bk=document.getElementById('rf-back');if(bk)bk.hidden=true;
     var nav2=document.getElementById('rf-nav');if(nav2){nav2.hidden=true;nav2.style.display='';}
@@ -5205,8 +5213,13 @@ function _wbBuildSite(forDownload){
         });
         var aVis=(dSel.has('allergy'))?' visible':'';
         var oVis=(dSel.has('other'))?' visible':'';
-        html+='<div class="diet-note'+aVis+'" id="'+slug+'-allergy"><input type="text" placeholder="Please describe your allergy\\u2026" data-mid="'+m.id+'" data-type="allergy" value="'+_esc(dietNotes[m.id+'-allergy']||'')+'" oninput="dietNotes[this.dataset.mid+\\'-allergy\\']=this.value"></div>';
-        html+='<div class="diet-note'+oVis+'" id="'+slug+'-other"><input type="text" placeholder="Please describe\\u2026" data-mid="'+m.id+'" data-type="other" value="'+_esc(dietNotes[m.id+'-other']||'')+'" oninput="dietNotes[this.dataset.mid+\\'-other\\']=this.value"></div>';
+        // Clicking into the field must not bubble to the diet-accordion wrapper's own
+        // onclick (window._uvToggleDiet) — that's what the dietary chips themselves guard
+        // against with their own stopPropagation(). Without it here, clicking (or even just
+        // focusing) the input closes the whole accordion and hides the field you just
+        // clicked into, so nothing you type ever lands anywhere.
+        html+='<div class="diet-note'+aVis+'" id="'+slug+'-allergy" onclick="event.stopPropagation()"><input type="text" placeholder="Please describe your allergy\\u2026" data-mid="'+m.id+'" data-type="allergy" value="'+_esc(dietNotes[m.id+'-allergy']||'')+'" oninput="dietNotes[this.dataset.mid+\\'-allergy\\']=this.value"></div>';
+        html+='<div class="diet-note'+oVis+'" id="'+slug+'-other" onclick="event.stopPropagation()"><input type="text" placeholder="Please describe\\u2026" data-mid="'+m.id+'" data-type="other" value="'+_esc(dietNotes[m.id+'-other']||'')+'" oninput="dietNotes[this.dataset.mid+\\'-other\\']=this.value"></div>';
         html+='</div></div></div>';
       }
       html+='</div>';
