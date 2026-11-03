@@ -4734,6 +4734,24 @@ function _wbBuildSite(forDownload){
   const brand = _wbBrand(t2.page);
   const _uvRsvp=w.rsvp||{},_uvRfields=_uvRsvp.fields||{};
   const _uvCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
+  // Context for the "email me a copy of my RSVP confirmation" checkbox — computed once
+  // here (admin/build context, where _wbIcs()/_wbCouple()/STATE.event are reachable) and
+  // baked into the embedded script below as a plain JSON value, so the submit handler
+  // doesn't need to re-derive any of it at runtime. _wbIcs() returns a data: URL
+  // ('data:text/calendar;charset=utf-8,<percent-encoded ics>') — the raw ICS text is
+  // everything after the first comma (the fixed MIME prefix has none; encodeURIComponent
+  // escapes any literal commas inside the encoded payload, so this split is safe).
+  const _uvIcsRaw=_wbIcs();
+  const _uvIcsText=_uvIcsRaw?decodeURIComponent(_uvIcsRaw.slice(_uvIcsRaw.indexOf(',')+1)):'';
+  const _uvConfirmCtxJson=JSON.stringify({
+    coupleId:_uvCoupleId,
+    coupleNames:_wbCouple()||'',
+    weddingDate:(STATE.event&&STATE.event.date)||'',
+    weddingTime:(STATE.event&&STATE.event.time)||'',
+    venue:[STATE.event&&STATE.event.venue,STATE.event&&STATE.event.venueAddress].filter(Boolean).join(', '),
+    siteUrl:_wbSiteUrl(),
+    icsText:_uvIcsText
+  }).replace(/<\/script/gi,'<\\/script');
   const _uvMealOn=!!(STATE.settings&&STATE.settings.mealChoiceOn)&&Array.isArray(STATE.settings.mealOptions)&&(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()).length>0;
   const _uvMealOpts=_uvMealOn?(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()):[];
   const _uvMealHtml=_uvMealOpts.map(o=>`<div class="meal-chip" data-meal="${_escHtml(o)}" onclick="window._uvChooseMeal(this)">${_escHtml(o)}</div>`).join('');
@@ -4960,6 +4978,7 @@ function _wbBuildSite(forDownload){
 <script>
 (function(){
   var _su='${_SB_URL}',_sk='${_SB_KEY}';
+  var _uvConfirmCtx=${_uvConfirmCtxJson};
   var _hasStep2=${_uvHasStep2?'true':'false'},_hasStep3=${_uvHasStep3?'true':'false'};
   var _rfWizPanels=['step1'${_uvHasStep2?",'step2'":""}${_uvHasStep3?",'step3'":""}];
   var _rfTotalSteps=_rfWizPanels.length;
@@ -4977,6 +4996,10 @@ function _wbBuildSite(forDownload){
   var CHK='<svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg>';
   var CHEVRON='<svg class="diet-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,5 7,9 11,5"/></svg>';
   function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  // Same placeholder format as _plusOneHostLabel/_plusOnePlaceholderHost in the admin
+  // app's js/import.js — duplicated here because this embedded script is the standalone
+  // public site's own page and has no access to the admin app's scripts.
+  function _uvIsPlaceholderName(n){return /^\+\s*1\s*\((.+)\)\s*$/.test(String(n||'').trim());}
 
   /* ── "Can't find your name? Contact us" — a guest who can't find their
      invite sends a short message, which emails the couple (reply-to the
@@ -5093,12 +5116,29 @@ function _wbBuildSite(forDownload){
       if(g.ci)addM(g.ci);
       (g.grp||[]).forEach(function(fid){addM(fid);});
       members.slice().forEach(function(m2){if(m2.p1&&byId[m2.p1])addM(m2.p1);});
-      var hasCpl=members.length===2&&members.some(function(m2){return m2.ci;});
-      var type=members.length===1?'Individual':hasCpl?'Couple':'Family &middot; '+members.length+' guests';
+      // A plus-one's record always carries .ci pointing at the host (one-directional —
+      // the host has no reciprocal link back), so "someone has .ci set" alone can't tell
+      // a real mutual couple from a host + their own plus-one. Check both directions for
+      // a true couple, and the .p1 link specifically for a plus-one pair.
+      var isTrueCouple=members.length===2&&members[0].ci===members[1].id&&members[1].ci===members[0].id;
+      var isPlusOnePair=members.length===2&&(members[0].p1===members[1].id||members[1].p1===members[0].id);
+      var isFamily=members.length>1&&!isTrueCouple&&!isPlusOnePair;
+      var type=members.length===1?'Individual':(isTrueCouple||isPlusOnePair)?'Couple':'Family &middot; '+members.length+' guests';
       var lastName=members[0].n.split(' ').pop();
-      var gName=members.length===1?members[0].n:hasCpl?members[0].n+' &amp; '+members[1].n:'The '+lastName+' Family';
+      var gName;
+      if(members.length===1){
+        gName=members[0].n;
+      }else if(isPlusOnePair){
+        var hostM=members[0].p1===members[1].id?members[0]:members[1];
+        var plusM=hostM===members[0]?members[1]:members[0];
+        gName=hostM.n+' &amp; '+(_uvIsPlaceholderName(plusM.n)?'+1':plusM.n);
+      }else if(isTrueCouple){
+        gName=members[0].n+' &amp; '+members[1].n;
+      }else{
+        gName='The '+lastName+' Family';
+      }
       var memberNames=members.map(function(m2){return m2.n;});
-      groups.push({name:gName,type:type,memberNames:memberNames,members:members});
+      groups.push({name:gName,type:type,memberNames:memberNames,members:members,isFamily:isFamily});
     });
     _lastSearchGroups=groups;
     var container=document.getElementById('search-results');
@@ -5109,7 +5149,7 @@ function _wbBuildSite(forDownload){
         html+='<div class="group-card" data-idx="'+i+'" onclick="window._uvSelectGroup('+i+')">';
         html+='<p class="group-card-name">'+gr.name+'</p>';
         html+='<p class="group-card-type">'+gr.type+'</p>';
-        if(gr.members.length>1)html+='<p class="group-card-members">'+gr.memberNames.join(', ')+'</p>';
+        if(gr.isFamily)html+='<p class="group-card-members">'+gr.memberNames.join(', ')+'</p>';
         html+='</div>';
       });
     }else{
@@ -5153,7 +5193,7 @@ function _wbBuildSite(forDownload){
         if(!m.isPlus1)return;
         var pn=_esc(plus1Names[m.id]||'');
         var yc='rf-pill'+(m.att===true?' yes':''),nc='rf-pill'+(m.att===false?' no':'');
-        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><input class="plus-one-name-input" type="text" placeholder="Enter their full name\\u2026" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)"><div class="member-row"><span class="member-name" style="'+(pn?'':'opacity:.6;font-style:italic')+'">'+(pn||'Your guest')+'</span><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Yes</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">&#10007; No</button></div></div></div>';
+        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><input class="plus-one-name-input" type="text" placeholder="Enter their full name\\u2026" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" style="flex:1;min-width:0;width:auto;margin-bottom:0"><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Yes</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">&#10007; No</button></div></div></div>';
       });
     }
     container.innerHTML=html;
@@ -5170,8 +5210,6 @@ function _wbBuildSite(forDownload){
   };
   window._uvSetP1Name=function(inp){
     plus1Names[inp.dataset.pid]=inp.value;
-    var row=inp.closest('.plus-one-added');
-    if(row){var nm=row.querySelector('.member-name');if(nm){nm.textContent=inp.value||'Your guest';nm.style.opacity=inp.value?'1':'.6';nm.style.fontStyle=inp.value?'normal':'italic';}}
     _checkStep1();
   };
 
@@ -5428,7 +5466,7 @@ function _wbBuildSite(forDownload){
       var on2=(dietNotes[m.id+'-other']||'').trim();
       if(an)ds.push('allergy:'+an);
       if(on2)ds.push('other:'+on2);
-      return {couple_id:cid,guest_name:n,email:email||null,phone:phone||null,address:addr,message:fullMsg,attending:m.att===true?'yes':'no',dietary:ds.length?ds:null,meal:mealPick[m.id]||null,high_chair:!!(mealPick[m.id+'-hc'])};
+      return {couple_id:cid,guest_id:m.id,guest_name:n,email:email||null,phone:phone||null,address:addr,message:fullMsg,attending:m.att===true?'yes':'no',dietary:ds.length?ds:null,meal:mealPick[m.id]||null,high_chair:!!(mealPick[m.id+'-hc'])};
     });
 
     try{
@@ -5438,6 +5476,13 @@ function _wbBuildSite(forDownload){
       var allOk=results.every(function(r){return r.ok||r.status===201;});
       if(allOk){
         fetch(_su+'/functions/v1/rsvp-notify',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({couple_id:cid,guest_name:payloads.map(function(p){return p.guest_name;}).join(', '),attending:anyYes?'yes':'no',members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending,dietary:p.dietary||[],meal:p.meal||null};}),phone:phone||null,email:email||null,address:addr,message:fullMsg})}).catch(function(){});
+
+        var ecb2=document.getElementById('f-email-copy');
+        if(ecb2&&ecb2.checked&&email&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
+          var allDietary=[];
+          payloads.forEach(function(p){if(p.dietary)allDietary=allDietary.concat(p.dietary);});
+          fetch(_su+'/functions/v1/rsvp-confirm-email',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_uvConfirmCtx.coupleId,couple_names:_uvConfirmCtx.coupleNames,wedding_date:_uvConfirmCtx.weddingDate,wedding_time:_uvConfirmCtx.weddingTime,venue:_uvConfirmCtx.venue,site_url:_uvConfirmCtx.siteUrl,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending};}),dietary:allDietary,ics_text:_uvConfirmCtx.icsText||null})}).catch(function(){});
+        }
 
         _rfWizPanels.forEach(function(pid){var p=document.getElementById('rf-'+pid);if(p)p.classList.remove('active');});
         var nav3=document.getElementById('rf-nav');if(nav3)nav3.style.display='none';
