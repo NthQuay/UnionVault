@@ -54,6 +54,7 @@ Deno.serve(async (req: Request) => {
     // caller here — the public Wishing Well page calls this with no sign-in).
     let replyTo: string | undefined;
     let senderTier = "free";
+    let dbSettings: Record<string, any> | null = null;
     if (couple_id) {
       const SB_URL = Deno.env.get("SUPABASE_URL")!;
       const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -78,12 +79,39 @@ Deno.serve(async (req: Request) => {
       } catch (_e) {
         // Non-fatal — defaults to free, branding shown.
       }
+      try {
+        // The couple's own saved settings (Email design, Communications copy). Real sends come from the public
+        // wedding website, which can't see these (they're private), so they're read here.
+        const supabase = createClient(SB_URL, SB_SERVICE);
+        const { data: sRow } = await supabase.from("planner_data").select("data").eq("user_id", couple_id).eq("section", "settings").maybeSingle();
+        if (sRow?.data && typeof sRow.data === "object") dbSettings = sRow.data as Record<string, any>;
+      } catch (_e) {
+        // Non-fatal — falls back to whatever the caller sent, then to defaults.
+      }
     }
     const showBranding = senderTier === "free";
+    // Real sends use the couple's saved settings; app previews send their own (possibly
+    // not-yet-synced) values, so those are used as-is.
+    const useDb = !isPreview && !!dbSettings;
+    const dbDesign = useDb ? (dbSettings!.commsDesign?.ww || dbSettings!.emailDesign || {}) : null;
+    const dOpts = dbDesign
+      ? {
+          accentColor: dbDesign.accentColor,
+          showLogo: dbDesign.showLogo,
+          headerImage: dbDesign.headerImage === "none" ? "none"
+            : (dbDesign.headerImage ? `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/photos/${couple_id}/${dbDesign.headerImage}` : ""),
+        }
+      : design_opts;
+    const dbText = useDb ? (dbSettings!.commsText?.ww || {}) : null;
+    const titleOv = dbText ? dbText.title : title_override;
+    const introOv = dbText ? dbText.intro : intro_override;
+    const digitalNoteOv = dbText ? dbText.digitalNote : digital_note_override;
+    const physicalNoteOv = dbText ? dbText.physicalNote : physical_note_override;
+    const closingOv = dbText ? dbText.closing : closing_override;
     const HEX_RE = /^#[0-9a-fA-F]{6}$/;
-    const accentColor = HEX_RE.test(String(design_opts?.accentColor || "")) ? String(design_opts.accentColor) : "#8a6a2c";
-    const showLogo = design_opts?.showLogo !== false;
-    const headerImageRaw = String(design_opts?.headerImage || "");
+    const accentColor = HEX_RE.test(String(dOpts?.accentColor || "")) ? String(dOpts.accentColor) : "#8a6a2c";
+    const showLogo = dOpts?.showLogo !== false;
+    const headerImageRaw = String(dOpts?.headerImage || "");
     const headerImageCustom = couple_id && headerImageRaw.startsWith(`${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/photos/${couple_id}/`) && !headerImageRaw.includes("..")
       ? headerImageRaw : "";
     // No custom header → the UnionVault default banner; 'none' → the couple turned it off.
@@ -102,24 +130,24 @@ Deno.serve(async (req: Request) => {
     const defaultIntro = hasAmount
       ? `We can't wait to celebrate with you!\nYou can send your selected gift amount of ${amountDisplay} using the payment info below.`
       : `We can't wait to celebrate with you!\nYou can find our payment info below.`;
-    const amountBlock = typeof intro_override === "string" && intro_override.trim()
-      ? fillNames(intro_override.trim()).replace(/\{amount\}/g, amountDisplay)
+    const amountBlock = typeof introOv === "string" && introOv.trim()
+      ? fillNames(introOv.trim()).replace(/\{amount\}/g, amountDisplay)
       : defaultIntro;
 
     const defaultDigitalNote = refNote
       ? `Be sure to include ${refNote} in the reference so we know who to thank.`
       : "Be sure to write your name/s in the reference so we know who to thank.";
-    const digitalNote = typeof digital_note_override === "string" && digital_note_override.trim()
-      ? fillNames(digital_note_override.trim())
+    const digitalNote = typeof digitalNoteOv === "string" && digitalNoteOv.trim()
+      ? fillNames(digitalNoteOv.trim())
       : defaultDigitalNote;
-    const physicalNote = typeof physical_note_override === "string" && physical_note_override.trim()
-      ? fillNames(physical_note_override.trim())
+    const physicalNote = typeof physicalNoteOv === "string" && physicalNoteOv.trim()
+      ? fillNames(physicalNoteOv.trim())
       : "Place in a card and/or envelope with your name and drop it into the wishing well box on the wedding day.";
-    const closingLine = typeof closing_override === "string" && closing_override.trim()
-      ? fillNames(closing_override.trim())
+    const closingLine = typeof closingOv === "string" && closingOv.trim()
+      ? fillNames(closingOv.trim())
       : "Thanks so much for your generosity!";
-    const titleText = typeof title_override === "string" && title_override.trim()
-      ? fillNames(title_override.trim())
+    const titleText = typeof titleOv === "string" && titleOv.trim()
+      ? fillNames(titleOv.trim())
       : `${coupleNames}'s gift details`;
 
     // Plain-text fallback (the email's MIME text alternative, not what guests normally

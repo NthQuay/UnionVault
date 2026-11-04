@@ -13,10 +13,22 @@ const json = (status: number, obj: unknown) =>
 
 const EMAIL_RE = /^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/;
 
-function fmtDate(iso: string): string {
+function ordinalSuffix(n: number): string {
+  const j = n % 10, k = n % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+}
+// "Saturday, 16 October 2027", or "Saturday, 16th October 2027" with ordinal dates on
+// (the Communications page setting — on by default).
+function fmtDate(iso: string, ordinal: boolean): string {
   const d = new Date(iso + "T00:00:00");
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const weekday = d.toLocaleDateString("en-AU", { weekday: "long" });
+  const month = d.toLocaleDateString("en-AU", { month: "long" });
+  const day = d.getDate();
+  return `${weekday}, ${day}${ordinal ? ordinalSuffix(day) : ""} ${month} ${d.getFullYear()}`;
 }
 
 const DIET_LABELS: Record<string, string> = {
@@ -67,7 +79,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const { to, couple_id, couple_names, wedding_date, wedding_time, venue, site_url, members, ics_text, title_override, intro_override, closing_override, design_opts, preview } = await req.json();
+    const { to, couple_id, couple_names, wedding_date, wedding_time, venue, site_url, members, ics_text, title_override, intro_override, closing_override, design_opts, ordinal_dates, preview } = await req.json();
     const isPreview = !!preview;
 
     const toEmail = EMAIL_RE.test(String(to || "")) ? String(to).trim() : "";
@@ -91,6 +103,7 @@ Deno.serve(async (req: Request) => {
     // page calls this with no sign-in), so it's looked up from couple_id instead.
     let replyTo: string | undefined;
     let senderTier = "free";
+    let dbSettings: Record<string, any> | null = null;
     if (couple_id) {
       const SB_URL = Deno.env.get("SUPABASE_URL")!;
       const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -115,12 +128,38 @@ Deno.serve(async (req: Request) => {
       } catch (_e) {
         // Non-fatal — defaults to free, branding shown.
       }
+      try {
+        // The couple's own saved settings (Email design, Communications copy, ordinal dates). Real sends come from the public
+        // wedding website, which can't see these (they're private), so they're read here.
+        const supabase = createClient(SB_URL, SB_SERVICE);
+        const { data: sRow } = await supabase.from("planner_data").select("data").eq("user_id", couple_id).eq("section", "settings").maybeSingle();
+        if (sRow?.data && typeof sRow.data === "object") dbSettings = sRow.data as Record<string, any>;
+      } catch (_e) {
+        // Non-fatal — falls back to whatever the caller sent, then to defaults.
+      }
     }
     const showBranding = senderTier === "free";
+    // Real sends use the couple's saved settings; app previews send their own (possibly
+    // not-yet-synced) values, so those are used as-is.
+    const useDb = !isPreview && !!dbSettings;
+    const dbDesign = useDb ? (dbSettings!.commsDesign?.confirm || dbSettings!.emailDesign || {}) : null;
+    const dOpts = dbDesign
+      ? {
+          accentColor: dbDesign.accentColor,
+          showLogo: dbDesign.showLogo,
+          headerImage: dbDesign.headerImage === "none" ? "none"
+            : (dbDesign.headerImage ? `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/photos/${couple_id}/${dbDesign.headerImage}` : ""),
+        }
+      : design_opts;
+    const dbText = useDb ? (dbSettings!.commsText?.confirm || {}) : null;
+    const titleOv = dbText ? dbText.title : title_override;
+    const introOv = dbText ? dbText.intro : intro_override;
+    const closingOv = dbText ? dbText.closing : closing_override;
+    const ordinal = useDb ? dbSettings!.commsOrdinalDates !== false : ordinal_dates !== false;
     const HEX_RE = /^#[0-9a-fA-F]{6}$/;
-    const accentColor = HEX_RE.test(String(design_opts?.accentColor || "")) ? String(design_opts.accentColor) : "#8a6a2c";
-    const showLogo = design_opts?.showLogo !== false;
-    const headerImageRaw = String(design_opts?.headerImage || "");
+    const accentColor = HEX_RE.test(String(dOpts?.accentColor || "")) ? String(dOpts.accentColor) : "#8a6a2c";
+    const showLogo = dOpts?.showLogo !== false;
+    const headerImageRaw = String(dOpts?.headerImage || "");
     const headerImageCustom = couple_id && headerImageRaw.startsWith(`${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/photos/${couple_id}/`) && !headerImageRaw.includes("..")
       ? headerImageRaw : "";
     // No custom header → the UnionVault default banner; 'none' → the couple turned it off.
@@ -138,11 +177,11 @@ Deno.serve(async (req: Request) => {
     // sense here (everything else in the body is assembled from the guest's own answers),
     // so it's the only one substituted. Unset/blank overrides keep the original wording.
     const fillNames = (t: string) => t.replace(/\{names\}/g, coupleNames);
-    const introLine = typeof intro_override === "string" && intro_override.trim()
-      ? fillNames(intro_override.trim())
+    const introLine = typeof introOv === "string" && introOv.trim()
+      ? fillNames(introOv.trim())
       : `Thanks for RSVPing to ${coupleNames}'s wedding! Here's what we've got:`;
-    const closingLine = typeof closing_override === "string" && closing_override.trim()
-      ? fillNames(closing_override.trim())
+    const closingLine = typeof closingOv === "string" && closingOv.trim()
+      ? fillNames(closingOv.trim())
       : "If anything above isn't right, just reply to this email and let them know.";
 
     const lines: string[] = [introLine];
@@ -164,7 +203,7 @@ Deno.serve(async (req: Request) => {
     if (dietaryLines.length) lines.push(`Dietary notes:\n${dietaryLines.join("\n")}`);
 
     if (wedding_date) {
-      const dateTime = [fmtDate(String(wedding_date)), wedding_time || null].filter(Boolean).join(" at ");
+      const dateTime = [fmtDate(String(wedding_date), ordinal), wedding_time || null].filter(Boolean).join(" at ");
       const whenWhere = [dateTime, venue || null].filter(Boolean).join(" at ");
       lines.push(`The wedding is ${whenWhere}.`);
     }
@@ -179,8 +218,8 @@ Deno.serve(async (req: Request) => {
 
     const text = lines.join("\n\n");
     const subject = `Your RSVP to ${coupleNames}'s wedding`;
-    const titleText = typeof title_override === "string" && title_override.trim()
-      ? fillNames(title_override.trim())
+    const titleText = typeof titleOv === "string" && titleOv.trim()
+      ? fillNames(titleOv.trim())
       : `${coupleNames} have received your reply.`;
     const html = brandedHtml({
       kicker: "RSVP confirmed", title: titleText, text,
