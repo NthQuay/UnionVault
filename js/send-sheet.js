@@ -355,9 +355,9 @@ function _ssMessage(){
   let msg=s.base;
   const extra=[];
   if(s.kind==='invite'){
-    if(s.asset.viewUrl && s.addLink) extra.push('View your invitation: '+s.asset.viewUrl);
     extra.push('Kindly RSVP by '+(_longDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
     extra.push('With love.');
+    if(s.asset.viewUrl && s.addLink) extra.push('View your invitation: '+s.asset.viewUrl);
   } else if(s.kind==='savedate'){
     const w=_wbSite(); if(w && w.published && w.slug) extra.push('Details: '+_wbSiteUrl());
   }

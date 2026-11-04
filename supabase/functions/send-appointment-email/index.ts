@@ -31,14 +31,14 @@ serve(async (req) => {
     })
   }
 
-  let body: { to: string[]; subject: string; body: string; ics?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string; htmlText?: string }
+  let body: { to: string[]; subject: string; body: string; ics?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string; htmlText?: string; signature?: string[] }
   try { body = await req.json() } catch {
     return new Response(JSON.stringify({ ok: false, error: 'Invalid JSON' }), {
       status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
     })
   }
 
-  const { to, subject, body: text, ics, fromName, replyTo, kicker, title, htmlText } = body
+  const { to, subject, body: text, ics, fromName, replyTo, kicker, title, htmlText, signature } = body
   if (!to?.length || to.length > 10 || !subject) {
     return new Response(JSON.stringify({ ok: false, error: 'Missing to or subject' }), {
       status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
@@ -50,7 +50,13 @@ serve(async (req) => {
   const payload: Record<string, unknown> = { from: `${name} <${FROM_ADDR}>`, to, subject, text }
   const rt = EMAIL_RE.test(String(replyTo ?? '')) ? String(replyTo) : user.email
   if (rt) payload.reply_to = rt
-  payload.html = brandedHtml({ kicker: String(kicker ?? '').slice(0, 120), title: String(title ?? '').slice(0, 200), text: String(htmlText || text || '').slice(0, 10000) })
+  const sigLines = Array.isArray(signature) ? signature.map((l) => String(l).slice(0, 200)).slice(0, 4) : []
+  payload.html = brandedHtml({
+    kicker: String(kicker ?? '').slice(0, 120),
+    title: String(title ?? '').slice(0, 200),
+    text: String(htmlText || text || '').slice(0, 10000),
+    signature: sigLines,
+  })
   if (ics) {
     payload.attachments = [{ filename: 'appointment.ics', content: ics }]
   }
@@ -83,9 +89,12 @@ const escH = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g,
 function linkify(escaped: string): string {
   return escaped.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)'"]/g, (u) => `<a href="${u}" style="color:#8a6a2c">${u}</a>`)
 }
-function brandedHtml(opts: { kicker?: string; title?: string; text: string }): string {
+function brandedHtml(opts: { kicker?: string; title?: string; text: string; signature?: string[] }): string {
   const paras = String(opts.text ?? '').trim().split(/\n{2,}/)
     .map((p) => `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkify(escH(p)).replace(/\n/g, '<br>')}</p>`).join('')
+  const signatureHtml = opts.signature?.length
+    ? `<div class="uv-muted" style="text-align:center;font-style:italic;font-size:13px;color:#6E6259;margin-top:4px">${opts.signature.map((l) => escH(l)).join('<br>')}</div>`
+    : ''
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <style>@media (prefers-color-scheme: dark){.uv-bg{background:#111114!important}.uv-card{background:#1A1A1F!important;color:#EDE6DA!important}.uv-band{background:#111114!important}.uv-muted{color:#A79E92!important}.uv-kicker{color:#E3C878!important}}</style></head>
@@ -99,6 +108,7 @@ function brandedHtml(opts: { kicker?: string; title?: string; text: string }): s
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a6a2c;margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
+${signatureHtml}
 </td></tr>
 <tr><td class="uv-muted" style="padding:0 26px 22px;font-size:11.5px;color:#6E6259">Sent with <a href="https://unionvault.app" style="color:#8a6a2c">UnionVault</a></td></tr>
 </table></td></tr></table></body></html>`
