@@ -1219,6 +1219,9 @@ function _orsvpRender(){
   const _fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
   const _badge=st=>st==='yes'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(74,124,89,.1);color:var(--green);font-size:11px;font-weight:600;white-space:nowrap">✓ Attending</span>`:st==='no'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(192,57,43,.07);color:var(--red);font-size:11px;font-weight:600;white-space:nowrap">✗ Declined</span>`:'';
 
+  const seenBefore=window._orsvpSeenBefore;
+  const _isNew=grp=>seenBefore!==undefined && grp.members.some(m=>m._rows.some(r=>r&&r.created_at&&(!seenBefore||r.created_at>seenBefore)));
+  const _newBadge='<span class="orsvp-new">NEW</span>';
   let html='';let shown=0;
   groups.forEach(grp=>{
     let vis=grp.members;
@@ -1261,7 +1264,7 @@ function _orsvpRender(){
         <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)">
           <div style="width:32px;height:32px;border-radius:50%;background:var(--surface);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;letter-spacing:-.02em">${grp.initials}</div>
           <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${grp.householdName}</div><div style="font-size:11.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${summaryLine}</div></div>
-          <div style="font-size:11px;color:var(--muted);flex-shrink:0;display:flex;align-items:center;gap:6px;white-space:nowrap">${histBtn}<span>${_fmt(grp.submittedDate)}</span></div>
+          <div style="font-size:11px;color:var(--muted);flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;white-space:nowrap">${_isNew(grp)?_newBadge:''}<div style="display:flex;align-items:center;gap:6px">${histBtn}<span>${_fmt(grp.submittedDate)}</span></div></div>
         </div>
         ${contactHtml}${memberRows}${msgHtml}${histSection}
       </div>`;
@@ -1288,7 +1291,7 @@ function _orsvpRender(){
         <div style="display:flex;align-items:center;gap:8px;padding:9px 14px ${ci.length?'4px':'9px'};${ci.length?'':'border-bottom:1px solid var(--border);'}background:var(--surface)">
           <div style="width:28px;height:28px;border-radius:50%;background:var(--cream);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${grp.initials}</div>
           <div style="flex:1;min-width:0"><span style="font-size:13px;font-weight:600;color:var(--ink)">${grp.householdName}</span> <span class="orsvp-lv-dash" style="font-size:11.5px;color:var(--muted)">—</span> <span class="orsvp-lv-summary" style="font-size:11.5px;color:var(--muted)">${summaryLine}</span></div>
-          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${histBtn}<span style="font-size:11px;color:var(--muted)">${_fmt(grp.submittedDate)}</span></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">${_isNew(grp)?_newBadge:''}<div style="display:flex;align-items:center;gap:6px">${histBtn}<span style="font-size:11px;color:var(--muted)">${_fmt(grp.submittedDate)}</span></div></div>
         </div>
         ${contactRow}${memberRows}${histSection}
       </div>`;
@@ -1376,6 +1379,8 @@ function _orsvpBodyHtml(){
   </div>`;
 }
 function _openOnlineRsvps(){
+  // What counts as NEW for this visit: anything after the newest response seen before it.
+  window._orsvpSeenBefore=(STATE.settings&&STATE.settings.orsvpSeenAt)||'';
   openModal('Online RSVPs', _orsvpBodyHtml(),
     `<button class="btn btn-outline" id="load-rsvps-btn" onclick="_loadOnlineRsvps()" style="display:inline-flex;align-items:center;gap:6px;margin-right:auto"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>Refresh</button>
      <button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`);
