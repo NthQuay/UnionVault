@@ -1,4 +1,4 @@
-const CACHE = 'union-vault-v459';
+const CACHE = 'union-vault-v460';
 const SHELL = [
   '/', '/index.html',
   '/css/fonts.css', '/css/app.css', '/css/landing.css',
@@ -15,7 +15,18 @@ const SHELL = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // Fetch every shell file with {cache:'reload'} instead of a plain c.addAll(SHELL) —
+  // addAll's underlying fetches use the browser's normal HTTP cache, which can silently
+  // hand back an already-stale copy of a JS file even though this install is building a
+  // brand new, differently-named cache. That defeats the entire point of bumping CACHE on
+  // every deploy: the "new" cache ends up holding the same old files. {cache:'reload'}
+  // forces each request straight to the network, bypassing HTTP cache, so what lands in
+  // the new cache is always genuinely current.
+  e.waitUntil(
+    caches.open(CACHE).then(c => Promise.all(SHELL.map(url =>
+      fetch(url, { cache: 'reload' }).then(resp => { if (resp.ok) return c.put(url, resp); })
+    ))).then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
