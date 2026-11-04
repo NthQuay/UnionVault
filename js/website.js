@@ -4547,7 +4547,7 @@ function _wbBuildSite(forDownload){
       // Editable copy (title/intro/notes/closing) from the Communications page.
       const wwText=(STATE.settings&&STATE.settings.commsText&&STATE.settings.commsText.ww)||{};
       // Shared Design settings — same object every other UnionVault-sent email reads from.
-      const wwEd=(STATE.settings&&STATE.settings.emailDesign)||{};
+      const wwEd=(typeof _commsDesignFor==='function'?_commsDesignFor('ww'):((STATE.settings&&STATE.settings.emailDesign)||{}));
       const wwOwnerUid=_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'';
       const wwDesignOpts={ accentColor:wwEd.accentColor||'#8a6a2c', showLogo:wwEd.showLogo!==false,
         headerImage:wwEd.headerImage&&wwOwnerUid?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+wwOwnerUid+'/'+wwEd.headerImage:'' };
@@ -4828,7 +4828,7 @@ function _wbBuildSite(forDownload){
   // Shared Design settings (accent colour/logo/header image) — same STATE.settings.emailDesign
   // object every other UnionVault-sent email reads from. The actual free/paid branding
   // decision is made server-side from the couple's tier, not trusted from this payload.
-  const _uvEd=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const _uvEd=(typeof _commsDesignFor==='function'?_commsDesignFor('confirm'):((STATE.settings&&STATE.settings.emailDesign)||{}));
   const _uvOwnerUid=_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'';
   const _uvConfirmCtxJson=JSON.stringify({
     coupleId:_uvCoupleId,
