@@ -205,7 +205,7 @@ function _commsEmailPreviewPayload(item){
       const w=typeof _wbSite==='function'&&_wbSite();
       if(w && w.published && w.slug) block.websiteUrl=_wbSiteUrl();
     } else if(item.tplKind==='reminder'){
-      block.rsvpLeadText='Please submit your RSVP by '+rsvpBy+' so we know whether to account for you or not.';
+      block.rsvpLeadText='Please submit your RSVP by '+rsvpBy+' so we can ensure you\'re catered for. If you cannot make it, please still submit your RSVP to let us know.';
     }
     payload.inviteBlock=block;
   }
