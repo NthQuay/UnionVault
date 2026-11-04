@@ -146,7 +146,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v468';
+const APP_BUILD='v469';
 const APP_BUILD_DATE='2026-11-04';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -816,100 +816,148 @@ function confirmResetSeating(){
 }
 
 // ── Random Fill — seat currently-unassigned attending guests into empty seats.
-// Keeps couples/plus-ones together (a pair only lands at a table with ≥2 free
-// seats); if no such table exists for a pair, both stay in the pool. Existing
-// seating is left untouched. Backed by the undo-snapshot so it can be reverted.
+// Guests are filled as GROUPS: a couple/plus-one pair, or a whole family (STATE.families),
+// merged if they overlap. Rules:
+//  • Part of a group already seated → the rest go to that same table. If that table has
+//    no room for them, the user is asked (after the fill): seat them at another table,
+//    or don't seat them yet.
+//  • No one in the group seated → the whole group goes to one table (a couple needs two
+//    chairs SIDE BY SIDE); if no table can take them all, they stay in the pool.
+// Existing seating is never moved. One undo snapshot covers the whole operation,
+// including the choices made in the follow-up prompts.
+let _rfState=null;
 function randomFillSeating(){
   const attendingOnly = seatingAttendingOnly;
   const pool = attendingOnly
     ? STATE.guests.filter(g=>g.rsvp==='attending' && (g.listType||'A')==='A')
     : STATE.guests.filter(g=>g.rsvp!=='declined' && (g.listType||'A')==='A');
-  const seatedIds = new Set(Object.values(STATE.seating).flat().filter(Boolean));
-  const unseated = pool.filter(g=>!seatedIds.has(g.id));
+  const seatedAt = {}; // guest id → table id
+  Object.keys(STATE.seating||{}).forEach(tid=>_seatIds(tid).forEach(gid=>{ seatedAt[gid]=tid; }));
+  const unseated = pool.filter(g=>!seatedAt[g.id]);
 
   if(!unseated.length){ _showInfoToast('Everyone is already seated.', null, null); return; }
   if(!(STATE.tables||[]).length){ _showInfoToast('Add a table first.', null, null); return; }
 
-  // Build seating units: a couple/plus-one pair = one 2-person unit; everyone
-  // else is a 1-person unit. Only pair when BOTH partners are in the unseated set.
-  const idSet = new Set(unseated.map(g=>g.id));
-  const used = new Set();
-  const units = [];
-  unseated.forEach(g=>{
-    if(used.has(g.id)) return;
-    const mateId = g.coupleId || g.plusOneId;
-    if(mateId && idSet.has(mateId) && !used.has(mateId)){
-      units.push([g.id, mateId]); used.add(g.id); used.add(mateId);
-    } else {
-      units.push([g.id]); used.add(g.id);
-    }
+  // Union-find over guest ids: couples/plus-ones and family members end up in one group.
+  const parent={};
+  const find=x=>{ while(parent[x]&&parent[x]!==x){ parent[x]=parent[parent[x]]||parent[x]; x=parent[x]; } return x; };
+  const union=(x,y)=>{ if(!x||!y) return; parent[x]=parent[x]||x; parent[y]=parent[y]||y; const a=find(x), b=find(y); if(a!==b) parent[b]=a; };
+  STATE.guests.forEach(g=>{ parent[g.id]=parent[g.id]||g.id; const m=g.coupleId||g.plusOneId; if(m) union(g.id,m); });
+  (STATE.families||[]).forEach(f=>{ const ids=(f.memberIds||[]); for(let i=1;i<ids.length;i++) union(ids[0],ids[i]); });
+  const byRoot={};
+  STATE.guests.forEach(g=>{ const r=find(g.id); (byRoot[r]=byRoot[r]||[]).push(g.id); });
+  const unseatedSet=new Set(unseated.map(g=>g.id));
+  const groups=[];
+  Object.values(byRoot).forEach(ids=>{
+    const todo=ids.filter(id=>unseatedSet.has(id)); if(!todo.length) return;
+    const seated=ids.filter(id=>seatedAt[id]);
+    groups.push({todo, seated});
   });
 
-  // Fisher–Yates shuffle helper.
   const shuffle = arr=>{ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; };
-  shuffle(units);
-
   const tables = shuffle((STATE.tables||[]).slice());
-
   const snap = _undoSnapshot();
-  let seatedCount = 0, couplesKept = 0, leftover = 0, couplesUnseatable = 0;
+  const st = { snap, seated:0, groupsKept:0, leftover:0, couplesUnseatable:0, conflicts:[] };
 
-  // ⚠️ CAPACITY IS A SHAPE, NOT A NUMBER.
-  // A table with two free chairs does not necessarily have room for a COUPLE: on a
-  // long 8-seater, chairs 3 and 4 are free but sit at OPPOSITE ENDS. So a single asks
-  // "is any chair free?" and a couple asks "are two ADJACENT chairs free?" — a
-  // question a count cannot answer. Recomputed per unit, because each placement
-  // changes the answer for the next.
-  const roomForSingle = tid => _seatFreeIdx(tid).length > 0;
-  const roomForCouple = tid => !!_seatFreeAdjacentPair(tid);
+  // Groups with someone already seated claim their table first; then bigger groups
+  // before smaller ones so families aren't squeezed out by singles filling the gaps.
+  const anchored=shuffle(groups.filter(g=>g.seated.length));
+  const fresh=shuffle(groups.filter(g=>!g.seated.length)).sort((a,b)=>b.todo.length-a.todo.length);
 
-  units.forEach(unit=>{
-    const need = unit.length;
-    if(need===2){
-      // Couples: only a table with two chairs SIDE BY SIDE will do.
-      const cands = shuffle(tables.filter(t=>roomForCouple(t.id)));
-      if(cands.length){
-        const tid = cands[0].id;
-        const pair = _seatFreeAdjacentPair(tid);   // [i,j], physically adjacent
-        _seatAt(tid, pair[0], unit[0]);
-        _seatAt(tid, pair[1], unit[1]);
-        seatedCount += 2; couplesKept++;
-      } else {
-        // Free chairs may well exist — just none TOGETHER. Left in the pool, and said
-        // so plainly, rather than quietly splitting them across a table.
-        leftover += 2;
-        if((STATE.tables||[]).some(t=>roomForSingle(t.id))) couplesUnseatable++;
-      }
+  anchored.forEach(g=>{
+    // The table holding most of the group already.
+    const counts={}; g.seated.forEach(id=>{ const t=seatedAt[id]; counts[t]=(counts[t]||0)+1; });
+    const tid=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
+    if(_seatFreeIdx(tid).length>=g.todo.length){
+      _rfPlaceGroup(tid, g.todo); st.seated+=g.todo.length; st.groupsKept++;
     } else {
-      // Singles: fill any gap, oldest chair first. Gaps get used before fresh tables.
-      const cands = shuffle(tables.filter(t=>roomForSingle(t.id)));
-      if(cands.length){
-        _seatFirstFree(cands[0].id, unit[0]);
-        seatedCount += 1;
-      } else {
-        leftover += 1;
-      }
+      st.conflicts.push({ tid, todo:g.todo, seated:g.seated.filter(id=>seatedAt[id]===tid) });
+    }
+  });
+  fresh.forEach(g=>{
+    const n=g.todo.length;
+    if(n===2){
+      const cands=shuffle(tables.filter(t=>!!_seatFreeAdjacentPair(t.id)));
+      if(cands.length){ const pair=_seatFreeAdjacentPair(cands[0].id); _seatAt(cands[0].id,pair[0],g.todo[0]); _seatAt(cands[0].id,pair[1],g.todo[1]); st.seated+=2; st.groupsKept++; }
+      else { st.leftover+=2; if(tables.some(t=>_seatFreeIdx(t.id).length)) st.couplesUnseatable++; }
+    } else {
+      const cands=shuffle(tables.filter(t=>_seatFreeIdx(t.id).length>=n));
+      if(cands.length){ _rfPlaceGroup(cands[0].id, g.todo); st.seated+=n; if(n>1) st.groupsKept++; }
+      else st.leftover+=n;
     }
   });
 
-  if(seatedCount===0){
-    _showInfoToast('No free seats available to fill.', null, null);
-    return;
-  }
-
+  _rfState=st;
   saveToStorage();
   navigate('seating');
-
-  // Compose a friendly summary.
-  let msg = `Seated ${seatedCount} guest${seatedCount!==1?'s':''}`;
+  _rfNextConflict();
+}
+// Seat `gids` at table `tid`, each one preferring a chair beside someone already in
+// their group (the group's seated members count) — falls back to the first free chair.
+function _rfPlaceGroup(tid, gids){
+  const t=(STATE.tables||[]).find(x=>x.id===tid); if(!t) return 0;
+  const groupIds=new Set(gids);
+  // Anyone at this table already linked to the group (couple/family) counts as an anchor.
+  const linked=id=>{ const g=STATE.guests.find(x=>x.id===id); if(!g) return false;
+    if(gids.some(o=>{ const og=STATE.guests.find(x=>x.id===o); return og&&(og.coupleId===id||og.plusOneId===id||g.coupleId===o||g.plusOneId===o); })) return true;
+    return (STATE.families||[]).some(f=>(f.memberIds||[]).includes(id)&&gids.some(o=>(f.memberIds||[]).includes(o))); };
+  const placed=[]; _seatArr(tid).forEach((id,i)=>{ if(id && (groupIds.has(id)||linked(id))) placed.push(i); });
+  let n=0;
+  gids.forEach(gid=>{
+    const free=_seatFreeIdx(tid); if(!free.length) return;
+    let pick=free.find(i=>placed.some(p=>_seatNeighbours(t,p).includes(i)));
+    if(pick===undefined) pick=free[0];
+    if(_seatAt(tid,pick,gid)){ placed.push(pick); n++; }
+  });
+  return n;
+}
+function _rfNames(ids){
+  const names=ids.map(id=>{ const g=STATE.guests.find(x=>x.id===id); return g?(g.name||'Guest'):'Guest'; });
+  return names.length<=1 ? (names[0]||'') : names.slice(0,-1).join(', ')+' & '+names[names.length-1];
+}
+// One prompt per group that couldn't join the rest of its group's table.
+function _rfNextConflict(){
+  const st=_rfState; if(!st) return;
+  const c=st.conflicts.shift();
+  if(!c){ _rfFinish(); return; }
+  st.current=c;
+  const t=(STATE.tables||[]).find(x=>x.id===c.tid);
+  const esc=_escHtml, who=esc(_rfNames(c.todo)), withWho=esc(_rfNames(c.seated)), tname=esc((t&&t.name)||'their table');
+  openModal('No room at '+((t&&t.name)||'the table'),
+    `<div style="font-size:14px;line-height:1.6;color:var(--ink)">There is no room at <strong>${tname}</strong> to sit <strong>${who}</strong> with <strong>${withWho}</strong>.</div>`,
+    `<button class="btn btn-outline" onclick="_rfResolve(false)">Don't seat ${who} yet</button>
+     <button class="btn btn-primary" onclick="_rfResolve(true)">Seat ${who} at another table</button>`);
+}
+function _rfResolve(seatElsewhere){
+  const st=_rfState; if(!st||!st.current) return;
+  const c=st.current; st.current=null;
+  closeModalDirect();
+  if(seatElsewhere){
+    // Together at one other table if any can take them all; otherwise wherever there's room.
+    const others=(STATE.tables||[]).filter(t=>t.id!==c.tid && _seatFreeIdx(t.id).length>=c.todo.length);
+    if(others.length){ const n=_rfPlaceGroup(others[Math.floor(Math.random()*others.length)].id, c.todo); st.seated+=n; }
+    else {
+      let n=0;
+      c.todo.forEach(gid=>{ const t=(STATE.tables||[]).find(x=>x.id!==c.tid && _seatFreeIdx(x.id).length); if(t && _seatFirstFree(t.id,gid)) n++; });
+      st.seated+=n; st.leftover+=c.todo.length-n;
+    }
+    saveToStorage(); navigate('seating');
+  } else {
+    st.leftover+=c.todo.length;
+  }
+  _rfNextConflict();
+}
+function _rfFinish(){
+  const st=_rfState; _rfState=null; if(!st) return;
+  if(st.seated===0){ _showInfoToast(st.leftover?'No guests could be seated.':'No free seats available to fill.', null, null); return; }
+  let msg = `Seated ${st.seated} guest${st.seated!==1?'s':''}`;
   const extras = [];
-  if(couplesKept) extras.push(`${couplesKept} couple${couplesKept!==1?'s':''} kept together`);
-  if(leftover) extras.push(`${leftover} couldn't fit, left in pool`);
+  if(st.groupsKept) extras.push(`${st.groupsKept} couple${st.groupsKept!==1?'s':''}/famil${st.groupsKept!==1?'ies':'y'} kept together`);
+  if(st.leftover) extras.push(`${st.leftover} left in pool`);
   // Be explicit about the surprising case: seats ARE free, but not side by side.
-  // Without this the user sees empty chairs and a couple in the pool and assumes a bug.
-  if(couplesUnseatable) extras.push(`${couplesUnseatable} couple${couplesUnseatable!==1?'s':''} had no two seats together`);
+  if(st.couplesUnseatable) extras.push(`${st.couplesUnseatable} couple${st.couplesUnseatable!==1?'s':''} had no two seats together`);
   if(extras.length) msg += ' · ' + extras.join(' · ');
-  _showInfoToast(msg, snap, 'seating');
+  _showInfoToast(msg, st.snap, 'seating');
 }
 
 // ── Generic info toast (mirrors the undo-delete toast styling). When a snapshot
