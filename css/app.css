@@ -2775,3 +2775,23 @@ body.dark .nav-item button.nav-locked::after{background-image:url("data:image/sv
   .comms-nav-card{display:none}
 }
 
+
+/* ── Online RSVPs pop-up + "new RSVPs" banner (RSVP & Invites) ── */
+.orsvp-stat{flex:1;min-width:90px;padding:10px 14px;border-radius:9px;text-align:center}
+.orsvp-stat-n{font-size:22px;font-weight:700}
+.orsvp-stat-l{font-size:11px;color:var(--muted);margin-top:2px}
+@media (max-width:600px){
+  /* ~2/3 size on phones */
+  #orsvp-stats{gap:8px!important}
+  .orsvp-stat{min-width:60px;padding:6px 9px;border-radius:7px}
+  .orsvp-stat-n{font-size:15px}
+  .orsvp-stat-l{font-size:9.5px;margin-top:1px}
+}
+.orsvp-banner{display:flex;align-items:center;gap:11px;width:100%;margin:0 0 14px;padding:11px 14px;border-radius:11px;border:1px solid var(--gold);background:var(--gold-bg,rgba(201,168,76,.12));color:var(--ink);font-family:inherit;font-size:13.5px;text-align:left;cursor:pointer}
+.orsvp-banner:hover{border-color:var(--gold-deep)}
+.orsvp-banner-ico{display:inline-flex;color:var(--gold-deep);flex-shrink:0}
+.orsvp-banner-txt{flex:1;min-width:0}
+.orsvp-banner-cta{font-size:12px;font-weight:600;color:var(--gold-deep);flex-shrink:0}
+
+/* Event guest picker: filter button is icon-only on phones so it can't overflow the modal */
+@media (max-width:600px){ .evp-filter-lbl{display:none} #evp-filter-btn{padding:7px 9px!important} }
