@@ -2777,7 +2777,33 @@ body.dark .nav-item button.nav-locked::after{background-image:url("data:image/sv
 
 
 /* ── Online RSVPs pop-up + "new RSVPs" banner (RSVP & Invites) ── */
-.orsvp-stat{flex:1;min-width:90px;padding:10px 14px;border-radius:9px;text-align:center}
+.orsvp-stat{flex:1;min-width:90px;padding:10px 14px;border-radius:9px;text-align:center;font-family:inherit;cursor:pointer;border:1px solid var(--orsvp-bd,var(--border));transition:box-shadow .15s,border-color .15s}
+.orsvp-stat:hover{border-color:var(--orsvp-on)}
+.orsvp-stat.on{border-color:var(--orsvp-on);box-shadow:0 0 0 1px var(--orsvp-on)}
+.orsvp-stat:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+/* Response list runs closer to the pop-up edges (~60% less side space than the 28px body padding) */
+.orsvp-list{margin-inline:-17px}
+/* Card/List switcher: in the toolbar on desktop, in the header (left of ×) on phones */
+.orsvp-views-hdr{display:none}
+@media (max-width:600px){ .orsvp-views-body{display:none!important} .orsvp-views-hdr{display:flex;gap:4px;margin-left:auto;align-self:center} }
+/* List view guest row — three layouts chosen by _orsvpFitListRows() */
+.orsvp-lvm{display:grid;column-gap:8px;row-gap:5px;align-items:center}
+.orsvp-lvm>span{white-space:nowrap}
+.orsvp-lvm .lvm-n{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.orsvp-lvm .lvm-d{display:inline-flex;flex-wrap:wrap;gap:4px}
+.orsvp-lvm .lvm-n{grid-area:n}.orsvp-lvm .lvm-d{grid-area:d}.orsvp-lvm .lvm-m{grid-area:m}.orsvp-lvm .lvm-b{grid-area:b;justify-self:end}
+.orsvp-lvm.st-a{grid-template-columns:auto auto 1fr auto auto;grid-template-areas:"n d . m b"}
+.orsvp-lvm.st-b{grid-template-columns:auto 1fr auto auto;grid-template-areas:"n . m b" "d d d d"}
+.orsvp-lvm.st-c{grid-template-columns:auto auto 1fr auto;grid-template-areas:"n n . b" "m d d d"}
+.orsvp-lvm.st-b .lvm-d,.orsvp-lvm.st-c .lvm-d{white-space:normal}
+.orsvp-lvm .lvm-m,.orsvp-lvm .lvm-d{justify-self:start}
+/* Card view contact block on phones: centred, email on its own line */
+@media (max-width:600px){
+  .orsvp-cv-contact{justify-content:center;text-align:center}
+  .orsvp-cv-contact .orsvp-ci-label{flex-basis:100%;margin-right:0}
+  .orsvp-cv-contact .orsvp-ci-email{flex-basis:100%}
+  .orsvp-cv-contact .orsvp-ci-email + .orsvp-ci-sep{display:none}
+}
 .orsvp-stat-n{font-size:22px;font-weight:700}
 .orsvp-stat-l{font-size:11px;color:var(--muted);margin-top:2px}
 @media (max-width:600px){

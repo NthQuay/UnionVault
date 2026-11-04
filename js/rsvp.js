@@ -1187,15 +1187,18 @@ function _orsvpRender(){
   if(!listEl)return;
   // Toolbar
   if(toolbar){
-    const pill=(f,label)=>`<button onclick="_orsvpSetFilter('${f}')" style="padding:4px 11px;border-radius:20px;border:1.5px solid ${filter===f?'var(--gold-deep)':'var(--border)'};background:${filter===f?'var(--gold-deep)':'transparent'};color:${filter===f?'#fff':'var(--muted)'};font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">${label}</button>`;
     const vBtn=(v,svg)=>`<button onclick="_orsvpSetView('${v}')" title="${v==='card'?'Card view':'List view'}" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid ${view===v?'var(--gold-deep)':'var(--border)'};background:${view===v?'var(--gold-deep)':'transparent'};color:${view===v?'#fff':'var(--muted)'};cursor:pointer;flex-shrink:0">${svg}</button>`;
-    toolbar.innerHTML=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      ${pill('all','All')}${pill('yes','Attending')}${pill('no','Declined')}
-      <div style="margin-left:auto;display:flex;gap:4px">
-        ${vBtn('card','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>')}
-        ${vBtn('list','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>')}
-      </div>
-    </div>`;
+    const views=vBtn('card','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>')
+      +vBtn('list','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>');
+    toolbar.innerHTML=`<div class="orsvp-views orsvp-views-body" style="display:flex;justify-content:flex-end;gap:4px">${views}</div>`;
+    // Phones: the same switcher sits in the pop-up header, left of the × button.
+    const hdr=document.querySelector('#modal-box .modal-header');
+    if(hdr){
+      let hv=document.getElementById('orsvp-hdr-views');
+      if(!hv){ hv=document.createElement('div'); hv.id='orsvp-hdr-views'; hv.className='orsvp-views orsvp-views-hdr'; hdr.insertBefore(hv, hdr.querySelector('.modal-close')); }
+      hv.innerHTML=views;
+    }
+    document.querySelectorAll('#orsvp-stats .orsvp-stat').forEach(t=>t.classList.toggle('on', t.dataset.orsvpF===filter));
   }
   const _pdi=function(d){if(d&&d.startsWith('other:'))return'Other'+(d.slice(6)?' ('+d.slice(6)+')':'');if(d&&d.startsWith('allergy:'))return'Allergy'+(d.slice(8)?': '+d.slice(8):'');const m={vegetarian:'Vegetarian',pescatarian:'Pescatarian',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose int.',gluten:'Gluten int.',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut allergy'};return m[d]||d;};
   // A submitted row can carry both the bare checkbox token ('allergy') and its free-text
@@ -1250,8 +1253,8 @@ function _orsvpRender(){
         </div>`;
       }).join('');
       const c=grp.contact;
-      const ci=[c.email?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.email}</span>`:'',c.phone?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0">${c.phone}</span>`:'',c.address?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.address}</span>`:''].filter(Boolean);
-      const contactHtml=ci.length?`<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0"><span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span>${ci.join('<span style="color:var(--border);flex-shrink:0">·</span>')}</div>`:'';
+      const ci=[c.email?`<span class="orsvp-ci-email" style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.email}</span>`:'',c.phone?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0">${c.phone}</span>`:'',c.address?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.address}</span>`:''].filter(Boolean);
+      const contactHtml=ci.length?`<div class="orsvp-cv-contact" style="background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;flex-wrap:wrap;gap:3px 10px;align-items:center;min-width:0"><span class="orsvp-ci-label" style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span>${ci.join('<span class="orsvp-ci-sep" style="color:var(--border);flex-shrink:0">·</span>')}</div>`:'';
       const msgHtml=grp.message?`<div style="border-top:1px solid var(--border);padding:9px 14px;font-size:12px;color:var(--muted);font-style:italic">"${grp.message}"</div>`:'';
       const histSection=grp.hasHistory?`<div id="${histId}" hidden style="border-top:1px solid var(--border);padding:10px 14px"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Submission history</div>${histRowsHtml}</div>`:'';
       html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
@@ -1269,15 +1272,17 @@ function _orsvpRender(){
         const dietItems=_mergeDietItems(Array.isArray(row.dietary)?row.dietary:[]);
         const chips=dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 6px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('');
         const meal=row.meal?`<span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
-        return `<div class="orsvp-lv-member" style="display:flex;align-items:center;gap:8px;padding:7px 14px 7px 46px;border-bottom:1px solid var(--border);flex-wrap:wrap">
-          <span style="font-size:12.5px;font-weight:500;color:var(--ink);flex-shrink:0">${m.name}</span>
-          ${_badge(row.attending)}
-          ${meal}
-          ${chips}
+        return `<div class="orsvp-lv-member" style="padding:7px 14px 7px 46px;border-bottom:1px solid var(--border)">
+          <div class="orsvp-lvm st-a">
+            <span class="lvm-n" style="font-size:12.5px;font-weight:500;color:var(--ink)">${m.name}</span>
+            ${chips?`<span class="lvm-d">${chips}</span>`:''}
+            ${meal?`<span class="lvm-m">${meal}</span>`:''}
+            <span class="lvm-b">${_badge(row.attending)}</span>
+          </div>
         </div>`;
       }).join('');
       const c=grp.contact;const ci=[c.email,c.phone,c.address].filter(Boolean);
-      const contactRow=ci.length?`<div class="orsvp-lv-contact" style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 14px 7px calc(14px + 28px + 8px);font-size:11px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border)">${ci.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
+      const contactRow=ci.length?`<div class="orsvp-lv-contact" style="display:flex;gap:4px 16px;flex-wrap:wrap;line-height:1.4;padding:4px 14px 7px calc(14px + 28px + 8px);font-size:11px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border)">${ci.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
       const histSection=grp.hasHistory?`<div id="${histId}" hidden class="orsvp-lv-hist" style="padding:6px 14px 8px 46px;border-bottom:1px solid var(--border)"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">History</div>${histRowsHtml}</div>`:'';
       html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:0">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 14px ${ci.length?'4px':'9px'};${ci.length?'':'border-bottom:1px solid var(--border);'}background:var(--surface)">
@@ -1290,7 +1295,26 @@ function _orsvpRender(){
     }
   });
   listEl.innerHTML=shown?html:`<div style="padding:32px 0;text-align:center;font-size:13px;color:var(--muted);font-style:italic">No responses match this filter.</div>`;
+  if(view==='list') requestAnimationFrame(_orsvpFitListRows);
 }
+// List view: each guest row is laid out in one of three ways, whichever fits —
+//  a) name · dietary · meal · badge on one line;
+//  b) name · meal · badge, dietary on the line below;
+//  c) name · badge, then meal and dietary side by side on the line below.
+// The badge always sits at the right edge, with the meal (when on line 1) just left of it.
+function _orsvpFitListRows(){
+  document.querySelectorAll('#orsvp-list .orsvp-lvm').forEach(row=>{
+    row.classList.remove('st-a','st-b','st-c'); row.classList.add('st-a');
+    // Natural (unsqueezed) widths: scrollWidth ignores any shrinking the grid applied.
+    const w=el=>el?Math.ceil(el.scrollWidth):0;
+    const g=8, avail=row.clientWidth;
+    const n=w(row.querySelector('.lvm-n')), d=w(row.querySelector('.lvm-d')), m=w(row.querySelector('.lvm-m')), b=w(row.querySelector('.lvm-b'));
+    const fits=(...xs)=>xs.filter(Boolean).reduce((s,x)=>s+x,0)+g*(xs.filter(Boolean).length-1)<=avail;
+    row.classList.remove('st-a');
+    row.classList.add(fits(n,d,m,b)?'st-a':fits(n,m,b)?'st-b':'st-c');
+  });
+}
+window.addEventListener('resize',()=>{ if(document.querySelector('#orsvp-list .orsvp-lvm')) _orsvpFitListRows(); });
 function _orsvpSetFilter(f){window._orsvpFilter=f;_orsvpRender();}
 function _orsvpSetView(v){window._orsvpView=v;try{localStorage.setItem('uv_orsvp_view',v);}catch(e){}  _orsvpRender();}
 function _orsvpToggleHistory(btn){
@@ -1338,15 +1362,16 @@ function _orsvpRepopulateFromCache(){
 // Uses the same element ids the old page card did, so the existing load/render/repopulate
 // code fills it unchanged.
 function _orsvpBodyHtml(){
-  const tile=(id,label,bg,bd,col)=>`<div class="orsvp-stat" style="background:${bg};border:1px solid ${bd}"><div id="${id}" class="orsvp-stat-n" style="color:${col}">—</div><div class="orsvp-stat-l">${label}</div></div>`;
+  // The three tiles double as the filters (Total = all); the active one is ringed.
+  const tile=(id,f,label,bg,bd,col)=>`<button type="button" class="orsvp-stat" data-orsvp-f="${f}" onclick="_orsvpSetFilter('${f}')" style="background:${bg};--orsvp-bd:${bd};--orsvp-on:${col}"><div id="${id}" class="orsvp-stat-n" style="color:${col}">—</div><div class="orsvp-stat-l">${label}</div></button>`;
   return `<div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:2px 0">
     <div id="orsvp-stats" style="display:none;flex-direction:row;gap:12px;flex-wrap:wrap;margin-bottom:14px">
-      ${tile('orsvp-stat-yes','Attending','rgba(74,124,89,.08)','rgba(74,124,89,.25)','var(--green)')}
-      ${tile('orsvp-stat-no','Declining','rgba(192,57,43,.06)','rgba(192,57,43,.2)','var(--red)')}
-      ${tile('orsvp-stat-total','Total','var(--surface)','var(--border)','var(--ink)')}
+      ${tile('orsvp-stat-yes','yes','Attending','rgba(74,124,89,.08)','rgba(74,124,89,.25)','var(--green)')}
+      ${tile('orsvp-stat-no','no','Declining','rgba(192,57,43,.06)','rgba(192,57,43,.2)','var(--red)')}
+      ${tile('orsvp-stat-total','all','Total','var(--surface)','var(--border)','var(--gold-deep)')}
     </div>
     <div id="orsvp-toolbar" style="margin-bottom:10px"></div>
-    <div id="orsvp-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div id="orsvp-list" class="orsvp-list" style="display:flex;flex-direction:column;gap:10px"></div>
     <span id="orsvp-msg" style="color:var(--muted)">Loading responses…</span>
   </div>`;
 }
