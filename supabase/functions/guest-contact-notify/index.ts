@@ -45,11 +45,17 @@ Deno.serve(async (req: Request) => {
     const from =
       Deno.env.get("RESEND_FROM") || "UnionVault <notifications@unionvault.app>";
     const subject = `New message from ${name}`;
-    const text = `${name} sent you a message from your wedding website's RSVP page:\n\n"${msg}"\n\n${email ? `Reply to this email to answer ${name} directly at ${email}.` : "They didn't leave an email address — you'll need to find them another way to reply."}\n\nLog in to UnionVault to manage your guest list.\nhttps://unionvault.app`;
+    const replyLine = email
+      ? `Reply to this email to answer ${name} directly at ${email}.`
+      : "They didn't leave an email address — you'll need to find them another way to reply.";
+    // Plain-text fallback keeps the quote marks (no box to lean on there).
+    const text = `${name} sent you a message from your wedding website's RSVP page:\n\n"${msg}"\n\n${replyLine}\n\nLog in to UnionVault to manage your guest list.\nhttps://unionvault.app`;
     const html = brandedHtml({
       kicker: "New message",
       title: `${name} wants to get in touch`,
-      text,
+      text: `${name} sent you a message from your wedding website's RSVP page:`,
+      extraHtml: `<div class="uv-quote" style="border-left:3px solid #C9A84C;border-radius:8px;padding:14px 16px;margin:0 0 16px;font-size:15px;line-height:1.6;font-style:italic">${linkify(escH(msg)).replace(/\n/g, "<br>")}</div>`,
+      afterText: `${replyLine}\n\nLog in to UnionVault to manage your guest list.\nhttps://unionvault.app`,
     });
 
     const payload: Record<string, unknown> = { from, to: [coupleEmail], subject, text, html };
@@ -93,18 +99,21 @@ function linkify(escaped: string): string {
     (u) => `<a href="${u}" style="color:#8a6a2c">${u}</a>`
   );
 }
-function brandedHtml(opts: { kicker?: string; title?: string; text: string }): string {
-  const paras = String(opts.text ?? "")
-    .trim()
-    .split(/\n{2,}/)
-    .map(
-      (p) =>
-        `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkify(escH(p)).replace(/\n/g, "<br>")}</p>`
-    )
-    .join("");
+function brandedHtml(opts: { kicker?: string; title?: string; text: string; extraHtml?: string; afterText?: string }): string {
+  const buildParas = (t: string) =>
+    String(t ?? "")
+      .trim()
+      .split(/\n{2,}/)
+      .map(
+        (p) =>
+          `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkify(escH(p)).replace(/\n/g, "<br>")}</p>`
+      )
+      .join("");
+  const paras = buildParas(opts.text);
+  const afterParas = opts.afterText ? buildParas(opts.afterText) : "";
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
-<style>@media (prefers-color-scheme: dark){.uv-bg{background:#111114!important}.uv-card{background:#1A1A1F!important;color:#EDE6DA!important}.uv-band{background:#111114!important}.uv-muted{color:#A79E92!important}.uv-kicker{color:#E3C878!important}}</style></head>
+<style>.uv-quote{background:#F4EEE4;color:#2C2222}@media (prefers-color-scheme: dark){.uv-bg{background:#111114!important}.uv-card{background:#1A1A1F!important;color:#EDE6DA!important}.uv-band{background:#111114!important}.uv-muted{color:#A79E92!important}.uv-kicker{color:#E3C878!important}.uv-quote{background:#232019!important;color:#EDE6DA!important}}</style></head>
 <body class="uv-bg" style="margin:0;padding:24px 12px;background:#EFEAE1;font-family:Helvetica,Arial,sans-serif;color:#2C2222">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FBF8F3;border-radius:12px;overflow:hidden">
@@ -115,6 +124,8 @@ function brandedHtml(opts: { kicker?: string; title?: string; text: string }): s
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a6a2c;margin-bottom:8px">${escH(opts.kicker)}</div>` : ""}
 ${opts.title ? `<div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ""}
 ${paras}
+${opts.extraHtml || ""}
+${afterParas}
 </td></tr>
 <tr><td class="uv-muted" style="padding:0 26px 22px;font-size:11.5px;color:#6E6259">Sent with <a href="https://unionvault.app" style="color:#8a6a2c">UnionVault</a></td></tr>
 </table></td></tr></table></body></html>`;

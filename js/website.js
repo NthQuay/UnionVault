@@ -4534,6 +4534,14 @@ function _wbBuildSite(forDownload){
                   ww.reference?['Reference', ww.reference]:null,
                   ww.acceptCash?['Cash', 'Accepted in person on the day']:null,
                   ww.acceptCheque?['Make cheque out to', ww.chequeTo||'(ask the couple)']:null ].filter(Boolean);
+      // Grouped shape for the "Email me these details" email only — the on-page payment
+      // list above stays as the flat `pay` rows; the email groups digital vs physical
+      // gifting with icons, so it's built separately rather than reshaping `pay` itself.
+      const wwDigital=[ ww.payId?{icon:'payid',label:'PayID',lines:[ww.payId]}:null,
+                  ww.paypal?{icon:'paypal',label:'PayPal',lines:[ww.paypal]}:null,
+                  (ww.bankBsb&&ww.bankAcc)?{icon:'bank',label:'Bank transfer',lines:['BSB: '+ww.bankBsb,'Acc no: '+ww.bankAcc].concat(ww.accountName?['Acc name: '+ww.accountName]:[])}:null ].filter(Boolean);
+      const wwPhysical=[ ww.acceptCash?{icon:'cash',label:'Cash',lines:[]}:null,
+                  ww.acceptCheque?{icon:'cheque',label:'Cheque',lines:['Make out to '+(ww.chequeTo||'the couple')+'.']}:null ].filter(Boolean);
       const payNote=(ww.payNote||'').trim()||'We greatly appreciate your generosity!';
       const wwCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
 
@@ -4599,6 +4607,9 @@ function _wbBuildSite(forDownload){
   var _su='${_SB_URL}',_sk='${_SB_KEY}',_cid='${wwCoupleId}';
   var _wwCoupleNames=${JSON.stringify(_wbCouple()||'').replace(/<\/script/gi,'<\\/script')};
   var _wwPayRows=${JSON.stringify(pay).replace(/<\/script/gi,'<\\/script')};
+  var _wwDigital=${JSON.stringify(wwDigital).replace(/<\/script/gi,'<\\/script')};
+  var _wwPhysical=${JSON.stringify(wwPhysical).replace(/<\/script/gi,'<\\/script')};
+  var _wwRefNote=${JSON.stringify(ww.reference||'').replace(/<\/script/gi,'<\\/script')};
   var sel=null;
   window._wwPick=function(el){
     var chips=document.querySelectorAll('.ww-chip');
@@ -4652,7 +4663,7 @@ function _wbBuildSite(forDownload){
     if(errEl)errEl.textContent='';
     var btn=document.getElementById('ww-email-send');
     if(btn){btn.disabled=true;btn.textContent='Sending\\u2026';}
-    fetch(_su+'/functions/v1/ww-email-details',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_cid,couple_names:_wwCoupleNames,pay:_wwPayRows,amount:sel})})
+    fetch(_su+'/functions/v1/ww-email-details',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_cid,couple_names:_wwCoupleNames,digital:_wwDigital,physical:_wwPhysical,referenceNote:_wwRefNote,amount:sel})})
     .then(function(r){return r.json();})
     .then(function(){
       window._wwCloseEmailPopup();

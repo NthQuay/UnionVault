@@ -2623,11 +2623,14 @@ function _apptBuildMailto(task, a, recipients, attached){
   if(Number(a.fee)>0) bodyLines.push(`Fee: ${fmt(Number(a.fee))}`);
   if(a.notes) bodyLines.push('', a.notes);
   bodyLines.push('', attached ? 'The calendar invite (.ics) is attached — open it to add this to your calendar.' : 'Calendar file (.ics) downloaded separately — open it to add this to your calendar.');
-  if(couple) bodyLines.push('', `Sent by ${couple} via UnionVault — reply to this email to reach them.`);
+  // Kept separate from bodyLines/htmlText — the branded HTML renders this as its own
+  // centred, italic sign-off block instead of a plain paragraph (see send-appointment-email).
+  const signature=couple?[`Sent by ${couple} via UnionVault.`,'Reply to this email to reach them.']:[];
+  const fullBodyLines=signature.length?bodyLines.concat(['',...signature]):bodyLines;
   const to=(recipients||[]).map(e=>encodeURIComponent(e)).join(',');
-  const url=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
-  return {subject, body:bodyLines.join('\n'), to:(recipients||[]).join(', '), url,
-    kicker:wedding, title:what, htmlText:bodyLines.slice(ctxLines).join('\n')};
+  const url=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullBodyLines.join('\n'))}`;
+  return {subject, body:fullBodyLines.join('\n'), to:(recipients||[]).join(', '), url,
+    kicker:wedding, title:what, htmlText:bodyLines.slice(ctxLines).join('\n'), signature};
 }
 function _apptOpenEmailDraft(task, a, recipients){
   const m=_apptBuildMailto(task, a, recipients);
@@ -2850,7 +2853,7 @@ async function _apptEmailSendViaEdge(task, a, recipients){
       const r=await fetch(_SB_URL+'/functions/v1/send-appointment-email',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||_SB_KEY),'apikey':_SB_KEY},
-        body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics,kicker:m.kicker,title:m.title,htmlText:m.htmlText,
+        body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics,kicker:m.kicker,title:m.title,htmlText:m.htmlText,signature:m.signature,
           fromName:_apptCoupleNames()||'', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||''})
       });
       return r.ok && (await r.json()).ok===true;
