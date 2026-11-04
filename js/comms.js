@@ -12,6 +12,14 @@
 // "[guest name]" placeholder (see _commsTokenFill below), never a real/sample person.
 
 const _COMMS_TOKEN_HELP='Tokens: {guest} {names} {date} {rsvp_by} {link}. {guest} always shows as "[guest name]" here in the preview — on a real send it fills in with the actual guest or household name.';
+// Design settings resolve per email: a custom design set via the "Design" button
+// (STATE.settings.commsDesign[itemKey]) wins; otherwise every branded email shares the
+// one app-wide STATE.settings.emailDesign.
+function _commsDesignFor(itemKey){
+  const universal=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const override=itemKey&&STATE.settings&&STATE.settings.commsDesign&&STATE.settings.commsDesign[itemKey];
+  return override||universal;
+}
 
 const _COMMS_ITEMS=[
   {key:'sd-email', group:'Email', title:'Save the date', sub:'Sent by you, via UnionVault · to guests', kind:'tpl', tplKind:'savedate', channel:'email', branded:true},
@@ -29,6 +37,12 @@ const _COMMS_GROUP_ORDER=['Email','SMS','After they RSVP','Vendors'];
 
 let _commsSel='sd-email';
 function _commsItem(key){ return _COMMS_ITEMS.find(i=>i.key===key); }
+function _commsSetOrdinal(on){
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.commsOrdinalDates=!!on;
+  saveToStorage();
+  _commsRefresh();
+}
 
 function renderComms(c, actions){
   actions.innerHTML='';
@@ -40,9 +54,21 @@ function renderComms(c, actions){
       ${items.map(i=>_commsNavBtnHtml(i)).join('')}
     </div>`;
   }).join('');
-  c.innerHTML=`<div style="margin-bottom:14px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:760px">Every message UnionVault can send to a guest or vendor, in one place. RSVP alerts and gift notifications aren't here — those come to you, not your guests.</div>
+  // Narrow viewports get a dropdown instead of the nav list — a long list of 10 items
+  // above the preview meant scrolling straight past all of them just to see one email.
+  const mobileOptions=_COMMS_GROUP_ORDER.map(g=>`<optgroup label="${_escHtml(g)}">${_COMMS_ITEMS.filter(i=>i.group===g)
+    .map(i=>`<option value="${i.key}" ${i.key===_commsSel?'selected':''}>${_escHtml(i.title)}</option>`).join('')}</optgroup>`).join('');
+  const ordinalOn=!!(STATE.settings&&STATE.settings.commsOrdinalDates);
+  c.innerHTML=`<div style="margin-bottom:10px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:760px">Every message UnionVault can send to a guest or vendor, in one place. RSVP alerts and gift notifications aren't here — those come to you, not your guests.</div>
+  <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;font-size:12px;color:var(--ink)">
+    <input type="checkbox" ${ordinalOn?'checked':''} onchange="_commsSetOrdinal(this.checked)" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+    Use ordinal dates (4th, 21st, 22nd…) instead of plain numbers (4, 21, 22…)
+  </label>
+  <div class="card comms-mobile-nav" style="margin-bottom:14px;padding:12px">
+    <select class="form-input" onchange="_commsSelect(this.value)" style="font-size:13px">${mobileOptions}</select>
+  </div>
   <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-    <div class="card" style="flex:0 0 240px;min-width:220px;padding:16px 10px">
+    <div class="card comms-nav-card" style="flex:0 0 240px;min-width:220px;padding:16px 10px">
       ${navHtml}
       <button type="button" onclick="_openEmailDesignModal()" style="display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-family:inherit;margin-top:4px">
         <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
@@ -68,6 +94,7 @@ function _commsSelect(key){
     b.style.background=on?'var(--parchment)':'transparent';
     const lbl=b.querySelector('div'); if(lbl) lbl.style.color=on?'var(--gold-deep)':'var(--ink)';
   });
+  const mob=document.querySelector('.comms-mobile-nav select'); if(mob) mob.value=key;
   _commsRefresh();
 }
 function _commsRefresh(){
@@ -77,13 +104,21 @@ function _commsRefresh(){
 }
 function _commsDetailHtml(){
   const item=_commsItem(_commsSel); if(!item) return '';
+  // "Design" (header image/colour/font just for this one email) only makes sense for
+  // branded items — SMS has no HTML to style.
+  const designBtn=item.branded
+    ? `<button type="button" class="btn btn-outline btn-sm" onclick="_commsDesignClick('${item.key}')" style="flex-shrink:0">Design</button>`
+    : '';
   return `<div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;line-height:1.2">${_escHtml(item.title)}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">${_escHtml(item.sub)}</div>
       </div>
-      <button type="button" class="btn btn-outline btn-sm" onclick="_commsEditClick('${item.key}')" style="flex-shrink:0">Edit</button>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        ${designBtn}
+        <button type="button" class="btn btn-outline btn-sm" onclick="_commsEditClick('${item.key}')" style="flex-shrink:0">Edit</button>
+      </div>
     </div>
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)" id="comms-preview-box"></div>
   </div>`;
@@ -98,8 +133,8 @@ function _commsTokenFill(tpl){
   const map={
     '{guest}':'[guest name]',
     '{names}':names,
-    '{date}':_longDate(ev.date)||'Saturday, 1 January 2028',
-    '{rsvp_by}':_longDate((STATE.settings||{}).rsvpBy)||'your earliest convenience',
+    '{date}':_commsLongDate(ev.date)||'Saturday, 1 January 2028',
+    '{rsvp_by}':_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience',
     '{link}':_rsvpLink(),
   };
   return _tplGreetingBreak(tpl||'').replace(/\{guest\}|\{names\}|\{date\}|\{rsvp_by\}|\{link\}/g, m=>map[m]!=null?map[m]:m);
@@ -108,7 +143,7 @@ function _commsTokenFill(tpl){
 // _ssMessage()'s `extra` array in send-sheet.js, with sample data only (preview, not a
 // real send).
 function _commsCtaLines(tplKind){
-  const by=_longDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
+  const by=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
   if(tplKind==='invite') return ['Kindly RSVP by '+by+' via '+_rsvpLink()+'.', 'With love.'];
   if(tplKind==='reminder') return ['Kindly RSVP by '+by+' via '+_rsvpLink()+'.', 'Thank you!'];
   if(tplKind==='savedate'){
@@ -145,7 +180,7 @@ function _commsSmsPreviewHtml(item){
 // same way _ssBuildPayload() builds a real send, so the preview can never drift from
 // what actually goes out.
 function _commsEmailPreviewPayload(item){
-  const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const ed=_commsDesignFor(item.key);
   const names=_ssCoupleNames();
   const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
     headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' };
@@ -157,13 +192,20 @@ function _commsEmailPreviewPayload(item){
     payload.body=_commsBaseText('savedate','email', true);
   } else {
     payload.htmlText=_commsBaseText(item.tplKind,'email', false);
-    const block={ rsvpUrl:_rsvpLink(), rsvpByText:_longDate((STATE.settings||{}).rsvpBy)||'', closingText:item.tplKind==='invite'?'With love.':'Thank you!' };
+    const rsvpBy=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
+    const block={ rsvpUrl:_rsvpLink(), rsvpByText:rsvpBy, rsvpButtonLabel:'RSVP',
+      closingText:item.tplKind==='invite'?'With love.':'Thank you, we hope you can make it!' };
     if(item.tplKind==='invite'){
       const asset=_ssInviteAsset();
       const f=asset.file;
       const isImg=f&&(/^image\//.test(f.type||'')||/\.(png|jpe?g|gif|webp)$/i.test(f.name||''));
       if(isImg && asset.publicUrl){ block.imageSrc=asset.publicUrl; block.imageHref=asset.viewUrl||asset.publicUrl; block.imageCaption='Click on invite to open in new page.'; }
       else if(asset.viewUrl){ block.fallbackLinkLabel='View your invitation'; block.fallbackLinkUrl=asset.viewUrl; }
+      block.rsvpLeadText='Kindly RSVP by '+rsvpBy+' by clicking the button below.';
+      const w=typeof _wbSite==='function'&&_wbSite();
+      if(w && w.published && w.slug) block.websiteUrl=_wbSiteUrl();
+    } else if(item.tplKind==='reminder'){
+      block.rsvpLeadText='Please submit your RSVP by '+rsvpBy+' so we know whether to account for you or not.';
     }
     payload.inviteBlock=block;
   }
@@ -173,7 +215,7 @@ function _commsEmailPreviewPayload(item){
 // sample data standing in for anything that's normally filled in from the guest's/vendor's
 // own details at send time.
 function _commsFixedPreviewPayload(key){
-  const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const ed=_commsDesignFor(key);
   const ownerUid=_sbSession&&_sbSession.user&&_sbSession.user.id;
   const designOpts={ accentColor:ed.accentColor||'#8a6a2c', showLogo:ed.showLogo!==false,
     headerImage:ed.headerImage&&ownerUid?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+ownerUid+'/'+ed.headerImage:'' };
@@ -241,11 +283,44 @@ async function _commsLoadPreview(){
     if(_commsSel!==item.key) return; // selection changed while this was loading
     if(!data.ok || !data.html){ box.innerHTML=`<div style="padding:30px 10px;text-align:center;color:var(--muted);font-size:12.5px">Preview unavailable.</div>`; return; }
     const w=Math.min(560, window.innerWidth-80);
-    box.innerHTML=`<div style="display:flex;justify-content:center"><iframe srcdoc="${_escHtml(data.html)}" sandbox="allow-same-origin" style="width:100%;max-width:${w}px;height:460px;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe></div>`;
+    const frameId='comms-preview-frame';
+    box.innerHTML=`<div style="display:flex;justify-content:center"><iframe id="${frameId}" srcdoc="${_escHtml(data.html)}" sandbox="allow-same-origin" scrolling="no" style="width:100%;max-width:${w}px;height:200px;border:1px solid var(--border);border-radius:10px;background:#fff;display:block"></iframe></div>`;
+    // The preview reads with the page's own scroll, not a boxed-in scroll area of its own —
+    // grow the iframe to exactly fit the email instead of a fixed height.
+    const frame=document.getElementById(frameId);
+    if(frame) frame.onload=()=>{
+      try{
+        const doc=frame.contentDocument;
+        const h=doc&&doc.documentElement?doc.documentElement.scrollHeight:0;
+        if(h) frame.style.height=(h+2)+'px';
+      }catch(_){}
+    };
   }catch(_){
     if(_commsSel!==item.key) return;
     box.innerHTML=`<div style="padding:30px 10px;text-align:center;color:var(--muted);font-size:12.5px">Preview failed — check your connection.</div>`;
   }
+}
+
+// ── Formatting toolbar — wraps the current textarea selection in the markup send-sheet.js's
+// _stripMd/buildParas understand (**bold** *italic* __underline__). Shown above every
+// multi-line editable field.
+function _commsToolbarHtml(taId){
+  const btn=(label,title,before,after,style)=>`<button type="button" title="${title}" onclick="_commsWrapSelection('${taId}','${before}','${after}')" style="width:26px;height:26px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;font-size:12px;color:var(--ink);${style||''}">${label}</button>`;
+  return `<div style="display:flex;gap:4px">
+    ${btn('B','Bold','**','**','font-weight:700')}
+    ${btn('I','Italic','*','*','font-style:italic')}
+    ${btn('U','Underline','__','__','text-decoration:underline')}
+  </div>`;
+}
+function _commsWrapSelection(id, before, after){
+  const ta=document.getElementById(id); if(!ta) return;
+  const start=ta.selectionStart||0, end=ta.selectionEnd||0;
+  const val=ta.value||'';
+  const sel=end>start?val.slice(start,end):'text';
+  ta.value=val.slice(0,start)+before+sel+after+val.slice(end);
+  ta.focus();
+  ta.selectionStart=start+before.length;
+  ta.selectionEnd=start+before.length+sel.length;
 }
 
 // ── Edit (gated to full access) ─────────────────────────────────────────────
@@ -253,15 +328,21 @@ function _commsEditClick(key){
   if(!_uvRequirePaid('editComms')) return;
   _commsOpenEditModal(key);
 }
+function _commsDesignClick(key){
+  if(!_uvRequirePaid('editComms')) return;
+  _openEmailDesignModal(key);
+}
 function _commsOpenEditModal(key){
   const item=_commsItem(key); if(!item) return;
   if(item.kind==='tpl'){
     const cur=_inviteTpl(item.tplKind, item.channel);
     const body=`<div style="display:flex;flex-direction:column;gap:12px">
-      <div style="font-size:12px;color:var(--muted);line-height:1.5">${_escHtml(_COMMS_TOKEN_HELP)}</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5">${_escHtml(_COMMS_TOKEN_HELP)}${item.channel==='email'?' '+_escHtml(_COMMS_MARKUP_HELP):''}</div>
+      ${item.channel==='email'?_commsToolbarHtml('comms-edit-ta'):''}
       <textarea id="comms-edit-ta" class="form-input" style="min-height:160px;font-size:13px;line-height:1.5;resize:vertical">${_escHtml(cur)}</textarea>
     </div>`;
-    const footer=`<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
+    const footer=`<button class="btn btn-outline btn-sm" onclick="_commsResetTpl('${key}')" style="margin-right:auto">Reset to default</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
       <button class="btn btn-primary btn-sm" onclick="_commsSaveTpl('${key}')">Save</button>`;
     openModal(item.title+' · '+(item.channel==='email'?'Email':'SMS'), body, footer);
     return;
@@ -277,10 +358,20 @@ function _commsSaveTpl(key){
   closeModalDirect();
   _commsRefresh();
 }
+function _commsResetTpl(key){
+  const item=_commsItem(key); if(!item) return;
+  if(STATE.settings) delete STATE.settings[_commsTplSettingsKey(item.tplKind, item.channel)];
+  saveToStorage();
+  closeModalDirect();
+  _commsRefresh();
+}
 function _commsFieldHtml(id,label,val,ph,multiline){
   const esc=_escHtml;
   return `<div>
-    <div style="font-size:11.5px;font-weight:600;color:var(--ink);margin-bottom:5px">${esc(label)}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px">
+      <div style="font-size:11.5px;font-weight:600;color:var(--ink)">${esc(label)}</div>
+      ${multiline?_commsToolbarHtml(id):''}
+    </div>
     ${multiline
       ? `<textarea id="${id}" class="form-input" placeholder="${_escAttr(ph)}" style="min-height:70px;font-size:13px;line-height:1.5;resize:vertical">${esc(val)}</textarea>`
       : `<input id="${id}" class="form-input" value="${esc(val)}" placeholder="${_escAttr(ph)}" style="font-size:13px"/>`}
@@ -289,6 +380,9 @@ function _commsFieldHtml(id,label,val,ph,multiline){
 function _commsLockedNote(text){
   return `<div style="font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 11px;line-height:1.5"><strong style="color:var(--ink)">Filled in automatically:</strong> ${_escHtml(text)}</div>`;
 }
+// key → the sub-object this item's overrides live under in STATE.settings.commsText,
+// shared by the save/reset functions below.
+const _COMMS_FIXED_TEXT_KEY={confirm:'confirm', ww:'ww', appt:'appt', vbrief:'vendorBrief'};
 function _commsOpenFixedEditModal(key){
   const ct=(STATE.settings&&STATE.settings.commsText)||{};
   let title='', fieldsHtml='', note='', saveFn='';
@@ -312,7 +406,8 @@ function _commsOpenFixedEditModal(key){
       _commsFieldHtml('ww-physical','Physical gifting note',t.physicalNote||'','Place in a card and/or envelope with your name and drop it into the wishing well box on the wedding day.',true),
       _commsFieldHtml('ww-closing','Closing',t.closing||'','Thanks so much for your generosity!',true),
     ].join('');
-    note=_commsLockedNote('Your payment details (PayID, bank, PayPal, cash, cheque).');
+    note=_commsLockedNote('Your payment details (PayID, bank, PayPal, cash, cheque).')
+      +`<div style="font-size:11px;color:var(--ink);background:var(--parchment);border:1px solid var(--gold-med,var(--border));border-radius:8px;padding:9px 11px;line-height:1.5">This page only edits the wording — to add or change your actual PayID, bank details, PayPal, cash or cheque options, go to <button type="button" onclick="closeModalDirect();navigate('wishingwell')" style="background:none;border:none;color:var(--gold-deep);text-decoration:underline;cursor:pointer;font-family:inherit;font-size:11px;padding:0">Wishing Well &rsaquo; Settings</button>.</div>`;
     saveFn='_commsSaveWw()';
   } else if(key==='appt'){
     const t=ct.appt||{};
@@ -331,10 +426,21 @@ function _commsOpenFixedEditModal(key){
     note=_commsLockedNote("The vendor's name and their secure brief link.");
     saveFn='_commsSaveVbrief()';
   } else return;
-  const body=`<div style="display:flex;flex-direction:column;gap:14px">${note}${fieldsHtml}</div>`;
-  const footer=`<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
+  const body=`<div style="display:flex;flex-direction:column;gap:14px">
+    <div style="font-size:12px;color:var(--muted);line-height:1.5">${_escHtml(_COMMS_MARKUP_HELP)}</div>
+    ${note}${fieldsHtml}
+  </div>`;
+  const footer=`<button class="btn btn-outline btn-sm" onclick="_commsResetFixed('${key}')" style="margin-right:auto">Reset to default</button>
+    <button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
     <button class="btn btn-primary btn-sm" onclick="${saveFn}">Save</button>`;
   openModal(title, body, footer);
+}
+function _commsResetFixed(key){
+  const sub=_COMMS_FIXED_TEXT_KEY[key]; if(!sub) return;
+  if(STATE.settings && STATE.settings.commsText) delete STATE.settings.commsText[sub];
+  saveToStorage();
+  closeModalDirect();
+  _commsRefresh();
 }
 function _commsEnsureCommsText(){
   if(!STATE.settings) STATE.settings={};

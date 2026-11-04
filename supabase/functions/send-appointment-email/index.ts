@@ -62,11 +62,16 @@ serve(async (req) => {
   let senderTier = 'free'
   if (SB_SERVICE) {
     try {
-      const pr = await fetch(`${SB_URL}/rest/v1/user_profiles?user_id=eq.${user.id}&select=tier`, {
-        headers: { apikey: SB_SERVICE, Authorization: `Bearer ${SB_SERVICE}` },
+      // compute_tier mirrors get_my_subscription()'s effective-tier logic (granted
+      // access + subscriptions table), not just the bare user_profiles.tier column —
+      // a plain column read missed any couple on a granted-access or active plan.
+      const pr = await fetch(`${SB_URL}/rest/v1/rpc/compute_tier`, {
+        method: 'POST',
+        headers: { apikey: SB_SERVICE, Authorization: `Bearer ${SB_SERVICE}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_user_id: user.id }),
       })
-      const rows = await pr.json()
-      if (rows?.[0]?.tier) senderTier = rows[0].tier
+      const t = await pr.json()
+      if (typeof t === 'string' && t) senderTier = t
     } catch (_) { /* default to free — branding shown */ }
   }
   const showBranding = senderTier === 'free'
@@ -122,14 +127,29 @@ const escH = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g,
 function linkifyWith(escaped: string, color: string): string {
   return escaped.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)'"]/g, (u) => `<a href="${u}" style="color:${color}">${u}</a>`)
 }
+// The Communications page's lightweight formatting markup — **bold** *italic* __underline__
+// — applied after escaping/linkifying, so typed text can never inject real HTML, only
+// these specific patterns become tags. Double-star before single-star so **bold** doesn't
+// get half-eaten by the italic pass.
+function applyInlineMarkup(s: string): string {
+  return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.+?)__/g, '<u>$1</u>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+}
 function brandedHtml(opts: { kicker?: string; title?: string; text: string; signature?: string[]; accentColor?: string; showBranding?: boolean; showLogo?: boolean; headerImage?: string }): string {
   const ac = escH(opts.accentColor || '#8a6a2c')
   const showBranding = opts.showBranding !== false
   const showLogo = opts.showLogo !== false
-  const paras = String(opts.text ?? '').trim().split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkifyWith(escH(p), ac).replace(/\n/g, '<br>')}</p>`).join('')
+  const paras = String(opts.text ?? '').trim().split(/\n{2,}/).map((p) => {
+    const isHeading = /^##\s+/.test(p)
+    const body = isHeading ? p.replace(/^##\s+/, '') : p
+    const html = applyInlineMarkup(linkifyWith(escH(body), ac)).replace(/\n/g, '<br>')
+    return isHeading
+      ? `<p style="margin:0 0 14px;font-size:17px;line-height:1.4;font-style:italic;font-weight:500">${html}</p>`
+      : `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${html}</p>`
+  }).join('')
   const signatureHtml = opts.signature?.length
-    ? `<div class="uv-muted" style="text-align:center;font-style:italic;font-size:13px;color:#6E6259;margin-top:4px">${opts.signature.map((l) => escH(l)).join('<br>')}</div>`
+    ? `<div class="uv-muted" style="text-align:center;font-style:italic;font-size:13px;color:#6E6259;margin-top:4px">${opts.signature.map((l) => applyInlineMarkup(escH(l))).join('<br>')}</div>`
     : ''
   const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="120" alt="UnionVault" style="display:block;width:120px;height:auto;border:0"></picture>`
   const headerBand = opts.headerImage
