@@ -144,7 +144,12 @@ function _commsTokenFill(tpl){
 // real send).
 function _commsCtaLines(tplKind){
   const by=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
-  if(tplKind==='invite') return ['Kindly RSVP by '+by+' via '+_rsvpLink()+'.', 'With love.'];
+  if(tplKind==='invite'){
+    const out=['Kindly RSVP by '+by+' via '+_rsvpLink()+'.'];
+    try{ const w=typeof _wbSite==='function'&&_wbSite(); if(w&&w.published&&w.slug) out.push('For further wedding details, please check out our wedding website: '+_wbSiteUrl()); }catch(_){}
+    out.push('With love.');
+    return out;
+  }
   if(tplKind==='reminder') return ['Kindly RSVP by '+by+' via '+_rsvpLink()+'.', 'Thank you!'];
   if(tplKind==='savedate'){
     try{ const w=typeof _wbSite==='function'&&_wbSite(); if(w&&w.published&&w.slug) return ['Details: '+_wbSiteUrl()]; }catch(_){}
@@ -360,7 +365,15 @@ function _commsSaveTpl(key){
 }
 function _commsResetTpl(key){
   const item=_commsItem(key); if(!item) return;
-  if(STATE.settings) delete STATE.settings[_commsTplSettingsKey(item.tplKind, item.channel)];
+  if(STATE.settings){
+    delete STATE.settings[_commsTplSettingsKey(item.tplKind, item.channel)];
+    // SMS also falls back to the old pre-channel-split key — clear it too, or Reset
+    // would just bring the old saved text back.
+    if(item.channel!=='email'){
+      const legacy=item.tplKind==='reminder'?'reminderTemplate':item.tplKind==='savedate'?'saveDateTemplate':'inviteTemplate';
+      delete STATE.settings[legacy];
+    }
+  }
   saveToStorage();
   closeModalDirect();
   _commsRefresh();
