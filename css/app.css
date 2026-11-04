@@ -2842,3 +2842,6 @@ body.dark .nav-item button.nav-locked::after{background-image:url("data:image/sv
 /* Online RSVPs household initials: gold-tinted in dark mode so the circle stands off the card
    (same treatment as the guest-list member picker avatars) */
 body.dark .orsvp-av{background:rgba(196,168,130,.16)!important;color:var(--gold)!important}
+
+/* Online RSVPs card view: small icon before each contact detail */
+.orsvp-ci-ico{display:inline-block;vertical-align:-1px;margin-right:5px;color:var(--muted);flex-shrink:0}

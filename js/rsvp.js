@@ -1247,16 +1247,24 @@ function _orsvpRender(){
         const dietChips=dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('');
         const mealHtml=row.meal?`<span style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
         const hcHtml=row.high_chair?`<span style="display:inline-block;font-size:10.5px;color:var(--muted)">🪑 High chair</span>`:'';
-        return `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0">
-            <span style="font-size:13px;font-weight:500;color:var(--ink);flex-shrink:0;margin-right:2px">${m.name}</span>
-            ${mealHtml}${hcHtml}${dietChips}
+        // Same self-fitting row as list view: badge at the right edge with the meal just
+        // left of it; dietary (and high chair) after the name, or on the line below.
+        const extras=hcHtml+dietChips;
+        return `<div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+          <div class="orsvp-lvm st-a">
+            <span class="lvm-n" style="font-size:13px;font-weight:500;color:var(--ink)">${m.name}</span>
+            ${extras?`<span class="lvm-d">${extras}</span>`:''}
+            ${mealHtml?`<span class="lvm-m">${mealHtml}</span>`:''}
+            <span class="lvm-b">${_badge(row.attending)}</span>
           </div>
-          <span style="flex-shrink:0;padding-top:1px">${_badge(row.attending)}</span>
         </div>`;
       }).join('');
       const c=grp.contact;
-      const ci=[c.email?`<span class="orsvp-ci-item orsvp-ci-email" style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.email}</span>`:'',c.phone?`<span class="orsvp-ci-item" style="font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0">${c.phone}</span>`:'',c.address?`<span class="orsvp-ci-item orsvp-ci-addr" style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.address}</span>`:''].filter(Boolean);
+      const _ico=d=>`<svg class="orsvp-ci-ico" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+      const icoMail=_ico('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/>');
+      const icoPhone=_ico('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>');
+      const icoPin=_ico('<path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>');
+      const ci=[c.email?`<span class="orsvp-ci-item orsvp-ci-email" style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${icoMail}${c.email}</span>`:'',c.phone?`<span class="orsvp-ci-item" style="font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0">${icoPhone}${c.phone}</span>`:'',c.address?`<span class="orsvp-ci-item orsvp-ci-addr" style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${icoPin}${c.address}</span>`:''].filter(Boolean);
       const contactHtml=ci.length?`<div class="orsvp-cv-contact" style="background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;gap:3px 10px;align-items:baseline;min-width:0"><span class="orsvp-ci-label" style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span><span class="orsvp-ci-body orsvp-ci-wrap">${ci.join('')}</span></div>`:'';
       const msgHtml=grp.message?`<div style="border-top:1px solid var(--border);padding:9px 14px;font-size:12px;color:var(--muted);font-style:italic">"${grp.message}"</div>`:'';
       const histSection=grp.hasHistory?`<div id="${histId}" hidden style="border-top:1px solid var(--border);padding:10px 14px"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Submission history</div>${histRowsHtml}</div>`:'';
@@ -1298,7 +1306,7 @@ function _orsvpRender(){
     }
   });
   listEl.innerHTML=shown?html:`<div style="padding:32px 0;text-align:center;font-size:13px;color:var(--muted);font-style:italic">No responses match this filter.</div>`;
-  requestAnimationFrame(()=>{ if(view==='list') _orsvpFitListRows(); _orsvpFitContactSeps(); });
+  requestAnimationFrame(()=>{ _orsvpFitListRows(); _orsvpFitContactSeps(); });
 }
 // List view: each guest row is laid out in one of three ways, whichever fits —
 //  a) name · dietary · meal · badge on one line;
