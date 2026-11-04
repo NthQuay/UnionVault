@@ -255,18 +255,21 @@ function brandedHtml(opts: { kicker?: string; title?: string; text: string; acce
         : `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${html}</p>`;
     })
     .join("");
-  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="120" alt="UnionVault" style="display:block;width:120px;height:auto;border:0"></picture>`;
+  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="90" alt="Union Vault" style="display:block;width:90px;height:auto;border:0;margin:0 auto"></picture>`;
   const headerBand = opts.headerImage
     ? `<tr><td style="padding:0"><img src="${escH(opts.headerImage)}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>`
-    : showLogo
-      ? `<tr><td class="uv-band" align="center" style="background:#F4EEE4;padding:22px 0 16px">${logoImg}</td></tr>`
-      : "";
-  const brandingFooter = showBranding
-    ? `<tr><td class="uv-muted" style="padding:0 26px 22px;font-size:11.5px;color:#6E6259">Sent with <a href="https://unionvault.app" style="color:${ac}">UnionVault</a></td></tr>`
     : "";
+  // Footer (same as send-guest-email's): shown when Show logo is on, and always on the
+  // free plan. Logo only when Show logo is on; the "Wedding planned with" line whenever
+  // the footer shows. Lives in the footer so a header image can't displace the logo.
+  const brandingFooter = (showBranding || showLogo)
+    ? `<tr><td style="padding:0 26px 6px"><hr class="uv-rule" style="border:none;border-top:1px solid #E0D8CF;margin:0 0 14px"></td></tr>
+${showLogo ? `<tr><td align="center" style="padding:0 26px 10px"><a href="https://unionvault.app" style="text-decoration:none">${logoImg}</a></td></tr>` : ""}
+<tr><td align="center" class="uv-muted" style="padding:0 26px 22px;font-size:11px;color:#6E6259">Wedding planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>`
+    : `<tr><td style="height:16px;line-height:16px;font-size:0">&nbsp;</td></tr>`;
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
-<style>@media (prefers-color-scheme: dark){.uv-bg{background:#111114!important}.uv-card{background:#1A1A1F!important;color:#EDE6DA!important}.uv-band{background:#111114!important}.uv-muted{color:#A79E92!important}.uv-kicker{color:#E3C878!important}}</style></head>
+<style>@media (prefers-color-scheme: dark){.uv-bg{background:#111114!important}.uv-card{background:#1A1A1F!important;color:#EDE6DA!important}.uv-band{background:#111114!important}.uv-muted{color:#A79E92!important}.uv-kicker{color:#E3C878!important}.uv-rule{border-top-color:#34343B!important}}</style></head>
 <body class="uv-bg" style="margin:0;padding:24px 12px;background:#EFEAE1;font-family:Helvetica,Arial,sans-serif;color:#2C2222">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FBF8F3;border-radius:12px;overflow:hidden">

@@ -211,7 +211,7 @@ async function _invBatchSend(){
     const g=guests[i];
     const grp={kind:'solo',members:[g]};
     const msg=_fillTemplate(_inviteTpl(kind, 'email'), grp);
-    const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
+    const ed=(typeof _commsDesignFor==='function'?_commsDesignFor('inv-email'):((STATE.settings&&STATE.settings.emailDesign)||{}));
     const names=_ssCoupleNames();
     const payload={ to:[(g.email||'').trim()], subject:'You\'re invited'+(names?' — '+names:''), body:msg,
       fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:'You\'re invited',

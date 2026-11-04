@@ -2363,7 +2363,8 @@ function confirmDeleteGuest(id){
 function _ssBuildPayload(s, msg){
   if(!s) s=_ss; if(!msg) msg=_ssMessage();
   const names=_ssCoupleNames();
-  const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
+  // Per-email Design (Communications page) wins over the app-wide one, same as the preview.
+  const ed=(typeof _commsDesignFor==='function'?_commsDesignFor(s&&s.kind==='invite'?'inv-email':s&&s.kind==='reminder'?'rem-email':'sd-email'):((STATE.settings&&STATE.settings.emailDesign)||{}));
   const _ssTitle=s&&s.kind==='invite'?'You\'re invited':s&&s.kind==='reminder'?'RSVP reminder':'Save the date';
   const payload={ to:s&&s.to?[s.to]:[], subject:_ssTitle+(names?' — '+names:''), body:msg,
     fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:_ssTitle,

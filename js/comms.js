@@ -251,10 +251,11 @@ function _commsFixedPreviewPayload(key){
     const signature=names&&t.signature&&t.signature.trim()
       ? t.signature.trim().replace(/\{names\}/g,names).split('\n').filter(Boolean)
       : (names?[`Sent by ${names} via UnionVault.`,'Reply to this email to reach them.']:[]);
+    const sigShown=typeof _apptSigFilter==='function'?_apptSigFilter(signature):signature;
     return {endpoint:'send-appointment-email', payload:{ preview:true,
       kicker:names?names+"'s wedding":'', title:'Vendor meeting',
       htmlText:'Vendor meeting with [vendor name].\n\nWhen: Saturday, 1 January 2028, 10:00am\nWhere: 123 Example Street',
-      signature, designOpts }};
+      signature:sigShown, designOpts }};
   }
   // vbrief
   const t=ct.vendorBrief||{};

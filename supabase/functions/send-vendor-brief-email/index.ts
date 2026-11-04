@@ -176,7 +176,7 @@ function classicTemplate(opts: TemplateOpts): string {
   const brandingFooter = (opts.showBranding || opts.showLogo)
     ? `<tr><td style="padding:0 26px 6px"><hr style="border:none;border-top:1px solid #E0D8CF;margin:0 0 14px"></td></tr>
 ${logoFooter}
-${opts.showBranding ? `<tr><td align="center" class="uv-muted" style="padding:0 26px 22px;font-size:11px;color:#6E6259">Planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>` : ''}`
+<tr><td align="center" class="uv-muted" style="padding:0 26px 22px;font-size:11px;color:#6E6259">Wedding planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>`
     : ''
 
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -216,7 +216,7 @@ function modernTemplate(opts: TemplateOpts): string {
   const brandingFooter = (opts.showBranding || opts.showLogo)
     ? `<tr><td style="padding:0 26px 6px"><hr style="border:none;border-top:1px solid #EBEBEB;margin:0 0 14px"></td></tr>
 ${logoFooter}
-${opts.showBranding ? `<tr><td align="center" class="uv-muted" style="padding:0 26px 20px;font-size:11px;color:#999">Planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>` : ''}`
+<tr><td align="center" class="uv-muted" style="padding:0 26px 20px;font-size:11px;color:#999">Wedding planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>`
     : ''
 
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -259,7 +259,7 @@ function botanicalTemplate(opts: TemplateOpts): string {
   const brandingFooter = (opts.showBranding || opts.showLogo)
     ? `<tr><td style="padding:0 26px 6px"><hr style="border:none;border-top:1px solid #D4DCD2;margin:0 0 14px"></td></tr>
 ${logoFooter}
-${opts.showBranding ? `<tr><td align="center" class="uv-muted" style="padding:0 26px 22px;font-size:11px;color:#7A8B78">Planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>` : ''}`
+<tr><td align="center" class="uv-muted" style="padding:0 26px 22px;font-size:11px;color:#7A8B78">Wedding planned with <a href="https://unionvault.app" style="color:${ac};text-decoration:none">Union Vault</a></td></tr>`
     : ''
 
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">

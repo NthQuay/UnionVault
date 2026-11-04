@@ -660,7 +660,7 @@ async function _sendVendorBriefEmailNow(btn){
   const fallback=()=>{ window.location.href=ctx.mailto; };
   if(!_sbSession){ fallback(); return; }
   if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
-  const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const ed=(typeof _commsDesignFor==='function'?_commsDesignFor('vbrief'):((STATE.settings&&STATE.settings.emailDesign)||{}));
   const vbText=(STATE.settings&&STATE.settings.commsText&&STATE.settings.commsText.vendorBrief)||{};
   const names=_apptCoupleNames();
   const payload={ to:ctx.to, vendor_name:ctx.vendorName, brief_url:ctx.briefUrl, expiry_display:ctx.expiryDisplay||null,
@@ -2667,14 +2667,22 @@ function _apptBuildMailto(task, a, recipients, attached){
   // text shown there (one sign-off, not an array), so split it back into lines here.
   // {names} is the only token that makes sense in a sign-off.
   const _apptSigOverride=(STATE.settings&&STATE.settings.commsText&&STATE.settings.commsText.appt&&STATE.settings.commsText.appt.signature)||'';
-  const signature=!couple?[]:_apptSigOverride.trim()
+  let signature=!couple?[]:_apptSigOverride.trim()
     ? _apptSigOverride.trim().replace(/\{names\}/g,couple).split('\n').filter(Boolean)
     : [`Sent by ${couple} via UnionVault.`,'Reply to this email to reach them.'];
+  // Show logo off (this email's Design) also hides the "…via UnionVault" sign-off line.
+  signature=_apptSigFilter(signature);
   const fullBodyLines=signature.length?bodyLines.concat(['',...signature]):bodyLines;
   const to=(recipients||[]).map(e=>encodeURIComponent(e)).join(',');
   const url=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullBodyLines.join('\n'))}`;
   return {subject, body:fullBodyLines.join('\n'), to:(recipients||[]).join(', '), url,
     kicker:wedding, title:what, htmlText:bodyLines.slice(ctxLines).join('\n'), signature};
+}
+// Drops any sign-off line mentioning UnionVault when the Appointment email's Design has
+// Show logo off — shared by the real send (here) and the Communications preview.
+function _apptSigFilter(lines){
+  const ed=typeof _commsDesignFor==='function'?_commsDesignFor('appt'):((STATE.settings&&STATE.settings.emailDesign)||{});
+  return ed.showLogo===false ? (lines||[]).filter(l=>!/union ?vault/i.test(l)) : (lines||[]);
 }
 function _apptOpenEmailDraft(task, a, recipients){
   const m=_apptBuildMailto(task, a, recipients);
@@ -2892,7 +2900,7 @@ async function _apptEmailSendViaEdge(task, a, recipients){
   const m=_apptBuildMailto(task,a,recipients,true);
   const ics=btoa(unescape(encodeURIComponent(_apptBuildIcs(task,a))));
   const token=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.access_token)||'';
-  const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const ed=(typeof _commsDesignFor==='function'?_commsDesignFor('appt'):((STATE.settings&&STATE.settings.emailDesign)||{}));
   const designOpts={ accentColor:ed.accentColor||'#8a6a2c', showLogo:ed.showLogo!==false,
     headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' };
   const one=async(to)=>{
