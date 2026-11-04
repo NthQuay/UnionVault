@@ -91,8 +91,20 @@ function _ordinalSuffix(n){
 // used everywhere else (budget due dates, the dashboard countdown, etc).
 function _commsLongDate(iso){
   const base=_longDate(iso); if(!base) return base;
-  if(!(STATE.settings&&STATE.settings.commsOrdinalDates)) return base;
-  return base.replace(/^(\d{1,2})\b/, (m,d)=>d+_ordinalSuffix(Number(d)));
+  return _commsOrdinalize(base);
+}
+// Ordinal dates are ON by default; unticking stores an explicit false, which is remembered.
+function _commsOrdinalOn(){ return !(STATE.settings && STATE.settings.commsOrdinalDates===false); }
+// Adds the suffix to the first "D Month" in a date string ("Saturday, 1 January 2028" →
+// "Saturday, 1st January 2028") when ordinal dates are on; otherwise returns it unchanged.
+function _commsOrdinalize(s){
+  if(!s || !_commsOrdinalOn()) return s;
+  return String(s).replace(/\b(\d{1,2})(?= (January|February|March|April|May|June|July|August|September|October|November|December)\b)/, (m,d)=>d+_ordinalSuffix(Number(d)));
+}
+// "Saturday, 1st January 2028" — weekday + comms long date, for emails that show a day.
+function _commsWeekdayDate(iso){
+  const d=new Date(iso+'T00:00:00'); if(isNaN(d)) return '';
+  return d.toLocaleDateString('en-AU',{weekday:'long'})+', '+_commsLongDate(iso);
 }
 // Pretty long date, e.g. "14 November 2026". Empty string if unset/invalid.
 function _longDate(iso){

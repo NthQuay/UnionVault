@@ -69,7 +69,7 @@ function renderComms(c, actions){
   // above the preview meant scrolling straight past all of them just to see one email.
   const mobileOptions=_COMMS_SECTIONS.map(sec=>sec.groups.map(g=>`<optgroup label="${_escHtml(sec.name+' · '+g)}">${_commsItemsIn(sec.name,g)
     .map(i=>`<option value="${i.key}" ${i.key===_commsSel?'selected':''}>${_escHtml(i.title)}</option>`).join('')}</optgroup>`).join('')).join('');
-  const ordinalOn=!!(STATE.settings&&STATE.settings.commsOrdinalDates);
+  const ordinalOn=_commsOrdinalOn();
   c.innerHTML=`<div style="margin-bottom:10px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:760px">Every message UnionVault can send to a guest or vendor, in one place. RSVP alerts and gift notifications aren't here — those come to you, not your guests.</div>
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;font-size:12px;color:var(--ink)">
     <input type="checkbox" ${ordinalOn?'checked':''} onchange="_commsSetOrdinal(this.checked)" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
@@ -140,7 +140,7 @@ function _commsTokenFill(tpl){
   const map={
     '{guest}':'[guest name]',
     '{names}':names,
-    '{date}':_commsLongDate(ev.date)||'Saturday, 1 January 2028',
+    '{date}':_commsLongDate(ev.date)||_commsOrdinalize('Saturday, 1 January 2028'),
     '{rsvp_by}':_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience',
     '{link}':_rsvpLink(),
   };
@@ -261,7 +261,7 @@ function _commsFixedPreviewPayload(key){
     const sigShown=typeof _apptSigFilter==='function'?_apptSigFilter(signature):signature;
     return {endpoint:'send-appointment-email', payload:{ preview:true,
       kicker:names?names+"'s wedding":'', title:'Vendor meeting',
-      htmlText:'Vendor meeting with [vendor name].\n\nWhen: Saturday, 1 January 2028, 10:00am\nWhere: 123 Example Street',
+      htmlText:'Vendor meeting with [vendor name].\n\nWhen: '+_commsOrdinalize('Saturday, 1 January 2028')+', 10:00am\nWhere: 123 Example Street',
       signature:sigShown, designOpts }};
   }
   // vbrief

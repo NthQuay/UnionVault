@@ -612,7 +612,7 @@ async function _generateVendorToken(){
     const baseUrl = window.location.origin + window.location.pathname;
     const fullLink = `${baseUrl}?vendor=${token}`;
     const expiryDisplay = expiresAt ? (()=>{
-      const d=new Date(expiresAt); return isNaN(d)?expiresAt:d.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+      const d=new Date(expiresAt); if(isNaN(d)) return expiresAt; const s=d.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}); return typeof _commsOrdinalize==='function'?_commsOrdinalize(s):s;
     })() : null;
     // Find vendor email — used both for the UnionVault send and as the mailto fallback.
     const _vobj=(STATE.vendors||[]).find(v=>v.business===name||v.contact===name);
@@ -2646,7 +2646,7 @@ function _apptBuildMailto(task, a, recipients, attached){
   const couple=_apptCoupleNames();
   const wedding=couple?`${couple}'s wedding`:'';
   const subject=_apptTitle(task, a)+(wedding?` — ${wedding}`:'');
-  const when=[a.date?fmtBudgetDate(a.date):'', a.time?(_fmtApptTime(a.time)+(a.endTime?('–'+_fmtApptTime(a.endTime)):'')):''].filter(Boolean).join(', ');
+  const when=[a.date?(typeof _commsWeekdayDate==='function'?_commsWeekdayDate(a.date):fmtBudgetDate(a.date)):'', a.time?(_fmtApptTime(a.time)+(a.endTime?('–'+_fmtApptTime(a.endTime)):'')):''].filter(Boolean).join(', ');
   const bodyLines=[];
   // Context first, so anyone it's forwarded to (bridal party, family, the vendor) knows what it is.
   const what=[(a.type||'Appointment'), a.business?`with ${a.business}`:''].filter(Boolean).join(' ');
