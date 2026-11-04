@@ -359,8 +359,14 @@ function _ssOpen(kind, slotKey, method){
   const channel=(method==='email'&&signedIn)?'email':'sms';
   const base=_fillTemplate(_inviteTpl(kind, channel), grp);
   const asset=kind==='invite'?_ssInviteAsset():{file:null,publicUrl:'',viewUrl:'',link:''};
-  const emails=grp.members.map(g=>({name:g.name||'',email:(g.email||'').trim()})).filter(x=>x.email);
-  _ss={kind, slotKey, method, grp, base, asset, file:null, signedIn, emails,
+  // A guest whose email has already bounced or been marked as spam (synced in by
+  // _loadOnlineRsvps' email_issues merge) is left off the Email "to" list entirely —
+  // resending to a known-bad address is what actually drags the whole domain's
+  // deliverability down. They're still offered for every other channel.
+  const emailCandidates=grp.members.filter(g=>(g.email||'').trim());
+  const blockedEmails=emailCandidates.filter(g=>g.emailIssue);
+  const emails=emailCandidates.filter(g=>!g.emailIssue).map(g=>({name:g.name||'',email:(g.email||'').trim()}));
+  _ss={kind, slotKey, method, grp, base, asset, file:null, signedIn, emails, blockedEmails,
        to:emails.length?emails[0].email:'',
        attach:!!asset.file, addLink:true};
   // Email sent by UnionVault carries the file, so the link is opt-in there; elsewhere it's on.
@@ -404,7 +410,12 @@ function _ssRender(open){
   const esc=_escHtml, mode=_ssMode();
   const noun=s.kind==='invite'?'invite':s.kind==='reminder'?'reminder':'save the date';
   const who=s.grp.members.map(g=>g.name).filter(Boolean).join(' & ');
-  const contact = s.method==='email' ? (s.emails.length>1?'':(s.to||'no email on file')) : (_groupContact(s.grp,'phone')||'');
+  const contact = s.method==='email'
+    ? (s.emails.length>1?'':(s.to||((s.blockedEmails&&s.blockedEmails.length)?'email bounced previously':'no email on file')))
+    : (_groupContact(s.grp,'phone')||'');
+  const blockedHtml = (s.method==='email' && s.blockedEmails && s.blockedEmails.length)
+    ? `<div style="border:1px dashed var(--red);border-radius:11px;padding:10px 12px;font-size:12px;color:var(--red);line-height:1.5"><strong>Skipped:</strong> ${esc(s.blockedEmails.map(g=>g.name||g.email).join(', '))} — a previous email bounced or was marked as spam. Try another way to reach ${s.blockedEmails.length>1?'them':'this guest'}.</div>`
+    : '';
   const sw=(on,fn,label)=>`<span class="toggle-switch"><input type="checkbox" ${on?'checked':''} onchange="${fn}" aria-label="${esc(label)}"/><span class="toggle-track"></span></span>`;
   const rowStyle='display:flex;align-items:center;gap:11px;border:.5px solid var(--border);border-radius:11px;padding:9px 10px;background:var(--surface)';
   const lab='font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)';
@@ -439,6 +450,7 @@ function _ssRender(open){
   const msg=_ssMessage();
   const body=`<div style="display:flex;flex-direction:column;gap:11px">
     <div style="font-size:12.5px;color:var(--muted);margin-top:-6px">${esc(who)} · ${esc(_ssMethodLabel(s.method))}${contact?' · '+esc(contact):''}</div>
+    ${blockedHtml}
     ${toHtml}
     ${attachHtml}
     <div style="${lab}">Message</div>
@@ -479,7 +491,10 @@ async function _ssGo(){
     return;
   }
   if(mode==='email-direct'){
-    if(!s.to){ if(typeof _showInfoToast==='function') _showInfoToast('No email address on file for this guest.', null, null); return; }
+    if(!s.to){
+      const _blockedMsg=(s.blockedEmails&&s.blockedEmails.length)?'This guest\'s email bounced before — try another way to reach them.':'No email address on file for this guest.';
+      if(typeof _showInfoToast==='function') _showInfoToast(_blockedMsg, null, null); return;
+    }
     if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
     if(s.asset.file && (s.attach||s.addLink)) await _ssEnsureUploaded();
     const payload=_ssBuildPayload(s, msg);
@@ -2298,6 +2313,10 @@ function _ssBuildPayload(s, msg){
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
       headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' } };
   if(s&&s.attach && s.asset && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
+  // Lets the edge function tag the Resend send with who it went to, so a bounce/complaint
+  // webhook can be attributed back to this guest (see _loadOnlineRsvps' email_issues merge).
+  const _toGuest=s&&s.grp&&s.grp.members&&s.to?s.grp.members.find(g=>(g.email||'').trim()===s.to):null;
+  if(_toGuest&&_toGuest.id) payload.guestId=_toGuest.id;
   // Invite email (sent via UnionVault): the greeting+intro renders as normal paragraphs
   // (htmlText), then the edge function splices in an embedded invitation image (or a
   // plain link for a PDF/non-image file) and a "click here" RSVP line as structured

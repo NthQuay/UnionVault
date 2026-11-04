@@ -34,7 +34,7 @@ serve(async (req) => {
   let b: { to?: string[]; subject?: string; body?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string;
            attachment?: { filename?: string; path?: string };
            templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean;
-           htmlText?: string;
+           htmlText?: string; guestId?: string;
            inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; closingText?: string } }
   try { b = await req.json() } catch { return json(400, { ok: false, error: 'Invalid JSON' }) }
 
@@ -112,6 +112,30 @@ serve(async (req) => {
 
   const payload: Record<string, unknown> = { from: `${name} <${FROM_ADDR}>`, to, subject, text, html }
   if (replyTo) payload.reply_to = replyTo
+
+  // A mailto List-Unsubscribe header — mail clients that honour it (Gmail, Outlook, Apple
+  // Mail) surface an "Unsubscribe" action next to the sender that just emails the couple,
+  // which is both a genuine deliverability signal (its mere presence tells spam filters
+  // this is bulk-ish mail sent responsibly) and a real way for a guest to opt out. The
+  // couple's own reply_to is the target, so the request reaches them directly; the subject
+  // names the guest so it's actionable without opening the message.
+  if (replyTo) {
+    const unsubSubject = `Unsubscribe request${to[0] ? ` — ${to[0]}` : ''}`
+    payload.headers = { 'List-Unsubscribe': `<mailto:${replyTo}?subject=${encodeURIComponent(unsubSubject)}>` }
+  }
+
+  // Tags Resend echoes back on delivery/bounce/complaint webhook events, so a bounce can
+  // be attributed to the right couple + guest without us tracking message ids ourselves.
+  // Values must be alnum/underscore/dash only — both ids already are, but sanitise anyway
+  // since this is user-adjacent input.
+  const tagVal = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 100)
+  const guestId = tagVal(String(b.guestId || ''))
+  if (guestId) {
+    payload.tags = [
+      { name: 'couple_id', value: tagVal(user.id) },
+      { name: 'guest_id', value: guestId },
+    ]
+  }
 
   if (b.attachment?.path) {
     const allowed = `${SB_URL}/storage/v1/object/public/photos/${user.id}/`
