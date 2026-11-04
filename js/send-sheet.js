@@ -1,7 +1,10 @@
 // STAGE 2 — Send hand-off + templates
 // ════════════════════════════════════════════════════════════════════════
 
-// Default save-the-date / invite / reminder templates (editable in Settings).
+// Default save-the-date / invite / reminder templates (editable from the Communications
+// page). Tokens: {guest} {names} {date} {rsvp_by} {link} — {guest} always resolves to a
+// literal "[guest name]" placeholder wherever these defaults are shown as a preview or
+// sample, never a made-up real-looking name.
 // Tokens: {guest} {names} {date} {rsvp_by} {link}
 const _DEFAULT_SAVEDATE_TPL="Dear {guest},\n\nSave the date! {names} are getting married on {date}. A formal invitation will follow. We can't wait to celebrate with you!";
 // The RSVP deadline/link and sign-off used to be baked into this text via the {rsvp_by}/
@@ -10,12 +13,34 @@ const _DEFAULT_SAVEDATE_TPL="Dear {guest},\n\nSave the date! {names} are getting
 // here" link + embedded invitation image instead of a plain pasted URL. Plain-text
 // channels (SMS/WhatsApp/mailto/etc.) still end up with the same wording as before.
 const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on {date}.";
+// SMS/plain-text reminder default — unchanged, the {rsvp_by}/{link} tokens are part of the
+// editable text itself since there's no HTML to turn them into a "click here" link.
 const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding ({date}) by {rsvp_by}: {link}\n\nThank you!";
-function _inviteTpl(kind){
+// Email reminder default — like Invite, the RSVP link/closing are mechanical (see
+// _ssMessage/_ssBuildPayload) so the email-direct send can show a "click here" CTA.
+const _DEFAULT_REMINDER_EMAIL_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding on {date}.";
+// Save the date / Invite / Reminder are each editable separately per channel — Email
+// (sent via UnionVault, branded HTML) and SMS (covers every other channel: Text, WhatsApp,
+// Messenger, Instagram, Call notes, copy, and the mailto fallback when not signed in).
+// `channel` is 'email' or 'sms' (default 'sms' for any caller that doesn't care).
+function _inviteTpl(kind, channel){
   const s=STATE.settings||{};
-  if(kind==='reminder') return (s.reminderTemplate!=null?s.reminderTemplate:_DEFAULT_REMINDER_TPL);
-  if(kind==='savedate') return (s.saveDateTemplate!=null?s.saveDateTemplate:_DEFAULT_SAVEDATE_TPL);
-  return (s.inviteTemplate!=null?s.inviteTemplate:_DEFAULT_INVITE_TPL);
+  const ch=channel==='email'?'email':'sms';
+  if(kind==='reminder'){
+    const key='reminderTemplate'+(ch==='email'?'Email':'Sms');
+    const def=ch==='email'?_DEFAULT_REMINDER_EMAIL_TPL:_DEFAULT_REMINDER_TPL;
+    if(s[key]!=null) return s[key];
+    // Fall back to the old single reminderTemplate key (pre-channel-split) for sms only.
+    return ch==='sms' && s.reminderTemplate!=null ? s.reminderTemplate : def;
+  }
+  if(kind==='savedate'){
+    const key='saveDateTemplate'+(ch==='email'?'Email':'Sms');
+    if(s[key]!=null) return s[key];
+    return ch==='sms' && s.saveDateTemplate!=null ? s.saveDateTemplate : _DEFAULT_SAVEDATE_TPL;
+  }
+  const key='inviteTemplate'+(ch==='email'?'Email':'Sms');
+  if(s[key]!=null) return s[key];
+  return ch==='sms' && s.inviteTemplate!=null ? s.inviteTemplate : _DEFAULT_INVITE_TPL;
 }
 // Pretty long date, e.g. "14 November 2026". Empty string if unset/invalid.
 function _longDate(iso){
@@ -327,9 +352,13 @@ function _ssCoupleNames(){ const ev=STATE.event||{}; return [ev.partner1,ev.part
 function _ssMethodLabel(m){ const c=INVITE_CHANNELS.find(x=>x.key===m); return c?c.label:m; }
 function _ssOpen(kind, slotKey, method){
   const grp=_groupFromSlotKey(slotKey); if(!grp) return;
-  const base=_fillTemplate(_inviteTpl(kind), grp);
-  const asset=kind==='invite'?_ssInviteAsset():{file:null,publicUrl:'',viewUrl:'',link:''};
   const signedIn=!!(_sbSession&&_sbSession.access_token);
+  // Matches _ssMode()'s own method==='email'&&signedIn check — email-direct uses the
+  // Email-channel template, everything else (including the not-signed-in email fallback,
+  // which just opens the mail app) uses the SMS/plain-text one.
+  const channel=(method==='email'&&signedIn)?'email':'sms';
+  const base=_fillTemplate(_inviteTpl(kind, channel), grp);
+  const asset=kind==='invite'?_ssInviteAsset():{file:null,publicUrl:'',viewUrl:'',link:''};
   const emails=grp.members.map(g=>({name:g.name||'',email:(g.email||'').trim()})).filter(x=>x.email);
   _ss={kind, slotKey, method, grp, base, asset, file:null, signedIn, emails,
        to:emails.length?emails[0].email:'',
@@ -360,8 +389,12 @@ function _ssMessage(){
     if(s.asset.viewUrl && s.addLink) extra.push('View your invitation: '+s.asset.viewUrl);
   } else if(s.kind==='savedate'){
     const w=_wbSite(); if(w && w.published && w.slug) extra.push('Details: '+_wbSiteUrl());
+  } else if(s.kind==='reminder'){
+    extra.push('Kindly RSVP by '+(_longDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
+    extra.push('Thank you!');
   }
-  if(extra.length) msg=msg.replace(/\s+$/,'')+'\n\n'+extra.join('\n');
+  // Each extra is its own paragraph (blank-line separated), not one run-on block.
+  if(extra.length) msg=msg.replace(/\s+$/,'')+'\n\n'+extra.join('\n\n');
   return msg;
 }
 function _ssToggle(which){ if(!_ss) return; _ss[which]=!_ss[which]; _ssRender(); }
@@ -369,7 +402,7 @@ function _ssPickTo(v){ if(_ss){ _ss.to=v; } }
 function _ssRender(open){
   const s=_ss; if(!s) return;
   const esc=_escHtml, mode=_ssMode();
-  const noun=s.kind==='invite'?'invite':'save the date';
+  const noun=s.kind==='invite'?'invite':s.kind==='reminder'?'reminder':'save the date';
   const who=s.grp.members.map(g=>g.name).filter(Boolean).join(' & ');
   const contact = s.method==='email' ? (s.emails.length>1?'':(s.to||'no email on file')) : (_groupContact(s.grp,'phone')||'');
   const sw=(on,fn,label)=>`<span class="toggle-switch"><input type="checkbox" ${on?'checked':''} onchange="${fn}" aria-label="${esc(label)}"/><span class="toggle-track"></span></span>`;
@@ -397,10 +430,11 @@ function _ssRender(open){
     } else {
       attachHtml+=`<div style="border:1px dashed var(--border);border-radius:11px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5"><strong style="color:var(--ink)">No invitation uploaded yet</strong><br>Add one under Your Invitation to attach it. The message still sends on its own.</div>`;
     }
-  } else {
+  } else if(s.kind==='savedate'){
     const w=_wbSite(); const pub=!!(w&&w.published&&w.slug);
     attachHtml+=`<div style="border:1px dashed var(--border);border-radius:11px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5"><strong style="color:var(--ink)">No save-the-date file yet</strong><br>${pub?'Your wedding website link goes in the message instead.':'Publish your wedding website to include its link.'} Uploading a save-the-date is coming soon.</div>`;
   }
+  // Reminder: no file/attachment concept at all, attachHtml stays empty.
   const toHtml = (s.method==='email' && s.emails.length>1) ? `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span style="color:var(--muted)">To</span><select class="form-input" style="font-size:12.5px;flex:1" onchange="_ssPickTo(this.value)">${s.emails.map(e=>`<option value="${esc(e.email)}" ${e.email===s.to?'selected':''}>${esc(e.name)} · ${esc(e.email)}</option>`).join('')}</select></div>` : '';
   const msg=_ssMessage();
   const body=`<div style="display:flex;flex-direction:column;gap:11px">
@@ -593,12 +627,15 @@ function trackerSend(kind, slotKey){
   const grp=_groupFromSlotKey(slotKey);
   if(!grp){ return; }
   // Save the dates + invites by email / chat go through the send sheet (file or link attached).
-  if((kind==='invite'||kind==='savedate') && _SS_CHANNELS.includes(method)){
+  // Reminders have no file to attach, so only Email routes through it — for the branded
+  // "click here" RSVP link; every other reminder channel keeps going straight to the
+  // plain-text handoff below, same as before.
+  if(((kind==='invite'||kind==='savedate') && _SS_CHANNELS.includes(method)) || (kind==='reminder' && method==='email')){
     _closeTrackerMenu();
     _ssOpen(kind, slotKey, method);
     return;
   }
-  const tpl=_inviteTpl(kind);
+  const tpl=_inviteTpl(kind, 'sms');
   const message=_fillTemplate(tpl, grp);
   const note=_channelHandoff(method, grp, message);
   _trackerRecordSend(kind, slotKey, method, note);
@@ -950,47 +987,6 @@ function _setRsvpByDate(v){
   saveToStorage();
   if(typeof navigate==='function' && typeof _currentPage!=='undefined' && _currentPage==='rsvp-mgr') navigate('rsvp-mgr');
 }
-function _openInviteTemplatesModal(){
-  const tokenChips=['{guest}','{names}','{date}','{rsvp_by}','{link}']
-    .map(t=>`<code style="font-size:11px;background:var(--chip);border:.5px solid var(--border);border-radius:5px;padding:2px 7px;color:var(--gold-deep)">${t}</code>`).join('');
-  const body=`
-    <div style="display:flex;flex-direction:column;gap:18px">
-      <div>
-        <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">RSVP by date</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">The date guests should respond by. Fills the <code style="font-size:11px">{rsvp_by}</code> token in your messages.</div>
-        <input type="date" class="form-input" id="tpl-rsvpby" value="${(STATE.settings.rsvpBy||'').replace(/"/g,'&quot;')}" onchange="_setRsvpByDate(this.value)" style="max-width:220px"/>
-      </div>
-      <div style="background:var(--surface);border-radius:12px;padding:16px 18px;border:1px solid var(--border)">
-        <div style="font-size:12.5px;color:var(--muted);line-height:1.6">Templates fill these tokens automatically when you send from the tracker:
-          <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${tokenChips}</span>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Save the Date message</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sent when you use the Save the Date send button in the tracker.</div>
-        <textarea class="form-input" id="tpl-savedate" rows="3" oninput="STATE.settings.saveDateTemplate=this.value;saveToStorage()" style="width:100%;resize:vertical;line-height:1.5;font-family:'Inter',sans-serif">${_escHtml(_inviteTpl('savedate'))}</textarea>
-        <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="STATE.settings.saveDateTemplate=null;saveToStorage();document.getElementById('tpl-savedate').value=_inviteTpl('savedate')">Reset to default</button>
-      </div>
-      <div>
-        <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Invite message</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sent when you use the invite send button in the tracker.</div>
-        <textarea class="form-input" id="tpl-invite" rows="3" oninput="STATE.settings.inviteTemplate=this.value;saveToStorage()" style="width:100%;resize:vertical;line-height:1.5;font-family:'Inter',sans-serif">${_escHtml(_inviteTpl('invite'))}</textarea>
-        <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="STATE.settings.inviteTemplate=null;saveToStorage();document.getElementById('tpl-invite').value=_inviteTpl('invite')">Reset to default</button>
-      </div>
-      <div>
-        <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Reminder message</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sent when you use the reminder send button in the tracker.</div>
-        <textarea class="form-input" id="tpl-reminder" rows="3" oninput="STATE.settings.reminderTemplate=this.value;saveToStorage()" style="width:100%;resize:vertical;line-height:1.5;font-family:'Inter',sans-serif">${_escHtml(_inviteTpl('reminder'))}</textarea>
-        <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="STATE.settings.reminderTemplate=null;saveToStorage();document.getElementById('tpl-reminder').value=_inviteTpl('reminder')">Reset to default</button>
-      </div>
-      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border)">
-        <strong style="color:var(--ink)">How sending works:</strong> Email, Text, and WhatsApp open the app pre-filled — you tap send. Messenger and Instagram open the person's chat and copy the message to your clipboard (paste &amp; send). Sending stamps today's date and marks the guest invited.
-      </div>
-    </div>`;
-  const footer=`<button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`;
-  openModal('Invites & Reminders', body, footer);
-}
-
 // Toggle: when on, the tracker's Reminder cell is blank for any group whose members
 // have all responded (attending/declined). Re-renders the tracker list in place.
 function _setHideReminderIfResponded(on){
@@ -2294,8 +2290,9 @@ function _ssBuildPayload(s, msg){
   if(!s) s=_ss; if(!msg) msg=_ssMessage();
   const names=_ssCoupleNames();
   const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
-  const payload={ to:s&&s.to?[s.to]:[], subject:(s&&s.kind==='invite'?'You\'re invited':'Save the date')+(names?' — '+names:''), body:msg,
-    fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:s&&s.kind==='invite'?'You\'re invited':'Save the date',
+  const _ssTitle=s&&s.kind==='invite'?'You\'re invited':s&&s.kind==='reminder'?'RSVP reminder':'Save the date';
+  const payload={ to:s&&s.to?[s.to]:[], subject:_ssTitle+(names?' — '+names:''), body:msg,
+    fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:_ssTitle,
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
     templateId:ed.templateId||'classic',
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
@@ -2326,6 +2323,14 @@ function _ssBuildPayload(s, msg){
     block.rsvpByText=_longDate((STATE.settings||{}).rsvpBy)||'';
     block.closingText='With love.';
     payload.inviteBlock=block;
+  } else if(s && s.kind==='reminder'){
+    // Same mechanical CTA as Invite, minus the image/file concept reminders don't have.
+    payload.htmlText=s.base;
+    payload.inviteBlock={
+      rsvpUrl:_rsvpLink(),
+      rsvpByText:_longDate((STATE.settings||{}).rsvpBy)||'',
+      closingText:'Thank you!',
+    };
   }
   return payload;
 }
