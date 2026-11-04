@@ -4539,7 +4539,7 @@ function _wbBuildSite(forDownload){
       // gifting with icons, so it's built separately rather than reshaping `pay` itself.
       const wwDigital=[ ww.payId?{icon:'payid',label:'PayID',lines:[ww.payId]}:null,
                   ww.paypal?{icon:'paypal',label:'PayPal',lines:[ww.paypal]}:null,
-                  (ww.bankBsb&&ww.bankAcc)?{icon:'bank',label:'Bank transfer',lines:['BSB '+ww.bankBsb,'Acc '+ww.bankAcc].concat(ww.accountName?['Account name: '+ww.accountName]:[])}:null ].filter(Boolean);
+                  (ww.bankBsb&&ww.bankAcc)?{icon:'bank',label:'Bank transfer',lines:['BSB: '+ww.bankBsb,'Acc no: '+ww.bankAcc].concat(ww.accountName?['Acc name: '+ww.accountName]:[])}:null ].filter(Boolean);
       const wwPhysical=[ ww.acceptCash?{icon:'cash',label:'Cash',lines:[]}:null,
                   ww.acceptCheque?{icon:'cheque',label:'Cheque',lines:['Make out to '+(ww.chequeTo||'the couple')+'.']}:null ].filter(Boolean);
       const payNote=(ww.payNote||'').trim()||'We greatly appreciate your generosity!';

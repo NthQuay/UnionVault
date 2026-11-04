@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
     const digitalNote = refNote
       ? `Be sure to include ${refNote} in the reference so we know who to thank.`
       : "Be sure to write your name/s in the reference so we know who to thank.";
-    const physicalNote = "Place in a card and/or envelope with your name on and drop it into the wishing well box on the wedding day.";
+    const physicalNote = "Place in a card and/or envelope with your name and drop it into the wishing well box on the wedding day.";
 
     // Plain-text fallback (the email's MIME text alternative, not what guests normally
     // see — the HTML below renders its own icon rows instead of paragraph-splitting
@@ -150,7 +150,21 @@ function iconBadge(icon: string): string {
   const glyph = ICON_GLYPH[icon] || "•";
   return `<td width="26" valign="top" style="padding:1px 10px 0 0"><span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:#F4EEE4;color:#8a6a2c;font-size:10px;font-weight:700">${escH(glyph)}</span></td>`;
 }
+// "Label: value" → [label, value], for the aligned sub-field table below.
+function splitLabelValue(line: string): [string, string] {
+  const i = line.indexOf(": ");
+  return i >= 0 ? [line.slice(0, i), line.slice(i + 2)] : ["", line];
+}
 function rowHtml(r: PayRow): string {
+  // Bank transfer: label on its own line, then BSB/Acc no/Acc name as a tight,
+  // colon-aligned mini table instead of one line per field with normal line spacing.
+  if (r.icon === "bank" && r.lines.length) {
+    const pairs = r.lines.map(splitLabelValue);
+    const sub = `<table role="presentation" cellpadding="0" cellspacing="0">${pairs
+      .map(([l, v]) => `<tr><td style="font-size:15px;line-height:1.45;padding-right:6px;white-space:nowrap">${escH(l)}:</td><td style="font-size:15px;line-height:1.45">${linkify(escH(v))}</td></tr>`)
+      .join("")}</table>`;
+    return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:9px"><tr>${iconBadge(r.icon)}<td style="padding-top:1px"><div style="font-size:15px;line-height:1.6;margin-bottom:2px">${escH(r.label)}</div>${sub}</td></tr></table>`;
+  }
   const first = r.lines.length ? `${escH(r.label)}: ${linkify(escH(r.lines[0]))}` : escH(r.label);
   const rest = r.lines.slice(1).map((l) => `<div style="margin-top:2px">${linkify(escH(l))}</div>`).join("");
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:9px"><tr>${iconBadge(r.icon)}<td style="font-size:15px;line-height:1.6;padding-top:1px">${first}${rest}</td></tr></table>`;
