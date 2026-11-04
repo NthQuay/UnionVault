@@ -1334,7 +1334,7 @@ body.dark .budget-item.bg-gentle > .bi-head{background:#1E1E23}
      full card width on a narrow screen. */
   .orsvp-lv-dash{display:none!important}
   .orsvp-lv-summary{display:block!important;margin-top:1px}
-  .orsvp-lv-contact{padding-left:14px!important;gap:8px!important}
+  .orsvp-lv-contact{padding-left:14px!important;gap:4px 0!important} /* no column gap: the "⋅" separator carries its own even spacing */
   .orsvp-lv-member,.orsvp-lv-hist{padding-left:14px!important}
   /* Show / hide items popup: single column on mobile */
   .vhb-cols{flex-direction:column!important;gap:14px!important}
