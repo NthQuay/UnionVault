@@ -238,7 +238,8 @@ function _commsFixedPreviewPayload(key){
     return {endpoint:'rsvp-confirm-email', payload:{ preview:true, couple_id:ownerUid||'', couple_names:names,
       wedding_date:(STATE.event&&STATE.event.date)||'', wedding_time:(STATE.event&&STATE.event.time)||'',
       venue:[STATE.event&&STATE.event.venue, STATE.event&&STATE.event.venueAddress].filter(Boolean).join(', '),
-      title_override:t.title||null, intro_override:t.intro||null, closing_override:t.closing||null, design_opts:designOpts }};
+      title_override:t.title||null, intro_override:t.intro||null, closing_override:t.closing||null, design_opts:designOpts,
+      ordinal_dates:typeof _commsOrdinalOn==='function'?_commsOrdinalOn():true }};
   }
   if(key==='ww'){
     const t=ct.ww||{};
