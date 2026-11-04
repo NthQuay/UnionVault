@@ -641,7 +641,7 @@ function _seatCogMenuHtml(style, layout){
     ${styleSeg}
     <div style="height:1px;background:var(--border);margin:2px 0 6px"></div>
     ${arrangeRow}
-    <button class="seat-cog-action" ${dis} onclick="randomFillSeating()" title="Randomly seat unassigned attending guests into free seats (keeps couples together)" style="display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;color:var(--gold-deep);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;padding:6px 2px;text-align:left">
+    <button class="seat-cog-action" ${dis} onclick="randomFillSeating()" title="Randomly seat unassigned attending guests into free seats (keeps couples and families together)" style="display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;color:var(--gold-deep);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;padding:6px 2px;text-align:left">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
       Random fill empty seats
     </button>

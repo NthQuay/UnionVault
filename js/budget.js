@@ -1879,7 +1879,7 @@ function renderBudgetSummaryBody(){
       +row(icD,'var(--green)','Paid',fmt(totalPaid),'var(--green)',depBtn,false,indent)
       +row(icO,'var(--gold-deep)','Left to pay',fmt(F.due),'var(--gold-deep)',dueBtn,false,indent)
       +row(icR,'var(--gold-deep)',F.remLbl,F.remVal,F.remColor,'',true)+`</div>`;
-    return wrapAB(rows(false),rows(true));
+    return wrapAB(rows(false),rows(false));
   }
 
   if(style===4){

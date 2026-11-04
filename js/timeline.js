@@ -535,8 +535,9 @@ function renderTimeline(c, actions){
     <button class="btn btn-primary btn-sm tl-tb-btn" onclick="openAddTimelineItem()" title="Add Moment" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="tl-tb-label">Add Moment</span></button>`;
 
   const items = tlSorted();
-  const dateLine = STATE.event.date ? fmtDate(STATE.event.date) : '';
-  const venueLine = STATE.event.venue || '';
+  const _dv = _tlDateVenue(_tlActiveTimeline());
+  const dateLine = _dv.date;
+  const venueLine = _dv.venue;
 
   const hasSongs = items.some(i=>Array.isArray(i.songs)&&i.songs.some(s=>s&&(s.title||s.artist)));
   // View switcher — only shown once there's at least one moment (music view needs songs to be useful).
@@ -1033,7 +1034,14 @@ async function _showPublicRunSheet(coupleId){
 
 // Shared print header bits.
 function _tlPrintNames(){ const p1=STATE.event.partner1||'', p2=STATE.event.partner2||''; return (p1||p2)?`${_escHtml(p1)} &amp; ${_escHtml(p2)}`:'Our Wedding'; }
-function _tlPrintSubLine(){ const d=STATE.event.date?fmtDate(STATE.event.date):''; const v=STATE.event.venue||''; return [d,v].filter(Boolean).join(' · '); }
+// Date + venue for a timeline: a timeline linked to an event (Events page) shows that
+// event's own date and venue; otherwise the wedding's.
+function _tlDateVenue(tl){
+  const ev=tl&&tl.linkedEventId?(STATE.events||[]).find(e=>e.id===tl.linkedEventId):null;
+  if(ev) return { date: ev.date?fmtDate(ev.date):'', venue: ev.venueName||'' };
+  return { date: STATE.event.date?fmtDate(STATE.event.date):'', venue: STATE.event.venue||'' };
+}
+function _tlPrintSubLine(){ const dv=_tlDateVenue(typeof _tlActiveTimeline==='function'?_tlActiveTimeline():null); return [dv.date,dv.venue].filter(Boolean).join(' · '); }
 
 function printTimeline(mode){
   if(mode==='music'){ return printTimelineMusic(); }
