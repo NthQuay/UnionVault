@@ -2838,3 +2838,7 @@ body.dark .nav-item button.nav-locked::after{background-image:url("data:image/sv
 
 /* Contact details: "   ⋅   " between items that share a line (added by _orsvpFitContactSeps) */
 .orsvp-ci-wrap .orsvp-ci-item.sep::before{content:"\22C5";padding:0 .85em;color:var(--muted)}
+
+/* Online RSVPs household initials: gold-tinted in dark mode so the circle stands off the card
+   (same treatment as the guest-list member picker avatars) */
+body.dark .orsvp-av{background:rgba(196,168,130,.16)!important;color:var(--gold)!important}
