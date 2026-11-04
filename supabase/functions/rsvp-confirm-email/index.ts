@@ -182,7 +182,7 @@ Deno.serve(async (req: Request) => {
       : `${coupleNames} have received your reply.`;
     const html = brandedHtml({
       kicker: "RSVP confirmed", title: titleText, text,
-      accentColor, showBranding, showLogo, headerImage,
+      accentColor, showBranding, showLogo: showLogo || showBranding, headerImage,
     });
 
     if (isPreview) return json(200, { ok: true, html });
@@ -255,7 +255,7 @@ function brandedHtml(opts: { kicker?: string; title?: string; text: string; acce
         : `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${html}</p>`;
     })
     .join("");
-  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="90" alt="Union Vault" style="display:block;width:90px;height:auto;border:0;margin:0 auto"></picture>`;
+  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="60" alt="Union Vault" style="display:block;width:60px;height:auto;border:0;margin:0 auto"></picture>`;
   const headerBand = opts.headerImage
     ? `<tr><td style="padding:0"><img src="${escH(opts.headerImage)}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>`
     : "";

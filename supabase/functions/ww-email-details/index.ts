@@ -148,7 +148,7 @@ Deno.serve(async (req: Request) => {
         { title: "Digital gifting options", note: digitalNote, rows: digitalRows },
         { title: "Physical gifting options", note: physicalNote, rows: physicalRows },
       ],
-      accentColor, showBranding, showLogo, headerImage,
+      accentColor, showBranding, showLogo: showLogo || showBranding, headerImage,
     });
 
     if (isPreview) return json(200, { ok: true, html });
@@ -259,7 +259,7 @@ function brandedHtml(opts: {
   const paras = buildParas(opts.text);
   const groupsHtml = (opts.groups || []).map((g) => groupHtml(g, ac)).join("");
   const afterParas = opts.afterText ? buildParas(opts.afterText) : "";
-  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="90" alt="Union Vault" style="display:block;width:90px;height:auto;border:0;margin:0 auto"></picture>`;
+  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="60" alt="Union Vault" style="display:block;width:60px;height:auto;border:0;margin:0 auto"></picture>`;
   const headerBand = opts.headerImage
     ? `<tr><td style="padding:0"><img src="${escH(opts.headerImage)}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>`
     : "";

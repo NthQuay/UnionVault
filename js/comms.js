@@ -250,7 +250,7 @@ function _commsFixedPreviewPayload(key){
     const t=ct.appt||{};
     const signature=names&&t.signature&&t.signature.trim()
       ? t.signature.trim().replace(/\{names\}/g,names).split('\n').filter(Boolean)
-      : (names?[`Sent by ${names} via UnionVault.`,'Reply to this email to reach them.']:[]);
+      : (names?[`Sent by ${names} via UnionVault.`,`Reply to this email to reach ${names}.`]:[]);
     const sigShown=typeof _apptSigFilter==='function'?_apptSigFilter(signature):signature;
     return {endpoint:'send-appointment-email', payload:{ preview:true,
       kicker:names?names+"'s wedding":'', title:'Vendor meeting',
@@ -334,8 +334,9 @@ function _commsEditClick(key){
   if(!_uvRequirePaid('editComms')) return;
   _commsOpenEditModal(key);
 }
+// Design is open to every plan (free plan just can't turn the footer logo off — see
+// _emailLogoLocked); Edit stays gated.
 function _commsDesignClick(key){
-  if(!_uvRequirePaid('editComms')) return;
   _openEmailDesignModal(key);
 }
 function _commsOpenEditModal(key){
@@ -426,7 +427,7 @@ function _commsOpenFixedEditModal(key){
   } else if(key==='appt'){
     const t=ct.appt||{};
     title='Appointment email';
-    fieldsHtml=_commsFieldHtml('appt-sig','Sign-off',t.signature||'','Sent by {names} via UnionVault.\nReply to this email to reach them.',true);
+    fieldsHtml=_commsFieldHtml('appt-sig','Sign-off',t.signature||'','Sent by {names} via UnionVault.\nReply to this email to reach {names}.',true);
     note=_commsLockedNote('The appointment type, vendor, date, time &amp; location.');
     saveFn='_commsSaveAppt()';
   } else if(key==='vbrief'){

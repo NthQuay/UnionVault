@@ -2465,6 +2465,9 @@ const _COMMS_COLOR_PRESETS=['#8a6a2c','#C9A66B','#B8865A','#9B6B6B','#6B4F4F','#
 // edits STATE.settings.commsDesign[itemKey] instead — a sparse per-email override that
 // falls back to the universal design for anything it doesn't set. The two share every
 // control; only the storage target and a small "custom for this email" banner differ.
+// Free plan (signed in, not paid) always shows the footer logo — the checkbox is locked
+// on here, and the edge functions enforce it server-side regardless of what's sent.
+function _emailLogoLocked(){ return !!(typeof _sbSession!=='undefined'&&_sbSession) && typeof _uvIsPaid==='function' && !_uvIsPaid(); }
 function _openEmailDesignModal(itemKey){
   const universal=(STATE.settings&&STATE.settings.emailDesign)||{};
   const override=itemKey&&STATE.settings&&STATE.settings.commsDesign&&STATE.settings.commsDesign[itemKey];
@@ -2472,7 +2475,8 @@ function _openEmailDesignModal(itemKey){
   const tplId=src.templateId||'classic';
   const accent=src.accentColor||'#8a6a2c';
   const ff=src.fontFamily||'serif';
-  const logo=src.showLogo!==false;
+  const logoLocked=_emailLogoLocked();
+  const logo=logoLocked||src.showLogo!==false;
   const hdrImg=src.headerImage||'';
   const hdrPreview=hdrImg?_mediaUrl(hdrImg):'';
   const item=itemKey&&typeof _commsItem==='function'?_commsItem(itemKey):null;
@@ -2546,10 +2550,11 @@ function _openEmailDesignModal(itemKey){
       </button></div>
     </div>
     <div>
-      <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
-        <input type="checkbox" ${logo?'checked':''} onchange="_emailDesignSet('showLogo',this.checked${arg})" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+      <label style="display:flex;align-items:center;gap:9px;cursor:${logoLocked?'default':'pointer'}">
+        <input type="checkbox" ${logo?'checked':''} ${logoLocked?'disabled':''} onchange="_emailDesignSet('showLogo',this.checked${arg})" style="width:15px;height:15px;accent-color:var(--gold);cursor:${logoLocked?'default':'pointer'};flex-shrink:0"/>
         <span style="font-size:13px;color:var(--ink)">Show logo in email footer</span>
       </label>
+      ${logoLocked?`<div style="font-size:11.5px;color:var(--muted);margin:5px 0 0 24px">Always shown on the free plan. <a href="#" onclick="event.preventDefault();_uvRequirePaid('brandOff')" style="color:var(--gold)">Upgrade</a> to remove it.</div>`:''}
     </div>
     ${!itemKey?`<div style="border-top:1px solid var(--border);padding-top:14px">
       <button type="button" class="btn btn-outline btn-sm" onclick="_ssPreviewEmail()" style="display:inline-flex;align-items:center;gap:6px">
@@ -2567,6 +2572,7 @@ function _openEmailDesignModal(itemKey){
 // previously that only happened on the next template switch. `skipRerender` is for the hex
 // field's live-as-you-type save, so a full re-render doesn't steal focus mid-keystroke.
 function _emailDesignSet(key, val, itemKey, skipRerender){
+  if(key==='showLogo' && !val && _emailLogoLocked()){ _openEmailDesignModal(itemKey); return; } // free plan: locked on
   if(!STATE.settings) STATE.settings={};
   if(itemKey){
     if(!STATE.settings.commsDesign) STATE.settings.commsDesign={};

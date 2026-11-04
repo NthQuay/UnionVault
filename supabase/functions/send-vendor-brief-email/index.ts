@@ -94,7 +94,7 @@ serve(async (req) => {
     kicker: names ? `${names}'s wedding` : '', title: 'Your vendor brief', text: intro,
     cta: { url: briefUrl, label: buttonLabel }, ctaNote: expiryDisplay ? `Expires ${expiryDisplay}` : '',
     afterText: closing,
-    showBranding, accentColor, fontFamily, showLogo, headerImage, templateId: tplId,
+    showBranding, accentColor, fontFamily, showLogo: showLogo || showBranding, headerImage, templateId: tplId,
   })
 
   if (isPreview) return json(200, { ok: true, html })
@@ -170,7 +170,7 @@ function classicTemplate(opts: TemplateOpts): string {
   const logoFooter = opts.showLogo
     ? `<tr><td align="center" style="padding:0 26px 10px">
 <a href="https://unionvault.app" style="text-decoration:none">
-<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="90" alt="Union Vault" style="display:block;width:90px;height:auto;border:0;margin:0 auto"></picture>
+<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="60" alt="Union Vault" style="display:block;width:60px;height:auto;border:0;margin:0 auto"></picture>
 </a></td></tr>` : ''
 
   const brandingFooter = (opts.showBranding || opts.showLogo)
@@ -210,7 +210,7 @@ function modernTemplate(opts: TemplateOpts): string {
   const logoFooter = opts.showLogo
     ? `<tr><td align="center" style="padding:0 26px 10px">
 <a href="https://unionvault.app" style="text-decoration:none">
-<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="80" alt="Union Vault" style="display:block;width:80px;height:auto;border:0;margin:0 auto"></picture>
+<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="53" alt="Union Vault" style="display:block;width:53px;height:auto;border:0;margin:0 auto"></picture>
 </a></td></tr>` : ''
 
   const brandingFooter = (opts.showBranding || opts.showLogo)
@@ -253,7 +253,7 @@ function botanicalTemplate(opts: TemplateOpts): string {
   const logoFooter = opts.showLogo
     ? `<tr><td align="center" style="padding:0 26px 10px">
 <a href="https://unionvault.app" style="text-decoration:none">
-<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="85" alt="Union Vault" style="display:block;width:85px;height:auto;border:0;margin:0 auto"></picture>
+<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="57" alt="Union Vault" style="display:block;width:57px;height:auto;border:0;margin:0 auto"></picture>
 </a></td></tr>` : ''
 
   const brandingFooter = (opts.showBranding || opts.showLogo)

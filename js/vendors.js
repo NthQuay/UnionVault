@@ -2669,7 +2669,7 @@ function _apptBuildMailto(task, a, recipients, attached){
   const _apptSigOverride=(STATE.settings&&STATE.settings.commsText&&STATE.settings.commsText.appt&&STATE.settings.commsText.appt.signature)||'';
   let signature=!couple?[]:_apptSigOverride.trim()
     ? _apptSigOverride.trim().replace(/\{names\}/g,couple).split('\n').filter(Boolean)
-    : [`Sent by ${couple} via UnionVault.`,'Reply to this email to reach them.'];
+    : [`Sent by ${couple} via UnionVault.`,`Reply to this email to reach ${couple}.`];
   // Show logo off (this email's Design) also hides the "…via UnionVault" sign-off line.
   signature=_apptSigFilter(signature);
   const fullBodyLines=signature.length?bodyLines.concat(['',...signature]):bodyLines;
@@ -2682,7 +2682,8 @@ function _apptBuildMailto(task, a, recipients, attached){
 // Show logo off — shared by the real send (here) and the Communications preview.
 function _apptSigFilter(lines){
   const ed=typeof _commsDesignFor==='function'?_commsDesignFor('appt'):((STATE.settings&&STATE.settings.emailDesign)||{});
-  return ed.showLogo===false ? (lines||[]).filter(l=>!/union ?vault/i.test(l)) : (lines||[]);
+  const locked=typeof _emailLogoLocked==='function'&&_emailLogoLocked();
+  return (ed.showLogo===false && !locked) ? (lines||[]).filter(l=>!/union ?vault/i.test(l)) : (lines||[]);
 }
 function _apptOpenEmailDraft(task, a, recipients){
   const m=_apptBuildMailto(task, a, recipients);

@@ -86,7 +86,7 @@ serve(async (req) => {
     title: String(title ?? '').slice(0, 200),
     text: String(htmlText || text || '').slice(0, 10000),
     signature: sigLines,
-    accentColor, showBranding, showLogo, headerImage,
+    accentColor, showBranding, showLogo: showLogo || showBranding, headerImage,
   })
 
   if (isPreview) {
@@ -151,7 +151,7 @@ function brandedHtml(opts: { kicker?: string; title?: string; text: string; sign
   const signatureHtml = opts.signature?.length
     ? `<div class="uv-muted" style="text-align:center;font-style:italic;font-size:13px;color:#6E6259;margin-top:4px">${opts.signature.map((l) => applyInlineMarkup(escH(l)).replace(/\bUnion ?Vault\b/g, (m) => `<a href="https://unionvault.app" style="color:${ac};text-decoration:none">${m}</a>`)).join('<br>')}</div>`
     : ''
-  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="90" alt="Union Vault" style="display:block;width:90px;height:auto;border:0;margin:0 auto"></picture>`
+  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="60" alt="Union Vault" style="display:block;width:60px;height:auto;border:0;margin:0 auto"></picture>`
   const headerBand = opts.headerImage
     ? `<tr><td style="padding:0"><img src="${escH(opts.headerImage)}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>`
     : ''
