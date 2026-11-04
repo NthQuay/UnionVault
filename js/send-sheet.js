@@ -24,7 +24,7 @@ const _DEFAULT_SAVEDATE_EMAIL_TPL="## We're getting married - so save the date!\
 const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on **{date}**.";
 // SMS/plain-text reminder default — the {rsvp_by}/{link} tokens are part of the editable
 // text itself since there's no HTML to turn them into a "click here" link.
-const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on {date}.\nPlease submit your RSVP via the link below by {rsvp_by} so we know whether to account for you or not: {link}\n\nThank you, we hope you can make it!";
+const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on {date}.\nPlease submit your RSVP via the link below by {rsvp_by} so we can ensure you're catered for. If you cannot make it, please still submit your RSVP to let us know: {link}\n\nThank you, we hope you can make it!";
 // Email reminder default — like Invite, the RSVP link/closing are mechanical (see
 // _ssMessage/_ssBuildPayload) so the email-direct send can show a "click here" CTA.
 const _DEFAULT_REMINDER_EMAIL_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on **{date}**.";
@@ -2403,7 +2403,7 @@ function _ssBuildPayload(s, msg){
       rsvpUrl:_rsvpLink(),
       rsvpByText:rsvpBy,
       rsvpButtonLabel:'RSVP',
-      rsvpLeadText:'Please submit your RSVP by '+rsvpBy+' so we know whether to account for you or not.',
+      rsvpLeadText:'Please submit your RSVP by '+rsvpBy+' so we can ensure you\'re catered for. If you cannot make it, please still submit your RSVP to let us know.',
       closingText:'Thank you, we hope you can make it!',
     };
   } else if(s && s.kind==='savedate'){
