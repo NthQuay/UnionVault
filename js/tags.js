@@ -366,6 +366,7 @@ function _deleteTag(name){
 function _escSQ(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
 function openModal(title,body,footer){
+  document.getElementById('orsvp-hdr-views')?.remove(); // Online RSVPs' header-only control
   // Any modal that isn't the just-armed confirm popup invalidates a pending revert.
   if(!_escapeRevertArm) _escapeRevert=null;
   const _rha=document.getElementById('budget-report-header-actions'); if(_rha) _rha.remove();
@@ -378,6 +379,6 @@ function openModal(title,body,footer){
   document.getElementById('modal-overlay').classList.remove('hidden');
 }
 function closeModal(e){ /* Outside-click close disabled — use the × or Cancel button to close. */ }
-function closeModalDirect(){ if(_groupReviewOpen){ _groupReviewOpen=false; _resumeGroupBannerTimer(); } _escapeRevert=null; _checkSnapshot=null; _plusOneNewMode=false; _popupBack=null; _popupBackPending=null; _ciAddDialogOpen=false; if(_wbLiveFocus!==null){ _wbLiveFocusOff(); document.getElementById('modal-overlay')?.classList.remove('wb-edit-overlay'); _wbLivePaint(); } const mb=document.getElementById('modal-box'); if(mb){ mb.classList.remove('modal-fit'); mb.classList.remove('seat-mgr-compact'); mb.classList.remove('modal-wide'); } const _mo=document.getElementById('modal-overlay'); if(_mo){ _mo.classList.remove('budget-summary-overlay'); _mo.classList.remove('print-hub-overlay'); _mo.classList.remove('seating-preview-overlay'); _mo.classList.remove('export-prev-guests','export-prev-timeline','export-prev-budget','export-prev-seating'); } document.getElementById('modal-overlay').classList.add('hidden'); }
+function closeModalDirect(){ document.getElementById('orsvp-hdr-views')?.remove(); if(_groupReviewOpen){ _groupReviewOpen=false; _resumeGroupBannerTimer(); } _escapeRevert=null; _checkSnapshot=null; _plusOneNewMode=false; _popupBack=null; _popupBackPending=null; _ciAddDialogOpen=false; if(_wbLiveFocus!==null){ _wbLiveFocusOff(); document.getElementById('modal-overlay')?.classList.remove('wb-edit-overlay'); _wbLivePaint(); } const mb=document.getElementById('modal-box'); if(mb){ mb.classList.remove('modal-fit'); mb.classList.remove('seat-mgr-compact'); mb.classList.remove('modal-wide'); } const _mo=document.getElementById('modal-overlay'); if(_mo){ _mo.classList.remove('budget-summary-overlay'); _mo.classList.remove('print-hub-overlay'); _mo.classList.remove('seating-preview-overlay'); _mo.classList.remove('export-prev-guests','export-prev-timeline','export-prev-budget','export-prev-seating'); } document.getElementById('modal-overlay').classList.add('hidden'); }
 
 // ═══════════════════════════════════════════════════════════════════════════
