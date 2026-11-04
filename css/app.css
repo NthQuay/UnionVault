@@ -2768,3 +2768,10 @@ body.dark .nav-item button.nav-locked::after{background-image:url("data:image/sv
 /* ── Wishing well column toggle (desktop only) ── */
 @media(min-width:768px){.ww-col-toggle{display:inline-flex!important}}
 
+/* ── Communications page: dropdown nav on narrow widths instead of the full list ── */
+.comms-mobile-nav{display:none}
+@media (max-width:760px){
+  .comms-mobile-nav{display:block}
+  .comms-nav-card{display:none}
+}
+

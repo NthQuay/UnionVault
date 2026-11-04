@@ -32,7 +32,7 @@ serve(async (req) => {
   if (!user?.id) return json(401, { ok: false, error: 'Sign in to send email' })
 
   let b: { to?: string[]; subject?: string; body?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string;
-           attachment?: { filename?: string; path?: string };
+           attachment?: { filename?: string; path?: string }; ics?: string;
            templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean;
            htmlText?: string; guestId?: string;
            inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; closingText?: string } }
@@ -63,11 +63,16 @@ serve(async (req) => {
   let senderTier = 'free'
   if (SB_SERVICE) {
     try {
-      const pr = await fetch(`${SB_URL}/rest/v1/user_profiles?user_id=eq.${user.id}&select=tier`, {
-        headers: { apikey: SB_SERVICE, Authorization: `Bearer ${SB_SERVICE}` },
+      // compute_tier mirrors get_my_subscription()'s effective-tier logic (granted
+      // access + subscriptions table), not just the bare user_profiles.tier column —
+      // a plain column read missed any couple on a granted-access or active plan.
+      const pr = await fetch(`${SB_URL}/rest/v1/rpc/compute_tier`, {
+        method: 'POST',
+        headers: { apikey: SB_SERVICE, Authorization: `Bearer ${SB_SERVICE}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_user_id: user.id }),
       })
-      const rows = await pr.json()
-      if (rows?.[0]?.tier) senderTier = rows[0].tier
+      const t = await pr.json()
+      if (typeof t === 'string' && t) senderTier = t
     } catch (_) { /* default to free — branding shown */ }
   }
   const showBranding = senderTier === 'free'
@@ -143,6 +148,10 @@ serve(async (req) => {
     if (!path.startsWith(allowed) || path.includes('..')) return json(400, { ok: false, error: 'Invalid attachment' })
     const filename = String(b.attachment.filename ?? 'invitation').replace(/[\\/\r\n"]/g, '').slice(0, 120) || 'invitation'
     payload.attachments = [{ filename, path }]
+  } else if (b.ics) {
+    // Save-the-date calendar invite — client already base64-encoded it (same pattern
+    // send-appointment-email uses), so just pass it through as-is.
+    payload.attachments = [{ filename: 'wedding.ics', content: String(b.ics) }]
   }
 
   const r = await fetch('https://api.resend.com/emails', {
@@ -165,9 +174,25 @@ function linkifyWith(escaped: string, color: string): string {
   return escaped.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)'"]/g, (u) => `<a href="${u}" style="color:${escH(color)}">${u}</a>`)
 }
 
+// The Communications page's lightweight formatting markup — **bold** *italic* __underline__
+// — applied after escaping/linkifying, so a guest's typed text can never inject real HTML,
+// only these specific patterns become tags. Double-star is matched before single-star so
+// **bold** doesn't get half-eaten by the italic pass.
+function applyInlineMarkup(s: string): string {
+  return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.+?)__/g, '<u>$1</u>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+}
+
 function buildParas(text: string, color: string): string {
-  return String(text ?? '').trim().split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkifyWith(escH(p), color).replace(/\n/g, '<br>')}</p>`).join('')
+  return String(text ?? '').trim().split(/\n{2,}/).map((p) => {
+    const isHeading = /^##\s+/.test(p)
+    const body = isHeading ? p.replace(/^##\s+/, '') : p
+    const html = applyInlineMarkup(linkifyWith(escH(body), color)).replace(/\n/g, '<br>')
+    return isHeading
+      ? `<p style="margin:0 0 14px;font-size:17px;line-height:1.4;font-style:italic;font-weight:500">${html}</p>`
+      : `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${html}</p>`
+  }).join('')
 }
 
 // Invite-only block: an embedded, clickable invitation image (or a plain link when
