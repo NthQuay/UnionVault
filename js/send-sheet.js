@@ -22,6 +22,10 @@ const _DEFAULT_SAVEDATE_EMAIL_TPL="## We're getting married - so save the date!\
 // channels (SMS/WhatsApp/mailto/etc.) still end up with the same wording as before.
 // Shared by both channels — the bold around {date} simply strips back to plain for SMS.
 const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on **{date}**.";
+// SMS/plain-text invite default — its own wording (Email keeps the one above). The RSVP
+// line, wedding-website line (only when the site is published) and "With love." are
+// appended mechanically by _ssMessage()/_commsCtaLines(), not part of this text.
+const _DEFAULT_INVITE_SMS_TPL="Dear {guest},\n\n{names} are getting married and we would be delighted to have you at our wedding on {date}.";
 // SMS/plain-text reminder default — the {rsvp_by}/{link} tokens are part of the editable
 // text itself since there's no HTML to turn them into a "click here" link.
 const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on {date}.\nPlease submit your RSVP via the link below by {rsvp_by} so we can ensure you're catered for. If you cannot make it, please still submit your RSVP to let us know: {link}\n\nThank you, we hope you can make it!";
@@ -50,7 +54,13 @@ function _inviteTpl(kind, channel){
   }
   const key='inviteTemplate'+(ch==='email'?'Email':'Sms');
   if(s[key]!=null) return s[key];
-  return ch==='sms' && s.inviteTemplate!=null ? s.inviteTemplate : _DEFAULT_INVITE_TPL;
+  if(ch==='email') return _DEFAULT_INVITE_TPL;
+  // Old single inviteTemplate key (pre-channel-split): only honoured if it doesn't carry
+  // its own {rsvp_by}/{link} RSVP line — that line is now appended mechanically, so an
+  // old template that bakes it in would show the RSVP sentence twice.
+  const legacy=s.inviteTemplate;
+  if(legacy!=null && !/\{rsvp_by\}|\{link\}/.test(legacy)) return legacy;
+  return _DEFAULT_INVITE_SMS_TPL;
 }
 // ── Lightweight formatting markup, shared by every editable template/field ─────────────
 // **bold** *italic* __underline__ — kept intentionally small (no nesting, no lists/links
@@ -437,6 +447,9 @@ function _ssMessage(){
   const extra=[];
   if(s.kind==='invite'){
     extra.push('Kindly RSVP by '+(_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
+    // Same gate as the Email invite's "Visit our website" button — never a dead link.
+    const w=typeof _wbSite==='function'&&_wbSite();
+    if(w && w.published && w.slug) extra.push('For further wedding details, please check out our wedding website: '+_wbSiteUrl());
     extra.push('With love.');
     if(s.asset.viewUrl && s.addLink) extra.push('View your invitation: '+s.asset.viewUrl);
   } else if(s.kind==='savedate'){
