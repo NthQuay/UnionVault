@@ -2384,18 +2384,26 @@ function _ssBuildPayload(s, msg){
         block.fallbackLinkUrl=s.asset.viewUrl;
       }
     }
+    const rsvpBy=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
     block.rsvpUrl=_rsvpLink();
-    block.rsvpByText=_commsLongDate((STATE.settings||{}).rsvpBy)||'';
+    block.rsvpByText=rsvpBy;
+    block.rsvpButtonLabel='RSVP';
+    block.rsvpLeadText='Kindly RSVP by '+rsvpBy+' by clicking the button below.';
+    // Points guests to the website only once there's a real one to send them to.
+    const w=_wbSite();
+    if(w && w.published && w.slug) block.websiteUrl=_wbSiteUrl();
     block.closingText='With love.';
     payload.inviteBlock=block;
   } else if(s && s.kind==='reminder'){
     // Reminder gets a real RSVP button (not Invite's quieter inline "by clicking here"
     // link) — it's a follow-up nudge, so the call to action should read as one.
     payload.htmlText=s.base;
+    const rsvpBy=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
     payload.inviteBlock={
       rsvpUrl:_rsvpLink(),
-      rsvpByText:_commsLongDate((STATE.settings||{}).rsvpBy)||'',
-      rsvpButtonLabel:'RSVP now',
+      rsvpByText:rsvpBy,
+      rsvpButtonLabel:'RSVP',
+      rsvpLeadText:'Please submit your RSVP by '+rsvpBy+' so we know whether to account for you or not.',
       closingText:'Thank you, we hope you can make it!',
     };
   } else if(s && s.kind==='savedate'){

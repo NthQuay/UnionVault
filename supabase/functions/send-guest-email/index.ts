@@ -35,7 +35,7 @@ serve(async (req) => {
            attachment?: { filename?: string; path?: string }; ics?: string;
            templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean;
            htmlText?: string; guestId?: string;
-           inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; rsvpButtonLabel?: string; closingText?: string } }
+           inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; rsvpButtonLabel?: string; rsvpLeadText?: string; websiteUrl?: string; websiteLabel?: string; closingText?: string } }
   try { b = await req.json() } catch { return json(400, { ok: false, error: 'Invalid JSON' }) }
 
   const isPreview = !!b.preview
@@ -101,6 +101,11 @@ serve(async (req) => {
       safe.rsvpUrl = ib.rsvpUrl
       if (ib.rsvpByText) safe.rsvpByText = String(ib.rsvpByText).slice(0, 80)
       if (ib.rsvpButtonLabel) safe.rsvpButtonLabel = String(ib.rsvpButtonLabel).slice(0, 40)
+      if (ib.rsvpLeadText) safe.rsvpLeadText = String(ib.rsvpLeadText).slice(0, 200)
+    }
+    if (ib.websiteUrl && isHttps(ib.websiteUrl)) {
+      safe.websiteUrl = ib.websiteUrl
+      safe.websiteLabel = String(ib.websiteLabel || 'Visit our website').slice(0, 40)
     }
     if (ib.closingText) safe.closingText = String(ib.closingText).slice(0, 200)
     if (Object.keys(safe).length) inviteBlock = safe
@@ -196,9 +201,15 @@ function buildParas(text: string, color: string): string {
   }).join('')
 }
 
+// A centred pill button — shared by the RSVP and wedding-website CTAs below.
+function ctaButtonHtml(url: string, label: string, color: string): string {
+  return `<div style="text-align:center;margin:6px 0 16px"><a href="${escH(url)}" style="display:inline-block;background:${color};color:#fff;font-size:13.5px;font-weight:600;padding:11px 26px;border-radius:8px;text-decoration:none">${escH(label)}</a></div>`
+}
+
 // Invite-only block: an embedded, clickable invitation image (or a plain link when
-// there's no image to show — a PDF, say) followed by the RSVP line and sign-off.
-// Spliced in after the greeting/intro paragraphs built from `text` above.
+// there's no image to show — a PDF, say), the RSVP CTA, an optional "visit our wedding
+// website" CTA, and a sign-off. Spliced in after the greeting/intro paragraphs built
+// from `text` above. Both Invite and the RSVP reminder email use this same block shape.
 function inviteBlockHtml(block: NonNullable<TemplateOpts['inviteBlock']>, color: string): string {
   const parts: string[] = []
   if (block.imageSrc) {
@@ -209,16 +220,17 @@ function inviteBlockHtml(block: NonNullable<TemplateOpts['inviteBlock']>, color:
     parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${escH(block.fallbackLinkLabel || 'View your invitation')}: <a href="${escH(block.fallbackLinkUrl)}" style="color:${escH(color)}">${escH(block.fallbackLinkUrl)}</a></p>`)
   }
   if (block.rsvpUrl && block.rsvpButtonLabel) {
-    // Reminder emails: a plain sentence stating the deadline, then an actual button —
-    // not the inline "by clicking here" link Invite uses below, which reads too quietly
-    // for a follow-up nudge.
-    if (block.rsvpByText) {
-      parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">Please submit your RSVP by ${escH(block.rsvpByText)} so we know whether to account for you or not.</p>`)
+    if (block.rsvpLeadText) {
+      parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${escH(block.rsvpLeadText)}</p>`)
     }
-    parts.push(`<div style="text-align:center;margin:6px 0 16px"><a href="${escH(block.rsvpUrl)}" style="display:inline-block;background:${color};color:#fff;font-size:13.5px;font-weight:600;padding:11px 26px;border-radius:8px;text-decoration:none">${escH(block.rsvpButtonLabel)}</a></div>`)
+    parts.push(ctaButtonHtml(block.rsvpUrl, block.rsvpButtonLabel, color))
   } else if (block.rsvpUrl) {
     const byPart = block.rsvpByText ? ` by ${escH(block.rsvpByText)}` : ''
     parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">Kindly RSVP${byPart} by clicking <a href="${escH(block.rsvpUrl)}" style="color:${escH(color)}">here</a>.</p>`)
+  }
+  if (block.websiteUrl) {
+    parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">For all the wedding details, check out our wedding website</p>`)
+    parts.push(ctaButtonHtml(block.websiteUrl, block.websiteLabel || 'Visit our website', color))
   }
   if (block.closingText) parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${escH(block.closingText)}</p>`)
   return parts.join('')
@@ -229,7 +241,7 @@ interface TemplateOpts {
   kicker?: string; title?: string; text: string; showBranding?: boolean
   accentColor: string; fontFamily: string; showLogo: boolean; templateId: string
   headerImage: string
-  inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; rsvpButtonLabel?: string; closingText?: string }
+  inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; rsvpButtonLabel?: string; rsvpLeadText?: string; websiteUrl?: string; websiteLabel?: string; closingText?: string }
 }
 
 function brandedHtml(opts: TemplateOpts): string {

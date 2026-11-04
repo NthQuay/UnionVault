@@ -192,15 +192,20 @@ function _commsEmailPreviewPayload(item){
     payload.body=_commsBaseText('savedate','email', true);
   } else {
     payload.htmlText=_commsBaseText(item.tplKind,'email', false);
-    const block={ rsvpUrl:_rsvpLink(), rsvpByText:_commsLongDate((STATE.settings||{}).rsvpBy)||'', closingText:item.tplKind==='invite'?'With love.':'Thank you, we hope you can make it!' };
+    const rsvpBy=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
+    const block={ rsvpUrl:_rsvpLink(), rsvpByText:rsvpBy, rsvpButtonLabel:'RSVP',
+      closingText:item.tplKind==='invite'?'With love.':'Thank you, we hope you can make it!' };
     if(item.tplKind==='invite'){
       const asset=_ssInviteAsset();
       const f=asset.file;
       const isImg=f&&(/^image\//.test(f.type||'')||/\.(png|jpe?g|gif|webp)$/i.test(f.name||''));
       if(isImg && asset.publicUrl){ block.imageSrc=asset.publicUrl; block.imageHref=asset.viewUrl||asset.publicUrl; block.imageCaption='Click on invite to open in new page.'; }
       else if(asset.viewUrl){ block.fallbackLinkLabel='View your invitation'; block.fallbackLinkUrl=asset.viewUrl; }
+      block.rsvpLeadText='Kindly RSVP by '+rsvpBy+' by clicking the button below.';
+      const w=typeof _wbSite==='function'&&_wbSite();
+      if(w && w.published && w.slug) block.websiteUrl=_wbSiteUrl();
     } else if(item.tplKind==='reminder'){
-      block.rsvpButtonLabel='RSVP now';
+      block.rsvpLeadText='Please submit your RSVP by '+rsvpBy+' so we know whether to account for you or not.';
     }
     payload.inviteBlock=block;
   }
