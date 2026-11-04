@@ -51,13 +51,29 @@ Deno.serve(async (req: Request) => {
     if (!resendKey) return json(500, { error: "RESEND_API_KEY not set" });
 
     const amtNum = Number(amount);
-    const amountLine = Number.isFinite(amtNum) && amtNum > 0 ? `You pledged $${amtNum.toFixed(2)}.` : "";
+    const hasAmount = Number.isFinite(amtNum) && amtNum > 0;
+    const amountBlock = hasAmount
+      ? `We can't wait to celebrate with you!\nYou can send your selected gift amount of $${amtNum.toFixed(2)} using the payment info below.`
+      : `We can't wait to celebrate with you!\nYou can find our payment info below.`;
 
-    const payLines = payRows.map(([label, value]) => `${label}: ${value}`).join("\n");
+    // Extra blank line after the PayID, Bank, PayPal, and Cash rows, so the list reads
+    // as grouped blocks (PayID / account+bank / paypal / cash / cheque) instead of one
+    // unbroken list.
+    const GROUP_BREAK_AFTER = new Set(["PayID", "Bank", "PayPal", "Cash"]);
+    const payLines = payRows
+      .map(([label, value]) => `${label}: ${value}${GROUP_BREAK_AFTER.has(label) ? "\n" : ""}`)
+      .join("\n");
+    // A lone line becomes its own paragraph in brandedHtml (which only collapses
+    // *consecutive* blank lines into one gap), giving an extra beat of space right
+    // around the payment-details block on top of the normal paragraph gap every other
+    // line break gets. A plain space collapses to zero height in HTML, so a
+    // non-breaking space is used instead — it still reads as a blank line visually.
     const text = [
+      amountBlock,
+      " ",
       `Here are ${coupleNames}'s wishing well details:`,
-      amountLine,
       payLines,
+      " ",
       "Thanks so much for your generosity!",
     ].filter(Boolean).join("\n\n");
     const subject = `${coupleNames}'s wishing well details`;
