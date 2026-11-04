@@ -56,7 +56,9 @@ serve(async (req) => {
   const fontFamily = fontFamilyId === 'sans-serif' ? "Helvetica,Arial,sans-serif" : "Georgia,'Times New Roman',serif"
   const showLogo = b.designOpts?.showLogo !== false
   const headerImageRaw = String(b.designOpts?.headerImage || '')
-  const headerImage = headerImageRaw.startsWith(`${SB_URL}/storage/v1/object/public/photos/`) && !headerImageRaw.includes('..') ? headerImageRaw : ''
+  const headerImageCustom = headerImageRaw.startsWith(`${SB_URL}/storage/v1/object/public/photos/`) && !headerImageRaw.includes('..') ? headerImageRaw : ''
+  // No custom header → the UnionVault default banner; 'none' → the couple turned it off.
+  const headerImage = headerImageRaw === 'none' ? '' : (headerImageCustom || 'https://unionvault.app/assets/email_header_default_blackgold.png')
 
   // Look up sender's tier for branding decision
   const SB_SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

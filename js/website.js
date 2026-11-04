@@ -4550,7 +4550,7 @@ function _wbBuildSite(forDownload){
       const wwEd=(typeof _commsDesignFor==='function'?_commsDesignFor('ww'):((STATE.settings&&STATE.settings.emailDesign)||{}));
       const wwOwnerUid=_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'';
       const wwDesignOpts={ accentColor:wwEd.accentColor||'#8a6a2c', showLogo:wwEd.showLogo!==false,
-        headerImage:wwEd.headerImage&&wwOwnerUid?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+wwOwnerUid+'/'+wwEd.headerImage:'' };
+        headerImage:_emailHeaderUrl(wwEd.headerImage,wwOwnerUid) };
 
       const chips=suggested.length?`<div class="ww-chips" id="ww-chips">${suggested.map(n=>`<button class="ww-chip" data-amt="${n}" onclick="window._wwPick(this)">${fmt(Number(n))}</button>`).join('')}<button class="ww-chip" data-amt="other" onclick="window._wwPick(this)">Other</button></div>`:'';
       const payHtml=pay.length?pay.map(r=>`<div class="ww-pay-row"><span class="ww-pay-label">${_escHtml(r[0])}</span> <span class="ww-pay-value">${_escHtml(r[1])}</span></div>`).join(''):'';
@@ -4839,7 +4839,7 @@ function _wbBuildSite(forDownload){
     siteUrl:_wbSiteUrl(),
     icsText:_uvIcsText,
     designOpts:{ accentColor:_uvEd.accentColor||'#8a6a2c', showLogo:_uvEd.showLogo!==false,
-      headerImage:_uvEd.headerImage&&_uvOwnerUid?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_uvOwnerUid+'/'+_uvEd.headerImage:'' },
+      headerImage:_emailHeaderUrl(_uvEd.headerImage,_uvOwnerUid) },
     titleOverride:_uvConfirmText.title||'',
     introOverride:_uvConfirmText.intro||'',
     closingOverride:_uvConfirmText.closing||''

@@ -2371,7 +2371,7 @@ function _ssBuildPayload(s, msg){
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
     templateId:ed.templateId||'classic',
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
-      headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' } };
+      headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
   if(s&&s.attach && s.asset && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
   // Lets the edge function tag the Resend send with who it went to, so a bounce/complaint
   // webhook can be attributed back to this guest (see _loadOnlineRsvps' email_issues merge).
@@ -2467,6 +2467,14 @@ const _COMMS_COLOR_PRESETS=['#8a6a2c','#C9A66B','#B8865A','#9B6B6B','#6B4F4F','#
 // control; only the storage target and a small "custom for this email" banner differ.
 // Free plan (signed in, not paid) always shows the footer logo — the checkbox is locked
 // on here, and the edge functions enforce it server-side regardless of what's sent.
+// Header image as sent to the email functions: a stored photo id becomes its public URL,
+// 'none' means "no header image", and '' (never set / back to default) lets the server
+// use the UnionVault default header (assets/email_header_default_blackgold.png).
+const _EMAIL_HEADER_DEFAULT='assets/email_header_default_blackgold.png';
+function _emailHeaderUrl(hid, uid){
+  if(hid==='none') return 'none';
+  return hid&&uid ? _SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+uid+'/'+hid : '';
+}
 function _emailLogoLocked(){ return !!(typeof _sbSession!=='undefined'&&_sbSession) && typeof _uvIsPaid==='function' && !_uvIsPaid(); }
 function _openEmailDesignModal(itemKey){
   const universal=(STATE.settings&&STATE.settings.emailDesign)||{};
@@ -2478,7 +2486,8 @@ function _openEmailDesignModal(itemKey){
   const logoLocked=_emailLogoLocked();
   const logo=logoLocked||src.showLogo!==false;
   const hdrImg=src.headerImage||'';
-  const hdrPreview=hdrImg?_mediaUrl(hdrImg):'';
+  const hdrNone=hdrImg==='none', hdrDefault=!hdrImg;
+  const hdrPreview=hdrNone?'':hdrDefault?_EMAIL_HEADER_DEFAULT:_mediaUrl(hdrImg);
   const item=itemKey&&typeof _commsItem==='function'?_commsItem(itemKey):null;
   const arg=itemKey?`,'${itemKey}'`:'';
   // The 3 "simple" fixed-copy emails (RSVP confirmation, Wishing Well, Appointment) always
@@ -2542,12 +2551,12 @@ function _openEmailDesignModal(itemKey){
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Header image</div>
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Upload a custom banner for the top of ${itemKey?'this email':'your emails'}. Recommended: 1200 &times; 400 px (displays at 600 &times; 200).</div>
-      ${hdrPreview?`<div style="margin-bottom:8px;position:relative;display:inline-block"><img src="${_escHtml(hdrPreview)}" style="max-width:100%;max-height:100px;border-radius:8px;border:1px solid var(--border);object-fit:contain" alt="Header preview"/>
+      ${hdrPreview?`<div style="font-size:11px;color:var(--muted);margin-bottom:4px">${hdrDefault?'UnionVault default':'Your image'}</div><div style="margin-bottom:8px;position:relative;display:inline-block"><img src="${_escHtml(hdrPreview)}" style="max-width:100%;max-height:100px;border-radius:8px;border:1px solid var(--border);object-fit:contain" alt="Header preview"/>
         <button type="button" onclick="_emailDesignRemoveHeader(${itemKey?`'${itemKey}'`:''})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--cream);border:2px solid var(--cream);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">&times;</button></div>`:''}
       <div><button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignPickHeader(${itemKey?`'${itemKey}'`:''})" style="display:inline-flex;align-items:center;gap:6px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         ${hdrPreview?'Replace image':'Upload image'}
-      </button></div>
+      </button>${hdrDefault?'':`<button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignSet('headerImage',''${arg})" style="margin-left:6px">Use default</button>`}</div>
     </div>
     <div>
       <label style="display:flex;align-items:center;gap:9px;cursor:${logoLocked?'default':'pointer'}">
@@ -2631,8 +2640,10 @@ function _emailDesignPickHeader(itemKey){
   };
   inp.click();
 }
+// × on your own image goes back to the default; × on the default means no header at all.
 function _emailDesignRemoveHeader(itemKey){
-  _emailDesignSet('headerImage','',itemKey);
+  const ed=typeof _commsDesignFor==='function'?_commsDesignFor(itemKey):((STATE.settings&&STATE.settings.emailDesign)||{});
+  _emailDesignSet('headerImage', ed.headerImage ? '' : 'none', itemKey);
 }
 
 // ══════════════════════════════════════════════

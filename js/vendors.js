@@ -668,7 +668,7 @@ async function _sendVendorBriefEmailNow(btn){
     intro_override:vbText.intro||null, button_label_override:vbText.buttonLabel||null, closing_override:vbText.closing||null,
     templateId:ed.templateId||'classic',
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
-      headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' } };
+      headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
   let ok=false;
   try{
     await _sbEnsureFreshToken();
@@ -2903,7 +2903,7 @@ async function _apptEmailSendViaEdge(task, a, recipients){
   const token=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.access_token)||'';
   const ed=(typeof _commsDesignFor==='function'?_commsDesignFor('appt'):((STATE.settings&&STATE.settings.emailDesign)||{}));
   const designOpts={ accentColor:ed.accentColor||'#8a6a2c', showLogo:ed.showLogo!==false,
-    headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' };
+    headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) };
   const one=async(to)=>{
     try{
       const r=await fetch(_SB_URL+'/functions/v1/send-appointment-email',{
