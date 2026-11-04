@@ -33,7 +33,9 @@ serve(async (req) => {
 
   let b: { to?: string[]; subject?: string; body?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string;
            attachment?: { filename?: string; path?: string };
-           templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean }
+           templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean;
+           htmlText?: string;
+           inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; closingText?: string } }
   try { b = await req.json() } catch { return json(400, { ok: false, error: 'Invalid JSON' }) }
 
   const isPreview = !!b.preview
@@ -70,11 +72,40 @@ serve(async (req) => {
   }
   const showBranding = senderTier === 'free'
 
+  // Invite-only: an embedded invitation image (or a plain link when there's no image —
+  // a PDF, say) plus a "click here" RSVP line, spliced into the template between the
+  // greeting/intro paragraphs and the sign-off. imageSrc is restricted to the sender's
+  // own photos folder, same rule as the attachment path below; the other URLs just need
+  // to be real https links so they can't be used to run a non-http scheme in an href.
+  const isHttps = (u: string) => /^https:\/\//i.test(u)
+  let inviteBlock: TemplateOpts['inviteBlock']
+  if (b.inviteBlock) {
+    const ib = b.inviteBlock
+    const imgAllowed = `${SB_URL}/storage/v1/object/public/photos/${user.id}/`
+    const imageSrc = ib.imageSrc && ib.imageSrc.startsWith(imgAllowed) && !ib.imageSrc.includes('..') ? ib.imageSrc : ''
+    const safe: NonNullable<TemplateOpts['inviteBlock']> = {}
+    if (imageSrc) {
+      safe.imageSrc = imageSrc
+      if (ib.imageHref && isHttps(ib.imageHref)) safe.imageHref = ib.imageHref
+      if (ib.imageCaption) safe.imageCaption = String(ib.imageCaption).slice(0, 160)
+    } else if (ib.fallbackLinkUrl && isHttps(ib.fallbackLinkUrl)) {
+      safe.fallbackLinkUrl = ib.fallbackLinkUrl
+      safe.fallbackLinkLabel = String(ib.fallbackLinkLabel || 'View your invitation').slice(0, 80)
+    }
+    if (ib.rsvpUrl && isHttps(ib.rsvpUrl)) {
+      safe.rsvpUrl = ib.rsvpUrl
+      if (ib.rsvpByText) safe.rsvpByText = String(ib.rsvpByText).slice(0, 80)
+    }
+    if (ib.closingText) safe.closingText = String(ib.closingText).slice(0, 200)
+    if (Object.keys(safe).length) inviteBlock = safe
+  }
+
   const html = brandedHtml({
     kicker: String(b.kicker ?? '').slice(0, 120),
     title: String(b.title ?? '').slice(0, 200),
-    text: text || 'Preview of your email template.',
+    text: String(b.htmlText || text) || 'Preview of your email template.',
     showBranding, accentColor, fontFamily, showLogo, headerImage, templateId: tplId,
+    inviteBlock,
   })
 
   if (isPreview) return json(200, { ok: true, html })
@@ -115,11 +146,32 @@ function buildParas(text: string, color: string): string {
     .map((p) => `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkifyWith(escH(p), color).replace(/\n/g, '<br>')}</p>`).join('')
 }
 
+// Invite-only block: an embedded, clickable invitation image (or a plain link when
+// there's no image to show — a PDF, say) followed by the RSVP line and sign-off.
+// Spliced in after the greeting/intro paragraphs built from `text` above.
+function inviteBlockHtml(block: NonNullable<TemplateOpts['inviteBlock']>, color: string): string {
+  const parts: string[] = []
+  if (block.imageSrc) {
+    const img = `<img src="${escH(block.imageSrc)}" alt="Invitation" style="display:block;width:100%;max-width:340px;height:auto;margin:0 auto;border-radius:8px;border:1px solid rgba(0,0,0,.08)">`
+    parts.push(`<div style="text-align:center;margin:2px 0 6px">${block.imageHref ? `<a href="${escH(block.imageHref)}" style="text-decoration:none">${img}</a>` : img}</div>`)
+    parts.push(`<div style="text-align:center;font-size:11.5px;color:#8a8077;margin:0 0 16px">${escH(block.imageCaption || 'Click on invite to open in new page.')}</div>`)
+  } else if (block.fallbackLinkUrl) {
+    parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${escH(block.fallbackLinkLabel || 'View your invitation')}: <a href="${escH(block.fallbackLinkUrl)}" style="color:${escH(color)}">${escH(block.fallbackLinkUrl)}</a></p>`)
+  }
+  if (block.rsvpUrl) {
+    const byPart = block.rsvpByText ? ` by ${escH(block.rsvpByText)}` : ''
+    parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">Kindly RSVP${byPart} by clicking <a href="${escH(block.rsvpUrl)}" style="color:${escH(color)}">here</a>.</p>`)
+  }
+  if (block.closingText) parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${escH(block.closingText)}</p>`)
+  return parts.join('')
+}
+
 // ── Template dispatcher ──────────────────────────────────────────────────────
 interface TemplateOpts {
   kicker?: string; title?: string; text: string; showBranding?: boolean
   accentColor: string; fontFamily: string; showLogo: boolean; templateId: string
   headerImage: string
+  inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; closingText?: string }
 }
 
 function brandedHtml(opts: TemplateOpts): string {
@@ -160,6 +212,7 @@ ${headerBand}
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
+${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac) : ''}
 </td></tr>
 ${brandingFooter}
 </table></td></tr></table></body></html>`
@@ -197,6 +250,7 @@ ${headerBand}
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:600;letter-spacing:.1em;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:22px;font-weight:600;line-height:1.25;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
+${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac) : ''}
 </td></tr>
 ${brandingFooter}
 </table></td></tr></table></body></html>`
@@ -237,6 +291,7 @@ ${headerBand}
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
+${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac) : ''}
 </td></tr>
 ${brandingFooter}
 </table></td></tr></table></body></html>`

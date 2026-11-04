@@ -4,7 +4,12 @@
 // Default save-the-date / invite / reminder templates (editable in Settings).
 // Tokens: {guest} {names} {date} {rsvp_by} {link}
 const _DEFAULT_SAVEDATE_TPL="Dear {guest},\n\nSave the date! {names} are getting married on {date}. A formal invitation will follow. We can't wait to celebrate with you!";
-const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on {date}. Kindly RSVP by {rsvp_by} via {link}. With love.";
+// The RSVP deadline/link and sign-off used to be baked into this text via the {rsvp_by}/
+// {link} tokens — now they're always appended mechanically in _ssMessage() (same pattern
+// "View your invitation" already used), so the email-direct send can swap in a "click
+// here" link + embedded invitation image instead of a plain pasted URL. Plain-text
+// channels (SMS/WhatsApp/mailto/etc.) still end up with the same wording as before.
+const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on {date}.";
 const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding ({date}) by {rsvp_by}: {link}\n\nThank you!";
 function _inviteTpl(kind){
   const s=STATE.settings||{};
@@ -351,6 +356,8 @@ function _ssMessage(){
   const extra=[];
   if(s.kind==='invite'){
     if(s.asset.viewUrl && s.addLink) extra.push('View your invitation: '+s.asset.viewUrl);
+    extra.push('Kindly RSVP by '+(_longDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
+    extra.push('With love.');
   } else if(s.kind==='savedate'){
     const w=_wbSite(); if(w && w.published && w.slug) extra.push('Details: '+_wbSiteUrl());
   }
@@ -2294,6 +2301,32 @@ function _ssBuildPayload(s, msg){
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
       headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' } };
   if(s&&s.attach && s.asset && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
+  // Invite email (sent via UnionVault): the greeting+intro renders as normal paragraphs
+  // (htmlText), then the edge function splices in an embedded invitation image (or a
+  // plain link for a PDF/non-image file) and a "click here" RSVP line as structured
+  // markup — see inviteBlockHtml() in send-guest-email/index.ts. `s.base` is the filled
+  // template with the mechanical RSVP/sign-off already stripped out (see
+  // _DEFAULT_INVITE_TPL), so it's just the couple's own greeting + message.
+  if(s && s.kind==='invite'){
+    payload.htmlText=s.base;
+    const block={};
+    const f=s.asset&&s.asset.file;
+    const isImg=f&&(/^image\//.test(f.type||'')||/\.(png|jpe?g|gif|webp)$/i.test(f.name||''));
+    if(s.addLink){
+      if(isImg && s.asset.publicUrl){
+        block.imageSrc=s.asset.publicUrl;
+        block.imageHref=s.asset.viewUrl||s.asset.publicUrl;
+        block.imageCaption='Click on invite to open in new page.';
+      } else if(s.asset.viewUrl){
+        block.fallbackLinkLabel='View your invitation';
+        block.fallbackLinkUrl=s.asset.viewUrl;
+      }
+    }
+    block.rsvpUrl=_rsvpLink();
+    block.rsvpByText=_longDate((STATE.settings||{}).rsvpBy)||'';
+    block.closingText='With love.';
+    payload.inviteBlock=block;
+  }
   return payload;
 }
 
