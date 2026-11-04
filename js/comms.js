@@ -22,20 +22,26 @@ function _commsDesignFor(itemKey){
 }
 
 const _COMMS_ITEMS=[
-  {key:'sd-email', group:'Email', title:'Save the date', sub:'Sent by you, via UnionVault · to guests', kind:'tpl', tplKind:'savedate', channel:'email', branded:true},
-  {key:'inv-email', group:'Email', title:'Invite', sub:'Sent by you, via UnionVault · to guests', kind:'tpl', tplKind:'invite', channel:'email', branded:true},
-  {key:'rem-email', group:'Email', title:'RSVP reminder', sub:'Sent by you, via UnionVault · to guests awaiting a reply', kind:'tpl', tplKind:'reminder', channel:'email', branded:true},
-  {key:'sd-sms', group:'SMS', title:'Save the date', sub:'Text, WhatsApp, Messenger, Instagram & more · to guests', kind:'tpl', tplKind:'savedate', channel:'sms', branded:false},
-  {key:'inv-sms', group:'SMS', title:'Invite', sub:'Text, WhatsApp, Messenger, Instagram & more · to guests', kind:'tpl', tplKind:'invite', channel:'sms', branded:false},
-  {key:'rem-sms', group:'SMS', title:'RSVP reminder', sub:'Text, WhatsApp, Messenger, Instagram & more · to guests awaiting a reply', kind:'tpl', tplKind:'reminder', channel:'sms', branded:false},
-  {key:'confirm', group:'After they RSVP', title:'RSVP confirmation', sub:'Sent automatically · to the guest, right after they RSVP online', kind:'fixed', branded:true},
-  {key:'ww', group:'After they RSVP', title:'Wishing Well details', sub:'Sent on request · to a guest who asks to be emailed your gift details', kind:'fixed', branded:true},
-  {key:'appt', group:'Vendors', title:'Appointment email', sub:'Sent by you, via UnionVault · to a vendor, about a booked appointment', kind:'fixed', branded:true},
-  {key:'vbrief', group:'Vendors', title:'Vendor brief', sub:'Sent by you, via UnionVault · to a vendor, with their secure brief link', kind:'fixed', branded:true},
+  {key:'sd-email', section:'Email', group:'The details', title:'Save the date', sub:'Sent by you, via UnionVault · to guests', kind:'tpl', tplKind:'savedate', channel:'email', branded:true},
+  {key:'inv-email', section:'Email', group:'The details', title:'Invite', sub:'Sent by you, via UnionVault · to guests', kind:'tpl', tplKind:'invite', channel:'email', branded:true},
+  {key:'rem-email', section:'Email', group:'The details', title:'RSVP reminder', sub:'Sent by you, via UnionVault · to guests awaiting a reply', kind:'tpl', tplKind:'reminder', channel:'email', branded:true},
+  {key:'sd-sms', section:'SMS', group:'The details', title:'Save the date', sub:'Text, WhatsApp, Messenger, Instagram & more · to guests', kind:'tpl', tplKind:'savedate', channel:'sms', branded:false},
+  {key:'inv-sms', section:'SMS', group:'The details', title:'Invite', sub:'Text, WhatsApp, Messenger, Instagram & more · to guests', kind:'tpl', tplKind:'invite', channel:'sms', branded:false},
+  {key:'rem-sms', section:'SMS', group:'The details', title:'RSVP reminder', sub:'Text, WhatsApp, Messenger, Instagram & more · to guests awaiting a reply', kind:'tpl', tplKind:'reminder', channel:'sms', branded:false},
+  {key:'confirm', section:'Email', group:'After they RSVP', title:'RSVP confirmation', sub:'Sent automatically · to the guest, right after they RSVP online', kind:'fixed', branded:true},
+  {key:'ww', section:'Email', group:'After they RSVP', title:'Wishing Well details', sub:'Sent on request · to a guest who asks to be emailed your gift details', kind:'fixed', branded:true},
+  {key:'appt', section:'Email', group:'Vendors', title:'Appointment details', sub:'Sent by you, via UnionVault · to a vendor, about a booked appointment', kind:'fixed', branded:true},
+  {key:'vbrief', section:'Email', group:'Vendors', title:'Vendor brief', sub:'Sent by you, via UnionVault · to a vendor, with their secure brief link', kind:'fixed', branded:true},
 ];
-const _COMMS_GROUP_ORDER=['Email','SMS','After they RSVP','Vendors'];
+// Two top-level sections (SMS first), each split into sub-groups. Email design sits at
+// the end of the Email section since it applies to every email above it.
+const _COMMS_SECTIONS=[
+  {name:'SMS', groups:['The details']},
+  {name:'Email', groups:['The details','After they RSVP','Vendors']},
+];
+const _commsItemsIn=(sec,grp)=>_COMMS_ITEMS.filter(i=>i.section===sec&&i.group===grp);
 
-let _commsSel='sd-email';
+let _commsSel='sd-sms';
 function _commsItem(key){ return _COMMS_ITEMS.find(i=>i.key===key); }
 function _commsSetOrdinal(on){
   if(!STATE.settings) STATE.settings={};
@@ -47,17 +53,22 @@ function _commsSetOrdinal(on){
 function renderComms(c, actions){
   actions.innerHTML='';
   if(!_commsItem(_commsSel)) _commsSel=_COMMS_ITEMS[0].key;
-  const navHtml=_COMMS_GROUP_ORDER.map(g=>{
-    const items=_COMMS_ITEMS.filter(i=>i.group===g);
-    return `<div style="margin-bottom:16px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 4px 7px">${_escHtml(g)}</div>
-      ${items.map(i=>_commsNavBtnHtml(i)).join('')}
-    </div>`;
-  }).join('');
+  const designBtnHtml=`<button type="button" onclick="_openEmailDesignModal()" style="display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-family:inherit;margin-top:2px">
+        <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
+        <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);font-weight:500;line-height:1.3">Email design</span><span style="display:block;font-size:10px;color:var(--muted);margin-top:1px;line-height:1.3">Branding &amp; header image — applies to all emails above</span></span>
+      </button>`;
+  const navHtml=_COMMS_SECTIONS.map((sec,si)=>`<div style="${si?'margin-top:6px;padding-top:14px;border-top:1px solid var(--border);':''}">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--ink);padding:0 4px 8px;line-height:1.1">${_escHtml(sec.name)}</div>
+      ${sec.groups.map(g=>`<div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 4px 6px">${_escHtml(g)}</div>
+        ${_commsItemsIn(sec.name,g).map(i=>_commsNavBtnHtml(i)).join('')}
+      </div>`).join('')}
+      ${sec.name==='Email'?designBtnHtml:''}
+    </div>`).join('');
   // Narrow viewports get a dropdown instead of the nav list — a long list of 10 items
   // above the preview meant scrolling straight past all of them just to see one email.
-  const mobileOptions=_COMMS_GROUP_ORDER.map(g=>`<optgroup label="${_escHtml(g)}">${_COMMS_ITEMS.filter(i=>i.group===g)
-    .map(i=>`<option value="${i.key}" ${i.key===_commsSel?'selected':''}>${_escHtml(i.title)}</option>`).join('')}</optgroup>`).join('');
+  const mobileOptions=_COMMS_SECTIONS.map(sec=>sec.groups.map(g=>`<optgroup label="${_escHtml(sec.name+' · '+g)}">${_commsItemsIn(sec.name,g)
+    .map(i=>`<option value="${i.key}" ${i.key===_commsSel?'selected':''}>${_escHtml(i.title)}</option>`).join('')}</optgroup>`).join('')).join('');
   const ordinalOn=!!(STATE.settings&&STATE.settings.commsOrdinalDates);
   c.innerHTML=`<div style="margin-bottom:10px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:760px">Every message UnionVault can send to a guest or vendor, in one place. RSVP alerts and gift notifications aren't here — those come to you, not your guests.</div>
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;font-size:12px;color:var(--ink)">
@@ -70,10 +81,6 @@ function renderComms(c, actions){
   <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
     <div class="card comms-nav-card" style="flex:0 0 240px;min-width:220px;padding:16px 10px">
       ${navHtml}
-      <button type="button" onclick="_openEmailDesignModal()" style="display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-family:inherit;margin-top:4px">
-        <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
-        <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);font-weight:500;line-height:1.3">Email design</span><span style="display:block;font-size:10px;color:var(--muted);margin-top:1px;line-height:1.3">Branding &amp; header image — applies to every email below</span></span>
-      </button>
     </div>
     <div class="card" style="flex:1;min-width:320px" id="comms-detail">${_commsDetailHtml()}</div>
   </div>`;
@@ -188,7 +195,7 @@ function _commsEmailPreviewPayload(item){
   const ed=_commsDesignFor(item.key);
   const names=_ssCoupleNames();
   const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
-    headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' };
+    headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) };
   const titleMap={savedate:'Save the date', invite:'You\'re invited', reminder:'RSVP reminder'};
   const title=titleMap[item.tplKind];
   const payload={ preview:true, subject:title+(names?' — '+names:''), fromName:names||'UnionVault',
@@ -223,7 +230,7 @@ function _commsFixedPreviewPayload(key){
   const ed=_commsDesignFor(key);
   const ownerUid=_sbSession&&_sbSession.user&&_sbSession.user.id;
   const designOpts={ accentColor:ed.accentColor||'#8a6a2c', showLogo:ed.showLogo!==false,
-    headerImage:ed.headerImage&&ownerUid?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+ownerUid+'/'+ed.headerImage:'' };
+    headerImage:_emailHeaderUrl(ed.headerImage,ownerUid) };
   const names=_ssCoupleNames();
   const ct=(STATE.settings&&STATE.settings.commsText)||{};
   if(key==='confirm'){

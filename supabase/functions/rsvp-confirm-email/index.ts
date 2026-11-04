@@ -121,8 +121,10 @@ Deno.serve(async (req: Request) => {
     const accentColor = HEX_RE.test(String(design_opts?.accentColor || "")) ? String(design_opts.accentColor) : "#8a6a2c";
     const showLogo = design_opts?.showLogo !== false;
     const headerImageRaw = String(design_opts?.headerImage || "");
-    const headerImage = couple_id && headerImageRaw.startsWith(`${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/photos/${couple_id}/`) && !headerImageRaw.includes("..")
+    const headerImageCustom = couple_id && headerImageRaw.startsWith(`${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/photos/${couple_id}/`) && !headerImageRaw.includes("..")
       ? headerImageRaw : "";
+    // No custom header → the UnionVault default banner; 'none' → the couple turned it off.
+    const headerImage = headerImageRaw === "none" ? "" : (headerImageCustom || "https://unionvault.app/assets/email_header_default_blackgold.png");
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) return json(500, { error: "RESEND_API_KEY not set" });

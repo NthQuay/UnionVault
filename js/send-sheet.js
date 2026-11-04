@@ -2371,7 +2371,7 @@ function _ssBuildPayload(s, msg){
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
     templateId:ed.templateId||'classic',
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
-      headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' } };
+      headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
   if(s&&s.attach && s.asset && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
   // Lets the edge function tag the Resend send with who it went to, so a bounce/complaint
   // webhook can be attributed back to this guest (see _loadOnlineRsvps' email_issues merge).
@@ -2467,6 +2467,13 @@ const _COMMS_COLOR_PRESETS=['#8a6a2c','#C9A66B','#B8865A','#9B6B6B','#6B4F4F','#
 // control; only the storage target and a small "custom for this email" banner differ.
 // Free plan (signed in, not paid) always shows the footer logo — the checkbox is locked
 // on here, and the edge functions enforce it server-side regardless of what's sent.
+// Header image as sent to the email functions: a stored photo id becomes its public URL,
+// 'none' means "no header image", and '' (never set / back to default) lets the server
+// use the UnionVault default header (assets/email_header_default_blackgold.png).
+function _emailHeaderUrl(hid, uid){
+  if(hid==='none') return 'none';
+  return hid&&uid ? _SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+uid+'/'+hid : '';
+}
 function _emailLogoLocked(){ return !!(typeof _sbSession!=='undefined'&&_sbSession) && typeof _uvIsPaid==='function' && !_uvIsPaid(); }
 function _openEmailDesignModal(itemKey){
   const universal=(STATE.settings&&STATE.settings.emailDesign)||{};
@@ -2478,7 +2485,8 @@ function _openEmailDesignModal(itemKey){
   const logoLocked=_emailLogoLocked();
   const logo=logoLocked||src.showLogo!==false;
   const hdrImg=src.headerImage||'';
-  const hdrPreview=hdrImg?_mediaUrl(hdrImg):'';
+  // Only the couple's own upload is shown here — with none, emails quietly use the default.
+  const hdrPreview=hdrImg&&hdrImg!=='none'?_mediaUrl(hdrImg):'';
   const item=itemKey&&typeof _commsItem==='function'?_commsItem(itemKey):null;
   const arg=itemKey?`,'${itemKey}'`:'';
   // The 3 "simple" fixed-copy emails (RSVP confirmation, Wishing Well, Appointment) always
@@ -2631,6 +2639,7 @@ function _emailDesignPickHeader(itemKey){
   };
   inp.click();
 }
+// × removes the couple's own image — emails then go back to the default header.
 function _emailDesignRemoveHeader(itemKey){
   _emailDesignSet('headerImage','',itemKey);
 }

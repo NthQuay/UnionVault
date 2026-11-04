@@ -79,7 +79,9 @@ serve(async (req) => {
   const accentColor = HEX_RE.test(String(body.designOpts?.accentColor || '')) ? String(body.designOpts!.accentColor) : '#8a6a2c'
   const showLogo = body.designOpts?.showLogo !== false
   const headerImageRaw = String(body.designOpts?.headerImage || '')
-  const headerImage = headerImageRaw.startsWith(`${SB_URL}/storage/v1/object/public/photos/${user.id}/`) && !headerImageRaw.includes('..') ? headerImageRaw : ''
+  const headerImageCustom = headerImageRaw.startsWith(`${SB_URL}/storage/v1/object/public/photos/${user.id}/`) && !headerImageRaw.includes('..') ? headerImageRaw : ''
+  // No custom header → the UnionVault default banner; 'none' → the couple turned it off.
+  const headerImage = headerImageRaw === 'none' ? '' : (headerImageCustom || 'https://unionvault.app/assets/email_header_default_blackgold.png')
 
   payload.html = brandedHtml({
     kicker: String(kicker ?? '').slice(0, 120),
