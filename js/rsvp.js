@@ -1256,8 +1256,8 @@ function _orsvpRender(){
         </div>`;
       }).join('');
       const c=grp.contact;
-      const ci=[c.email?`<span class="orsvp-ci-email" style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.email}</span>`:'',c.phone?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0">${c.phone}</span>`:'',c.address?`<span class="orsvp-ci-addr" style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.address}</span>`:''].filter(Boolean);
-      const contactHtml=ci.length?`<div class="orsvp-cv-contact" style="background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;gap:3px 10px;align-items:baseline;min-width:0"><span class="orsvp-ci-label" style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span><span class="orsvp-ci-body">${ci.map((x,i)=>(i&&!x.includes('orsvp-ci-addr')?'<span class="orsvp-ci-sep" style="color:var(--border);flex-shrink:0">·</span>':'')+x).join('')}</span></div>`:'';
+      const ci=[c.email?`<span class="orsvp-ci-item orsvp-ci-email" style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.email}</span>`:'',c.phone?`<span class="orsvp-ci-item" style="font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0">${c.phone}</span>`:'',c.address?`<span class="orsvp-ci-item orsvp-ci-addr" style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.address}</span>`:''].filter(Boolean);
+      const contactHtml=ci.length?`<div class="orsvp-cv-contact" style="background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;gap:3px 10px;align-items:baseline;min-width:0"><span class="orsvp-ci-label" style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span><span class="orsvp-ci-body orsvp-ci-wrap">${ci.join('')}</span></div>`:'';
       const msgHtml=grp.message?`<div style="border-top:1px solid var(--border);padding:9px 14px;font-size:12px;color:var(--muted);font-style:italic">"${grp.message}"</div>`:'';
       const histSection=grp.hasHistory?`<div id="${histId}" hidden style="border-top:1px solid var(--border);padding:10px 14px"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Submission history</div>${histRowsHtml}</div>`:'';
       html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
@@ -1285,7 +1285,7 @@ function _orsvpRender(){
         </div>`;
       }).join('');
       const c=grp.contact;const ci=[c.email,c.phone,c.address].filter(Boolean);
-      const contactRow=ci.length?`<div class="orsvp-lv-contact" style="display:flex;gap:4px 16px;flex-wrap:wrap;line-height:1.4;padding:4px 14px 7px calc(14px + 28px + 8px);font-size:11px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border)">${ci.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
+      const contactRow=ci.length?`<div class="orsvp-lv-contact orsvp-ci-wrap" style="display:flex;gap:4px 0;flex-wrap:wrap;line-height:1.4;padding:4px 14px 7px calc(14px + 28px + 8px);font-size:11px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border)">${ci.map(x=>`<span class="orsvp-ci-item">${x}</span>`).join('')}</div>`:'';
       const histSection=grp.hasHistory?`<div id="${histId}" hidden class="orsvp-lv-hist" style="padding:6px 14px 8px 46px;border-bottom:1px solid var(--border)"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">History</div>${histRowsHtml}</div>`:'';
       html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:0">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 14px ${ci.length?'4px':'9px'};${ci.length?'':'border-bottom:1px solid var(--border);'}background:var(--surface)">
@@ -1298,7 +1298,7 @@ function _orsvpRender(){
     }
   });
   listEl.innerHTML=shown?html:`<div style="padding:32px 0;text-align:center;font-size:13px;color:var(--muted);font-style:italic">No responses match this filter.</div>`;
-  if(view==='list') requestAnimationFrame(_orsvpFitListRows);
+  requestAnimationFrame(()=>{ if(view==='list') _orsvpFitListRows(); _orsvpFitContactSeps(); });
 }
 // List view: each guest row is laid out in one of three ways, whichever fits —
 //  a) name · dietary · meal · badge on one line;
@@ -1317,7 +1317,21 @@ function _orsvpFitListRows(){
     row.classList.add(fits(n,d,m,b)?'st-a':fits(n,m,b)?'st-b':'st-c');
   });
 }
-window.addEventListener('resize',()=>{ if(document.querySelector('#orsvp-list .orsvp-lvm')) _orsvpFitListRows(); });
+window.addEventListener('resize',()=>{ if(document.querySelector('#orsvp-list .orsvp-lvm')) _orsvpFitListRows(); if(document.querySelector('#orsvp-list .orsvp-ci-wrap')) _orsvpFitContactSeps(); });
+// Contact details: a "⋅" goes between two items only when they share a line. Each item is
+// given a separator in turn and keeps it only if it is still on the same line as the item
+// before it — so nothing ever dangles at the start or end of a wrapped line.
+function _orsvpFitContactSeps(){
+  document.querySelectorAll('#orsvp-list .orsvp-ci-wrap').forEach(wrap=>{
+    const items=[...wrap.querySelectorAll('.orsvp-ci-item')];
+    items.forEach(el=>el.classList.remove('sep'));
+    for(let i=1;i<items.length;i++){
+      const prev=items[i-1], el=items[i];
+      el.classList.add('sep');
+      if(Math.abs(el.getBoundingClientRect().top-prev.getBoundingClientRect().top)>2) el.classList.remove('sep');
+    }
+  });
+}
 function _orsvpSetFilter(f){window._orsvpFilter=f;_orsvpRender();}
 function _orsvpSetView(v){window._orsvpView=v;try{localStorage.setItem('uv_orsvp_view',v);}catch(e){}  _orsvpRender();}
 function _orsvpToggleHistory(btn){
