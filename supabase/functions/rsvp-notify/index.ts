@@ -96,13 +96,34 @@ Deno.serve(async (req: Request) => {
       ? `New RSVP ✓ ${guest_name} is attending!`
       : `New RSVP — ${guest_name} has declined`;
 
-    const text = anyYes
-      ? `Great news!\n\n${guest_name} has accepted your wedding invitation.\n\nGuest responses:\n${guestLines}${contactBlock}\n\nLog in to UnionVault to manage your guest list.\nhttps://unionvault.app`
-      : `${guest_name} has regretfully declined your wedding invitation.\n\nGuest responses:\n${guestLines}${contactBlock}\n\nLog in to UnionVault to view all RSVP responses.\nhttps://unionvault.app`;
+    // Who actually accepted/declined, not just the whole submitted group — a mixed
+    // group (some yes, some no) gets both sentences below, each with the right names
+    // and has/have agreement, rather than one sentence covering everyone.
+    const attendingNames = memberList.filter((m) => m.attending === "yes").map((m) => m.name);
+    const declinedNames = memberList.filter((m) => m.attending === "no").map((m) => m.name);
+    const joinN = (arr: string[]) =>
+      arr.length <= 1 ? (arr[0] || "") : arr.slice(0, -1).join(", ") + " & " + arr[arr.length - 1];
+    const verb = (n: number) => (n === 1 ? "has" : "have");
+
+    const parts: string[] = [];
+    if (attendingNames.length) {
+      parts.push("Great news!");
+      parts.push(`${joinN(attendingNames)} ${verb(attendingNames.length)} accepted your wedding invitation.`);
+    }
+    if (declinedNames.length) {
+      parts.push(`${joinN(declinedNames)} ${verb(declinedNames.length)} regretfully declined your wedding invitation.`);
+    }
+    parts.push(`Guest responses:\n${guestLines}${contactBlock}`);
+    parts.push(
+      anyYes
+        ? "Log in to UnionVault to manage your guest list.\nhttps://unionvault.app"
+        : "Log in to UnionVault to view all RSVP responses.\nhttps://unionvault.app"
+    );
+    const text = parts.join("\n\n");
 
     const html = brandedHtml({
       kicker: "New RSVP",
-      title: anyYes ? `${guest_name} is attending` : `${guest_name} has declined`,
+      title: "You have a new RSVP response.",
       text,
     });
 

@@ -7,7 +7,7 @@ const SHELL = [
   '/js/send-sheet.js', '/js/rsvp.js', '/js/checklist.js', '/js/vendors.js',
   '/js/budget.js', '/js/seating.js', '/js/supabase.js', '/js/subscription.js', '/js/autocomplete.js',
   '/js/floorplan.js', '/js/inspiration.js', '/js/visionboard.js',
-  '/js/wishingwell.js', '/js/website.js', '/js/invitations.js', '/js/events.js',
+  '/js/wishingwell.js', '/js/website.js', '/js/comms.js', '/js/invitations.js', '/js/events.js',
   '/js/settings.js', '/js/import.js', '/js/attachments.js', '/js/export.js',
   '/js/tags.js', '/js/undo.js', '/js/payments.js', '/js/auth.js',
   '/js/storage.js', '/js/media.js', '/js/welcome.js', '/js/dots.js',
@@ -15,7 +15,18 @@ const SHELL = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // Fetch every shell file with {cache:'reload'} instead of a plain c.addAll(SHELL) —
+  // addAll's underlying fetches use the browser's normal HTTP cache, which can silently
+  // hand back an already-stale copy of a JS file even though this install is building a
+  // brand new, differently-named cache. That defeats the entire point of bumping CACHE on
+  // every deploy: the "new" cache ends up holding the same old files. {cache:'reload'}
+  // forces each request straight to the network, bypassing HTTP cache, so what lands in
+  // the new cache is always genuinely current.
+  e.waitUntil(
+    caches.open(CACHE).then(c => Promise.all(SHELL.map(url =>
+      fetch(url, { cache: 'reload' }).then(resp => { if (resp.ok) return c.put(url, resp); })
+    ))).then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {

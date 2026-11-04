@@ -1,16 +1,110 @@
 // STAGE 2 — Send hand-off + templates
 // ════════════════════════════════════════════════════════════════════════
 
-// Default save-the-date / invite / reminder templates (editable in Settings).
+// Default save-the-date / invite / reminder templates (editable from the Communications
+// page). Tokens: {guest} {names} {date} {rsvp_by} {link} — {guest} always resolves to a
+// literal "[guest name]" placeholder wherever these defaults are shown as a preview or
+// sample, never a made-up real-looking name.
 // Tokens: {guest} {names} {date} {rsvp_by} {link}
-const _DEFAULT_SAVEDATE_TPL="Dear {guest},\n\nSave the date! {names} are getting married on {date}. A formal invitation will follow. We can't wait to celebrate with you!";
-const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on {date}. Kindly RSVP by {rsvp_by} via {link}. With love.";
-const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding ({date}) by {rsvp_by}: {link}\n\nThank you!";
-function _inviteTpl(kind){
+// Formatting: **bold** *italic* __underline__, and a line starting "## " renders as a
+// larger, italic intro/heading line in Email — see _commsMarkupHelp. Markup is stripped
+// back to plain text for SMS/plain-text channels (see _stripMd) since there's no rich
+// text there; a template can freely use it either way without needing two copies.
+const _DEFAULT_SAVEDATE_TPL="Dear {guest},\n\nWe're getting married - so save the date!\n{names} are getting married on {date}. A formal invitation will follow.\nWe can't wait to celebrate with you!";
+// Email save-the-date default: no greeting line (reads as an announcement), a larger
+// italic opener, and the date in bold — kept separate from the SMS default above because
+// the two read quite differently as plain text, not just "the same text, formatted".
+const _DEFAULT_SAVEDATE_EMAIL_TPL="## We're getting married - so save the date!\n\n{names} are getting married on **{date}**.\nA formal invitation will follow.\nWe can't wait to celebrate with you!";
+// The RSVP deadline/link and sign-off used to be baked into this text via the {rsvp_by}/
+// {link} tokens — now they're always appended mechanically in _ssMessage() (same pattern
+// "View your invitation" already used), so the email-direct send can swap in a "click
+// here" link + embedded invitation image instead of a plain pasted URL. Plain-text
+// channels (SMS/WhatsApp/mailto/etc.) still end up with the same wording as before.
+// Shared by both channels — the bold around {date} simply strips back to plain for SMS.
+const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on **{date}**.";
+// SMS/plain-text invite default — its own wording (Email keeps the one above). The RSVP
+// line, wedding-website line (only when the site is published) and "With love." are
+// appended mechanically by _ssMessage()/_commsCtaLines(), not part of this text.
+const _DEFAULT_INVITE_SMS_TPL="Dear {guest},\n\n{names} are getting married and we would be delighted to have you at our wedding on {date}.";
+// SMS/plain-text reminder default — the {rsvp_by}/{link} tokens are part of the editable
+// text itself since there's no HTML to turn them into a "click here" link.
+const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on {date}.\nPlease submit your RSVP via the link below by {rsvp_by} so we can ensure you're catered for. If you cannot make it, please still submit your RSVP to let us know: {link}\n\nThank you, we hope you can make it!";
+// Email reminder default — like Invite, the RSVP link/closing are mechanical (see
+// _ssMessage/_ssBuildPayload) so the email-direct send can show a "click here" CTA.
+const _DEFAULT_REMINDER_EMAIL_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on **{date}**.";
+// Save the date / Invite / Reminder are each editable separately per channel — Email
+// (sent via UnionVault, branded HTML) and SMS (covers every other channel: Text, WhatsApp,
+// Messenger, Instagram, Call notes, copy, and the mailto fallback when not signed in).
+// `channel` is 'email' or 'sms' (default 'sms' for any caller that doesn't care).
+function _inviteTpl(kind, channel){
   const s=STATE.settings||{};
-  if(kind==='reminder') return (s.reminderTemplate!=null?s.reminderTemplate:_DEFAULT_REMINDER_TPL);
-  if(kind==='savedate') return (s.saveDateTemplate!=null?s.saveDateTemplate:_DEFAULT_SAVEDATE_TPL);
-  return (s.inviteTemplate!=null?s.inviteTemplate:_DEFAULT_INVITE_TPL);
+  const ch=channel==='email'?'email':'sms';
+  if(kind==='reminder'){
+    const key='reminderTemplate'+(ch==='email'?'Email':'Sms');
+    const def=ch==='email'?_DEFAULT_REMINDER_EMAIL_TPL:_DEFAULT_REMINDER_TPL;
+    if(s[key]!=null) return s[key];
+    // Fall back to the old single reminderTemplate key (pre-channel-split) for sms only.
+    return ch==='sms' && s.reminderTemplate!=null ? s.reminderTemplate : def;
+  }
+  if(kind==='savedate'){
+    const key='saveDateTemplate'+(ch==='email'?'Email':'Sms');
+    const def=ch==='email'?_DEFAULT_SAVEDATE_EMAIL_TPL:_DEFAULT_SAVEDATE_TPL;
+    if(s[key]!=null) return s[key];
+    return ch==='sms' && s.saveDateTemplate!=null ? s.saveDateTemplate : def;
+  }
+  const key='inviteTemplate'+(ch==='email'?'Email':'Sms');
+  if(s[key]!=null) return s[key];
+  if(ch==='email') return _DEFAULT_INVITE_TPL;
+  // Old single inviteTemplate key (pre-channel-split): only honoured if it doesn't carry
+  // its own {rsvp_by}/{link} RSVP line — that line is now appended mechanically, so an
+  // old template that bakes it in would show the RSVP sentence twice.
+  const legacy=s.inviteTemplate;
+  if(legacy!=null && !/\{rsvp_by\}|\{link\}/.test(legacy)) return legacy;
+  return _DEFAULT_INVITE_SMS_TPL;
+}
+// ── Lightweight formatting markup, shared by every editable template/field ─────────────
+// **bold** *italic* __underline__ — kept intentionally small (no nesting, no lists/links
+// syntax) since it only needs to survive being typed in a plain textarea and rendered by
+// hand-rolled paragraph builders in half a dozen edge functions. A line starting "## " is
+// the one block-level convention: a larger italic "intro" line (see _DEFAULT_SAVEDATE_EMAIL_TPL).
+const _COMMS_MARKUP_HELP='Formatting: **bold**, *italic*, __underline__. Start a line with "## " for a larger, italic intro line (shown in Email only).';
+// Strips all of the above back to plain text, for SMS/plain-text channels where none of
+// it can render — so one template can be written once and still read cleanly everywhere.
+function _stripMd(text){
+  return String(text||'')
+    .replace(/^##\s+/gm,'')
+    .replace(/\*\*(.+?)\*\*/g,'$1')
+    .replace(/__(.+?)__/g,'$1')
+    .replace(/\*(.+?)\*/g,'$1');
+}
+// Ordinal day suffix — "4th", "21st", "22nd", "23rd", with the 11th/12th/13th exception.
+function _ordinalSuffix(n){
+  const j=n%10, k=n%100;
+  if(j===1 && k!==11) return 'st';
+  if(j===2 && k!==12) return 'nd';
+  if(j===3 && k!==13) return 'rd';
+  return 'th';
+}
+// _longDate(), with the day number given an ordinal suffix when the couple has turned
+// that on (STATE.settings.commsOrdinalDates) — used only for {date}/{rsvp_by} token
+// substitution in templates/previews, deliberately not touching the app's plain _longDate
+// used everywhere else (budget due dates, the dashboard countdown, etc).
+function _commsLongDate(iso){
+  const base=_longDate(iso); if(!base) return base;
+  return _commsOrdinalize(base);
+}
+// Ordinal dates are ON by default; unticking stores an explicit false, which is remembered.
+function _commsOrdinalOn(){ return !(STATE.settings && STATE.settings.commsOrdinalDates===false); }
+// Adds the suffix to the first "D Month" in a date string ("Saturday, 1 January 2028" →
+// "Saturday, 1st January 2028") when ordinal dates are on; otherwise returns it unchanged.
+function _commsOrdinalize(s){
+  if(!s || !_commsOrdinalOn()) return s;
+  return String(s).replace(/\b(\d{1,2})(?= (January|February|March|April|May|June|July|August|September|October|November|December)\b)/, (m,d)=>d+_ordinalSuffix(Number(d)));
+}
+// "Saturday, 1st January 2028" — weekday + comms long date, for emails that show a day.
+function _commsWeekdayDate(iso){
+  const d=new Date(iso+'T00:00:00'); if(isNaN(d)) return '';
+  return d.toLocaleDateString('en-AU',{weekday:'long'})+', '+_commsLongDate(iso);
 }
 // Pretty long date, e.g. "14 November 2026". Empty string if unset/invalid.
 function _longDate(iso){
@@ -31,7 +125,10 @@ function _rsvpLink(){
 function _tplGreetingBreak(tpl){
   return String(tpl||'').replace(/^(\s*(?:[A-Za-z]+\s+)?\{guest\}[,!])[ \t]*(?!\r?\n)(\S)/, (m, greet, ch)=>greet+'\n\n'+ch.toUpperCase());
 }
-function _fillTemplate(tpl, grp){
+// `channel`: pass 'sms' to strip ** / * / __ / "## " formatting markup back to plain text
+// (there's no rich text in a text message) — omitted/'email' leaves it in place for the
+// branded HTML send to render as real tags.
+function _fillTemplate(tpl, grp, channel){
   tpl=_tplGreetingBreak(tpl);
   const ev=STATE.event||{};
   const p1=ev.partner1||'', p2=ev.partner2||'';
@@ -42,11 +139,12 @@ function _fillTemplate(tpl, grp){
   const map={
     '{guest}':guest,
     '{names}':names,
-    '{date}':_longDate(ev.date)|| 'our wedding day',
-    '{rsvp_by}':_longDate((STATE.settings||{}).rsvpBy)|| 'your earliest convenience',
+    '{date}':_commsLongDate(ev.date)|| 'our wedding day',
+    '{rsvp_by}':_commsLongDate((STATE.settings||{}).rsvpBy)|| 'your earliest convenience',
     '{link}':_rsvpLink()
   };
   let msg = (tpl||'').replace(/\{guest\}|\{names\}|\{date\}|\{rsvp_by\}|\{link\}/g, m=>map[m]!=null?map[m]:m);
+  if(channel==='sms') msg=_stripMd(msg);
   if(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()) msg += '\n\nSent via unionvault.app';
   return msg;
 }
@@ -322,11 +420,21 @@ function _ssCoupleNames(){ const ev=STATE.event||{}; return [ev.partner1,ev.part
 function _ssMethodLabel(m){ const c=INVITE_CHANNELS.find(x=>x.key===m); return c?c.label:m; }
 function _ssOpen(kind, slotKey, method){
   const grp=_groupFromSlotKey(slotKey); if(!grp) return;
-  const base=_fillTemplate(_inviteTpl(kind), grp);
-  const asset=kind==='invite'?_ssInviteAsset():{file:null,publicUrl:'',viewUrl:'',link:''};
   const signedIn=!!(_sbSession&&_sbSession.access_token);
-  const emails=grp.members.map(g=>({name:g.name||'',email:(g.email||'').trim()})).filter(x=>x.email);
-  _ss={kind, slotKey, method, grp, base, asset, file:null, signedIn, emails,
+  // Matches _ssMode()'s own method==='email'&&signedIn check — email-direct uses the
+  // Email-channel template, everything else (including the not-signed-in email fallback,
+  // which just opens the mail app) uses the SMS/plain-text one.
+  const channel=(method==='email'&&signedIn)?'email':'sms';
+  const base=_fillTemplate(_inviteTpl(kind, channel), grp, channel);
+  const asset=kind==='invite'?_ssInviteAsset():{file:null,publicUrl:'',viewUrl:'',link:''};
+  // A guest whose email has already bounced or been marked as spam (synced in by
+  // _loadOnlineRsvps' email_issues merge) is left off the Email "to" list entirely —
+  // resending to a known-bad address is what actually drags the whole domain's
+  // deliverability down. They're still offered for every other channel.
+  const emailCandidates=grp.members.filter(g=>(g.email||'').trim());
+  const blockedEmails=emailCandidates.filter(g=>g.emailIssue);
+  const emails=emailCandidates.filter(g=>!g.emailIssue).map(g=>({name:g.name||'',email:(g.email||'').trim()}));
+  _ss={kind, slotKey, method, grp, base, asset, file:null, signedIn, emails, blockedEmails,
        to:emails.length?emails[0].email:'',
        attach:!!asset.file, addLink:true};
   // Email sent by UnionVault carries the file, so the link is opt-in there; elsewhere it's on.
@@ -350,11 +458,20 @@ function _ssMessage(){
   let msg=s.base;
   const extra=[];
   if(s.kind==='invite'){
+    extra.push('Kindly RSVP by '+(_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
+    // Same gate as the Email invite's "Visit our website" button — never a dead link.
+    const w=typeof _wbSite==='function'&&_wbSite();
+    if(w && w.published && w.slug) extra.push('For further wedding details, please check out our wedding website: '+_wbSiteUrl());
+    extra.push('With love.');
     if(s.asset.viewUrl && s.addLink) extra.push('View your invitation: '+s.asset.viewUrl);
   } else if(s.kind==='savedate'){
     const w=_wbSite(); if(w && w.published && w.slug) extra.push('Details: '+_wbSiteUrl());
+  } else if(s.kind==='reminder'){
+    extra.push('Kindly RSVP by '+(_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
+    extra.push('Thank you!');
   }
-  if(extra.length) msg=msg.replace(/\s+$/,'')+'\n\n'+extra.join('\n');
+  // Each extra is its own paragraph (blank-line separated), not one run-on block.
+  if(extra.length) msg=msg.replace(/\s+$/,'')+'\n\n'+extra.join('\n\n');
   return msg;
 }
 function _ssToggle(which){ if(!_ss) return; _ss[which]=!_ss[which]; _ssRender(); }
@@ -362,9 +479,14 @@ function _ssPickTo(v){ if(_ss){ _ss.to=v; } }
 function _ssRender(open){
   const s=_ss; if(!s) return;
   const esc=_escHtml, mode=_ssMode();
-  const noun=s.kind==='invite'?'invite':'save the date';
+  const noun=s.kind==='invite'?'invite':s.kind==='reminder'?'reminder':'save the date';
   const who=s.grp.members.map(g=>g.name).filter(Boolean).join(' & ');
-  const contact = s.method==='email' ? (s.emails.length>1?'':(s.to||'no email on file')) : (_groupContact(s.grp,'phone')||'');
+  const contact = s.method==='email'
+    ? (s.emails.length>1?'':(s.to||((s.blockedEmails&&s.blockedEmails.length)?'email bounced previously':'no email on file')))
+    : (_groupContact(s.grp,'phone')||'');
+  const blockedHtml = (s.method==='email' && s.blockedEmails && s.blockedEmails.length)
+    ? `<div style="border:1px dashed var(--red);border-radius:11px;padding:10px 12px;font-size:12px;color:var(--red);line-height:1.5"><strong>Skipped:</strong> ${esc(s.blockedEmails.map(g=>g.name||g.email).join(', '))} — a previous email bounced or was marked as spam. Try another way to reach ${s.blockedEmails.length>1?'them':'this guest'}.</div>`
+    : '';
   const sw=(on,fn,label)=>`<span class="toggle-switch"><input type="checkbox" ${on?'checked':''} onchange="${fn}" aria-label="${esc(label)}"/><span class="toggle-track"></span></span>`;
   const rowStyle='display:flex;align-items:center;gap:11px;border:.5px solid var(--border);border-radius:11px;padding:9px 10px;background:var(--surface)';
   const lab='font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)';
@@ -390,14 +512,16 @@ function _ssRender(open){
     } else {
       attachHtml+=`<div style="border:1px dashed var(--border);border-radius:11px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5"><strong style="color:var(--ink)">No invitation uploaded yet</strong><br>Add one under Your Invitation to attach it. The message still sends on its own.</div>`;
     }
-  } else {
+  } else if(s.kind==='savedate'){
     const w=_wbSite(); const pub=!!(w&&w.published&&w.slug);
     attachHtml+=`<div style="border:1px dashed var(--border);border-radius:11px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5"><strong style="color:var(--ink)">No save-the-date file yet</strong><br>${pub?'Your wedding website link goes in the message instead.':'Publish your wedding website to include its link.'} Uploading a save-the-date is coming soon.</div>`;
   }
+  // Reminder: no file/attachment concept at all, attachHtml stays empty.
   const toHtml = (s.method==='email' && s.emails.length>1) ? `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span style="color:var(--muted)">To</span><select class="form-input" style="font-size:12.5px;flex:1" onchange="_ssPickTo(this.value)">${s.emails.map(e=>`<option value="${esc(e.email)}" ${e.email===s.to?'selected':''}>${esc(e.name)} · ${esc(e.email)}</option>`).join('')}</select></div>` : '';
   const msg=_ssMessage();
   const body=`<div style="display:flex;flex-direction:column;gap:11px">
     <div style="font-size:12.5px;color:var(--muted);margin-top:-6px">${esc(who)} · ${esc(_ssMethodLabel(s.method))}${contact?' · '+esc(contact):''}</div>
+    ${blockedHtml}
     ${toHtml}
     ${attachHtml}
     <div style="${lab}">Message</div>
@@ -438,7 +562,10 @@ async function _ssGo(){
     return;
   }
   if(mode==='email-direct'){
-    if(!s.to){ if(typeof _showInfoToast==='function') _showInfoToast('No email address on file for this guest.', null, null); return; }
+    if(!s.to){
+      const _blockedMsg=(s.blockedEmails&&s.blockedEmails.length)?'This guest\'s email bounced before — try another way to reach them.':'No email address on file for this guest.';
+      if(typeof _showInfoToast==='function') _showInfoToast(_blockedMsg, null, null); return;
+    }
     if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
     if(s.asset.file && (s.attach||s.addLink)) await _ssEnsureUploaded();
     const payload=_ssBuildPayload(s, msg);
@@ -586,12 +713,15 @@ function trackerSend(kind, slotKey){
   const grp=_groupFromSlotKey(slotKey);
   if(!grp){ return; }
   // Save the dates + invites by email / chat go through the send sheet (file or link attached).
-  if((kind==='invite'||kind==='savedate') && _SS_CHANNELS.includes(method)){
+  // Reminders have no file to attach, so only Email routes through it — for the branded
+  // "click here" RSVP link; every other reminder channel keeps going straight to the
+  // plain-text handoff below, same as before.
+  if(((kind==='invite'||kind==='savedate') && _SS_CHANNELS.includes(method)) || (kind==='reminder' && method==='email')){
     _closeTrackerMenu();
     _ssOpen(kind, slotKey, method);
     return;
   }
-  const tpl=_inviteTpl(kind);
+  const tpl=_inviteTpl(kind, 'sms');
   const message=_fillTemplate(tpl, grp);
   const note=_channelHandoff(method, grp, message);
   _trackerRecordSend(kind, slotKey, method, note);
@@ -943,47 +1073,6 @@ function _setRsvpByDate(v){
   saveToStorage();
   if(typeof navigate==='function' && typeof _currentPage!=='undefined' && _currentPage==='rsvp-mgr') navigate('rsvp-mgr');
 }
-function _openInviteTemplatesModal(){
-  const tokenChips=['{guest}','{names}','{date}','{rsvp_by}','{link}']
-    .map(t=>`<code style="font-size:11px;background:var(--chip);border:.5px solid var(--border);border-radius:5px;padding:2px 7px;color:var(--gold-deep)">${t}</code>`).join('');
-  const body=`
-    <div style="display:flex;flex-direction:column;gap:18px">
-      <div>
-        <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">RSVP by date</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">The date guests should respond by. Fills the <code style="font-size:11px">{rsvp_by}</code> token in your messages.</div>
-        <input type="date" class="form-input" id="tpl-rsvpby" value="${(STATE.settings.rsvpBy||'').replace(/"/g,'&quot;')}" onchange="_setRsvpByDate(this.value)" style="max-width:220px"/>
-      </div>
-      <div style="background:var(--surface);border-radius:12px;padding:16px 18px;border:1px solid var(--border)">
-        <div style="font-size:12.5px;color:var(--muted);line-height:1.6">Templates fill these tokens automatically when you send from the tracker:
-          <span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${tokenChips}</span>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Save the Date message</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sent when you use the Save the Date send button in the tracker.</div>
-        <textarea class="form-input" id="tpl-savedate" rows="3" oninput="STATE.settings.saveDateTemplate=this.value;saveToStorage()" style="width:100%;resize:vertical;line-height:1.5;font-family:'Inter',sans-serif">${_escHtml(_inviteTpl('savedate'))}</textarea>
-        <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="STATE.settings.saveDateTemplate=null;saveToStorage();document.getElementById('tpl-savedate').value=_inviteTpl('savedate')">Reset to default</button>
-      </div>
-      <div>
-        <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Invite message</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sent when you use the invite send button in the tracker.</div>
-        <textarea class="form-input" id="tpl-invite" rows="3" oninput="STATE.settings.inviteTemplate=this.value;saveToStorage()" style="width:100%;resize:vertical;line-height:1.5;font-family:'Inter',sans-serif">${_escHtml(_inviteTpl('invite'))}</textarea>
-        <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="STATE.settings.inviteTemplate=null;saveToStorage();document.getElementById('tpl-invite').value=_inviteTpl('invite')">Reset to default</button>
-      </div>
-      <div>
-        <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Reminder message</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sent when you use the reminder send button in the tracker.</div>
-        <textarea class="form-input" id="tpl-reminder" rows="3" oninput="STATE.settings.reminderTemplate=this.value;saveToStorage()" style="width:100%;resize:vertical;line-height:1.5;font-family:'Inter',sans-serif">${_escHtml(_inviteTpl('reminder'))}</textarea>
-        <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="STATE.settings.reminderTemplate=null;saveToStorage();document.getElementById('tpl-reminder').value=_inviteTpl('reminder')">Reset to default</button>
-      </div>
-      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border)">
-        <strong style="color:var(--ink)">How sending works:</strong> Email, Text, and WhatsApp open the app pre-filled — you tap send. Messenger and Instagram open the person's chat and copy the message to your clipboard (paste &amp; send). Sending stamps today's date and marks the guest invited.
-      </div>
-    </div>`;
-  const footer=`<button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`;
-  openModal('Invites & Reminders', body, footer);
-}
-
 // Toggle: when on, the tracker's Reminder cell is blank for any group whose members
 // have all responded (attending/declined). Re-renders the tracker list in place.
 function _setHideReminderIfResponded(on){
@@ -2286,14 +2375,74 @@ function confirmDeleteGuest(id){
 function _ssBuildPayload(s, msg){
   if(!s) s=_ss; if(!msg) msg=_ssMessage();
   const names=_ssCoupleNames();
-  const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
-  const payload={ to:s&&s.to?[s.to]:[], subject:(s&&s.kind==='invite'?'You\'re invited':'Save the date')+(names?' — '+names:''), body:msg,
-    fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:s&&s.kind==='invite'?'You\'re invited':'Save the date',
+  // Per-email Design (Communications page) wins over the app-wide one, same as the preview.
+  const ed=(typeof _commsDesignFor==='function'?_commsDesignFor(s&&s.kind==='invite'?'inv-email':s&&s.kind==='reminder'?'rem-email':'sd-email'):((STATE.settings&&STATE.settings.emailDesign)||{}));
+  const _ssTitle=s&&s.kind==='invite'?'You\'re invited':s&&s.kind==='reminder'?'RSVP reminder':'Save the date';
+  const payload={ to:s&&s.to?[s.to]:[], subject:_ssTitle+(names?' — '+names:''), body:msg,
+    fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:_ssTitle,
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
     templateId:ed.templateId||'classic',
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
-      headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' } };
+      headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
   if(s&&s.attach && s.asset && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
+  // Lets the edge function tag the Resend send with who it went to, so a bounce/complaint
+  // webhook can be attributed back to this guest (see _loadOnlineRsvps' email_issues merge).
+  const _toGuest=s&&s.grp&&s.grp.members&&s.to?s.grp.members.find(g=>(g.email||'').trim()===s.to):null;
+  if(_toGuest&&_toGuest.id) payload.guestId=_toGuest.id;
+  // Invite email (sent via UnionVault): the greeting+intro renders as normal paragraphs
+  // (htmlText), then the edge function splices in an embedded invitation image (or a
+  // plain link for a PDF/non-image file) and a "click here" RSVP line as structured
+  // markup — see inviteBlockHtml() in send-guest-email/index.ts. `s.base` is the filled
+  // template with the mechanical RSVP/sign-off already stripped out (see
+  // _DEFAULT_INVITE_TPL), so it's just the couple's own greeting + message.
+  if(s && s.kind==='invite'){
+    payload.htmlText=s.base;
+    const block={};
+    const f=s.asset&&s.asset.file;
+    const isImg=f&&(/^image\//.test(f.type||'')||/\.(png|jpe?g|gif|webp)$/i.test(f.name||''));
+    if(s.addLink){
+      if(isImg && s.asset.publicUrl){
+        block.imageSrc=s.asset.publicUrl;
+        block.imageHref=s.asset.viewUrl||s.asset.publicUrl;
+        block.imageCaption='Click on invite to open in new page.';
+      } else if(s.asset.viewUrl){
+        block.fallbackLinkLabel='View your invitation';
+        block.fallbackLinkUrl=s.asset.viewUrl;
+      }
+    }
+    const rsvpBy=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
+    block.rsvpUrl=_rsvpLink();
+    block.rsvpByText=rsvpBy;
+    block.rsvpButtonLabel='RSVP';
+    block.rsvpLeadText='Kindly RSVP by '+rsvpBy+' by clicking the button below.';
+    // Points guests to the website only once there's a real one to send them to.
+    const w=_wbSite();
+    if(w && w.published && w.slug) block.websiteUrl=_wbSiteUrl();
+    block.closingText='With love.';
+    payload.inviteBlock=block;
+  } else if(s && s.kind==='reminder'){
+    // Reminder gets a real RSVP button (not Invite's quieter inline "by clicking here"
+    // link) — it's a follow-up nudge, so the call to action should read as one.
+    payload.htmlText=s.base;
+    const rsvpBy=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
+    payload.inviteBlock={
+      rsvpUrl:_rsvpLink(),
+      rsvpByText:rsvpBy,
+      rsvpButtonLabel:'RSVP',
+      rsvpLeadText:'Please submit your RSVP by '+rsvpBy+' so we can ensure you\'re catered for. If you cannot make it, please still submit your RSVP to let us know.',
+      closingText:'Thank you, we hope you can make it!',
+    };
+  } else if(s && s.kind==='savedate'){
+    // A calendar invite for the wedding date itself — same client-side base64 pattern
+    // _apptEmailSendViaEdge already uses for appointment .ics attachments.
+    try{
+      const icsRaw=typeof _wbIcs==='function'?_wbIcs():'';
+      if(icsRaw){
+        const icsText=decodeURIComponent(icsRaw.slice(icsRaw.indexOf(',')+1));
+        payload.ics=btoa(unescape(encodeURIComponent(icsText)));
+      }
+    }catch(_){}
+  }
   return payload;
 }
 
@@ -2319,17 +2468,51 @@ async function _ssPreviewEmail(){
 }
 
 // ── Email design modal ───────────────────────────────────────────────────
-function _openEmailDesignModal(){
-  const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
-  const tplId=ed.templateId||'classic';
-  const accent=ed.accentColor||'#8a6a2c';
-  const ff=ed.fontFamily||'serif';
-  const logo=ed.showLogo!==false;
-  const hdrImg=ed.headerImage||'';
-  const hdrPreview=hdrImg?_mediaUrl(hdrImg):'';
+// A handful of elegant, wedding-appropriate presets, click-to-apply — plus a custom
+// swatch + hex field below for anything else. Shown as circles with a check ring on the
+// selected one, matching the template thumbnails' own selected-state treatment.
+const _COMMS_COLOR_PRESETS=['#8a6a2c','#C9A66B','#B8865A','#9B6B6B','#6B4F4F','#5B6E8C','#7D8471','#3A3A3A'];
+// itemKey is omitted for the universal (app-wide) design, reached from Settings/RSVP page;
+// passed in when opened from the Comms page's "Design" button on a specific email, which
+// edits STATE.settings.commsDesign[itemKey] instead — a sparse per-email override that
+// falls back to the universal design for anything it doesn't set. The two share every
+// control; only the storage target and a small "custom for this email" banner differ.
+// Free plan (signed in, not paid) always shows the footer logo — the checkbox is locked
+// on here, and the edge functions enforce it server-side regardless of what's sent.
+// Header image as sent to the email functions: a stored photo id becomes its public URL,
+// 'none' means "no header image", and '' (never set / back to default) lets the server
+// use the UnionVault default header (assets/email_header_default_blackgold.png).
+function _emailHeaderUrl(hid, uid){
+  if(hid==='none') return 'none';
+  return hid&&uid ? _SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+uid+'/'+hid : '';
+}
+function _emailLogoLocked(){ return !!(typeof _sbSession!=='undefined'&&_sbSession) && typeof _uvIsPaid==='function' && !_uvIsPaid(); }
+function _openEmailDesignModal(itemKey){
+  const universal=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const override=itemKey&&STATE.settings&&STATE.settings.commsDesign&&STATE.settings.commsDesign[itemKey];
+  const src=override||universal;
+  const tplId=src.templateId||'classic';
+  const accent=src.accentColor||'#8a6a2c';
+  const ff=src.fontFamily||'serif';
+  const logoLocked=_emailLogoLocked();
+  const logo=logoLocked||src.showLogo!==false;
+  const hdrImg=src.headerImage||'';
+  // Only the couple's own upload is shown here — with none, emails quietly use the default.
+  const hdrPreview=hdrImg&&hdrImg!=='none'?_mediaUrl(hdrImg):'';
+  const item=itemKey&&typeof _commsItem==='function'?_commsItem(itemKey):null;
+  const arg=itemKey?`,'${itemKey}'`:'';
+  // The 3 "simple" fixed-copy emails (RSVP confirmation, Wishing Well, Appointment) always
+  // render the one classic-style layout server-side — offering a template choice there
+  // would do nothing, so it's hidden rather than silently ignored.
+  const showTemplatePicker=!itemKey||['sd-email','inv-email','rem-email','vbrief'].includes(itemKey);
+  const banner=itemKey
+    ? (override
+        ? `<div style="display:flex;align-items:center;gap:10px;background:var(--parchment);border:1px solid var(--gold-med,var(--border));border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ink)"><span style="flex:1">Custom design for <strong>${_escHtml(item?item.title:'this email')}</strong> — the app-wide design below no longer applies to it.</span><button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignResetItem('${itemKey}')" style="flex-shrink:0;font-size:10.5px">Reset to app-wide</button></div>`
+        : `<div style="font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;line-height:1.5">Currently using the app-wide <strong style="color:var(--ink)">Email design</strong>. Changing anything below gives <strong style="color:var(--ink)">${_escHtml(item?item.title:'this email')}</strong> its own design instead.</div>`)
+    : '';
   const tplThumb=(id,name,desc,bandColor,cardColor,borderLeft)=>{
     const sel=tplId===id;
-    return `<button type="button" onclick="_emailDesignSet('templateId','${id}')" style="flex:1;min-width:100px;max-width:160px;border:2px solid ${sel?'var(--gold)':'var(--border)'};border-radius:12px;padding:0;overflow:hidden;cursor:pointer;background:var(--cream);display:flex;flex-direction:column;text-align:left;position:relative${sel?';box-shadow:0 0 0 2px var(--gold-fade)':''}">
+    return `<button type="button" onclick="_emailDesignSet('templateId','${id}'${arg})" style="flex:1;min-width:100px;max-width:160px;border:2px solid ${sel?'var(--gold)':'var(--border)'};border-radius:12px;padding:0;overflow:hidden;cursor:pointer;background:var(--cream);display:flex;flex-direction:column;text-align:left;position:relative${sel?';box-shadow:0 0 0 2px var(--gold-fade)':''}">
       <div style="height:28px;background:${bandColor};${borderLeft?'border-left:4px solid '+accent:''}"></div>
       <div style="padding:8px 10px;background:${cardColor}">
         <div style="width:70%;height:4px;background:${accent};border-radius:2px;margin-bottom:5px;opacity:.6"></div>
@@ -2344,63 +2527,112 @@ function _openEmailDesignModal(){
       ${sel?'<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>':''}
     </button>`;
   };
+  const presetHtml=_COMMS_COLOR_PRESETS.map(c=>{
+    const sel=c.toLowerCase()===accent.toLowerCase();
+    return `<button type="button" onclick="_emailDesignSet('accentColor','${c}'${arg})" title="${c}" aria-label="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};border:none;box-shadow:0 0 0 2px ${sel?'var(--ink)':'transparent'},0 0 0 1px var(--border);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">${sel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</button>`;
+  }).join('');
   const body=`<div style="display:flex;flex-direction:column;gap:18px">
-    <div>
+    ${banner}
+    ${showTemplatePicker?`<div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:8px">Template</div>
       <div id="email-tpl-picker" style="display:flex;gap:10px;flex-wrap:wrap">
         ${tplThumb('classic','Classic','Cream card, warm tones','#F4EEE4','#FBF8F3',false)}
         ${tplThumb('modern','Modern','Clean white, accent border','#F5F5F5','#FFFFFF',true)}
         ${tplThumb('botanical','Botanical','Sage green, natural feel','#E8EDE6','#FFFFFF',false)}
       </div>
-    </div>
+    </div>`:''}
     <div>
-      <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Accent colour</div>
+      <div style="font-size:13.5px;font-weight:500;margin-bottom:8px">Accent colour</div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px">${presetHtml}</div>
       <div style="display:flex;align-items:center;gap:10px">
-        <input type="color" id="email-accent" value="${accent}" onchange="_emailDesignSet('accentColor',this.value)" style="width:36px;height:30px;border:1px solid var(--border);border-radius:6px;padding:1px;cursor:pointer"/>
-        <span style="font-size:12px;color:var(--muted);font-family:monospace">${accent}</span>
-        <button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignSet('accentColor','#8a6a2c');document.getElementById('email-accent').value='#8a6a2c'" style="font-size:10px;margin-left:auto">Reset</button>
+        <label style="position:relative;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);cursor:pointer;overflow:hidden;background:${accent};flex-shrink:0" title="Custom colour">
+          <input type="color" id="email-accent-native" value="${accent}" onchange="_emailDesignSet('accentColor',this.value${arg})" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;margin:0"/>
+        </label>
+        <input id="email-accent-hex" class="form-input" value="${accent}" maxlength="7" placeholder="#8a6a2c" style="font-family:monospace;font-size:12.5px;width:110px" oninput="_emailDesignHexInput(this${arg})" onchange="_emailDesignHexCommit(this${arg})"/>
+        <button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignSet('accentColor','#8a6a2c'${arg})" style="font-size:10px;margin-left:auto">Reset</button>
       </div>
     </div>
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Font style</div>
       <span class="inv-seg" style="display:inline-flex">
-        <button type="button" class="${ff==='serif'?'active':''}" onclick="_emailDesignSet('fontFamily','serif')" style="font-family:Georgia,serif">Serif</button>
-        <button type="button" class="${ff==='sans-serif'?'active':''}" onclick="_emailDesignSet('fontFamily','sans-serif')">Sans-serif</button>
+        <button type="button" class="${ff==='serif'?'active':''}" onclick="_emailDesignSet('fontFamily','serif'${arg})" style="font-family:Georgia,serif">Serif</button>
+        <button type="button" class="${ff==='sans-serif'?'active':''}" onclick="_emailDesignSet('fontFamily','sans-serif'${arg})">Sans-serif</button>
       </span>
     </div>
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Header image</div>
-      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Upload a custom banner for the top of your emails. Recommended: 1200 &times; 400 px (displays at 600 &times; 200).</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Upload a custom banner for the top of ${itemKey?'this email':'your emails'}. Recommended: 1200 &times; 400 px (displays at 600 &times; 200).</div>
       ${hdrPreview?`<div style="margin-bottom:8px;position:relative;display:inline-block"><img src="${_escHtml(hdrPreview)}" style="max-width:100%;max-height:100px;border-radius:8px;border:1px solid var(--border);object-fit:contain" alt="Header preview"/>
-        <button type="button" onclick="_emailDesignRemoveHeader()" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--cream);border:2px solid var(--cream);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">&times;</button></div>`:''}
-      <div><button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignPickHeader()" style="display:inline-flex;align-items:center;gap:6px">
+        <button type="button" onclick="_emailDesignRemoveHeader(${itemKey?`'${itemKey}'`:''})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--cream);border:2px solid var(--cream);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">&times;</button></div>`:''}
+      <div><button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignPickHeader(${itemKey?`'${itemKey}'`:''})" style="display:inline-flex;align-items:center;gap:6px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         ${hdrPreview?'Replace image':'Upload image'}
       </button></div>
     </div>
     <div>
-      <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
-        <input type="checkbox" ${logo?'checked':''} onchange="_emailDesignSet('showLogo',this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
+      <label style="display:flex;align-items:center;gap:9px;cursor:${logoLocked?'default':'pointer'}">
+        <input type="checkbox" ${logo?'checked':''} ${logoLocked?'disabled':''} onchange="_emailDesignSet('showLogo',this.checked${arg})" style="width:15px;height:15px;accent-color:var(--gold);cursor:${logoLocked?'default':'pointer'};flex-shrink:0"/>
         <span style="font-size:13px;color:var(--ink)">Show logo in email footer</span>
       </label>
+      ${logoLocked?`<div style="font-size:11.5px;color:var(--muted);margin:5px 0 0 24px">Always shown on the free plan. <a href="#" onclick="event.preventDefault();_uvRequirePaid('brandOff')" style="color:var(--gold)">Upgrade</a> to remove it.</div>`:''}
     </div>
-    <div style="border-top:1px solid var(--border);padding-top:14px">
+    ${!itemKey?`<div style="border-top:1px solid var(--border);padding-top:14px">
       <button type="button" class="btn btn-outline btn-sm" onclick="_ssPreviewEmail()" style="display:inline-flex;align-items:center;gap:6px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Preview with sample content
       </button>
-    </div>
+    </div>`:''}
   </div>`;
-  openModal('Email Design',body,`<button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`);
+  openModal(itemKey&&item?'Email Design · '+item.title:'Email Design',body,`<button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`);
 }
-function _emailDesignSet(key, val){
+// Writes to the per-email override (STATE.settings.commsDesign[itemKey]) when itemKey is
+// given, else the universal STATE.settings.emailDesign. Always re-renders the modal (every
+// control used to miss this for fontFamily/showLogo, which is why Sans-serif/the logo
+// toggle looked unresponsive) and live-refreshes the Comms page preview if it's open —
+// previously that only happened on the next template switch. `skipRerender` is for the hex
+// field's live-as-you-type save, so a full re-render doesn't steal focus mid-keystroke.
+function _emailDesignSet(key, val, itemKey, skipRerender){
+  if(key==='showLogo' && !val && _emailLogoLocked()){ _openEmailDesignModal(itemKey); return; } // free plan: locked on
   if(!STATE.settings) STATE.settings={};
-  if(!STATE.settings.emailDesign) STATE.settings.emailDesign={ templateId:'classic', accentColor:'#8a6a2c', fontFamily:'serif', showLogo:true, headerImage:'' };
-  STATE.settings.emailDesign[key]=val;
+  if(itemKey){
+    if(!STATE.settings.commsDesign) STATE.settings.commsDesign={};
+    if(!STATE.settings.commsDesign[itemKey]){
+      const u=STATE.settings.emailDesign||{};
+      STATE.settings.commsDesign[itemKey]={ templateId:u.templateId||'classic', accentColor:u.accentColor||'#8a6a2c', fontFamily:u.fontFamily||'serif', showLogo:u.showLogo!==false, headerImage:u.headerImage||'' };
+    }
+    STATE.settings.commsDesign[itemKey][key]=val;
+  } else {
+    if(!STATE.settings.emailDesign) STATE.settings.emailDesign={ templateId:'classic', accentColor:'#8a6a2c', fontFamily:'serif', showLogo:true, headerImage:'' };
+    STATE.settings.emailDesign[key]=val;
+  }
   saveToStorage();
-  if(key==='templateId'||key==='accentColor'||key==='headerImage') _openEmailDesignModal();
+  if(!skipRerender) _openEmailDesignModal(itemKey);
+  if(typeof _currentPage!=='undefined' && _currentPage==='comms' && typeof _commsLoadPreview==='function') _commsLoadPreview();
 }
-function _emailDesignPickHeader(){
+function _emailDesignResetItem(itemKey){
+  if(STATE.settings && STATE.settings.commsDesign) delete STATE.settings.commsDesign[itemKey];
+  saveToStorage();
+  _openEmailDesignModal(itemKey);
+  if(typeof _currentPage!=='undefined' && _currentPage==='comms' && typeof _commsLoadPreview==='function') _commsLoadPreview();
+}
+function _emailDesignHexInput(inp, itemKey){
+  let v=(inp.value||'').trim();
+  if(v && v[0]!=='#') v='#'+v;
+  if(/^#[0-9a-fA-F]{6}$/.test(v)){
+    inp.style.borderColor='';
+    const sw=document.getElementById('email-accent-native'); if(sw){ sw.value=v; sw.parentElement.style.background=v; }
+    _emailDesignSet('accentColor', v, itemKey, true);
+  } else {
+    inp.style.borderColor='var(--red)';
+  }
+}
+function _emailDesignHexCommit(inp, itemKey){
+  let v=(inp.value||'').trim();
+  if(v && v[0]!=='#') v='#'+v;
+  if(/^#[0-9a-fA-F]{6}$/.test(v)) _emailDesignSet('accentColor', v, itemKey);
+  else _openEmailDesignModal(itemKey); // invalid — just resync the field back to the last saved value
+}
+function _emailDesignPickHeader(itemKey){
   const inp=document.createElement('input');
   inp.type='file'; inp.accept='image/*';
   inp.onchange=async()=>{
@@ -2411,7 +2643,7 @@ function _emailDesignPickHeader(){
       reader.onload=async()=>{
         const dataUrl=await compressImage(reader.result, 1200, 0.85);
         const id=await _mediaPut(dataUrl, f.name||'email-header', f.type||'image/jpeg');
-        _emailDesignSet('headerImage', id);
+        _emailDesignSet('headerImage', id, itemKey);
         if(typeof _showInfoToast==='function') _showInfoToast('Header image saved.',null,null);
       };
       reader.readAsDataURL(f);
@@ -2419,8 +2651,9 @@ function _emailDesignPickHeader(){
   };
   inp.click();
 }
-function _emailDesignRemoveHeader(){
-  _emailDesignSet('headerImage','');
+// × removes the couple's own image — emails then go back to the default header.
+function _emailDesignRemoveHeader(itemKey){
+  _emailDesignSet('headerImage','',itemKey);
 }
 
 // ══════════════════════════════════════════════

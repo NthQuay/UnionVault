@@ -612,9 +612,9 @@ async function _generateVendorToken(){
     const baseUrl = window.location.origin + window.location.pathname;
     const fullLink = `${baseUrl}?vendor=${token}`;
     const expiryDisplay = expiresAt ? (()=>{
-      const d=new Date(expiresAt); return isNaN(d)?expiresAt:d.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+      const d=new Date(expiresAt); if(isNaN(d)) return expiresAt; const s=d.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}); return typeof _commsOrdinalize==='function'?_commsOrdinalize(s):s;
     })() : null;
-    // Find vendor email for mailto pre-fill
+    // Find vendor email — used both for the UnionVault send and as the mailto fallback.
     const _vobj=(STATE.vendors||[]).find(v=>v.business===name||v.contact===name);
     const _vemail=_vobj?.email||'';
     const _ev=STATE.event||{};
@@ -622,6 +622,10 @@ async function _generateVendorToken(){
     const _emailSubj=encodeURIComponent(`Vendor brief — ${name}`);
     const _emailBody=encodeURIComponent(`Hi ${name},\n\nPlease find your vendor brief for our wedding below.\n\nBrief link: ${fullLink}${expiryDisplay?`\nExpiry: ${expiryDisplay}`:''}\n\nLet us know if you have any questions.\n\nWarm regards,\n${_couple}`);
     const _mailto=`mailto:${_vemail}?subject=${_emailSubj}&body=${_emailBody}`;
+    window.__vbEmailCtx={ to:_vemail, vendorName:name, briefUrl:fullLink, expiryDisplay:expiryDisplay||'', mailto:_mailto };
+    const _emailBtn=_vemail
+      ? `<button class="btn btn-outline btn-sm" id="vbm-email-btn" onclick="_sendVendorBriefEmailNow(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg> Email vendor</button>`
+      : `<a class="btn btn-outline btn-sm" href="${_mailto}" style="text-decoration:none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg> Email vendor</a>`;
     const body = document.getElementById('vbm-body');
     if(body) body.innerHTML = `
       <div class="vbm-title">Link created ✓</div>
@@ -632,7 +636,7 @@ async function _generateVendorToken(){
         ${expiryDisplay?`<div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:2px">Expires: <strong style="color:var(--ink)">${_escHtml(expiryDisplay)}</strong></div>`:''}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
           <button class="btn btn-primary btn-sm" onclick="_copyVendorLink('${token}',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy link</button>
-          <a class="btn btn-outline btn-sm" href="${_mailto}" style="text-decoration:none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg> Email vendor</a>
+          ${_emailBtn}
           <button class="btn btn-outline btn-sm" onclick="document.getElementById('vbm-overlay').remove();_openVendorBriefModal(null)">Create another</button>
         </div>
       </div>
@@ -647,6 +651,40 @@ async function _generateVendorToken(){
     if(genBtn){ genBtn.disabled=false; genBtn.textContent='Generate link'; }
     if(errEl){ errEl.textContent='Error: '+err.message; errEl.style.display=''; }
   }
+}
+// Send the just-created vendor brief link via UnionVault (branded email, same Design
+// settings as every other comms email); falls back to the mailto draft on any failure,
+// same pattern as the RSVP send sheet.
+async function _sendVendorBriefEmailNow(btn){
+  const ctx=window.__vbEmailCtx; if(!ctx) return;
+  const fallback=()=>{ window.location.href=ctx.mailto; };
+  if(!_sbSession){ fallback(); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+  const ed=(typeof _commsDesignFor==='function'?_commsDesignFor('vbrief'):((STATE.settings&&STATE.settings.emailDesign)||{}));
+  const vbText=(STATE.settings&&STATE.settings.commsText&&STATE.settings.commsText.vendorBrief)||{};
+  const names=_apptCoupleNames();
+  const payload={ to:ctx.to, vendor_name:ctx.vendorName, brief_url:ctx.briefUrl, expiry_display:ctx.expiryDisplay||null,
+    fromName:names||'', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
+    intro_override:vbText.intro||null, button_label_override:vbText.buttonLabel||null, closing_override:vbText.closing||null,
+    templateId:ed.templateId||'classic',
+    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
+      headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
+  let ok=false;
+  try{
+    await _sbEnsureFreshToken();
+    const r=await fetch(_SB_URL+'/functions/v1/send-vendor-brief-email',{ method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+_sbSession.access_token,'apikey':_SB_KEY},
+      body:JSON.stringify(payload) });
+    ok = r.ok && (await r.json()).ok===true;
+  }catch(_){ ok=false; }
+  if(ok){
+    if(btn){ btn.textContent='Sent ✓'; }
+    if(typeof _showInfoToast==='function') _showInfoToast('Brief emailed to '+ctx.to+'.', null, null);
+    return;
+  }
+  if(btn){ btn.disabled=false; btn.textContent='Email vendor'; }
+  if(typeof _showInfoToast==='function') _showInfoToast('Couldn\'t send from UnionVault — opening your mail app instead.', null, null);
+  fallback();
 }
 
 // Revoke (delete) a vendor token.
@@ -2608,7 +2646,7 @@ function _apptBuildMailto(task, a, recipients, attached){
   const couple=_apptCoupleNames();
   const wedding=couple?`${couple}'s wedding`:'';
   const subject=_apptTitle(task, a)+(wedding?` — ${wedding}`:'');
-  const when=[a.date?fmtBudgetDate(a.date):'', a.time?(_fmtApptTime(a.time)+(a.endTime?('–'+_fmtApptTime(a.endTime)):'')):''].filter(Boolean).join(', ');
+  const when=[a.date?(typeof _commsWeekdayDate==='function'?_commsWeekdayDate(a.date):fmtBudgetDate(a.date)):'', a.time?(_fmtApptTime(a.time)+(a.endTime?('–'+_fmtApptTime(a.endTime)):'')):''].filter(Boolean).join(', ');
   const bodyLines=[];
   // Context first, so anyone it's forwarded to (bridal party, family, the vendor) knows what it is.
   const what=[(a.type||'Appointment'), a.business?`with ${a.business}`:''].filter(Boolean).join(' ');
@@ -2623,11 +2661,29 @@ function _apptBuildMailto(task, a, recipients, attached){
   if(Number(a.fee)>0) bodyLines.push(`Fee: ${fmt(Number(a.fee))}`);
   if(a.notes) bodyLines.push('', a.notes);
   bodyLines.push('', attached ? 'The calendar invite (.ics) is attached — open it to add this to your calendar.' : 'Calendar file (.ics) downloaded separately — open it to add this to your calendar.');
-  if(couple) bodyLines.push('', `Sent by ${couple} via UnionVault — reply to this email to reach them.`);
+  // Kept separate from bodyLines/htmlText — the branded HTML renders this as its own
+  // centred, italic sign-off block instead of a plain paragraph (see send-appointment-email).
+  // Editable override from the Communications page — stored as the literal multi-line
+  // text shown there (one sign-off, not an array), so split it back into lines here.
+  // {names} is the only token that makes sense in a sign-off.
+  const _apptSigOverride=(STATE.settings&&STATE.settings.commsText&&STATE.settings.commsText.appt&&STATE.settings.commsText.appt.signature)||'';
+  let signature=!couple?[]:_apptSigOverride.trim()
+    ? _apptSigOverride.trim().replace(/\{names\}/g,couple).split('\n').filter(Boolean)
+    : [`Sent by ${couple} via UnionVault.`,`Reply to this email to reach ${couple}.`];
+  // Show logo off (this email's Design) also hides the "…via UnionVault" sign-off line.
+  signature=_apptSigFilter(signature);
+  const fullBodyLines=signature.length?bodyLines.concat(['',...signature]):bodyLines;
   const to=(recipients||[]).map(e=>encodeURIComponent(e)).join(',');
-  const url=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
-  return {subject, body:bodyLines.join('\n'), to:(recipients||[]).join(', '), url,
-    kicker:wedding, title:what, htmlText:bodyLines.slice(ctxLines).join('\n')};
+  const url=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullBodyLines.join('\n'))}`;
+  return {subject, body:fullBodyLines.join('\n'), to:(recipients||[]).join(', '), url,
+    kicker:wedding, title:what, htmlText:bodyLines.slice(ctxLines).join('\n'), signature};
+}
+// Drops any sign-off line mentioning UnionVault when the Appointment email's Design has
+// Show logo off — shared by the real send (here) and the Communications preview.
+function _apptSigFilter(lines){
+  const ed=typeof _commsDesignFor==='function'?_commsDesignFor('appt'):((STATE.settings&&STATE.settings.emailDesign)||{});
+  const locked=typeof _emailLogoLocked==='function'&&_emailLogoLocked();
+  return (ed.showLogo===false && !locked) ? (lines||[]).filter(l=>!/union ?vault/i.test(l)) : (lines||[]);
 }
 function _apptOpenEmailDraft(task, a, recipients){
   const m=_apptBuildMailto(task, a, recipients);
@@ -2845,13 +2901,17 @@ async function _apptEmailSendViaEdge(task, a, recipients){
   const m=_apptBuildMailto(task,a,recipients,true);
   const ics=btoa(unescape(encodeURIComponent(_apptBuildIcs(task,a))));
   const token=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.access_token)||'';
+  const ed=(typeof _commsDesignFor==='function'?_commsDesignFor('appt'):((STATE.settings&&STATE.settings.emailDesign)||{}));
+  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', showLogo:ed.showLogo!==false,
+    headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) };
   const one=async(to)=>{
     try{
       const r=await fetch(_SB_URL+'/functions/v1/send-appointment-email',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||_SB_KEY),'apikey':_SB_KEY},
-        body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics,kicker:m.kicker,title:m.title,htmlText:m.htmlText,
-          fromName:_apptCoupleNames()||'', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||''})
+        body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics,kicker:m.kicker,title:m.title,htmlText:m.htmlText,signature:m.signature,
+          fromName:_apptCoupleNames()||'', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
+          designOpts})
       });
       return r.ok && (await r.json()).ok===true;
     }catch(_){ return false; }

@@ -108,7 +108,7 @@ function _rsvpWidgetDeadline(){
   }).join('');
 
   return `<div class="card">
-    <div class="section-eyebrow" style="margin-bottom:13px">RSVP Deadline</div>
+    <div class="section-eyebrow" style="margin-bottom:13px">RSVP</div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
       <div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;line-height:1">${dateLabel}</div>
@@ -134,7 +134,62 @@ function _rsvpWidgetDeadline(){
     </div>
     ${barHtml}
     ${warnHtml}
+    <div style="display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap">
+      <button type="button" onclick="navigate('comms')" style="flex:1;min-width:140px;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
+        <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">Edit communications</span><span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Every message UnionVault sends, in one place</span></span>
+        <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
+      </button>
+      <button type="button" onclick="_openEmailDesignModal()" style="flex:1;min-width:140px;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
+        <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
+        <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">Email design</span><span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Template, colours &amp; fonts</span></span>
+        <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
+      </button>
+      <button type="button" onclick="_openRsvpLinkModal()" style="flex:1;min-width:140px;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
+        <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="3" height="3"/><rect x="18" y="3" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="18" y="7" width="3" height="3"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/></svg></span>
+        <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">Your RSVP Link</span><span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Share link &amp; QR code</span></span>
+        <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
+      </button>
+      <button type="button" onclick="_openRsvpFormFieldsModal()" style="flex:1;min-width:140px;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
+        <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
+        <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">RSVP form fields</span><span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Choose what guests fill in</span></span>
+        <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
+      </button>
+    </div>
   </div>`;
+}
+function _openRsvpLinkModal(){
+  const url=_rsvpLink();
+  const body=`<div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;justify-content:flex-end;margin:-6px -2px -10px 0">
+      <button onclick="_rsvpSettingsPopup()" title="RSVP settings" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--muted);line-height:0" aria-label="RSVP settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input class="form-input" value="${url}" readonly style="flex:1;font-size:11.5px"/>
+      <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${url}').then(()=>alert('Copied!'))">Copy</button>
+      <button class="btn btn-primary btn-sm" onclick="openRsvpPage()">Preview</button>
+    </div>
+    <div>
+      <div class="form-label" style="margin-bottom:10px">QR Code</div>
+      <div id="qrcode-wrap" style="background:#fff;padding:12px;display:inline-block;border-radius:8px;border:1px solid var(--border)"></div>
+      <div style="margin-top:10px">
+        <button class="btn btn-outline btn-sm" style="display:inline-flex;align-items:center;gap:5px;font-size:12px" onclick="_downloadQr('qrcode-wrap','rsvp-qr-code.png')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download QR Code
+        </button>
+      </div>
+    </div>
+  </div>`;
+  openModal('Your RSVP Link',body,'');
+  setTimeout(()=>{
+    const el=document.getElementById('qrcode-wrap');
+    if(el&&typeof QRCode!=='undefined'){ el.innerHTML=''; new QRCode(el,{text:url,width:160,height:160,colorDark:'#1A1A18',colorLight:'#ffffff'}); }
+  },50);
+}
+function _openRsvpFormFieldsModal(){
+  openModal('RSVP form fields',_rsvpFormFieldsCardHtml(),'');
 }
 function _rsvpDlToggle(e){
   e.stopPropagation();
@@ -280,8 +335,7 @@ function _rsvpFormFieldsCardHtml(){
       ${delBtn}
     </div>`;
   }).join('');
-  return `<div class="card">
-    <div class="section-eyebrow" style="margin-bottom:4px">RSVP form fields</div>
+  return `<div>
     <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">Choose which fields guests fill in when they RSVP online.</div>
     <div style="display:grid;grid-template-columns:1fr 60px 60px 24px;align-items:center;gap:8px;padding:0 0 6px;border-bottom:2px solid var(--border);font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase">
       <span>Field</span><span style="text-align:center">Show</span><span style="text-align:center">Req'd</span><span></span>
@@ -384,7 +438,6 @@ const _RSVP_SECTIONS=[
   ['invitation','Your invitation'],
   ['sendguests','Send to guests'],
   ['tracker','Guest response tracker'],
-  ['link','RSVP link & QR'],
   ['summary','Response summary'],
   ['dietary','Dietary requirements'],
   ['plusones','Plus-ones'],
@@ -393,8 +446,7 @@ const _RSVP_SECTIONS=[
   ['invites','Invites & responses'],
   ['contactable','Guests contactable via'],
   ['seatingstatus','Seating status'],
-  ['onlinersvps','Online RSVPs'],
-  ['formfields','RSVP form fields']
+  ['onlinersvps','Online RSVPs']
 ];
 // Default order = array index order of _RSVP_SECTIONS keys
 const _RSVP_SECTION_KEYS=_RSVP_SECTIONS.map(s=>s[0]);
@@ -1077,10 +1129,17 @@ function _rsvpSortClick(colKey){ _cycleSort('rsvpSort', colKey); rsvpRerenderLis
 // ── Online RSVPs: helpers for grouped household display ──────────────────────
 let _orsvpGroups=null;
 function _orsvpBuildGroups(rows){
+  // Rows carrying a guest_id (submitted after that column existed) are matched by id,
+  // never by name too — avoids double-counting the same row under both maps. Older rows
+  // with no guest_id fall back to the original name match, unchanged.
   const rowsByName={};
-  rows.forEach(r=>{if(!r.guest_name)return;const k=r.guest_name.trim().toLowerCase();if(!rowsByName[k])rowsByName[k]=[];rowsByName[k].push(r);});
+  const rowsById={};
+  rows.forEach(r=>{
+    if(r.guest_id){ (rowsById[r.guest_id]=rowsById[r.guest_id]||[]).push(r); return; }
+    if(!r.guest_name)return;const k=r.guest_name.trim().toLowerCase();if(!rowsByName[k])rowsByName[k]=[];rowsByName[k].push(r);
+  });
   const allG=STATE.guests||[];
-  const matched=allG.filter(g=>g&&g.name&&rowsByName[g.name.trim().toLowerCase()]);
+  const matched=allG.filter(g=>g&&((g.id&&rowsById[g.id])||(g.name&&rowsByName[g.name.trim().toLowerCase()])));
   const inList=new Set(matched.map(g=>g.id));
   const byId=Object.fromEntries(matched.map(g=>[g.id,g]));
   const used=new Set();const groups=[];
@@ -1092,13 +1151,20 @@ function _orsvpBuildGroups(rows){
     if(g.plusOneId&&inList.has(g.plusOneId)&&!used.has(g.plusOneId)){const p=byId[g.plusOneId];used.add(g.id);used.add(p.id);groups.push({kind:'plusone',members:[g,p]});return;}
     used.add(g.id);groups.push({kind:'single',members:[g]});
   });
-  // Unrecognised names not in STATE.guests
-  Object.keys(rowsByName).forEach(k=>{
-    if(!matched.some(g=>g.name.trim().toLowerCase()===k)){const r=rowsByName[k][0];groups.push({kind:'single',members:[{id:'anon-'+k,name:r.guest_name}]});}
+  // Unrecognised — a guest_id/name in the responses that matches no current guest.
+  Object.keys(rowsById).forEach(gid=>{
+    if(!inList.has(gid)){const r=rowsById[gid][0];groups.push({kind:'single',members:[{id:'anon-'+gid,name:r.guest_name,_rows:rowsById[gid]}]});}
   });
-  // Attach row data
+  Object.keys(rowsByName).forEach(k=>{
+    if(!matched.some(g=>g.name.trim().toLowerCase()===k)){const r=rowsByName[k][0];groups.push({kind:'single',members:[{id:'anon-'+k,name:r.guest_name,_rows:rowsByName[k]}]});}
+  });
+  // Attach row data (unrecognised members already have _rows set above)
   groups.forEach(grp=>{
-    grp.members=grp.members.map(m=>{const rws=(rowsByName[(m.name||'').trim().toLowerCase()]||[]);return Object.assign({},m,{_rows:rws});});
+    grp.members=grp.members.map(m=>{
+      if(m._rows)return m;
+      const rws=(m.id&&rowsById[m.id])||(rowsByName[(m.name||'').trim().toLowerCase()])||[];
+      return Object.assign({},m,{_rows:rws});
+    });
     const all=grp.members.flatMap(m=>m._rows).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
     grp.contact={email:null,phone:null,address:null};
     ['email','phone','address'].forEach(f=>{const m=grp.members.find(m=>m._rows[0]&&m._rows[0][f]);if(m)grp.contact[f]=m._rows[0][f];});
@@ -1133,6 +1199,21 @@ function _orsvpRender(){
     </div>`;
   }
   const _pdi=function(d){if(d&&d.startsWith('other:'))return'Other'+(d.slice(6)?' ('+d.slice(6)+')':'');if(d&&d.startsWith('allergy:'))return'Allergy'+(d.slice(8)?': '+d.slice(8):'');const m={vegetarian:'Vegetarian',pescatarian:'Pescatarian',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose int.',gluten:'Gluten int.',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut allergy'};return m[d]||d;};
+  // A submitted row can carry both the bare checkbox token ('allergy') and its free-text
+  // detail ('allergy:<note>') as two separate array entries — merge them into one token
+  // (detailed when a note was given) so the card/list views render a single chip instead
+  // of a duplicate bare one next to the detailed one.
+  const _mergeDietItems=function(items){
+    const detail={};
+    items.forEach(d=>{ if(d&&d.startsWith('allergy:'))detail.allergy=d.slice(8); else if(d&&d.startsWith('other:'))detail.other=d.slice(6); });
+    const seen=new Set();const base=[];
+    items.forEach(d=>{ if(!d||d.startsWith('allergy:')||d.startsWith('other:'))return; if(seen.has(d))return; seen.add(d); base.push(d); });
+    // A detail can in principle arrive with no matching bare token (e.g. a legacy row) —
+    // don't let it silently vanish, surface it as its own entry.
+    if(detail.allergy&&!base.includes('allergy'))base.push('allergy');
+    if(detail.other&&!base.includes('other'))base.push('other');
+    return base.map(d=>{ if(d==='allergy'&&detail.allergy)return'allergy:'+detail.allergy; if(d==='other'&&detail.other)return'other:'+detail.other; return d; });
+  };
   const _fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
   const _badge=st=>st==='yes'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(74,124,89,.1);color:var(--green);font-size:11px;font-weight:600;white-space:nowrap">✓ Attending</span>`:st==='no'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(192,57,43,.07);color:var(--red);font-size:11px;font-weight:600;white-space:nowrap">✗ Declined</span>`:'';
 
@@ -1157,18 +1238,21 @@ function _orsvpRender(){
     if(view==='card'){
       const memberRows=vis.map(m=>{
         const row=m._rows[0]||{};
-        const dietItems=Array.isArray(row.dietary)?row.dietary:[];
-        const dietHtml=dietItems.length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('')}</div>`:'';
-        const mealHtml=row.meal?`<span style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink);margin-top:4px">${row.meal}</span>`:'';
-        const hcHtml=row.high_chair?`<span style="display:inline-block;font-size:10.5px;color:var(--muted);margin-top:4px">🪑 High chair</span>`:'';
-        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">
-          <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink)">${m.name}</div>${mealHtml}${hcHtml}${dietHtml}</div>
-          <div style="flex-shrink:0;padding-top:1px">${_badge(row.attending)}</div>
+        const dietItems=_mergeDietItems(Array.isArray(row.dietary)?row.dietary:[]);
+        const dietChips=dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('');
+        const mealHtml=row.meal?`<span style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
+        const hcHtml=row.high_chair?`<span style="display:inline-block;font-size:10.5px;color:var(--muted)">🪑 High chair</span>`:'';
+        return `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0">
+            <span style="font-size:13px;font-weight:500;color:var(--ink);flex-shrink:0;margin-right:2px">${m.name}</span>
+            ${mealHtml}${hcHtml}${dietChips}
+          </div>
+          <span style="flex-shrink:0;padding-top:1px">${_badge(row.attending)}</span>
         </div>`;
       }).join('');
       const c=grp.contact;
       const ci=[c.email?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.email}</span>`:'',c.phone?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;flex-shrink:0">${c.phone}</span>`:'',c.address?`<span style="font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${c.address}</span>`:''].filter(Boolean);
-      const contactHtml=ci.length?`<div style="background:var(--surface);border-top:1px solid var(--border);padding:9px 14px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0"><span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span>${ci.join('<span style="color:var(--border);flex-shrink:0">·</span>')}</div>`:'';
+      const contactHtml=ci.length?`<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0"><span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex-shrink:0">Contact</span>${ci.join('<span style="color:var(--border);flex-shrink:0">·</span>')}</div>`:'';
       const msgHtml=grp.message?`<div style="border-top:1px solid var(--border);padding:9px 14px;font-size:12px;color:var(--muted);font-style:italic">"${grp.message}"</div>`:'';
       const histSection=grp.hasHistory?`<div id="${histId}" hidden style="border-top:1px solid var(--border);padding:10px 14px"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Submission history</div>${histRowsHtml}</div>`:'';
       html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
@@ -1177,16 +1261,16 @@ function _orsvpRender(){
           <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${grp.householdName}</div><div style="font-size:11.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${summaryLine}</div></div>
           <div style="font-size:11px;color:var(--muted);flex-shrink:0;display:flex;align-items:center;gap:6px;white-space:nowrap">${histBtn}<span>${_fmt(grp.submittedDate)}</span></div>
         </div>
-        ${memberRows}${contactHtml}${msgHtml}${histSection}
+        ${contactHtml}${memberRows}${msgHtml}${histSection}
       </div>`;
     } else {
       // List view
       const memberRows=vis.map(m=>{
         const row=m._rows[0]||{};
-        const dietItems=Array.isArray(row.dietary)?row.dietary:[];
-        const chips=dietItems.length?dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 6px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join(''):'';
+        const dietItems=_mergeDietItems(Array.isArray(row.dietary)?row.dietary:[]);
+        const chips=dietItems.map(d=>`<span style="border:1px solid var(--border);border-radius:20px;padding:1px 6px;font-size:10.5px;color:var(--muted)">${_pdi(d)}</span>`).join('');
         const meal=row.meal?`<span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
-        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 14px 7px 46px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+        return `<div class="orsvp-lv-member" style="display:flex;align-items:center;gap:8px;padding:7px 14px 7px 46px;border-bottom:1px solid var(--border);flex-wrap:wrap">
           <span style="font-size:12.5px;font-weight:500;color:var(--ink);flex-shrink:0">${m.name}</span>
           ${_badge(row.attending)}
           ${meal}
@@ -1194,12 +1278,12 @@ function _orsvpRender(){
         </div>`;
       }).join('');
       const c=grp.contact;const ci=[c.email,c.phone,c.address].filter(Boolean);
-      const contactRow=ci.length?`<div style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 14px 7px calc(14px + 28px + 8px);font-size:11px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border)">${ci.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
-      const histSection=grp.hasHistory?`<div id="${histId}" hidden style="padding:6px 14px 8px 46px;border-bottom:1px solid var(--border)"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">History</div>${histRowsHtml}</div>`:'';
+      const contactRow=ci.length?`<div class="orsvp-lv-contact" style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 14px 7px calc(14px + 28px + 8px);font-size:11px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border)">${ci.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
+      const histSection=grp.hasHistory?`<div id="${histId}" hidden class="orsvp-lv-hist" style="padding:6px 14px 8px 46px;border-bottom:1px solid var(--border)"><div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">History</div>${histRowsHtml}</div>`:'';
       html+=`<div style="background:var(--cream);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:0">
         <div style="display:flex;align-items:center;gap:8px;padding:9px 14px ${ci.length?'4px':'9px'};${ci.length?'':'border-bottom:1px solid var(--border);'}background:var(--surface)">
           <div style="width:28px;height:28px;border-radius:50%;background:var(--cream);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${grp.initials}</div>
-          <div style="flex:1;min-width:0"><span style="font-size:13px;font-weight:600;color:var(--ink)">${grp.householdName}</span> <span style="font-size:11.5px;color:var(--muted)">— ${summaryLine}</span></div>
+          <div style="flex:1;min-width:0"><span style="font-size:13px;font-weight:600;color:var(--ink)">${grp.householdName}</span> <span class="orsvp-lv-dash" style="font-size:11.5px;color:var(--muted)">—</span> <span class="orsvp-lv-summary" style="font-size:11.5px;color:var(--muted)">${summaryLine}</span></div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${histBtn}<span style="font-size:11px;color:var(--muted)">${_fmt(grp.submittedDate)}</span></div>
         </div>
         ${contactRow}${memberRows}${histSection}
@@ -1347,16 +1431,28 @@ async function _loadOnlineRsvps(){
         }catch(e){ console.warn('RSVP sync: cloud guest fetch failed, using local state',e); }
       }
       const guestsByName={};
+      const guestsById={};
       baseGuests.forEach(function(g){
         if(g&&g.name) guestsByName[g.name.trim().toLowerCase()]=g;
+        if(g&&g.id) guestsById[g.id]=g;
       });
       let changed=0;
       rows.forEach(function(r){
         if(!r.guest_name) return;
-        const g=guestsByName[r.guest_name.trim().toLowerCase()];
+        // Match by the submitting guest's stable id first — falls back to the old
+        // exact-name match for rows submitted before guest_id existed. Id matching is
+        // what lets a plus-one's real typed name ever reach their placeholder record:
+        // by name alone, "Jane Smith" never finds a guest still called "+1 (Host Name)".
+        const g=(r.guest_id&&guestsById[r.guest_id])||guestsByName[r.guest_name.trim().toLowerCase()];
         if(!g) return;
         const newRsvp=r.attending==='yes'?'attending':r.attending==='no'?'declined':null;
         let rowChanged=false;
+        // A named plus-one overrides their own still-placeholder name, so it propagates
+        // everywhere guest.name is read (guest list, floorplan, invites, etc.).
+        if(_isPlusOneRel(g)&&_plusOnePlaceholderHost(g.name)&&r.guest_name.trim()&&r.guest_name.trim()!==g.name.trim()){
+          g.name=r.guest_name.trim();
+          rowChanged=true;
+        }
         if(newRsvp && g.rsvp!==newRsvp){
           g.rsvp=newRsvp;
           _stampRsvpDate(g,newRsvp);
@@ -1383,6 +1479,28 @@ async function _loadOnlineRsvps(){
         if(r.address&&!(g.address||'').trim()){g.address=r.address.trim();rowChanged=true;}
         if(rowChanged) changed++;
       });
+      // Pull in any bounce/spam-complaint flags recorded by the resend-webhook edge
+      // function since we last checked, so the send flows (tracker, batch invite) can
+      // stop offering Email for an address that's already known to be bad — repeatedly
+      // sending to one is what actually drags a sending domain's reputation down.
+      if(_sbSession){
+        try{
+          const _eiRows=await _sbSelect('email_issues',
+            `couple_id=eq.${_sbSession.user.id}&select=guest_id,kind,reason,created_at&order=created_at.desc`);
+          if(Array.isArray(_eiRows)&&_eiRows.length){
+            const seen=new Set();
+            _eiRows.forEach(function(ei){
+              if(!ei||!ei.guest_id||seen.has(ei.guest_id)) return; // newest row per guest wins (already ordered desc)
+              seen.add(ei.guest_id);
+              const g=guestsById[ei.guest_id]; if(!g) return;
+              if(!g.emailIssue||g.emailIssue.kind!==ei.kind){
+                g.emailIssue={kind:ei.kind, reason:ei.reason||''};
+                changed++;
+              }
+            });
+          }
+        }catch(e){ console.warn('email_issues sync failed',e); }
+      }
       if(changed){
         STATE.guests=baseGuests; // commit the cloud-merged list back to STATE
         saveToStorage();
@@ -1514,29 +1632,6 @@ function renderRsvpMgr(c, actions){
       invitation:!hidden.has('invitation')?_invitationSectionHtml('invitation'):'',
       sendguests:!hidden.has('sendguests')?_invitationSectionHtml('sendguests'):'',
       mealcount:!hidden.has('mealcount')?`<div class="card" id="rsvp-mealcount-card" style="padding:22px 20px 20px">${_mealCountCardHtml()}</div>`:'',
-      link:!hidden.has('link')?`<div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div class="section-eyebrow" style="margin:0">Your RSVP Link</div>
-          <button onclick="_rsvpSettingsPopup()" title="RSVP settings" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--muted);line-height:0" aria-label="RSVP settings">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </button>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input class="form-input" value="${url}" readonly style="flex:1;font-size:11.5px"/>
-          <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${url}').then(()=>alert('Copied!'))">Copy</button>
-          <button class="btn btn-primary btn-sm" onclick="openRsvpPage()">Preview</button>
-        </div>
-        <div style="margin-top:20px">
-          <div class="form-label" style="margin-bottom:10px">QR Code</div>
-          <div id="qrcode-wrap" style="background:#fff;padding:12px;display:inline-block;border-radius:8px;border:1px solid var(--border)"></div>
-          <div style="margin-top:10px">
-            <button class="btn btn-outline btn-sm" style="display:inline-flex;align-items:center;gap:5px;font-size:12px" onclick="_downloadQr('qrcode-wrap','rsvp-qr-code.png')">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download QR Code
-            </button>
-          </div>
-        </div>
-      </div>`:'',
       summary:!hidden.has('summary')?`<div class="card" style="position:relative">
         <div class="rsvp-style-switch">
           <button class="rsvp-style-btn" onclick="toggleRsvpStyleMenu(event)" title="Change layout" aria-label="Change response summary layout" aria-haspopup="true">
@@ -1590,8 +1685,7 @@ function renderRsvpMgr(c, actions){
           </div>
           <span id="orsvp-msg" style="color:var(--muted)">Responses submitted via your public RSVP link will appear here. Hit <strong>Refresh</strong> to fetch the latest.</span>
         </div>
-      </div>`,
-      formfields:!hidden.has('formfields')?_rsvpFormFieldsCardHtml():''
+      </div>`
     };
     // ── Placement-driven assembly: dock stack beside tracker + row-broken grid ──
     const _placements=_rsvpPlacements();

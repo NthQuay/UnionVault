@@ -5,9 +5,16 @@
   --muted:#9A9389;--surface:#F3EFE9;--border:#E0D8CF;--connector:#E7DECF;--red:#C0392B;--red-deep:#8B0000;
   --green:#4A7C59;--sep-ink:#9A4F95;--gt-couple:#9A7B2E;--gt-fam:#5B7BA0;--gt-house:#8A6BA8;--sidebar-w:188px;--sidebar-collapsed:56px;
   --shadow:0 2px 20px rgba(26,26,24,.07);--radius:12px;
+  /* Pin native widgets (checkboxes, radios, date pickers, scrollbars) to the app's OWN
+     active theme, not the OS/browser preference — the page's <meta color-scheme> meta tag
+     otherwise lets a system dark-mode phone render them dark even while the app itself is
+     in light mode (and vice versa), which is why an unstyled checkbox like .diet-cb could
+     show up as a solid dark square on an all-light screen. */
+  color-scheme:light;
 }
 /* ── DARK MODE ── */
 body.dark{
+  color-scheme:dark;
   --cream:#191A1E;
   --ink:#D2CEC6;
   --gold:#B0A085;
@@ -1318,6 +1325,17 @@ body.dark .budget-item.bg-gentle > .bi-head{background:#1E1E23}
   .archived-btn .archived-label{display:none}
   /* Timeline toolbar buttons collapse to icon-only on narrow viewports */
   .tl-tb-btn .tl-tb-label{display:none}
+  /* "Add N guests" event-picker footer button collapses to icon-only on narrow viewports,
+     so it stops overflowing the modal footer alongside Cancel. */
+  .evp-go-btn .evp-go-label{display:none}
+  /* Online RSVPs list view: the "# of # attending" summary drops to its own line under
+     the household name instead of competing with it, and the contact/member/history rows
+     below lose their indent (which existed to align under the avatar) so they can use the
+     full card width on a narrow screen. */
+  .orsvp-lv-dash{display:none!important}
+  .orsvp-lv-summary{display:block!important;margin-top:1px}
+  .orsvp-lv-contact{padding-left:14px!important;gap:8px!important}
+  .orsvp-lv-member,.orsvp-lv-hist{padding-left:14px!important}
   /* Show / hide items popup: single column on mobile */
   .vhb-cols{flex-direction:column!important;gap:14px!important}
   .vhb-wrap{width:100%!important}
@@ -2749,4 +2767,11 @@ body.dark .nav-item button.nav-locked::after{background-image:url("data:image/sv
 
 /* ── Wishing well column toggle (desktop only) ── */
 @media(min-width:768px){.ww-col-toggle{display:inline-flex!important}}
+
+/* ── Communications page: dropdown nav on narrow widths instead of the full list ── */
+.comms-mobile-nav{display:none}
+@media (max-width:760px){
+  .comms-mobile-nav{display:block}
+  .comms-nav-card{display:none}
+}
 
