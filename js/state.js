@@ -1,7 +1,7 @@
 // STATE
 // ══════════════════════════════════════════════
 const STATE = {
-  event: { partner1:'Alex', partner2:'Jordan', title1:'Partner', title2:'Partner', date:'', venue:'', venueAddress:'', religion:'', officiant:'', ceremonyVenue:'' },
+  event: { partner1:'Alex', partner2:'Jordan', title1:'Partner', title2:'Partner', date:'', venue:'', venueAddress:'', religion:'', officiant:'', ceremonyVenue:'', pronouns1:'', pronouns2:'', timeOfDay:'', ceremonyType:'', setting:'', formality:'', vibe:[], guestCount:0, partyBridesmaids:null, partyGroomsmen:null, partyFlowerGirls:null, partyPageBoys:null },
   events: [],
   vendors: [],
   quotes: [],
@@ -124,7 +124,7 @@ const STATE = {
   },
   invites: [],
   inviteMeta: {},
-  settings: { partner1Title:'Partner', partner2Title:'Partner', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], childrenMealOn:true, childrenMealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current', partnerEmail:'', showAgeBadges:true, rsvpCustomFields:[], rsvpLockEnabled:true, rsvpLockPassword:'', emailDesign:{ templateId:'classic', accentColor:'#8a6a2c', fontFamily:'serif', showLogo:true, headerImage:'' } },
+  settings: { partner1Title:'Partner', partner2Title:'Partner', currency:'AUD', accentColor:'', accentColor2:'', autoCheckPassedInstallments:true, rsvpBy:'', saveDateTemplate:null, inviteTemplate:null, reminderTemplate:null, rsvpCols:{ status:true, savedate:true, invited:true, date:true, reminder:true, dietary:false, tags:false, phone:false, email:false, address:false }, rsvpColOrder:['name','savedate','invited','status','date','rsvpby','reminder','handle','email','phone','address','tags','dietary','ageband'], rsvpFreezeName:false, rsvpEmailOn:true, mealChoiceOn:false, mealOptions:[], childrenMealOn:true, childrenMealOptions:[], trackerPrintCols:{ status:true, date:true, dietary:true, tags:false, phone:true, email:true, address:false }, trackerPrintColOrder:['status','date','dietary','tags','phone','email','address'], trackerPrintFilter:'all', trackerPrintSync:false, budgetJumpBar:'off', budgetDensity:'current', partnerEmail:'', showAgeBadges:true, rsvpCustomFields:[], rsvpLockEnabled:true, rsvpLockPassword:'', emailDesign:{ templateId:'classic', accentColor:'#8a6a2c', fontFamily:'serif', showLogo:true, headerImage:'' } },
   // Guest-facing website. Content is NOT duplicated here — sections read from the
   // planner (details, timeline, inspo, wishingwell) so there is one source of truth.
   // This object holds only what the planner has no opinion about: which sections are

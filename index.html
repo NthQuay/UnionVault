@@ -46,6 +46,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/setup-wizard.css">
 </head>
 <body>
 <script>(function(){try{var s=localStorage.getItem('uv_sb_session');if(s&&s!=='null')document.documentElement.setAttribute('data-uv-auth','');}catch(_){}}());</script>
@@ -562,77 +563,357 @@
 </div>
 
 
-<!-- SETUP MODAL -->
-<div class="modal-overlay hidden" id="setup-modal-overlay" style="z-index:2050;background:rgba(10,9,8,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)">
-  <div class="setup-modal-card" id="setup-modal-card" onclick="event.stopPropagation()">
-    <div class="setup-modal-eyebrow">Setup</div>
-    <div class="setup-modal-title">Let's plan your<br><em>perfect day.</em></div>
-    <div class="setup-modal-sub">Tell us a little about your wedding to get started — everything can be updated later.</div>
+<!-- SETUP WIZARD -->
+<div class="modal-overlay hidden" id="setup-modal-overlay" style="z-index:2050;background:rgba(10,9,8,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);overflow-y:auto;align-items:flex-start;padding:20px 16px 44px">
+<div class="wz-wrap" onclick="event.stopPropagation()">
+<div class="wz-card">
 
-    <div style="display:flex;gap:14px">
-      <div style="flex:1;display:flex;flex-direction:column;gap:10px">
-        <div class="form-group">
-          <label class="form-label">Partner 1</label>
-          <input class="form-input" id="w-p1" placeholder="e.g. Alex" style="font-size:15px"/>
-        </div>
-        <div>
-          <label class="form-label" style="margin-bottom:6px;display:block">Referred to as</label>
-          <select class="form-input" id="w-t1" style="font-size:13px">
-            <option value="Bride">Bride</option>
-            <option value="Groom" selected>Groom</option>
-            <option value="Partner">Partner</option>
-            <option value="Spouse">Spouse</option>
-            <option value="Fianc&#233;">Fianc&#233;</option>
-            <option value="Fianc&#233;e">Fianc&#233;e</option>
-          </select>
-        </div>
-      </div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:10px">
-        <div class="form-group">
-          <label class="form-label">Partner 2</label>
-          <input class="form-input" id="w-p2" placeholder="e.g. Jordan" style="font-size:15px"/>
-        </div>
-        <div>
-          <label class="form-label" style="margin-bottom:6px;display:block">Referred to as</label>
-          <select class="form-input" id="w-t2" style="font-size:13px">
-            <option value="Bride" selected>Bride</option>
-            <option value="Groom">Groom</option>
-            <option value="Partner">Partner</option>
-            <option value="Spouse">Spouse</option>
-            <option value="Fianc&#233;">Fianc&#233;</option>
-            <option value="Fianc&#233;e">Fianc&#233;e</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <div style="height:1px;background:var(--border);margin:20px 0"></div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Wedding Date</label>
-        <input class="form-input" type="date" id="w-date" style="font-size:14px"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Venue Name</label>
-        <input class="form-input" id="w-venue" placeholder="e.g. The Grand Pavilion" style="font-size:14px"/>
-      </div>
-    </div>
-
-    <div class="form-group" style="margin-top:4px">
-      <label class="form-label">Total Budget (AUD)</label>
-      <div style="position:relative">
-        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none">$</span>
-        <input class="form-input" type="number" id="w-budget" placeholder="e.g. 35000" style="padding-left:26px;font-size:14px" min="0"/>
-      </div>
-    </div>
-
-    <button class="btn btn-primary" style="width:100%;padding:13px;font-size:14px;justify-content:center;letter-spacing:.02em;margin-top:10px;gap:8px" onclick="welcomeFinish()">
-      Start planning
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-    </button>
-    <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--muted)">All fields except partner names are optional</div>
+  <!-- Header -->
+  <div class="wz-head">
+    <div class="wz-eyebrow">Account setup</div>
+    <div class="wz-title" id="wz-title">Meet <em>the couple.</em></div>
+    <div class="wz-sub"  id="wz-sub">Start with the most important detail — you two.</div>
   </div>
+
+  <!-- Step bar -->
+  <div class="step-bar" id="step-bar"></div>
+
+  <!-- Body -->
+  <div class="wz-body">
+
+    <!-- Step 1: The Couple -->
+    <div class="step-panel visible" id="p1">
+      <div class="partner-cols">
+        <div class="partner-col">
+          <label class="lbl" style="margin-bottom:7px">Partner 1</label>
+          <input class="inp" id="i-p1" placeholder="First name" style="font-size:15px">
+          <label class="lbl" style="margin:10px 0 6px;font-size:9.5px">Referred to as</label>
+          <select class="sel" id="i-t1" onchange="wzOnTitleChange('t1')">
+            <option>Bride</option><option selected>Groom</option>
+            <option>Partner</option><option>Spouse</option>
+            <option>Fianc&#233;</option><option>Fianc&#233;e</option>
+            <option value="custom">Custom…</option>
+          </select>
+          <input class="inp" id="i-t1-custom" placeholder="Their title…" style="display:none;margin-top:7px;font-size:12.5px;padding:8px 11px">
+        </div>
+        <div class="partner-col">
+          <label class="lbl" style="margin-bottom:7px">Partner 2</label>
+          <input class="inp" id="i-p2" placeholder="First name" style="font-size:15px">
+          <label class="lbl" style="margin:10px 0 6px;font-size:9.5px">Referred to as</label>
+          <select class="sel" id="i-t2" onchange="wzOnTitleChange('t2')">
+            <option selected>Bride</option><option>Groom</option>
+            <option>Partner</option><option>Spouse</option>
+            <option>Fianc&#233;</option><option>Fianc&#233;e</option>
+            <option value="custom">Custom…</option>
+          </select>
+          <input class="inp" id="i-t2-custom" placeholder="Their title…" style="display:none;margin-top:7px;font-size:12.5px;padding:8px 11px">
+        </div>
+      </div>
+      <button class="pr-toggle" id="pr-toggle" onclick="wzTogglePronouns()" type="button">
+        <span class="pr-toggle-lbl">Pronouns <span class="opt">(optional)</span></span>
+        <svg class="pr-chev" id="pr-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="pr-panel" id="pr-panel">
+        <div class="pr-grid">
+          <div id="pr-col1">
+            <div class="pr-pills">
+              <div class="pill" data-pr="p1" onclick="wzPronounPill(this,'p1')">She / Her</div>
+              <div class="pill" data-pr="p1" onclick="wzPronounPill(this,'p1')">He / Him</div>
+              <div class="pill" data-pr="p1" onclick="wzPronounPill(this,'p1')">They / Them</div>
+            </div>
+            <input class="inp" id="i-pr1-custom" placeholder="Custom…" style="margin-top:9px;font-size:12.5px;padding:7px 10px">
+          </div>
+          <div id="pr-col2">
+            <div class="pr-pills">
+              <div class="pill" data-pr="p2" onclick="wzPronounPill(this,'p2')">She / Her</div>
+              <div class="pill" data-pr="p2" onclick="wzPronounPill(this,'p2')">He / Him</div>
+              <div class="pill" data-pr="p2" onclick="wzPronounPill(this,'p2')">They / Them</div>
+            </div>
+            <input class="inp" id="i-pr2-custom" placeholder="Custom…" style="margin-top:9px;font-size:12.5px;padding:7px 10px">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: The Day -->
+    <div class="step-panel" id="p2">
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="lbl">Wedding Date</label>
+          <input class="inp" type="date" id="i-date">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="lbl">Time of Day</label>
+          <select class="sel" id="i-tod">
+            <option>Morning (before noon)</option>
+            <option selected>Afternoon (12pm &#8211; 4pm)</option>
+            <option>Evening (after 4pm)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label class="lbl">Reception Venue</label>
+        <input class="inp" id="i-venue" placeholder="e.g. The Grand Pavilion">
+      </div>
+      <div class="form-group">
+        <label class="lbl">Ceremony Type</label>
+        <div class="pill-group">
+          <div class="pill" data-grp="cer" onclick="wzSinglePill(this)">Civil / Celebrant</div>
+          <div class="pill" data-grp="cer" onclick="wzSinglePill(this)">Religious</div>
+          <div class="pill" data-grp="cer" onclick="wzSinglePill(this)">Symbolic</div>
+          <div class="pill" data-grp="cer" onclick="wzSinglePill(this)">Elopement</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="lbl">Setting</label>
+        <div class="pill-group">
+          <div class="pill" data-grp="loc" onclick="wzSinglePill(this)">Indoor only</div>
+          <div class="pill" data-grp="loc" onclick="wzSinglePill(this)">Outdoor only</div>
+          <div class="pill" data-grp="loc" onclick="wzSinglePill(this)">Both</div>
+          <div class="pill" data-grp="loc" onclick="wzSinglePill(this)">Destination</div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="lbl">Separate ceremony venue?</label>
+        <div class="pill-group">
+          <div class="pill" data-grp="sep" onclick="wzSinglePill(this);wzToggleCerVenue(true)">Yes &#8212; different venue</div>
+          <div class="pill" data-grp="sep" onclick="wzSinglePill(this);wzToggleCerVenue(false)">No &#8212; same venue</div>
+        </div>
+      </div>
+      <div class="form-group" id="cer-venue-group" style="display:none;margin-top:14px;margin-bottom:0">
+        <label class="lbl">Ceremony Venue Name</label>
+        <input class="inp" id="i-cer-venue" placeholder="e.g. St Paul's Cathedral">
+      </div>
+    </div>
+
+    <!-- Step 3: Size & Style -->
+    <div class="step-panel" id="p3">
+      <div class="form-group">
+        <label class="lbl">Estimated Guest Count</label>
+        <div class="guest-disp" id="guest-disp">80<small>guests</small></div>
+        <input type="range" class="guest-slider" id="i-guest-count" min="2" max="400" step="2" value="80"
+          oninput="document.getElementById('guest-disp').innerHTML=this.value+'<small>guests</small>'">
+        <div class="slider-labels"><span>Intimate</span><span>Medium</span><span>Grand</span></div>
+      </div>
+      <div class="div" style="margin:14px 0"></div>
+      <div class="form-group">
+        <label class="lbl">Formality</label>
+        <div class="pill-group">
+          <div class="pill" data-grp="fm" onclick="wzSinglePill(this)">Relaxed</div>
+          <div class="pill" data-grp="fm" onclick="wzSinglePill(this)">Smart Casual</div>
+          <div class="pill" data-grp="fm" onclick="wzSinglePill(this)">Semi-Formal</div>
+          <div class="pill" data-grp="fm" onclick="wzSinglePill(this)">Black Tie</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="lbl">Vibe <span class="opt">(pick any that fit)</span></label>
+        <div class="pill-group">
+          <div class="pill" onclick="wzTogglePill(this)">Romantic</div>
+          <div class="pill" onclick="wzTogglePill(this)">Rustic</div>
+          <div class="pill" onclick="wzTogglePill(this)">Boho</div>
+          <div class="pill" onclick="wzTogglePill(this)">Elegant</div>
+          <div class="pill" onclick="wzTogglePill(this)">Garden Party</div>
+          <div class="pill" onclick="wzTogglePill(this)">Modern Minimalist</div>
+          <div class="pill" onclick="wzTogglePill(this)">Vintage</div>
+          <div class="pill" onclick="wzTogglePill(this)">Beach / Coastal</div>
+          <div class="pill" onclick="wzTogglePill(this)">Whimsical</div>
+          <div class="pill" onclick="wzTogglePill(this)">Classic</div>
+          <div class="pill" onclick="wzTogglePill(this)">Industrial</div>
+          <div class="pill" onclick="wzTogglePill(this)">Luxe</div>
+        </div>
+      </div>
+      <div class="div" style="margin:14px 0"></div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="lbl">Wedding palette <span class="opt">(optional &#8212; pre-wires your website theme &amp; app accent)</span></label>
+        <div class="pal-role">Primary colour</div>
+        <div class="pal-grid" id="pal-grid"></div>
+        <div class="pal-custom-row">
+          <span>Custom:</span>
+          <input type="color" id="pal-custom" value="#C4A882" oninput="wzSelectCustomPalette(this.value)" title="Custom primary colour">
+        </div>
+        <div class="pal-role">Secondary / accent colour</div>
+        <div class="pal-grid" id="pal-grid2"></div>
+        <div class="pal-custom-row">
+          <span>Custom:</span>
+          <input type="color" id="pal-custom2" value="#D4C9A8" oninput="wzSelectCustomPalette2(this.value)" title="Custom secondary colour">
+        </div>
+        <div class="pal-preview">
+          <div class="pal-preview-dot" id="pal-dot1" style="background:#C4A882"></div>
+          <div class="pal-preview-dot" id="pal-dot2" style="background:#D4C9A8"></div>
+          <span class="pal-preview-lbl">Your palette &#8212; shown live across this wizard</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Preferences -->
+    <div class="step-panel" id="p4">
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="lbl">Total Budget</label>
+          <div class="prefix-wrap">
+            <span class="prefix-sym">$</span>
+            <input class="inp" id="i-budget-wz" type="number" placeholder="e.g. 45000" min="0">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="lbl">Currency</label>
+          <select class="sel" id="i-currency">
+            <option value="AUD" selected>AUD &#8212; Australian Dollar</option>
+            <option value="USD">USD &#8212; US Dollar</option>
+            <option value="GBP">GBP &#8212; British Pound</option>
+            <option value="EUR">EUR &#8212; Euro</option>
+            <option value="NZD">NZD &#8212; New Zealand Dollar</option>
+            <option value="CAD">CAD &#8212; Canadian Dollar</option>
+            <option value="SGD">SGD &#8212; Singapore Dollar</option>
+          </select>
+        </div>
+      </div>
+      <div class="div" style="margin:14px 0 10px"></div>
+      <div class="tog-row">
+        <div class="tog-info"><strong>Unplugged ceremony</strong><small>Add a reminder task to let guests know during the ceremony</small></div>
+        <div class="tog-sw" id="tog-unplugged" onclick="this.classList.toggle('on')"><div class="tog-knob"></div></div>
+      </div>
+    </div>
+
+    <!-- Step 5: Wedding Party -->
+    <div class="step-panel" id="p5">
+      <div style="margin-bottom:16px">
+        <div class="step-row" id="sr-bm">
+          <div class="step-row-info"><b>Bridesmaids</b><span>Including Maid / Matron of Honour</span></div>
+          <div class="step-ctrl">
+            <button class="step-btn" onclick="wzAdj('bm',-1)">&#8722;</button>
+            <div class="step-val" id="sv-bm">4</div>
+            <button class="step-btn" onclick="wzAdj('bm',1)">+</button>
+            <button class="unk-btn" id="unk-bm" onclick="wzToggleUnk('bm')">Not sure</button>
+          </div>
+        </div>
+        <div class="step-row" id="sr-gm">
+          <div class="step-row-info"><b>Groomsmen</b><span>Including Best Man</span></div>
+          <div class="step-ctrl">
+            <button class="step-btn" onclick="wzAdj('gm',-1)">&#8722;</button>
+            <div class="step-val" id="sv-gm">4</div>
+            <button class="step-btn" onclick="wzAdj('gm',1)">+</button>
+            <button class="unk-btn" id="unk-gm" onclick="wzToggleUnk('gm')">Not sure</button>
+          </div>
+        </div>
+        <div class="step-row" id="sr-fg">
+          <div class="step-row-info"><b>Flower girls</b><span></span></div>
+          <div class="step-ctrl">
+            <button class="step-btn" onclick="wzAdj('fg',-1)">&#8722;</button>
+            <div class="step-val" id="sv-fg">1</div>
+            <button class="step-btn" onclick="wzAdj('fg',1)">+</button>
+            <button class="unk-btn" id="unk-fg" onclick="wzToggleUnk('fg')">Not sure</button>
+          </div>
+        </div>
+        <div class="step-row" id="sr-pb">
+          <div class="step-row-info"><b>Page boys / Ring bearers</b><span></span></div>
+          <div class="step-ctrl">
+            <button class="step-btn" onclick="wzAdj('pb',-1)">&#8722;</button>
+            <div class="step-val" id="sv-pb">0</div>
+            <button class="step-btn" onclick="wzAdj('pb',1)">+</button>
+            <button class="unk-btn" id="unk-pb" onclick="wzToggleUnk('pb')">Not sure</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="lbl">Pre-wedding events</label>
+        <div class="pill-group">
+          <div class="pill" onclick="wzTogglePill(this)">Hen's party</div>
+          <div class="pill" onclick="wzTogglePill(this)">Buck's party</div>
+          <div class="pill" onclick="wzTogglePill(this)">Rehearsal dinner</div>
+          <div class="pill" onclick="wzTogglePill(this)">Engagement party</div>
+          <div class="pill" onclick="wzTogglePill(this)">Day-after brunch</div>
+        </div>
+      </div>
+      <div class="notice">
+        Party numbers help pre-fill attire tasks and budget categories. Each person can be added to your guest list anytime.
+      </div>
+    </div>
+
+    <!-- Step 6: Checklist -->
+    <div class="step-panel" id="p6">
+      <div class="cl-top">
+        <svg class="cl-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="cl-search" placeholder="Filter tasks…" oninput="wzFilterCL(this.value)">
+      </div>
+      <div class="cl-meta">
+        <div class="cl-stat"><strong id="cl-n">&#8212;</strong> of <span id="cl-tot">&#8212;</span> tasks selected</div>
+        <button class="cl-all" onclick="wzToggleAll()">Select all</button>
+      </div>
+      <div class="cl-scroll" id="cl-scroll"></div>
+    </div>
+
+    <!-- Step 7: All Set -->
+    <div class="step-panel" id="p7">
+      <div class="sum-hero">
+        <div class="sum-ring">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </div>
+        <div class="sum-title" id="sum-title">Let the planning begin!</div>
+        <div class="sum-sub">Here's everything you've set up — all of it editable anytime from your Event Details and Settings.</div>
+      </div>
+      <div class="sum-grid">
+        <div class="sum-card">
+          <div class="sum-card-lbl">The Couple</div>
+          <div class="sum-card-val" id="sum-couple">&#8212;</div>
+          <div class="sum-card-sub" id="sum-roles">&#8212;</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-card-lbl">The Day</div>
+          <div class="sum-card-val" id="sum-date">&#8212;</div>
+          <div class="sum-card-sub" id="sum-countdown"></div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-card-lbl">Venue</div>
+          <div class="sum-card-val" id="sum-venue">&#8212;</div>
+          <div class="sum-card-sub" id="sum-setting-disp">&#8212;</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-card-lbl">Budget &amp; Guests</div>
+          <div class="sum-card-val" id="sum-budget">&#8212;</div>
+          <div class="sum-card-sub" id="sum-guests">&#8212;</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-card-lbl">Ceremony</div>
+          <div class="sum-card-val" id="sum-ceremony">&#8212;</div>
+          <div class="sum-card-sub" id="sum-formality-disp">&#8212;</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-card-lbl">Wedding Party</div>
+          <div class="sum-card-val" id="sum-party">&#8212;</div>
+          <div class="sum-card-sub" id="sum-party-sub">Bridesmaids &amp; Groomsmen</div>
+        </div>
+      </div>
+      <div class="sum-tags" id="sum-tags" style="margin-bottom:10px;display:none;flex-wrap:wrap;gap:6px;align-items:center"></div>
+      <div class="sum-pal" id="sum-pal" style="margin-bottom:10px"></div>
+      <div class="sum-cl-wide">
+        <div class="sum-cl-num" id="sum-cl-n">&#8212;</div>
+        <div class="sum-cl-desc">
+          <strong>personalised tasks added to your checklist</strong>
+          <small>Suggested due dates will be applied based on your wedding date</small>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /wz-body -->
+
+  <!-- Footer -->
+  <div class="wz-foot">
+    <button class="btn-back" id="btn-back" onclick="wzNav(-1)" style="visibility:hidden">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back
+    </button>
+    <span class="step-txt" id="step-txt">Step 1 of 7</span>
+    <button class="btn-next" id="btn-next" onclick="wzNav(1)">
+      Continue
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+  </div>
+
+</div><!-- /wz-card -->
+</div><!-- /wz-wrap -->
 </div>
 
 <!-- AUTH MODAL -->
