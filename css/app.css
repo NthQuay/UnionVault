@@ -2795,3 +2795,12 @@ body.dark .nav-item button.nav-locked::after{background-image:url("data:image/sv
 
 /* Event guest picker: filter button is icon-only on phones so it can't overflow the modal */
 @media (max-width:600px){ .evp-filter-lbl{display:none} #evp-filter-btn{padding:7px 9px!important} }
+
+/* Phone menu drawer: share the available height between the menu rows so they always fit
+   without a scrollbar (rows shrink a little on shorter screens, down to a comfortable
+   36px tap height; only then does the list scroll). Icon-sidebar mode is unaffected. */
+@media (max-width:900px){
+  body:not(.icon-sidebar) .sidebar .nav-list{display:flex;flex-direction:column;padding:6px 0}
+  body:not(.icon-sidebar) .sidebar .nav-item{display:flex;flex:1 1 0;min-height:36px;max-height:48px}
+  body:not(.icon-sidebar) .sidebar .nav-item button{padding-top:0;padding-bottom:0}
+}
