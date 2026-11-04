@@ -2797,12 +2797,15 @@ body.dark .nav-item button.nav-locked::after{background-image:url("data:image/sv
 .orsvp-lvm.st-c{grid-template-columns:auto auto 1fr auto;grid-template-areas:"n n . b" "m d d d"}
 .orsvp-lvm.st-b .lvm-d,.orsvp-lvm.st-c .lvm-d{white-space:normal}
 .orsvp-lvm .lvm-m,.orsvp-lvm .lvm-d{justify-self:start}
-/* Card view contact block on phones: centred, email on its own line */
+/* Card view contact block: email + phone share a line where they fit; address always on the next */
+.orsvp-cv-contact .orsvp-ci-body{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:3px 10px;align-items:center}
+.orsvp-cv-contact .orsvp-ci-addr{flex-basis:100%}
+/* …and on phones the block is centred, with the "Contact" label on its own line */
 @media (max-width:600px){
-  .orsvp-cv-contact{justify-content:center;text-align:center}
+  .orsvp-cv-contact{flex-direction:column;align-items:center!important;text-align:center}
+  .orsvp-cv-contact .orsvp-ci-body{justify-content:center;width:100%}
   .orsvp-cv-contact .orsvp-ci-label{flex-basis:100%;margin-right:0}
-  .orsvp-cv-contact .orsvp-ci-email{flex-basis:100%}
-  .orsvp-cv-contact .orsvp-ci-email + .orsvp-ci-sep{display:none}
+  .orsvp-cv-contact .orsvp-ci-sep{display:none}
 }
 .orsvp-stat-n{font-size:22px;font-weight:700}
 .orsvp-stat-l{font-size:11px;color:var(--muted);margin-top:2px}
