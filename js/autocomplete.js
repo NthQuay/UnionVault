@@ -146,7 +146,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v469';
+const APP_BUILD='v470';
 const APP_BUILD_DATE='2026-11-04';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -879,10 +879,11 @@ function randomFillSeating(){
     if(n===2){
       const cands=shuffle(tables.filter(t=>!!_seatFreeAdjacentPair(t.id)));
       if(cands.length){ const pair=_seatFreeAdjacentPair(cands[0].id); _seatAt(cands[0].id,pair[0],g.todo[0]); _seatAt(cands[0].id,pair[1],g.todo[1]); st.seated+=2; st.groupsKept++; }
-      else { st.leftover+=2; if(tables.some(t=>_seatFreeIdx(t.id).length)) st.couplesUnseatable++; }
+      else _rfApart(st, g.todo);
     } else {
       const cands=shuffle(tables.filter(t=>_seatFreeIdx(t.id).length>=n));
       if(cands.length){ _rfPlaceGroup(cands[0].id, g.todo); st.seated+=n; if(n>1) st.groupsKept++; }
+      else if(n>1) _rfApart(st, g.todo);
       else st.leftover+=n;
     }
   });
@@ -891,6 +892,14 @@ function randomFillSeating(){
   saveToStorage();
   navigate('seating');
   _rfNextConflict();
+}
+// A couple/family with no one seated yet that can't sit together anywhere. If there are
+// enough free chairs in total, ask (after the fill) whether to seat them apart; otherwise
+// they simply stay in the pool.
+function _rfApart(st, todo){
+  const free=(STATE.tables||[]).reduce((n,t)=>n+_seatFreeIdx(t.id).length,0);
+  if(free>=todo.length) st.conflicts.push({ apart:true, todo });
+  else st.leftover+=todo.length;
 }
 // Seat `gids` at table `tid`, each one preferring a chair beside someone already in
 // their group (the group's seated members count) — falls back to the first free chair.
@@ -921,6 +930,17 @@ function _rfNextConflict(){
   const c=st.conflicts.shift();
   if(!c){ _rfFinish(); return; }
   st.current=c;
+  if(c.apart){
+    const who=_escHtml(_rfNames(c.todo));
+    const msg=c.todo.length===2
+      ? `There are no two seats side by side for <strong>${who}</strong>.`
+      : `There is no table with room for <strong>${who}</strong> to sit together.`;
+    openModal(c.todo.length===2?'No seats side by side':'No room together',
+      `<div style="font-size:14px;line-height:1.6;color:var(--ink)">${msg}</div>`,
+      `<button class="btn btn-outline" onclick="_rfResolve(false)">Don't seat ${who} yet</button>
+       <button class="btn btn-primary" onclick="_rfResolve(true)">Seat ${who} apart</button>`);
+    return;
+  }
   const t=(STATE.tables||[]).find(x=>x.id===c.tid);
   const esc=_escHtml, who=esc(_rfNames(c.todo)), withWho=esc(_rfNames(c.seated)), tname=esc((t&&t.name)||'their table');
   openModal('No room at '+((t&&t.name)||'the table'),
@@ -932,7 +952,19 @@ function _rfResolve(seatElsewhere){
   const st=_rfState; if(!st||!st.current) return;
   const c=st.current; st.current=null;
   closeModalDirect();
-  if(seatElsewhere){
+  if(seatElsewhere && c.apart){
+    // Apart, but as close as possible: same table if any has enough free chairs (just not
+    // side by side); otherwise spread across the tables with the most free chairs.
+    let n=0;
+    const same=(STATE.tables||[]).filter(t=>_seatFreeIdx(t.id).length>=c.todo.length);
+    if(same.length) n=_rfPlaceGroup(same[Math.floor(Math.random()*same.length)].id, c.todo);
+    else c.todo.forEach(gid=>{
+      const t=(STATE.tables||[]).slice().sort((a,b)=>_seatFreeIdx(b.id).length-_seatFreeIdx(a.id).length).find(x=>_seatFreeIdx(x.id).length);
+      if(t){ const placed=_rfPlaceGroup(t.id,[gid]); n+=placed; }
+    });
+    st.seated+=n; st.leftover+=c.todo.length-n;
+    saveToStorage(); navigate('seating');
+  } else if(seatElsewhere){
     // Together at one other table if any can take them all; otherwise wherever there's room.
     const others=(STATE.tables||[]).filter(t=>t.id!==c.tid && _seatFreeIdx(t.id).length>=c.todo.length);
     if(others.length){ const n=_rfPlaceGroup(others[Math.floor(Math.random()*others.length)].id, c.todo); st.seated+=n; }
@@ -954,8 +986,6 @@ function _rfFinish(){
   const extras = [];
   if(st.groupsKept) extras.push(`${st.groupsKept} couple${st.groupsKept!==1?'s':''}/famil${st.groupsKept!==1?'ies':'y'} kept together`);
   if(st.leftover) extras.push(`${st.leftover} left in pool`);
-  // Be explicit about the surprising case: seats ARE free, but not side by side.
-  if(st.couplesUnseatable) extras.push(`${st.couplesUnseatable} couple${st.couplesUnseatable!==1?'s':''} had no two seats together`);
   if(extras.length) msg += ' · ' + extras.join(' · ');
   _showInfoToast(msg, st.snap, 'seating');
 }

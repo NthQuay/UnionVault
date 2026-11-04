@@ -313,13 +313,13 @@ function _evOpenPicker(evId){
 
   const body=`<div style="display:flex;flex-direction:column;gap:0">
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:6px;flex:1;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:7px 10px">
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:7px 10px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input id="evp-q" type="search" placeholder="Search guests\u2026" oninput="_evPickSearch(this.value)" style="border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--ink);outline:none;flex:1;min-width:0" autocomplete="off"/>
       </div>
-      <button id="evp-filter-btn" onclick="_evPickToggleFilter()" style="display:flex;align-items:center;gap:4px;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:7px 11px;font-size:12.5px;color:var(--ink);cursor:pointer;white-space:nowrap;flex-shrink:0">
+      <button id="evp-filter-btn" onclick="_evPickToggleFilter()" title="Filter" aria-label="Filter" style="display:flex;align-items:center;gap:4px;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:7px 11px;font-size:12.5px;color:var(--ink);cursor:pointer;white-space:nowrap;flex-shrink:0">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-        Filter<span id="evp-filter-badge" style="display:none;margin-left:3px;background:var(--gold-deep);color:#fff;border-radius:8px;padding:0 5px;font-size:10px;font-weight:700">0</span>
+        <span class="evp-filter-lbl">Filter</span><span id="evp-filter-badge" style="display:none;margin-left:3px;background:var(--gold-deep);color:#fff;border-radius:8px;padding:0 5px;font-size:10px;font-weight:700">0</span>
       </button>
     </div>
     <div id="evp-filter-panel" style="display:none;margin-bottom:8px;background:var(--surface);border:.5px solid var(--border);border-radius:9px;padding:10px 12px"></div>

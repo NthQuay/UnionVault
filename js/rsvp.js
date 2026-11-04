@@ -445,8 +445,7 @@ const _RSVP_SECTIONS=[
   ['headcount','Guest headcount'],
   ['invites','Invites & responses'],
   ['contactable','Guests contactable via'],
-  ['seatingstatus','Seating status'],
-  ['onlinersvps','Online RSVPs']
+  ['seatingstatus','Seating status']
 ];
 // Default order = array index order of _RSVP_SECTIONS keys
 const _RSVP_SECTION_KEYS=_RSVP_SECTIONS.map(s=>s[0]);
@@ -1329,14 +1328,70 @@ function _orsvpRepopulateFromCache(){
     if(tEl) tEl.textContent=total;
     statsEl.style.display='flex';
   }
-  const dietEl=document.getElementById('orsvp-diet-line');
-  if(dietEl){
-    dietEl.innerHTML=`<strong style="color:var(--ink)">Dietary (attending):</strong> ${dietSummary}`;
-    dietEl.style.display='';
-  }
   const msgEl=document.getElementById('orsvp-msg');
   if(msgEl) msgEl.style.display='none';
   _orsvpRender();
+}
+
+// ── Online RSVPs pop-up ───────────────────────────────────────────────────────
+// Opened from the "new RSVPs" banner or the globe button on the Guest Response Tracker.
+// Uses the same element ids the old page card did, so the existing load/render/repopulate
+// code fills it unchanged.
+function _orsvpBodyHtml(){
+  const tile=(id,label,bg,bd,col)=>`<div class="orsvp-stat" style="background:${bg};border:1px solid ${bd}"><div id="${id}" class="orsvp-stat-n" style="color:${col}">—</div><div class="orsvp-stat-l">${label}</div></div>`;
+  return `<div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:2px 0">
+    <div id="orsvp-stats" style="display:none;flex-direction:row;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      ${tile('orsvp-stat-yes','Attending','rgba(74,124,89,.08)','rgba(74,124,89,.25)','var(--green)')}
+      ${tile('orsvp-stat-no','Declining','rgba(192,57,43,.06)','rgba(192,57,43,.2)','var(--red)')}
+      ${tile('orsvp-stat-total','Total','var(--surface)','var(--border)','var(--ink)')}
+    </div>
+    <div id="orsvp-toolbar" style="margin-bottom:10px"></div>
+    <div id="orsvp-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    <span id="orsvp-msg" style="color:var(--muted)">Loading responses…</span>
+  </div>`;
+}
+function _openOnlineRsvps(){
+  openModal('Online RSVPs', _orsvpBodyHtml(),
+    `<button class="btn btn-outline" id="load-rsvps-btn" onclick="_loadOnlineRsvps()" style="display:inline-flex;align-items:center;gap:6px;margin-right:auto"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>Refresh</button>
+     <button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`);
+  const mb=document.getElementById('modal-box'); if(mb) mb.classList.add('modal-wide');
+  _loadOnlineRsvps().then(_orsvpMarkSeen, _orsvpMarkSeen);
+}
+// "New" = submitted after the newest response the couple has already seen in the pop-up.
+function _orsvpNewRows(){
+  const rows=window._orsvpCachedRows||[];
+  const seen=(STATE.settings&&STATE.settings.orsvpSeenAt)||'';
+  return rows.filter(r=>r&&r.created_at&&(!seen||r.created_at>seen));
+}
+function _orsvpBannerHtml(){
+  const fresh=_orsvpNewRows(); if(!fresh.length) return '';
+  const n=typeof _orsvpBuildGroups==='function'?_orsvpBuildGroups(fresh).length||fresh.length:fresh.length;
+  return `<button type="button" class="orsvp-banner" onclick="_openOnlineRsvps()">
+    <span class="orsvp-banner-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+    <span class="orsvp-banner-txt"><strong>${n} new RSVP${n!==1?'s':''} received</strong></span>
+    <span class="orsvp-banner-cta">View</span>
+  </button>`;
+}
+function _orsvpRefreshBanner(){ const el=document.getElementById('orsvp-new-banner'); if(el) el.innerHTML=_orsvpBannerHtml(); }
+function _orsvpMarkSeen(){
+  const rows=window._orsvpCachedRows||[]; if(!rows.length) return;
+  const newest=rows.reduce((m,r)=>r&&r.created_at&&r.created_at>m?r.created_at:m,'');
+  if(!newest) return;
+  if(!STATE.settings) STATE.settings={};
+  if(STATE.settings.orsvpSeenAt!==newest){ STATE.settings.orsvpSeenAt=newest; saveToStorage(); }
+  _orsvpRefreshBanner();
+}
+// Background fetch on the RSVP & Invites page — just updates the cache and the banner.
+async function _orsvpCheckNew(){
+  if(!_sbSession) return;
+  try{
+    const uid=_sbSession.user.id;
+    const res=await fetch(`${_SB_URL}/rest/v1/rsvp_responses?couple_id=eq.${encodeURIComponent(uid)}&order=created_at.desc&limit=200`,
+      {headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json'}});
+    if(!res.ok) return;
+    window._orsvpCachedRows=await res.json();
+    _orsvpRefreshBanner();
+  }catch(_){}
 }
 
 // ── Online RSVPs: fetch submitted responses from Supabase ────────────────────
@@ -1396,11 +1451,6 @@ async function _loadOnlineRsvps(){
       if(nEl) nEl.textContent=no;
       if(tEl) tEl.textContent=total;
       statsEl.style.display='flex';
-    }
-    const dietEl=document.getElementById('orsvp-diet-line');
-    if(dietEl){
-      dietEl.innerHTML=`<strong style="color:var(--ink)">Dietary (attending):</strong> ${dietSummary}`;
-      dietEl.style.display='';
     }
     const msgEl=document.getElementById('orsvp-msg');
     if(msgEl) msgEl.style.display='none';
@@ -1622,7 +1672,7 @@ function renderRsvpMgr(c, actions){
     return true;
   });
 
-  c.innerHTML=(()=>{
+  c.innerHTML=`<div id="orsvp-new-banner">${_orsvpBannerHtml()}</div>`+(()=>{
     const order=_rsvpSectionOrder();
     const hidden=_rsvpHiddenSet();
     const cols=_rsvpCardCols();
@@ -1662,30 +1712,7 @@ function renderRsvpMgr(c, actions){
       headcount:!hidden.has('headcount')?_rsvpWidgetHeadcount():'',
       invites:!hidden.has('invites')?_rsvpWidgetInvitesAndResponses():'',
       contactable:!hidden.has('contactable')?_rsvpWidgetContactable():'',
-      seatingstatus:!hidden.has('seatingstatus')?_rsvpWidgetSeating():'',
-      // ── Stage 5: Online RSVPs card (submissions received via public link) ──
-      onlinersvps:`<div class="card" id="online-rsvp-card">
-        <div class="section-eyebrow" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
-          <span>Online RSVPs</span>
-          <button class="btn btn-sm btn-outline" style="font-size:11.5px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px" onclick="_loadOnlineRsvps()" id="load-rsvps-btn">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>
-            Refresh
-          </button>
-        </div>
-        <div id="online-rsvps-body" style="font-size:13px;color:var(--muted);padding:6px 0">
-          <div id="orsvp-stats" style="display:none;flex-direction:row;gap:16px;flex-wrap:wrap;margin-bottom:14px">
-            <div style="flex:1;min-width:90px;padding:10px 14px;background:rgba(74,124,89,.08);border:1px solid rgba(74,124,89,.25);border-radius:9px;text-align:center"><div id="orsvp-stat-yes" style="font-size:22px;font-weight:700;color:var(--green)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Attending</div></div>
-            <div style="flex:1;min-width:90px;padding:10px 14px;background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.2);border-radius:9px;text-align:center"><div id="orsvp-stat-no" style="font-size:22px;font-weight:700;color:var(--red)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Declining</div></div>
-            <div style="flex:1;min-width:90px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;text-align:center"><div id="orsvp-stat-total" style="font-size:22px;font-weight:700;color:var(--ink)">—</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Total</div></div>
-          </div>
-          <div id="orsvp-diet-line" style="display:none;font-size:11.5px;color:var(--muted);margin-bottom:12px"></div>
-          <div id="orsvp-toolbar" style="margin-bottom:10px"></div>
-          <div style="max-height:480px;overflow-y:auto">
-            <div id="orsvp-list" style="display:flex;flex-direction:column;gap:10px"></div>
-          </div>
-          <span id="orsvp-msg" style="color:var(--muted)">Responses submitted via your public RSVP link will appear here. Hit <strong>Refresh</strong> to fetch the latest.</span>
-        </div>
-      </div>`
+      seatingstatus:!hidden.has('seatingstatus')?_rsvpWidgetSeating():''
     };
     // ── Placement-driven assembly: dock stack beside tracker + row-broken grid ──
     const _placements=_rsvpPlacements();
@@ -1711,6 +1738,9 @@ function renderRsvpMgr(c, actions){
               ${_rsvpColMenuHtml()}
             </div>
           </div>
+          <button onclick="_openOnlineRsvps()" class="btn-icon rsvp-thead-web" style="width:31px;height:31px" title="Online RSVPs" aria-label="Online RSVPs">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </button>
           <div class="rsvp-thead-cog" style="position:relative;display:inline-flex">
             <button onclick="event.stopPropagation();_inviteChanToggleMenu(event)" class="btn-icon" style="width:31px;height:31px" title="Invite &amp; reminder methods" aria-label="Choose invite and reminder methods" aria-haspopup="true">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1777,8 +1807,10 @@ function renderRsvpMgr(c, actions){
     const el=document.getElementById('qrcode-wrap');
     if(el&&typeof QRCode!=='undefined'){ el.innerHTML=''; new QRCode(el,{text:url,width:160,height:160,colorDark:'#1A1A18',colorLight:'#ffffff'}); }
     if(typeof _rsvpAttachPan==='function') _rsvpAttachPan();
-    if(!window._orsvpSkipNextLoad) _loadOnlineRsvps();
-    else if(window._orsvpCachedRows) _orsvpRepopulateFromCache();
+    // Online RSVPs live in a pop-up now: refresh the cache + "new RSVPs" banner in the
+    // background, and repopulate the pop-up if it happens to be open.
+    if(document.getElementById('online-rsvps-body')){ if(!window._orsvpSkipNextLoad) _loadOnlineRsvps(); else if(window._orsvpCachedRows) _orsvpRepopulateFromCache(); }
+    else if(!window._orsvpSkipNextLoad) _orsvpCheckNew();
     window._orsvpSkipNextLoad=false;
   },80);
 }
