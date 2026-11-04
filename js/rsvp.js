@@ -1738,10 +1738,10 @@ function renderRsvpMgr(c, actions){
               ${_rsvpColMenuHtml()}
             </div>
           </div>
-          <button onclick="_openOnlineRsvps()" class="btn-icon rsvp-thead-web" style="width:31px;height:31px" title="Online RSVPs" aria-label="Online RSVPs">
+          <div class="rsvp-thead-cog" style="position:relative;display:inline-flex;align-items:center;gap:8px">
+            <button onclick="_openOnlineRsvps()" class="btn-icon rsvp-thead-web" style="width:31px;height:31px" title="Online RSVPs" aria-label="Online RSVPs">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          </button>
-          <div class="rsvp-thead-cog" style="position:relative;display:inline-flex">
+            </button>
             <button onclick="event.stopPropagation();_inviteChanToggleMenu(event)" class="btn-icon" style="width:31px;height:31px" title="Invite &amp; reminder methods" aria-label="Choose invite and reminder methods" aria-haspopup="true">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
