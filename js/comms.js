@@ -67,16 +67,22 @@ function renderComms(c, actions){
     </div>`).join('');
   // Narrow viewports get a dropdown instead of the nav list — a long list of 10 items
   // above the preview meant scrolling straight past all of them just to see one email.
-  const mobileOptions=_COMMS_SECTIONS.map(sec=>sec.groups.map(g=>`<optgroup label="${_escHtml(sec.name+' · '+g)}">${_commsItemsIn(sec.name,g)
-    .map(i=>`<option value="${i.key}" ${i.key===_commsSel?'selected':''}>${_escHtml(i.title)}</option>`).join('')}</optgroup>`).join('')).join('');
+  // Phones: an in-app dropdown with the same sections/groups/rows as the desktop list
+  // (not the system <select> picker). The Email design shortcut sits at the end too.
+  const mobileNavHtml=_COMMS_SECTIONS.map((sec,si)=>`<div class="comms-mnav-sec"${si?' style="border-top:1px solid var(--border);margin-top:4px;padding-top:10px"':''}>
+      <div class="comms-mnav-sec-h">${_escHtml(sec.name)}</div>
+      ${sec.groups.map(g=>`<div class="comms-mnav-grp">${_escHtml(g)}</div>${_commsItemsIn(sec.name,g).map(i=>_commsNavBtnHtml(i)).join('')}`).join('')}
+      ${sec.name==='Email'?`<div style="margin-top:6px" onclick="_commsMnavClose()">${designBtnHtml}</div>`:''}
+    </div>`).join('');
   const ordinalOn=_commsOrdinalOn();
   c.innerHTML=`<div style="margin-bottom:10px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:760px">Every message UnionVault can send to a guest or vendor, in one place. RSVP alerts and gift notifications aren't here — those come to you, not your guests.</div>
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;font-size:12px;color:var(--ink)">
     <input type="checkbox" ${ordinalOn?'checked':''} onchange="_commsSetOrdinal(this.checked)" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
     Use ordinal dates (4th, 21st, 22nd…) instead of plain numbers (4, 21, 22…)
   </label>
-  <div class="card comms-mobile-nav" style="margin-bottom:14px;padding:12px">
-    <select class="form-input" onchange="_commsSelect(this.value)" style="font-size:13px">${mobileOptions}</select>
+  <div class="card comms-mobile-nav" style="margin-bottom:14px;padding:10px">
+    <button type="button" id="comms-mnav-btn" class="comms-mnav-btn" onclick="_commsMnavToggle(event)" aria-haspopup="listbox" aria-expanded="false">${_commsMnavLabelHtml()}</button>
+    <div id="comms-mnav-panel" class="comms-mnav-panel" hidden onclick="if(event.target.closest('[data-comms-key]')) _commsMnavClose()">${mobileNavHtml}</div>
   </div>
   <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
     <div class="card comms-nav-card" style="flex:0 0 240px;min-width:220px;padding:16px 10px">
@@ -86,6 +92,23 @@ function renderComms(c, actions){
   </div>`;
   _commsLoadPreview();
 }
+function _commsMnavLabelHtml(){
+  const i=_commsItem(_commsSel)||_COMMS_ITEMS[0];
+  return `<span class="comms-mnav-cur"><span class="comms-mnav-ctx">${_escHtml(i.section+' · '+i.group)}</span><span class="comms-mnav-title">${_escHtml(i.title)}</span></span>
+    <svg class="comms-mnav-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
+}
+function _commsMnavToggle(e){
+  if(e) e.stopPropagation();
+  const p=document.getElementById('comms-mnav-panel'), b=document.getElementById('comms-mnav-btn'); if(!p) return;
+  const open=p.hidden; p.hidden=!open; if(b){ b.setAttribute('aria-expanded',String(open)); b.classList.toggle('open',open); }
+  if(open){ const on=p.querySelector('[data-comms-key="'+_commsSel+'"]'); if(on) on.scrollIntoView({block:'nearest'}); }
+}
+function _commsMnavClose(){
+  const p=document.getElementById('comms-mnav-panel'), b=document.getElementById('comms-mnav-btn');
+  if(p) p.hidden=true; if(b){ b.setAttribute('aria-expanded','false'); b.classList.remove('open'); }
+}
+// Tap anywhere outside the open dropdown closes it.
+document.addEventListener('click',e=>{ const p=document.getElementById('comms-mnav-panel'); if(p&&!p.hidden&&!e.target.closest('.comms-mobile-nav')) _commsMnavClose(); });
 function _commsNavBtnHtml(i){
   const on=_commsSel===i.key;
   return `<button type="button" data-comms-key="${i.key}" onclick="_commsSelect('${i.key}')" style="display:block;width:100%;text-align:left;padding:9px 11px;border-radius:9px;border:1px solid ${on?'var(--gold-deep)':'transparent'};background:${on?'var(--parchment)':'transparent'};cursor:pointer;font-family:inherit;margin-bottom:3px">
@@ -101,7 +124,7 @@ function _commsSelect(key){
     b.style.background=on?'var(--parchment)':'transparent';
     const lbl=b.querySelector('div'); if(lbl) lbl.style.color=on?'var(--gold-deep)':'var(--ink)';
   });
-  const mob=document.querySelector('.comms-mobile-nav select'); if(mob) mob.value=key;
+  const mb=document.getElementById('comms-mnav-btn'); if(mb) mb.innerHTML=_commsMnavLabelHtml();
   _commsRefresh();
 }
 function _commsRefresh(){
