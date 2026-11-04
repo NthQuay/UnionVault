@@ -196,7 +196,7 @@ async function _invBatchSend(){
   for(let i=0;i<guests.length;i++){
     const g=guests[i];
     const grp={kind:'solo',members:[g]};
-    const msg=_fillTemplate(_inviteTpl(kind), grp);
+    const msg=_fillTemplate(_inviteTpl(kind, 'email'), grp);
     const ed=(STATE.settings&&STATE.settings.emailDesign)||{};
     const names=_ssCoupleNames();
     const payload={ to:[(g.email||'').trim()], subject:'You\'re invited'+(names?' — '+names:''), body:msg,

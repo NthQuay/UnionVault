@@ -15,7 +15,7 @@ const _UV_PAID_PAGES = new Set(['seating','calendar','events','inspo','visionboa
 const _UV_PAID_FEATURES = new Set([
   'mealChoices','childrenMeal','highChair','dietary',
   'budgetSubItems','budgetDocs','budgetPayments','perHead','perItem',
-  'printExport','brandOff','unlimitedGuests',
+  'printExport','brandOff','unlimitedGuests','editComms',
 ]);
 
 const _UV_FEATURE_LABELS = {
@@ -26,7 +26,7 @@ const _UV_FEATURE_LABELS = {
   budgetDocs:'Budget Documents', budgetPayments:'Payment Plans',
   perHead:'Per-Head Pricing', perItem:'Per-Item Pricing',
   printExport:'Print & Export', brandOff:'Remove Union Vault Badge',
-  unlimitedGuests:'Unlimited Guests',
+  unlimitedGuests:'Unlimited Guests', editComms:'Edit Communications',
 };
 
 function _uvIsPaid(){ return _uvTier === 'full' || _uvTier === 'trial'; }

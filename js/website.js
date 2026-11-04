@@ -4544,6 +4544,13 @@ function _wbBuildSite(forDownload){
                   ww.acceptCheque?{icon:'cheque',label:'Cheque',lines:['Make out to '+(ww.chequeTo||'the couple')+'.']}:null ].filter(Boolean);
       const payNote=(ww.payNote||'').trim()||'We greatly appreciate your generosity!';
       const wwCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
+      // Editable copy (title/intro/notes/closing) from the Communications page.
+      const wwText=(STATE.settings&&STATE.settings.commsText&&STATE.settings.commsText.ww)||{};
+      // Shared Design settings — same object every other UnionVault-sent email reads from.
+      const wwEd=(STATE.settings&&STATE.settings.emailDesign)||{};
+      const wwOwnerUid=_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'';
+      const wwDesignOpts={ accentColor:wwEd.accentColor||'#8a6a2c', showLogo:wwEd.showLogo!==false,
+        headerImage:wwEd.headerImage&&wwOwnerUid?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+wwOwnerUid+'/'+wwEd.headerImage:'' };
 
       const chips=suggested.length?`<div class="ww-chips" id="ww-chips">${suggested.map(n=>`<button class="ww-chip" data-amt="${n}" onclick="window._wwPick(this)">${fmt(Number(n))}</button>`).join('')}<button class="ww-chip" data-amt="other" onclick="window._wwPick(this)">Other</button></div>`:'';
       const payHtml=pay.length?pay.map(r=>`<div class="ww-pay-row"><span class="ww-pay-label">${_escHtml(r[0])}</span> <span class="ww-pay-value">${_escHtml(r[1])}</span></div>`).join(''):'';
@@ -4610,6 +4617,8 @@ function _wbBuildSite(forDownload){
   var _wwDigital=${JSON.stringify(wwDigital).replace(/<\/script/gi,'<\\/script')};
   var _wwPhysical=${JSON.stringify(wwPhysical).replace(/<\/script/gi,'<\\/script')};
   var _wwRefNote=${JSON.stringify(ww.reference||'').replace(/<\/script/gi,'<\\/script')};
+  var _wwText=${JSON.stringify(wwText).replace(/<\/script/gi,'<\\/script')};
+  var _wwDesignOpts=${JSON.stringify(wwDesignOpts).replace(/<\/script/gi,'<\\/script')};
   var sel=null;
   window._wwPick=function(el){
     var chips=document.querySelectorAll('.ww-chip');
@@ -4663,7 +4672,7 @@ function _wbBuildSite(forDownload){
     if(errEl)errEl.textContent='';
     var btn=document.getElementById('ww-email-send');
     if(btn){btn.disabled=true;btn.textContent='Sending\\u2026';}
-    fetch(_su+'/functions/v1/ww-email-details',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_cid,couple_names:_wwCoupleNames,digital:_wwDigital,physical:_wwPhysical,referenceNote:_wwRefNote,amount:sel})})
+    fetch(_su+'/functions/v1/ww-email-details',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_cid,couple_names:_wwCoupleNames,digital:_wwDigital,physical:_wwPhysical,referenceNote:_wwRefNote,amount:sel,title_override:_wwText.title||null,intro_override:_wwText.intro||null,digital_note_override:_wwText.digitalNote||null,physical_note_override:_wwText.physicalNote||null,closing_override:_wwText.closing||null,design_opts:_wwDesignOpts})})
     .then(function(r){return r.json();})
     .then(function(){
       window._wwCloseEmailPopup();
@@ -4813,6 +4822,14 @@ function _wbBuildSite(forDownload){
   // escapes any literal commas inside the encoded payload, so this split is safe).
   const _uvIcsRaw=_wbIcs();
   const _uvIcsText=_uvIcsRaw?decodeURIComponent(_uvIcsRaw.slice(_uvIcsRaw.indexOf(',')+1)):'';
+  // Editable copy (title/intro/closing) from the Communications page — unset fields fall
+  // back to the edge function's own defaults, same as the template tokens elsewhere.
+  const _uvConfirmText=(STATE.settings&&STATE.settings.commsText&&STATE.settings.commsText.confirm)||{};
+  // Shared Design settings (accent colour/logo/header image) — same STATE.settings.emailDesign
+  // object every other UnionVault-sent email reads from. The actual free/paid branding
+  // decision is made server-side from the couple's tier, not trusted from this payload.
+  const _uvEd=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const _uvOwnerUid=_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'';
   const _uvConfirmCtxJson=JSON.stringify({
     coupleId:_uvCoupleId,
     coupleNames:_wbCouple()||'',
@@ -4820,7 +4837,12 @@ function _wbBuildSite(forDownload){
     weddingTime:(STATE.event&&STATE.event.time)||'',
     venue:[STATE.event&&STATE.event.venue,STATE.event&&STATE.event.venueAddress].filter(Boolean).join(', '),
     siteUrl:_wbSiteUrl(),
-    icsText:_uvIcsText
+    icsText:_uvIcsText,
+    designOpts:{ accentColor:_uvEd.accentColor||'#8a6a2c', showLogo:_uvEd.showLogo!==false,
+      headerImage:_uvEd.headerImage&&_uvOwnerUid?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_uvOwnerUid+'/'+_uvEd.headerImage:'' },
+    titleOverride:_uvConfirmText.title||'',
+    introOverride:_uvConfirmText.intro||'',
+    closingOverride:_uvConfirmText.closing||''
   }).replace(/<\/script/gi,'<\\/script');
   const _uvMealOn=!!(STATE.settings&&STATE.settings.mealChoiceOn)&&Array.isArray(STATE.settings.mealOptions)&&(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()).length>0;
   const _uvMealOpts=_uvMealOn?(STATE.settings.mealOptions||[]).filter(x=>String(x||'').trim()):[];
@@ -5549,7 +5571,7 @@ function _wbBuildSite(forDownload){
 
         var ecb2=document.getElementById('f-email-copy');
         if(ecb2&&ecb2.checked&&email&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
-          fetch(_su+'/functions/v1/rsvp-confirm-email',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_uvConfirmCtx.coupleId,couple_names:_uvConfirmCtx.coupleNames,wedding_date:_uvConfirmCtx.weddingDate,wedding_time:_uvConfirmCtx.weddingTime,venue:_uvConfirmCtx.venue,site_url:_uvConfirmCtx.siteUrl,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending,dietary:p.dietary||[]};}),ics_text:_uvConfirmCtx.icsText||null})}).catch(function(){});
+          fetch(_su+'/functions/v1/rsvp-confirm-email',{method:'POST',headers:{'Content-Type':'application/json','apikey':_sk},body:JSON.stringify({to:email,couple_id:_uvConfirmCtx.coupleId,couple_names:_uvConfirmCtx.coupleNames,wedding_date:_uvConfirmCtx.weddingDate,wedding_time:_uvConfirmCtx.weddingTime,venue:_uvConfirmCtx.venue,site_url:_uvConfirmCtx.siteUrl,members:payloads.map(function(p){return{name:p.guest_name,attending:p.attending,dietary:p.dietary||[]};}),ics_text:_uvConfirmCtx.icsText||null,title_override:_uvConfirmCtx.titleOverride||null,intro_override:_uvConfirmCtx.introOverride||null,closing_override:_uvConfirmCtx.closingOverride||null,design_opts:_uvConfirmCtx.designOpts||null})}).catch(function(){});
         }
 
         _rfWizPanels.forEach(function(pid){var p=document.getElementById('rf-'+pid);if(p)p.classList.remove('active');});

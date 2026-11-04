@@ -31,15 +31,19 @@ serve(async (req) => {
     })
   }
 
-  let body: { to: string[]; subject: string; body: string; ics?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string; htmlText?: string; signature?: string[] }
+  let body: {
+    to: string[]; subject: string; body: string; ics?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string; htmlText?: string; signature?: string[]
+    templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean
+  }
   try { body = await req.json() } catch {
     return new Response(JSON.stringify({ ok: false, error: 'Invalid JSON' }), {
       status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
     })
   }
 
+  const isPreview = !!body.preview
   const { to, subject, body: text, ics, fromName, replyTo, kicker, title, htmlText, signature } = body
-  if (!to?.length || to.length > 10 || !subject) {
+  if (!isPreview && (!to?.length || to.length > 10 || !subject)) {
     return new Response(JSON.stringify({ ok: false, error: 'Missing to or subject' }), {
       status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
     })
@@ -51,12 +55,41 @@ serve(async (req) => {
   const rt = EMAIL_RE.test(String(replyTo ?? '')) ? String(replyTo) : user.email
   if (rt) payload.reply_to = rt
   const sigLines = Array.isArray(signature) ? signature.map((l) => String(l).slice(0, 200)).slice(0, 4) : []
+
+  // Same free/paid branding gate as send-guest-email (this function is already
+  // signed-in-only, so the tier is looked up for the calling user directly).
+  const SB_SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  let senderTier = 'free'
+  if (SB_SERVICE) {
+    try {
+      const pr = await fetch(`${SB_URL}/rest/v1/user_profiles?user_id=eq.${user.id}&select=tier`, {
+        headers: { apikey: SB_SERVICE, Authorization: `Bearer ${SB_SERVICE}` },
+      })
+      const rows = await pr.json()
+      if (rows?.[0]?.tier) senderTier = rows[0].tier
+    } catch (_) { /* default to free — branding shown */ }
+  }
+  const showBranding = senderTier === 'free'
+  const HEX_RE = /^#[0-9a-fA-F]{6}$/
+  const accentColor = HEX_RE.test(String(body.designOpts?.accentColor || '')) ? String(body.designOpts!.accentColor) : '#8a6a2c'
+  const showLogo = body.designOpts?.showLogo !== false
+  const headerImageRaw = String(body.designOpts?.headerImage || '')
+  const headerImage = headerImageRaw.startsWith(`${SB_URL}/storage/v1/object/public/photos/${user.id}/`) && !headerImageRaw.includes('..') ? headerImageRaw : ''
+
   payload.html = brandedHtml({
     kicker: String(kicker ?? '').slice(0, 120),
     title: String(title ?? '').slice(0, 200),
     text: String(htmlText || text || '').slice(0, 10000),
     signature: sigLines,
+    accentColor, showBranding, showLogo, headerImage,
   })
+
+  if (isPreview) {
+    return new Response(JSON.stringify({ ok: true, html: payload.html }), {
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+    })
+  }
+
   if (ics) {
     payload.attachments = [{ filename: 'appointment.ics', content: ics }]
   }
@@ -86,14 +119,24 @@ serve(async (req) => {
 // to the white logo on a dark band.
 const LOGO_BASE = 'https://unionvault.app/assets'
 const escH = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-function linkify(escaped: string): string {
-  return escaped.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)'"]/g, (u) => `<a href="${u}" style="color:#8a6a2c">${u}</a>`)
+function linkifyWith(escaped: string, color: string): string {
+  return escaped.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)'"]/g, (u) => `<a href="${u}" style="color:${color}">${u}</a>`)
 }
-function brandedHtml(opts: { kicker?: string; title?: string; text: string; signature?: string[] }): string {
+function brandedHtml(opts: { kicker?: string; title?: string; text: string; signature?: string[]; accentColor?: string; showBranding?: boolean; showLogo?: boolean; headerImage?: string }): string {
+  const ac = escH(opts.accentColor || '#8a6a2c')
+  const showBranding = opts.showBranding !== false
+  const showLogo = opts.showLogo !== false
   const paras = String(opts.text ?? '').trim().split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkify(escH(p)).replace(/\n/g, '<br>')}</p>`).join('')
+    .map((p) => `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkifyWith(escH(p), ac).replace(/\n/g, '<br>')}</p>`).join('')
   const signatureHtml = opts.signature?.length
     ? `<div class="uv-muted" style="text-align:center;font-style:italic;font-size:13px;color:#6E6259;margin-top:4px">${opts.signature.map((l) => escH(l)).join('<br>')}</div>`
+    : ''
+  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="120" alt="UnionVault" style="display:block;width:120px;height:auto;border:0"></picture>`
+  const headerBand = opts.headerImage
+    ? `<tr><td style="padding:0"><img src="${escH(opts.headerImage)}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>`
+    : showLogo ? `<tr><td class="uv-band" align="center" style="background:#F4EEE4;padding:22px 0 16px">${logoImg}</td></tr>` : ''
+  const brandingFooter = showBranding
+    ? `<tr><td class="uv-muted" style="padding:0 26px 22px;font-size:11.5px;color:#6E6259">Sent with <a href="https://unionvault.app" style="color:${ac}">UnionVault</a></td></tr>`
     : ''
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
@@ -101,15 +144,13 @@ function brandedHtml(opts: { kicker?: string; title?: string; text: string; sign
 <body class="uv-bg" style="margin:0;padding:24px 12px;background:#EFEAE1;font-family:Helvetica,Arial,sans-serif;color:#2C2222">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FBF8F3;border-radius:12px;overflow:hidden">
-<tr><td class="uv-band" align="center" style="background:#F4EEE4;padding:22px 0 16px">
-<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="120" alt="UnionVault" style="display:block;width:120px;height:auto;border:0"></picture>
-</td></tr>
+${headerBand}
 <tr><td style="padding:24px 26px 10px">
-${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a6a2c;margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
+${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
 ${signatureHtml}
 </td></tr>
-<tr><td class="uv-muted" style="padding:0 26px 22px;font-size:11.5px;color:#6E6259">Sent with <a href="https://unionvault.app" style="color:#8a6a2c">UnionVault</a></td></tr>
+${brandingFooter}
 </table></td></tr></table></body></html>`
 }

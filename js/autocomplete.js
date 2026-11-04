@@ -146,7 +146,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v456';
+const APP_BUILD='v458';
 const APP_BUILD_DATE='2026-11-04';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -294,6 +294,7 @@ function _seatingPrintHtml(forPreview){
   }
 
   // ----- Table-by-table list -----
+  const _mealColOn=!!(STATE.settings&&STATE.settings.mealChoiceOn);
   const listCards=tables.map(t=>{
     const ids=_seatIds(t.id);
     const heads=new Set([t.headLeft,t.headRight].filter(Boolean));
@@ -306,7 +307,9 @@ function _seatingPrintHtml(forPreview){
       const _at=_hasAllergy(g)?_allergyText(g):'';
       const diet=(_dn.length?` <span class="sp-diet">${_escHtml(_dn.map(d=>d==='other'&&_otherText(g)?'other ('+_otherText(g)+')':d).join(', '))}</span>`:'')
         +(_hasAllergy(g)?` <span class="sp-al">ALLERGY${_at?': '+_escHtml(_at.toLowerCase()):''}</span>`:'');
-      return `<li>${nm}${crown}${diet}</li>`;
+      const _meal=_mealColOn?String(g&&g.meal||'').trim():'';
+      const meal=_meal?` <span class="sp-meal">${_escHtml(_meal)}</span>`:'';
+      return `<li>${nm}${crown}${diet}${meal}</li>`;
     }).join('');
     const empty=ids.length?'':'<li class="sp-empty">— empty —</li>';
     return `<div class="sp-tcard">
@@ -377,6 +380,7 @@ const _SEATING_PRINT_CSS=`
   .sp-crown{color:#9A7B2E;font-size:12px}
   .sp-diet{color:#9A9389;font-size:10.5px;font-style:italic}
   .sp-al{color:#A8322A;font-size:10.5px;font-weight:700;letter-spacing:.02em}
+  .sp-meal{color:#9A7B2E;font-size:10.5px}
   .sp-empty{color:#B4AFA4;font-style:italic;list-style:none;margin-left:-12px}
   .sp-unassigned{border-style:dashed;background:#FBF8F3}
   .sp-foot{text-align:center;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;color:#B4AFA4;font-size:12px;margin-top:26px;padding-top:14px;border-top:1px solid #E7DECF}
@@ -423,6 +427,7 @@ const _SEATING_PRINT_CSS=`
      gold stripes), in every floorplan wrapper incl. the rotated landscape stage. */
   .sp-doc.bw .sp-floor-wrap > div,.sp-doc.bw .sp-floor-scroll > div,.sp-doc.bw .sp-rot-inner{filter:grayscale(1)}
   .sp-doc.bw .sp-crown{color:#7c7c7c}
+  .sp-doc.bw .sp-meal{color:#7c7c7c}
   /* Seated pips: outline ring + initials in the SAME grey as the rest of the plan
      (matches the grayscaled decor gold, ~#7c7c7c), no fill. */
   .sp-doc.bw [data-pipon="1"]{background:transparent!important;border-color:#7c7c7c!important}
@@ -703,12 +708,13 @@ async function _downloadFloorplanPng(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-// ── Seating → CSV (First name, Last name, Table) ─────────────────────────────
+// ── Seating → CSV (First name, Last name, Table, Dietary, Meal choice, High chair) ──
 // One row per SEATED guest. Name is split on whitespace: the first token is the
 // first name, everything after is the last name (so middle names stay with the
 // surname rather than being dropped). Rows are sorted alphabetically by full name.
 // Only guests actually placed at a table appear — unseated guests are omitted by
-// design (this export answers "who sits where").
+// design (this export answers "who sits where"). Meal choice and High chair columns
+// are only included when those features are turned on (_downloadSeatingCsv).
 function _seatingCsvRows(){
   const rows=[];
   (STATE.tables||[]).forEach(t=>{
@@ -718,7 +724,10 @@ function _seatingCsvRows(){
       const parts=String(g.name).trim().split(/\s+/);
       const first=parts.shift()||'';
       const last=parts.join(' ');
-      rows.push({first, last, table:t.name||'', full:String(g.name).trim()});
+      rows.push({first, last, table:t.name||'', full:String(g.name).trim(),
+        dietary:typeof _dietText==='function'?_dietText(g):'',
+        meal:String(g.meal||'').trim(),
+        highChair:!!g.highChair});
     });
   });
   rows.sort((a,b)=>a.full.localeCompare(b.full, undefined, {sensitivity:'base'}));
@@ -733,9 +742,18 @@ function _csvField(v){
 function _downloadSeatingCsv(){
   const rows=_seatingCsvRows();
   if(!rows.length){ if(typeof _showInfoToast==='function') _showInfoToast('No seated guests to export yet.', null, null); return; }
-  const header=['First name','Last name','Table'];
+  const mealOn=!!(STATE.settings&&STATE.settings.mealChoiceOn);
+  const hcOn=!(STATE.settings&&STATE.settings.highChairOn===false);
+  const header=['First name','Last name','Table','Dietary requirements'];
+  if(mealOn) header.push('Meal choice');
+  if(hcOn) header.push('High chair');
   const lines=[header.map(_csvField).join(',')]
-    .concat(rows.map(r=>[r.first, r.last, r.table].map(_csvField).join(',')));
+    .concat(rows.map(r=>{
+      const cells=[r.first, r.last, r.table, r.dietary];
+      if(mealOn) cells.push(r.meal);
+      if(hcOn) cells.push(r.highChair?'Yes':'');
+      return cells.map(_csvField).join(',');
+    }));
   // Prepend a UTF-8 BOM so Excel opens accented names correctly.
   const csv='\ufeff'+lines.join('\r\n');
   const ev=STATE.event||{};

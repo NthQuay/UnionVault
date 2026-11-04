@@ -46,10 +46,10 @@ function navigate(page){
   }
   const titles={dashboard:'Dashboard',details:'Event Details',timeline:'Timelines',guests:'Guest List','rsvp-mgr':'RSVP & Invites',
     checklist:'Checklist',calendar:'Calendar',budget:'Budget',vendors:'Vendors',seating:'Seating Plan',inspo:'Inspiration',
-    visionboard:'Vision Board',wishingwell:'Wishing Well',invitation:'RSVP & Invites',settings:'Settings',events:'Events',website:'Website'};
+    visionboard:'Vision Board',wishingwell:'Wishing Well',invitation:'RSVP & Invites',settings:'Settings',events:'Events',website:'Website',comms:'Communications'};
   const eyebrows={dashboard:'Overview',details:'Your Event',timeline:'Schedule',guests:'Guests','rsvp-mgr':'Guests',
     checklist:'Planning',calendar:'Planning',budget:'Finances',vendors:'Suppliers',seating:'Layout',inspo:'Create',
-    visionboard:'Aesthetic',wishingwell:'Gifts',invitation:'Guests',settings:'Preferences',events:'Celebrations',website:'Guests'};
+    visionboard:'Aesthetic',wishingwell:'Gifts',invitation:'Guests',settings:'Preferences',events:'Celebrations',website:'Guests',comms:'Templates'};
   document.getElementById('topbar-title').textContent=titles[page]||page;
   const eb=document.getElementById('topbar-eyebrow');
   if(eb) eb.textContent=eyebrows[page]||'';
@@ -77,6 +77,7 @@ function navigate(page){
   else if(page==='website') renderWebsite(c,actions);
   else if(page==='invitation') renderInvitation(c,actions);
   else if(page==='settings') renderSettings(c,actions);
+  else if(page==='comms') renderComms(c,actions);
   _updateBudgetNavBadge();
   _updateChecklistNavBadge();
   _updateSeatingNavBadge();

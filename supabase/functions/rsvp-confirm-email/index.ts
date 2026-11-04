@@ -67,13 +67,17 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const { to, couple_id, couple_names, wedding_date, wedding_time, venue, site_url, members, ics_text } = await req.json();
+    const { to, couple_id, couple_names, wedding_date, wedding_time, venue, site_url, members, ics_text, title_override, intro_override, closing_override, design_opts, preview } = await req.json();
+    const isPreview = !!preview;
 
     const toEmail = EMAIL_RE.test(String(to || "")) ? String(to).trim() : "";
-    if (!toEmail) return json(400, { error: "missing or invalid 'to'" });
+    if (!isPreview && !toEmail) return json(400, { error: "missing or invalid 'to'" });
 
-    const memberList: Array<{ name: string; attending: string; dietary?: unknown }> = Array.isArray(members) ? members : [];
-    if (!memberList.length) return json(400, { error: "missing members" });
+    let memberList: Array<{ name: string; attending: string; dietary?: unknown }> = Array.isArray(members) ? members : [];
+    if (!memberList.length) {
+      if (!isPreview) return json(400, { error: "missing members" });
+      memberList = [{ name: "[guest name]", attending: "yes", dietary: [] }];
+    }
 
     const coupleNames = String(couple_names || "").trim() || "the couple";
 
@@ -82,19 +86,38 @@ Deno.serve(async (req: Request) => {
     // couple directly instead of landing in a dead notifications@ inbox — same
     // reply-to convention send-appointment-email/send-guest-email already use when
     // the couple is the one sending. No DB write here, read-only lookup.
+    // Also resolves the couple's tier, for the same free/paid branding gate
+    // send-guest-email uses — there's no authenticated caller here (the public RSVP
+    // page calls this with no sign-in), so it's looked up from couple_id instead.
     let replyTo: string | undefined;
+    let senderTier = "free";
     if (couple_id) {
+      const SB_URL = Deno.env.get("SUPABASE_URL")!;
+      const SB_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       try {
-        const supabase = createClient(
-          Deno.env.get("SUPABASE_URL")!,
-          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-        );
+        const supabase = createClient(SB_URL, SB_SERVICE);
         const { data: userData } = await supabase.auth.admin.getUserById(couple_id);
         if (userData?.user?.email) replyTo = userData.user.email;
       } catch (_e) {
         // Non-fatal — the confirmation still sends without a reply-to.
       }
+      try {
+        const pr = await fetch(`${SB_URL}/rest/v1/user_profiles?user_id=eq.${couple_id}&select=tier`, {
+          headers: { apikey: SB_SERVICE, Authorization: `Bearer ${SB_SERVICE}` },
+        });
+        const rows = await pr.json();
+        if (rows?.[0]?.tier) senderTier = rows[0].tier;
+      } catch (_e) {
+        // Non-fatal — defaults to free, branding shown.
+      }
     }
+    const showBranding = senderTier === "free";
+    const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+    const accentColor = HEX_RE.test(String(design_opts?.accentColor || "")) ? String(design_opts.accentColor) : "#8a6a2c";
+    const showLogo = design_opts?.showLogo !== false;
+    const headerImageRaw = String(design_opts?.headerImage || "");
+    const headerImage = couple_id && headerImageRaw.startsWith(`${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/photos/${couple_id}/`) && !headerImageRaw.includes("..")
+      ? headerImageRaw : "";
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) return json(500, { error: "RESEND_API_KEY not set" });
@@ -104,7 +127,18 @@ Deno.serve(async (req: Request) => {
     const joinN = (arr: string[]) =>
       arr.length <= 1 ? (arr[0] || "") : arr.slice(0, -1).join(", ") + " & " + arr[arr.length - 1];
 
-    const lines: string[] = [`Thanks for RSVPing to ${coupleNames}'s wedding! Here's what we've got:`];
+    // Editable copy from the Communications page — {names} is the only token that makes
+    // sense here (everything else in the body is assembled from the guest's own answers),
+    // so it's the only one substituted. Unset/blank overrides keep the original wording.
+    const fillNames = (t: string) => t.replace(/\{names\}/g, coupleNames);
+    const introLine = typeof intro_override === "string" && intro_override.trim()
+      ? fillNames(intro_override.trim())
+      : `Thanks for RSVPing to ${coupleNames}'s wedding! Here's what we've got:`;
+    const closingLine = typeof closing_override === "string" && closing_override.trim()
+      ? fillNames(closing_override.trim())
+      : "If anything above isn't right, just reply to this email and let them know.";
+
+    const lines: string[] = [introLine];
     if (attendingNames.length) lines.push(`${joinN(attendingNames)} confirmed as attending.`);
     if (declinedNames.length) lines.push(`${joinN(declinedNames)} let ${coupleNames} know they can't make it.`);
 
@@ -134,11 +168,19 @@ Deno.serve(async (req: Request) => {
     const siteUrl = /^https?:\/\//i.test(String(site_url || "")) ? String(site_url).trim() : "";
     if (siteUrl) lines.push(`You can revisit the wedding website any time here: ${siteUrl}`);
 
-    lines.push("If anything above isn't right, just reply to this email and let them know.");
+    lines.push(closingLine);
 
     const text = lines.join("\n\n");
     const subject = `Your RSVP to ${coupleNames}'s wedding`;
-    const html = brandedHtml({ kicker: "RSVP confirmed", title: `${coupleNames} have received your reply.`, text });
+    const titleText = typeof title_override === "string" && title_override.trim()
+      ? fillNames(title_override.trim())
+      : `${coupleNames} have received your reply.`;
+    const html = brandedHtml({
+      kicker: "RSVP confirmed", title: titleText, text,
+      accentColor, showBranding, showLogo, headerImage,
+    });
+
+    if (isPreview) return json(200, { ok: true, html });
 
     const payload: Record<string, unknown> = { from: "UnionVault <notifications@unionvault.app>", to: [toEmail], subject, text, html };
     if (replyTo) payload.reply_to = replyTo;
@@ -177,35 +219,45 @@ const escH = (s: string) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-function linkify(escaped: string): string {
+function linkifyWith(escaped: string, color: string): string {
   return escaped.replace(
     /\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)'"]/g,
-    (u) => `<a href="${u}" style="color:#8a6a2c">${u}</a>`
+    (u) => `<a href="${u}" style="color:${color}">${u}</a>`
   );
 }
-function brandedHtml(opts: { kicker?: string; title?: string; text: string }): string {
+function brandedHtml(opts: { kicker?: string; title?: string; text: string; accentColor?: string; showBranding?: boolean; showLogo?: boolean; headerImage?: string }): string {
+  const ac = escH(opts.accentColor || "#8a6a2c");
+  const showBranding = opts.showBranding !== false;
+  const showLogo = opts.showLogo !== false;
   const paras = String(opts.text ?? "")
     .trim()
     .split(/\n{2,}/)
     .map(
       (p) =>
-        `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkify(escH(p)).replace(/\n/g, "<br>")}</p>`
+        `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${linkifyWith(escH(p), ac).replace(/\n/g, "<br>")}</p>`
     )
     .join("");
+  const logoImg = `<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="120" alt="UnionVault" style="display:block;width:120px;height:auto;border:0"></picture>`;
+  const headerBand = opts.headerImage
+    ? `<tr><td style="padding:0"><img src="${escH(opts.headerImage)}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>`
+    : showLogo
+      ? `<tr><td class="uv-band" align="center" style="background:#F4EEE4;padding:22px 0 16px">${logoImg}</td></tr>`
+      : "";
+  const brandingFooter = showBranding
+    ? `<tr><td class="uv-muted" style="padding:0 26px 22px;font-size:11.5px;color:#6E6259">Sent with <a href="https://unionvault.app" style="color:${ac}">UnionVault</a></td></tr>`
+    : "";
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <style>@media (prefers-color-scheme: dark){.uv-bg{background:#111114!important}.uv-card{background:#1A1A1F!important;color:#EDE6DA!important}.uv-band{background:#111114!important}.uv-muted{color:#A79E92!important}.uv-kicker{color:#E3C878!important}}</style></head>
 <body class="uv-bg" style="margin:0;padding:24px 12px;background:#EFEAE1;font-family:Helvetica,Arial,sans-serif;color:#2C2222">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FBF8F3;border-radius:12px;overflow:hidden">
-<tr><td class="uv-band" align="center" style="background:#F4EEE4;padding:22px 0 16px">
-<picture><source srcset="${LOGO_BASE}/email-logo-white.png" media="(prefers-color-scheme: dark)"><img src="${LOGO_BASE}/email-logo-black.png" width="120" alt="UnionVault" style="display:block;width:120px;height:auto;border:0"></picture>
-</td></tr>
+${headerBand}
 <tr><td style="padding:24px 26px 10px">
-${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a6a2c;margin-bottom:8px">${escH(opts.kicker)}</div>` : ""}
+${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ""}
 ${opts.title ? `<div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ""}
 ${paras}
 </td></tr>
-<tr><td class="uv-muted" style="padding:0 26px 22px;font-size:11.5px;color:#6E6259">Sent with <a href="https://unionvault.app" style="color:#8a6a2c">UnionVault</a></td></tr>
+${brandingFooter}
 </table></td></tr></table></body></html>`;
 }

@@ -119,6 +119,13 @@ function renderSettings(c, actions){
           </button>
         </div>
       </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <button type="button" onclick="navigate('comms')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
+          <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          <span style="min-width:0;flex:1"><span style="display:block;font-size:13px;color:var(--ink);line-height:1.3;font-weight:500">Edit communications</span><span style="display:block;font-size:11px;color:var(--muted);margin-top:1px;line-height:1.35">Every message UnionVault sends, in one place</span></span>
+          <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
+        </button>
+      </div>
     </div>
     <div class="settings-sect" data-sect="display formatting fade completed tasks faded strikethrough dim finished checklist ceremony details event details religion officiant venue budget year budget dates paid owing categories suggest budget links follow-up tasks email appointments auto-mark installments mark paid due soon countdown currency decimals dollars cents currency symbol aud usd gbp eur nzd cad euro pound dollar yen rupee payment badges vendor badges vendor badge style avatar pill name off linked vendors on budget vision board dashboard">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Display &amp; Formatting</div>
@@ -517,6 +524,7 @@ const _SETTINGS_PAGE_MAP={
   'Dark Mode':'general',
   'Show Vision Board on Dashboard':'dashboard',
   'Navigation Style':'general',
+  'Edit communications':'general',
   'Task Alerts Banner':'appointments',
   'Payment Alerts Banner':'appointments',
   'Undo Toast on Delete':'general',
