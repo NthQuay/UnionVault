@@ -1479,6 +1479,28 @@ async function _loadOnlineRsvps(){
         if(r.address&&!(g.address||'').trim()){g.address=r.address.trim();rowChanged=true;}
         if(rowChanged) changed++;
       });
+      // Pull in any bounce/spam-complaint flags recorded by the resend-webhook edge
+      // function since we last checked, so the send flows (tracker, batch invite) can
+      // stop offering Email for an address that's already known to be bad — repeatedly
+      // sending to one is what actually drags a sending domain's reputation down.
+      if(_sbSession){
+        try{
+          const _eiRows=await _sbSelect('email_issues',
+            `couple_id=eq.${_sbSession.user.id}&select=guest_id,kind,reason,created_at&order=created_at.desc`);
+          if(Array.isArray(_eiRows)&&_eiRows.length){
+            const seen=new Set();
+            _eiRows.forEach(function(ei){
+              if(!ei||!ei.guest_id||seen.has(ei.guest_id)) return; // newest row per guest wins (already ordered desc)
+              seen.add(ei.guest_id);
+              const g=guestsById[ei.guest_id]; if(!g) return;
+              if(!g.emailIssue||g.emailIssue.kind!==ei.kind){
+                g.emailIssue={kind:ei.kind, reason:ei.reason||''};
+                changed++;
+              }
+            });
+          }
+        }catch(e){ console.warn('email_issues sync failed',e); }
+      }
       if(changed){
         STATE.guests=baseGuests; // commit the cloud-merged list back to STATE
         saveToStorage();

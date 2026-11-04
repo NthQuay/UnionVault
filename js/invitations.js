@@ -167,14 +167,23 @@ function _invitationSend(channel){
     if(typeof _showInfoToast==='function') _showInfoToast('Text messages are sent per-guest from the RSVP tracker.',null,null);
     return;
   }
-  const guests=(STATE.guests||[]).filter(g=>(g.email||'').trim());
-  if(!guests.length){ if(typeof _showInfoToast==='function') _showInfoToast('No guests have email addresses.',null,null); return; }
+  // Skip anyone whose address has already bounced or been marked as spam — see the same
+  // guard in _invBatchSend. Computed here too so the confirmation count and the progress
+  // bar's denominator (built from this same count) match what actually gets sent.
+  const allWithEmail=(STATE.guests||[]).filter(g=>(g.email||'').trim());
+  const guests=allWithEmail.filter(g=>!g.emailIssue);
+  const skipped=allWithEmail.length-guests.length;
+  if(!guests.length){
+    if(typeof _showInfoToast==='function') _showInfoToast(skipped?'Every guest with an email has a previous bounce — nothing to send.':'No guests have email addresses.',null,null);
+    return;
+  }
   const names=_ssCoupleNames();
   const count=guests.length;
   openConfirm2('Send invitations by email',
     `<div style="display:flex;flex-direction:column;gap:14px">
       <div style="font-size:14px;color:var(--ink)">Send your invitation to <strong>${count}</strong> guest${count===1?'':'s'} with an email address?</div>
       <div style="font-size:12.5px;color:var(--muted);line-height:1.5">Each guest receives a personalised email from <strong>invites@unionvault.app</strong> as "${_escHtml(names||'UnionVault')}" using their template message.${(STATE.invitation&&STATE.invitation.file&&STATE.invitation.file.mediaId)?' Your uploaded invitation will be attached.':''}</div>
+      ${skipped?`<div style="font-size:12px;color:var(--red)">${skipped} guest${skipped===1?'':'s'} skipped — a previous email bounced or was marked as spam.</div>`:''}
       <div id="inv-batch-progress" style="display:none">
         <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Sending… <span id="inv-batch-count">0</span> / ${count}</div>
         <div style="height:6px;border-radius:3px;background:var(--border);overflow:hidden"><div id="inv-batch-bar" style="height:100%;width:0;background:var(--gold);border-radius:3px;transition:width .3s"></div></div>
@@ -188,7 +197,12 @@ async function _invBatchSend(){
   const prog=document.getElementById('inv-batch-progress'); if(prog) prog.style.display='';
   const countEl=document.getElementById('inv-batch-count');
   const bar=document.getElementById('inv-batch-bar');
-  const guests=(STATE.guests||[]).filter(g=>(g.email||'').trim());
+  // Skip anyone whose address has already bounced or been marked as spam (synced in by
+  // _loadOnlineRsvps' email_issues merge) — resending to a known-bad address is what
+  // actually drags the whole sending domain's deliverability down for everyone else.
+  const allWithEmail=(STATE.guests||[]).filter(g=>(g.email||'').trim());
+  const guests=allWithEmail.filter(g=>!g.emailIssue);
+  const skipped=allWithEmail.length-guests.length;
   const total=guests.length; let sent=0; let failed=0;
   const asset=_ssInviteAsset();
   const kind='invite';
@@ -202,7 +216,7 @@ async function _invBatchSend(){
     const payload={ to:[(g.email||'').trim()], subject:'You\'re invited'+(names?' — '+names:''), body:msg,
       fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:'You\'re invited',
       replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
-      templateId:ed.templateId||'classic',
+      templateId:ed.templateId||'classic', guestId:g.id,
       designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
         headerImage:ed.headerImage&&_sbSession&&_sbSession.user?_SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+_sbSession.user.id+'/'+ed.headerImage:'' } };
     if(asset.file && asset.publicUrl) payload.attachment={ filename:asset.file.name||'invitation', path:asset.publicUrl };
@@ -221,7 +235,7 @@ async function _invBatchSend(){
     if(bar) bar.style.width=((sent+failed)/total*100)+'%';
   }
   _closeConfirm2Direct();
-  const note=sent+' invitation'+(sent===1?'':'s')+' sent by email.'+(failed?' '+failed+' failed.':'');
+  const note=sent+' invitation'+(sent===1?'':'s')+' sent by email.'+(failed?' '+failed+' failed.':'')+(skipped?' '+skipped+' skipped — email bounced previously.':'');
   if(typeof _showInfoToast==='function') _showInfoToast(note,null,null);
   if(typeof rsvpRerenderList==='function') rsvpRerenderList();
 }
