@@ -27,7 +27,7 @@ const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have y
 const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on {date}.\nPlease submit your RSVP via the link below by {rsvp_by} so we know whether to account for you or not: {link}\n\nThank you, we hope you can make it!";
 // Email reminder default — like Invite, the RSVP link/closing are mechanical (see
 // _ssMessage/_ssBuildPayload) so the email-direct send can show a "click here" CTA.
-const _DEFAULT_REMINDER_EMAIL_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding on {date}.\n\nWe hope you can make it!";
+const _DEFAULT_REMINDER_EMAIL_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on **{date}**.";
 // Save the date / Invite / Reminder are each editable separately per channel — Email
 // (sent via UnionVault, branded HTML) and SMS (covers every other channel: Text, WhatsApp,
 // Messenger, Instagram, Call notes, copy, and the mailto fallback when not signed in).
@@ -2389,12 +2389,14 @@ function _ssBuildPayload(s, msg){
     block.closingText='With love.';
     payload.inviteBlock=block;
   } else if(s && s.kind==='reminder'){
-    // Same mechanical CTA as Invite, minus the image/file concept reminders don't have.
+    // Reminder gets a real RSVP button (not Invite's quieter inline "by clicking here"
+    // link) — it's a follow-up nudge, so the call to action should read as one.
     payload.htmlText=s.base;
     payload.inviteBlock={
       rsvpUrl:_rsvpLink(),
       rsvpByText:_commsLongDate((STATE.settings||{}).rsvpBy)||'',
-      closingText:'Thank you!',
+      rsvpButtonLabel:'RSVP now',
+      closingText:'Thank you, we hope you can make it!',
     };
   } else if(s && s.kind==='savedate'){
     // A calendar invite for the wedding date itself — same client-side base64 pattern
