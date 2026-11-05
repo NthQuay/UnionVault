@@ -640,12 +640,12 @@ function renderDashboard(c, actions){
     </div>`;
   } else {
     // Style 1 — current (default)
-    heroHtml = `<div class="db-hero" style="position:relative;border-radius:20px;padding:44px 48px;margin-bottom:24px;overflow:hidden">
+    heroHtml = `<div class="db-hero db-hero-s1" style="position:relative;border-radius:20px;padding:44px 48px;margin-bottom:24px;overflow:hidden">
       ${heroSwitcher}
-      <div style="position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;border:1px solid var(--border);pointer-events:none;opacity:.6"></div>
-      <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;border:1px solid var(--border);pointer-events:none;opacity:.4"></div>
-      <div style="position:absolute;bottom:-80px;left:-40px;width:200px;height:200px;border-radius:50%;border:1px solid var(--border);pointer-events:none;opacity:.3"></div>
-      <div style="position:absolute;right:48px;top:50%;transform:translateY(-50%);opacity:.04;font-family:Cormorant Garamond,serif;font-size:120px;font-weight:600;color:var(--ink);line-height:1;pointer-events:none;user-select:none">${_mono}</div>
+      <div class="db-hero-deco" style="position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;border:1px solid var(--border);pointer-events:none;opacity:.6"></div>
+      <div class="db-hero-deco" style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;border:1px solid var(--border);pointer-events:none;opacity:.4"></div>
+      <div class="db-hero-deco" style="position:absolute;bottom:-80px;left:-40px;width:200px;height:200px;border-radius:50%;border:1px solid var(--border);pointer-events:none;opacity:.3"></div>
+      <div class="db-hero-deco" style="position:absolute;right:48px;top:50%;transform:translateY(-50%);opacity:.04;font-family:Cormorant Garamond,serif;font-size:120px;font-weight:600;color:var(--ink);line-height:1;pointer-events:none;user-select:none">${_mono}</div>
       <div style="position:relative">
         <div style="font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">The Wedding of</div>
         <div style="font-family:Cormorant Garamond,serif;font-size:clamp(26px,4vw,44px);font-weight:300;color:var(--ink);line-height:1.1;margin-bottom:6px">${p1} <span style="font-style:italic;color:var(--gold-deep)">&amp;</span> ${p2}</div>
