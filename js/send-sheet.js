@@ -2529,7 +2529,7 @@ function _openEmailDesignModal(itemKey){
   };
   const presetHtml=_COMMS_COLOR_PRESETS.map(c=>{
     const sel=c.toLowerCase()===accent.toLowerCase();
-    return `<button type="button" onclick="_emailDesignSet('accentColor','${c}'${arg})" title="${c}" aria-label="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};border:none;box-shadow:0 0 0 2px ${sel?'var(--ink)':'transparent'},0 0 0 1px var(--border);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">${sel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</button>`;
+    return `<button type="button" onclick="_emailDesignSet('accentColor','${c}'${arg})" title="${c}" aria-label="${c}" style="flex:0 1 26px;width:26px;min-width:0;height:auto;aspect-ratio:1;border-radius:50%;background:${c};border:none;box-shadow:0 0 0 2px ${sel?'var(--ink)':'transparent'},0 0 0 1px var(--border);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0">${sel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</button>`;
   }).join('');
   const body=`<div style="display:flex;flex-direction:column;gap:18px">
     ${banner}
@@ -2543,7 +2543,7 @@ function _openEmailDesignModal(itemKey){
     </div>`:''}
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:8px">Accent colour</div>
-      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px">${presetHtml}</div>
+      <div style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:12px">${presetHtml}</div>
       <div style="display:flex;align-items:center;gap:10px">
         <label style="position:relative;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);cursor:pointer;overflow:hidden;background:${accent};flex-shrink:0" title="Custom colour">
           <input type="color" id="email-accent-native" value="${accent}" onchange="_emailDesignSet('accentColor',this.value${arg})" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;margin:0"/>
@@ -2553,7 +2553,7 @@ function _openEmailDesignModal(itemKey){
       </div>
     </div>
     <div>
-      <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Font style</div>
+      <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Header font style</div>
       <span class="inv-seg" style="display:inline-flex">
         <button type="button" class="${ff==='serif'?'active':''}" onclick="_emailDesignSet('fontFamily','serif'${arg})" style="font-family:Georgia,serif">Serif</button>
         <button type="button" class="${ff==='sans-serif'?'active':''}" onclick="_emailDesignSet('fontFamily','sans-serif'${arg})">Sans-serif</button>
