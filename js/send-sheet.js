@@ -2497,12 +2497,33 @@ async function _ssPreviewEmail(){
       body:JSON.stringify(payload) });
     const data=await r.json();
     if(!data.ok||!data.html){ if(typeof _showInfoToast==='function') _showInfoToast('Preview unavailable.',null,null); return; }
-    const w=Math.min(600,window.innerWidth-40);
-    openConfirm2('Email preview',
-      `<div style="display:flex;justify-content:center"><iframe srcdoc="${_escHtml(data.html)}" sandbox="allow-same-origin" style="width:${w}px;height:480px;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe></div>`,
-      `<button class="btn btn-outline btn-sm" onclick="_closeConfirm2Direct()">Close</button>`);
+    if(typeof _dismissUndoToast==='function') _dismissUndoToast();
+    _ssShowPreview(data.html);
   }catch(_){ if(typeof _showInfoToast==='function') _showInfoToast('Preview failed — check your connection.',null,null); }
 }
+
+// The preview gets its own layer above everything else. The send sheet lives in the
+// confirm2 popup, so showing the preview there replaced the sheet and Close shut both;
+// this overlay sits on top and closing it leaves whatever is underneath untouched.
+function _ssShowPreview(html){
+  _ssClosePreview();
+  const w=Math.min(600,window.innerWidth-40);
+  const ov=document.createElement('div');
+  ov.id='ss-preview-overlay'; ov.className='modal-overlay'; ov.style.zIndex='1400';
+  ov.innerHTML=`<div class="modal modal-fit" style="max-width:${w+48}px" onclick="event.stopPropagation()">
+    <div class="modal-header"><div class="modal-title">Email preview</div><button class="modal-close" aria-label="Close preview" onclick="_ssClosePreview()">×</button></div>
+    <div class="modal-body"><div style="display:flex;justify-content:center"><iframe srcdoc="${_escHtml(html)}" sandbox="allow-same-origin" style="width:${w}px;height:480px;max-height:62vh;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe></div></div>
+    <div class="modal-footer"><button class="btn btn-outline btn-sm" onclick="_ssClosePreview()">Back</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  document.addEventListener('keydown',_ssPreviewKey,true);
+}
+function _ssClosePreview(){
+  const ov=document.getElementById('ss-preview-overlay'); if(ov) ov.remove();
+  document.removeEventListener('keydown',_ssPreviewKey,true);
+}
+// Escape closes just the preview, before any other Escape handler sees it.
+function _ssPreviewKey(e){ if(e.key==='Escape'){ e.stopImmediatePropagation(); e.preventDefault(); _ssClosePreview(); } }
 
 // ── Email design modal ───────────────────────────────────────────────────
 // A handful of elegant, wedding-appropriate presets, click-to-apply — plus a custom
