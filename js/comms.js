@@ -222,7 +222,7 @@ function _commsEmailPreviewPayload(item){
   const titleMap={savedate:'Save the date', invite:'You\'re invited', reminder:'RSVP reminder'};
   const title=titleMap[item.tplKind];
   const payload={ preview:true, subject:title+(names?' — '+names:''), fromName:names||'UnionVault',
-    kicker:names?names+'\'s wedding':'', title, templateId:ed.templateId||'classic', designOpts };
+    kicker:names?names+'\'s wedding':'', title, templateId:_emailTplId(ed.templateId), designOpts };
   if(item.tplKind==='savedate'){
     payload.body=_commsBaseText('savedate','email', true);
   } else {
@@ -293,7 +293,7 @@ function _commsFixedPreviewPayload(key){
   const edFull={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false, headerImage:designOpts.headerImage };
   return {endpoint:'send-vendor-brief-email', payload:{ preview:true, fromName:names||'',
     intro_override:t.intro||null, button_label_override:t.buttonLabel||null, closing_override:t.closing||null,
-    templateId:ed.templateId||'classic', designOpts:edFull }};
+    templateId:_emailTplId(ed.templateId), designOpts:edFull }};
 }
 async function _commsLoadPreview(){
   const item=_commsItem(_commsSel); if(!item) return;

@@ -2381,7 +2381,7 @@ function _ssBuildPayload(s, msg){
   const payload={ to:s&&s.to?[s.to]:[], subject:_ssTitle+(names?' — '+names:''), body:msg,
     fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:_ssTitle,
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
-    templateId:ed.templateId||'classic',
+    templateId:_emailTplId(ed.templateId),
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
       headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
   if(s&&s.attach && s.asset && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
@@ -2486,12 +2486,15 @@ function _emailHeaderUrl(hid, uid){
   if(hid==='none') return 'none';
   return hid&&uid ? _SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+uid+'/'+hid : '';
 }
+// Email templates on offer: Classic and Modern. Botanical was retired — anyone who had it
+// picked (app-wide or per email) now gets Classic.
+function _emailTplId(id){ return id==='modern'?'modern':'classic'; }
 function _emailLogoLocked(){ return !!(typeof _sbSession!=='undefined'&&_sbSession) && typeof _uvIsPaid==='function' && !_uvIsPaid(); }
 function _openEmailDesignModal(itemKey){
   const universal=(STATE.settings&&STATE.settings.emailDesign)||{};
   const override=itemKey&&STATE.settings&&STATE.settings.commsDesign&&STATE.settings.commsDesign[itemKey];
   const src=override||universal;
-  const tplId=src.templateId||'classic';
+  const tplId=_emailTplId(src.templateId);
   const accent=src.accentColor||'#8a6a2c';
   const ff=src.fontFamily||'serif';
   const logoLocked=_emailLogoLocked();
@@ -2538,7 +2541,6 @@ function _openEmailDesignModal(itemKey){
       <div id="email-tpl-picker" style="display:flex;gap:10px;flex-wrap:wrap">
         ${tplThumb('classic','Classic','Cream card, warm tones','#F4EEE4','#FBF8F3',false)}
         ${tplThumb('modern','Modern','Clean white, accent border','#F5F5F5','#FFFFFF',true)}
-        ${tplThumb('botanical','Botanical','Sage green, natural feel','#E8EDE6','#FFFFFF',false)}
       </div>
     </div>`:''}
     <div>
