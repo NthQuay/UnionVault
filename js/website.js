@@ -6272,7 +6272,7 @@ function _wwTrackerHtml(ww, total, count, thanksDue){
       <select onchange="setWwSort(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--ink);cursor:pointer;outline:none">
         ${_sortOpts.map(([v,l])=>`<option value="${v}"${wwSort===v?' selected':''}>${l}</option>`).join('')}
       </select>
-      <div class="ww-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="ww-search" type="search" placeholder="Search name or address" aria-label="Search contributions" value="${_wwEsc(wwSearch||'')}" oninput="setWwSearch(this.value)" autocomplete="off"/></div>
+      <div class="ww-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="ww-search" type="search" placeholder="Search" aria-label="Search name or address" value="${_wwEsc(wwSearch||'')}" oninput="setWwSearch(this.value)" autocomplete="off"/></div>
       ${colToggle}
     </div>` : '';
   let listHtml;
