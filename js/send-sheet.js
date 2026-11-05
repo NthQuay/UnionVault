@@ -21,7 +21,10 @@ const _DEFAULT_SAVEDATE_EMAIL_TPL="## We're getting married - so save the date!\
 // here" link + embedded invitation image instead of a plain pasted URL. Plain-text
 // channels (SMS/WhatsApp/mailto/etc.) still end up with the same wording as before.
 // Shared by both channels — the bold around {date} simply strips back to plain for SMS.
-const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on **{date}**.";
+// Invite email default: the WHOLE body is editable text — the invitation image, the RSVP
+// line + button, the website line + button and the sign-off are all placed blocks/paragraphs
+// the couple can reword, move or delete ({invitation_image}, {rsvp_button}, {website_button}).
+const _DEFAULT_INVITE_TPL="Dear {guest},\n\n{names} would be delighted to have you at their wedding on **{date}**.\n\n{invitation_image}\n\n-# Click on the invitation to open it in a new page.\n\nKindly RSVP by {rsvp_by} by clicking the button below.\n\n{rsvp_button}\n\nFor all the wedding details, check out our wedding website.\n\n{website_button}\n\nWith love.";
 // SMS/plain-text invite default — its own wording (Email keeps the one above). The RSVP
 // line, wedding-website line (only when the site is published) and "With love." are
 // appended mechanically by _ssMessage()/_commsCtaLines(), not part of this text.
@@ -31,7 +34,7 @@ const _DEFAULT_INVITE_SMS_TPL="Dear {guest},\n\n{names} are getting married and 
 const _DEFAULT_REMINDER_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on {date}.\nPlease submit your RSVP via the link below by {rsvp_by} so we can ensure you're catered for. If you cannot make it, please still submit your RSVP to let us know: {link}\n\nThank you, we hope you can make it!";
 // Email reminder default — like Invite, the RSVP link/closing are mechanical (see
 // _ssMessage/_ssBuildPayload) so the email-direct send can show a "click here" CTA.
-const _DEFAULT_REMINDER_EMAIL_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on **{date}**.";
+const _DEFAULT_REMINDER_EMAIL_TPL="Hi {guest},\n\nA gentle reminder to RSVP for {names}'s wedding taking place on **{date}**.\n\nPlease submit your RSVP by {rsvp_by} so we can ensure you're catered for. If you cannot make it, please still submit your RSVP to let us know.\n\n{rsvp_button}\n\nThank you, we hope you can make it!";
 // Save the date / Invite / Reminder are each editable separately per channel — Email
 // (sent via UnionVault, branded HTML) and SMS (covers every other channel: Text, WhatsApp,
 // Messenger, Instagram, Call notes, copy, and the mailto fallback when not signed in).
@@ -61,6 +64,54 @@ function _inviteTpl(kind, channel){
   const legacy=s.inviteTemplate;
   if(legacy!=null && !/\{rsvp_by\}|\{link\}/.test(legacy)) return legacy;
   return _DEFAULT_INVITE_SMS_TPL;
+}
+// Full-body mode (Invite / Reminder email): everything in the email is the couple's own text
+// and placed blocks, with no automatic image/RSVP/closing added after it. On when there is no
+// saved override (the new defaults are full) or when the saved text was written in the new
+// editor (it sets commsFullBody on Save). Older saved texts stay as they were until re-saved.
+function _tplFullBody(kind){
+  if(kind!=='invite' && kind!=='reminder') return false;
+  const s=STATE.settings||{};
+  const key=kind==='reminder'?'reminderTemplateEmail':'inviteTemplateEmail';
+  if(s[key]==null) return true;
+  return !!(s.commsFullBody && s.commsFullBody[kind]);
+}
+// What the email actually contains today for an older saved text, written out as editable text
+// + blocks — shown in the editor so nothing the couple was sending is hidden from them.
+function _tplExpandLegacy(kind, tpl){
+  let t=String(tpl||'').replace(/\s+$/,'');
+  const hasRsvp=_tplHasBtn(t,'rsvp'), hasWeb=_tplHasBtn(t,'website');
+  const w=typeof _wbSite==='function'&&_wbSite();
+  const siteLive=!!(w && w.published && w.slug);
+  const add=[];
+  if(kind==='invite'){
+    add.push('{invitation_image}','-# Click on the invitation to open it in a new page.');
+    if(!hasRsvp) add.push('Kindly RSVP by {rsvp_by} by clicking the button below.','{rsvp_button}');
+    if(!hasWeb && siteLive) add.push('For all the wedding details, check out our wedding website.','{website_button}');
+    add.push('With love.');
+  } else {
+    if(!hasRsvp) add.push("Please submit your RSVP by {rsvp_by} so we can ensure you're catered for. If you cannot make it, please still submit your RSVP to let us know.",'{rsvp_button}');
+    add.push('Thank you, we hope you can make it!');
+  }
+  return t+(add.length?'\n\n'+add.join('\n\n'):'');
+}
+// Placed blocks with nothing to show (no invitation file yet / website not published) are
+// dropped along with the sentence that introduces them, so a guest never sees a dangling line.
+function _tplCleanFull(text, hasImg, hasWeb){
+  const paras=String(text||'').split(/\n{2,}/), out=[];
+  for(let i=0;i<paras.length;i++){
+    const t=paras[i].trim();
+    if(t==='{invitation_image}' && !hasImg){
+      if(paras[i+1] && /^(~[cr]\s+)?(-#\s+)?Click on the invitation/i.test(paras[i+1].trim())) i++;
+      continue;
+    }
+    if(t==='{website_button}' && !hasWeb){
+      if(out.length && /website/i.test(out[out.length-1])) out.pop();
+      continue;
+    }
+    out.push(paras[i]);
+  }
+  return out.join('\n\n');
 }
 // ── Lightweight formatting markup, shared by every editable template/field ─────────────
 // **bold** *italic* __underline__ — kept intentionally small (no nesting, no lists/links
@@ -142,6 +193,7 @@ function _tplHasBtn(text, kind){ return new RegExp('(^|\\n)\\s*\\{'+kind+'_butto
 function _ctaPlain(text){
   const L=_ctaLinks();
   return String(text||'')
+    .replace(/(^|\n)[ \t]*\{invitation_image\}[ \t]*(?=\n|$)/g, (m,a)=>{ let u=''; try{ u=_ssInviteAsset().viewUrl||''; }catch(_){} return a+(u?'View your invitation: '+u:''); })
     .replace(/(^|\n)[ \t]*\{rsvp_button\}[ \t]*(?=\n|$)/g, (m,a)=>a+'RSVP here: '+L.rsvp)
     .replace(/(^|\n)[ \t]*\{website_button\}[ \t]*(?=\n|$)/g, (m,a)=>a+(L.website?'Our wedding website: '+L.website:''))
     .replace(/\n{3,}/g,'\n\n').replace(/\s+$/,'');
@@ -472,9 +524,15 @@ function _ssMode(){
   if(_ss.asset.file && _ssIsPhone() && _ssCanShareFiles()) return 'share';
   return 'link';
 }
+// Email sent by UnionVault for Invite / Reminder, written in the new fully-editable form.
+function _ssIsFull(s){ return !!(s && s.signedIn && s.method==='email' && (s.kind==='invite'||s.kind==='reminder') && _tplFullBody(s.kind)); }
 function _ssMessage(){
   const s=_ss;
   let msg=s.base;
+  if(_ssIsFull(s)){
+    let u=''; try{ u=(s.kind==='invite'&&_ssInviteAsset().viewUrl)||''; }catch(_){}
+    return _ctaPlain(_tplCleanFull(msg, !!u, !!_ctaLinks().website));
+  }
   const extra=[];
   const ownRsvp=_tplHasBtn(s.base,'rsvp')||/\{link\}/.test(s.base), ownWeb=_tplHasBtn(s.base,'website');
   if(s.kind==='invite'){
@@ -2438,7 +2496,21 @@ function _ssBuildPayload(s, msg){
   // markup — see inviteBlockHtml() in send-guest-email/index.ts. `s.base` is the filled
   // template with the mechanical RSVP/sign-off already stripped out (see
   // _DEFAULT_INVITE_TPL), so it's just the couple's own greeting + message.
-  if(s && s.kind==='invite'){
+  if(_ssIsFull(s)){
+    // Fully editable body: the text IS the email. Only the invitation image data goes along,
+    // for wherever {invitation_image} was placed; nothing is appended after the text.
+    const f=s.asset&&s.asset.file;
+    const isImg=f&&(/^image\//.test(f.type||'')||/\.(png|jpe?g|gif|webp)$/i.test(f.name||''));
+    const block={};
+    if(s.kind==='invite' && s.asset){
+      if(isImg && s.asset.publicUrl){ block.imageSrc=s.asset.publicUrl; block.imageHref=s.asset.viewUrl||s.asset.publicUrl; }
+      else if(s.asset.viewUrl){ block.fallbackLinkLabel='View your invitation'; block.fallbackLinkUrl=s.asset.viewUrl; }
+    }
+    const hasImg=!!(block.imageSrc||block.fallbackLinkUrl);
+    payload.htmlText=_tplCleanFull(s.base, hasImg, !!_ctaLinks().website);
+    // Only sent when {invitation_image} is still in the text — delete the block and no image appears.
+    if(hasImg && /\{invitation_image\}/.test(payload.htmlText)) payload.inviteBlock=block;
+  } else if(s && s.kind==='invite'){
     payload.htmlText=s.base;
     const block={};
     const f=s.asset&&s.asset.file;

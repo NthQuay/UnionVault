@@ -211,7 +211,7 @@ function _commsCtaLines(tplKind){
 function _commsBaseText(tplKind, channel, includeCta, tplOverride){
   const raw=tplOverride!=null?tplOverride:_inviteTpl(tplKind, channel);
   let msg=_commsTokenFill(raw);
-  if(includeCta){
+  if(includeCta && !(channel==='email' && (tplKind==='invite'||tplKind==='reminder') && (tplOverride!=null||_tplFullBody(tplKind)))){
     // Same rule as a real send: a button the couple placed replaces the automatic line.
     const ownRsvp=_tplHasBtn(raw,'rsvp')||/\{link\}/.test(raw), ownWeb=_tplHasBtn(raw,'website');
     const extra=_commsCtaLines(tplKind).filter(l=>!(ownRsvp&&/^Kindly RSVP/.test(l))&&!(ownWeb&&/website|^Details:/.test(l)));
@@ -254,6 +254,17 @@ function _commsEmailPreviewPayload(item, tplOverride){
       const w=_ctaLinks().website;
       if(w && !_tplHasBtn(raw,'website')) payload.htmlText=payload.htmlText.replace(/\s+$/,'')+'\n\nDetails: '+w;
     }
+  } else if(tplOverride!=null || _tplFullBody(item.tplKind)){
+    // Fully editable body (a draft in the editor is always the new form): the text is the email.
+    let hasImg=false; const block={};
+    if(item.tplKind==='invite'){
+      const asset=_ssInviteAsset(); const f=asset.file;
+      const isImg=f&&(/^image\//.test(f.type||'')||/\.(png|jpe?g|gif|webp)$/i.test(f.name||''));
+      if(isImg && asset.publicUrl){ block.imageSrc=asset.publicUrl; block.imageHref=asset.viewUrl||asset.publicUrl; hasImg=true; }
+      else if(asset.viewUrl){ block.fallbackLinkLabel='View your invitation'; block.fallbackLinkUrl=asset.viewUrl; hasImg=true; }
+    }
+    payload.htmlText=_tplCleanFull(_commsBaseText(item.tplKind,'email', false, raw), hasImg, !!_ctaLinks().website);
+    if(hasImg && /\{invitation_image\}/.test(payload.htmlText)) payload.inviteBlock=block;
   } else {
     payload.htmlText=_commsBaseText(item.tplKind,'email', false, raw);
     const rsvpBy=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
@@ -472,11 +483,14 @@ function _commsOpenEditModal(key){
   const item=_commsItem(key); if(!item) return;
   _commsEditKey=key;
   if(item.kind==='tpl'){
-    const cur=_inviteTpl(item.tplKind, item.channel);
+    let cur=_inviteTpl(item.tplKind, item.channel);
     const email=item.channel==='email';
+    // Invite / Reminder email: an older saved text is shown with everything that was being added
+    // after it written out, so the whole email is visible and editable. Saving makes it the new form.
+    if(email && (item.tplKind==='invite'||item.tplKind==='reminder') && !_tplFullBody(item.tplKind)) cur=_tplExpandLegacy(item.tplKind, cur);
     const editor=_rteHtml('comms-edit-ta', cur, {
       toks: email?['guest','names','date','rsvp_by']:['guest','names','date','rsvp_by','link','website'],
-      btns: email, intro: email, fmt: email, minH:170 });
+      btns: email, invite: email&&item.tplKind==='invite', intro: email, fmt: email, minH:email?240:170 });
     const body=_commsEditShell(key, editor, email?_COMMS_TIPS_EMAIL:_COMMS_TIPS_SMS);
     openModal(item.title+' · '+(email?'Email':'SMS'), body, _commsEditFooter(`_commsResetTpl('${key}')`, `_commsSaveTpl('${key}')`));
     _rteInitAll();
@@ -489,6 +503,9 @@ function _commsSaveTpl(key){
   if(!document.getElementById('comms-edit-ta')) return;
   if(!STATE.settings) STATE.settings={};
   STATE.settings[_commsTplSettingsKey(item.tplKind, item.channel)]=_rteGet('comms-edit-ta');
+  if(item.channel==='email' && (item.tplKind==='invite'||item.tplKind==='reminder')){
+    STATE.settings.commsFullBody=Object.assign({},STATE.settings.commsFullBody,{[item.tplKind]:true});
+  }
   saveToStorage();
   closeModalDirect();
   _commsRefresh();
@@ -497,6 +514,7 @@ function _commsResetTpl(key){
   const item=_commsItem(key); if(!item) return;
   if(STATE.settings){
     delete STATE.settings[_commsTplSettingsKey(item.tplKind, item.channel)];
+    if(STATE.settings.commsFullBody) delete STATE.settings.commsFullBody[item.tplKind];
     // SMS also falls back to the old pre-channel-split key — clear it too, or Reset
     // would just bring the old saved text back.
     if(item.channel!=='email'){
@@ -614,7 +632,7 @@ function _commsSaveVbrief(){ _commsSaveFixed('vbrief'); }
 // {website_button} on their own line), so nothing downstream changes format.
 const _RTE_TOKENS={guest:'Guest name',names:"Couple's names",date:'Wedding date',rsvp_by:'RSVP-by date',link:'RSVP link',website:'Website link',vendor_name:'Vendor name',amount:'Gift amount'};
 const _RTE_TOKEN_EG={guest:'Olivia & James',names:'',date:'',rsvp_by:'',link:'',website:'',vendor_name:'Bloom Florals',amount:'$100.00'};
-const _RTE_BTNS={rsvp:'RSVP',website:'Visit our website'};
+const _RTE_BTNS={rsvp:'RSVP',website:'Visit our website',invitation:'Invitation image'};
 function _rteTokHtml(k){ return `<span class="rte-tok" contenteditable="false" data-tok="${k}">${_escHtml(_RTE_TOKENS[k]||k)}</span>`; }
 function _rteBtnRowHtml(k){
   return `<p class="rte-btnrow" contenteditable="false"><span class="rte-btn" data-btn="${k}">${_escHtml(_RTE_BTNS[k])}<button type="button" class="rte-btn-x" onclick="_rteRemoveBtn(this)" aria-label="Remove button">×</button></span></p>`;
@@ -624,6 +642,7 @@ function _rteMdToHtml(md){
   const html=paras.map(p=>{
     const bm=p.trim().match(/^\{(rsvp|website)_button\}$/);
     if(bm) return _rteBtnRowHtml(bm[1]);
+    if(/^\{invitation_image\}$/.test(p.trim())) return _rteBtnRowHtml('invitation');
     let cls='', body=p;
     const alm=body.match(/^~([cr])\s+/);
     if(alm){ cls=alm[1]==='c'?'rte-center':'rte-right'; body=body.slice(alm[0].length); }
@@ -669,7 +688,7 @@ function _rteHtmlToMd(root){
   [...root.childNodes].forEach(n=>{
     if(n.nodeType===1 && (n.nodeName==='P'||n.nodeName==='DIV')){
       flush();
-      if(n.classList.contains('rte-btnrow')){ const b=n.querySelector('[data-btn]'); if(b) blocks.push('{'+b.dataset.btn+'_button}'); return; }
+      if(n.classList.contains('rte-btnrow')){ const b=n.querySelector('[data-btn]'); if(b) blocks.push(b.dataset.btn==='invitation'?'{invitation_image}':'{'+b.dataset.btn+'_button}'); return; }
       const txt=[...n.childNodes].map(inline).join('').replace(/^\n+|\n+$/g,'');
       if(!txt.trim()) return;
       blocks.push((n.classList.contains('rte-center')?'~c ':n.classList.contains('rte-right')?'~r ':'')+(n.classList.contains('rte-intro')?'## ':n.classList.contains('rte-large')?'### ':n.classList.contains('rte-small')?'-# ':'')+txt);
@@ -687,7 +706,8 @@ function _rteHtml(id, md, opts){
       ${toks.map(k=>`<button type="button" onmousedown="event.preventDefault()" onclick="_rteInsertTok('${id}','${k}')">${_escHtml(_RTE_TOKENS[k])}<small>${_escHtml(_rteTokExample(k))}</small></button>`).join('')}
       ${opts.btns?`${toks.length?'<div class="rte-menu-sep"></div>':''}
         <button type="button" onmousedown="event.preventDefault()" onclick="_rteInsertBtn('${id}','rsvp')">RSVP button<small>Guests tap to reply</small></button>
-        <button type="button" onmousedown="event.preventDefault()" onclick="_rteInsertBtn('${id}','website')">Website button<small>Your wedding website</small></button>`:''}
+        <button type="button" onmousedown="event.preventDefault()" onclick="_rteInsertBtn('${id}','website')">Website button<small>Your wedding website</small></button>
+        ${opts.invite?`<button type="button" onmousedown="event.preventDefault()" onclick="_rteInsertBtn('${id}','invitation')">Invitation image<small>Your invitation</small></button>`:''}`:''}
     </div>`:'';
   return `<div class="rte" data-rte="${id}">
     <div class="rte-bar" role="toolbar" aria-label="Formatting">
