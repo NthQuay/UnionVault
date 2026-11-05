@@ -3015,3 +3015,12 @@ body.dark .sl-root,body.dark .sl-detail,body.dark .sl-gbox{--sl-ok:#8FBF7F;--sl-
   #comms-detail{padding:16px 12px!important;min-width:0!important}
   #comms-preview-box{margin-left:-6px;margin-right:-6px}
 }
+
+/* Email text editor toolbar: stay on one line on phones (labels shrink to icons) */
+@media(max-width:600px){
+  .rte-bar{flex-wrap:nowrap;gap:3px}
+  .rte-bar .rte-tb{height:30px;min-width:28px;padding:0 5px;font-size:12.5px;flex-shrink:0}
+  .rte-bar .rte-algn .rte-tb{min-width:27px;padding:0 4px}
+  .rte-bar .rte-lbl{display:none}
+  .rte-bar .rte-sep{margin:0 1px}
+}
