@@ -14,6 +14,13 @@ const EMAIL_RE = /^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/
 const MAX_TO = 10
 const VALID_TEMPLATES = ['classic', 'modern', 'botanical'] as const
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
+// Email-safe font stacks, keyed by the ids the app stores (fontFamily = header, bodyFont = body).
+const FONT_STACKS: Record<string, string> = {
+  'serif': "Georgia,'Times New Roman',serif",
+  'palatino': "'Palatino Linotype',Palatino,'Book Antiqua',serif",
+  'sans-serif': 'Helvetica,Arial,sans-serif',
+  'trebuchet': "'Trebuchet MS',Verdana,sans-serif",
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
@@ -33,8 +40,8 @@ serve(async (req) => {
 
   let b: { to?: string[]; subject?: string; body?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string;
            attachment?: { filename?: string; path?: string }; ics?: string;
-           templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean;
-           htmlText?: string; guestId?: string;
+           templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; bodyFont?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean;
+           htmlText?: string; guestId?: string; ctaLinks?: { rsvp?: string; website?: string };
            inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; rsvpButtonLabel?: string; rsvpLeadText?: string; websiteUrl?: string; websiteLabel?: string; closingText?: string } }
   try { b = await req.json() } catch { return json(400, { ok: false, error: 'Invalid JSON' }) }
 
@@ -52,8 +59,8 @@ serve(async (req) => {
   // Template + design options (validated server-side, never trust the client)
   const tplId = VALID_TEMPLATES.includes(String(b.templateId || '') as typeof VALID_TEMPLATES[number]) ? String(b.templateId) : 'classic'
   const accentColor = HEX_RE.test(String(b.designOpts?.accentColor || '')) ? String(b.designOpts!.accentColor) : '#8a6a2c'
-  const fontFamilyId = b.designOpts?.fontFamily === 'sans-serif' ? 'sans-serif' : 'serif'
-  const fontFamily = fontFamilyId === 'sans-serif' ? "Helvetica,Arial,sans-serif" : "Georgia,'Times New Roman',serif"
+  const fontFamily = FONT_STACKS[String(b.designOpts?.fontFamily || '')] || FONT_STACKS['serif']
+  const bodyFont = FONT_STACKS[String((b.designOpts as { bodyFont?: string } | undefined)?.bodyFont || '')] || FONT_STACKS['sans-serif']
   const showLogo = b.designOpts?.showLogo !== false
   const headerImageRaw = String(b.designOpts?.headerImage || '')
   const headerImageCustom = headerImageRaw.startsWith(`${SB_URL}/storage/v1/object/public/photos/`) && !headerImageRaw.includes('..') ? headerImageRaw : ''
@@ -113,12 +120,18 @@ serve(async (req) => {
     if (Object.keys(safe).length) inviteBlock = safe
   }
 
+  // RSVP / website buttons the couple placed in the text ({rsvp_button} / {website_button}
+  // on a line of their own) — drawn from these links; https only, like the invite block.
+  const ctaLinks = {
+    rsvp: b.ctaLinks?.rsvp && /^https:\/\//i.test(b.ctaLinks.rsvp) ? String(b.ctaLinks.rsvp) : '',
+    website: b.ctaLinks?.website && /^https:\/\//i.test(b.ctaLinks.website) ? String(b.ctaLinks.website) : '',
+  }
   const html = brandedHtml({
     kicker: String(b.kicker ?? '').slice(0, 120),
     title: String(b.title ?? '').slice(0, 200),
     text: String(b.htmlText || text) || 'Preview of your email template.',
-    showBranding, accentColor, fontFamily, showLogo: showLogo || showBranding, headerImage, templateId: tplId,
-    inviteBlock,
+    showBranding, accentColor, fontFamily, bodyFont, showLogo: showLogo || showBranding, headerImage, templateId: tplId,
+    inviteBlock, ctaLinks,
   })
 
   if (isPreview) return json(200, { ok: true, html })
@@ -192,8 +205,13 @@ function applyInlineMarkup(s: string): string {
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
 }
 
-function buildParas(text: string, color: string): string {
+function buildParas(text: string, color: string, links?: { rsvp?: string; website?: string }): string {
   return String(text ?? '').trim().split(/\n{2,}/).map((p) => {
+    const btn = p.trim().match(/^\{(rsvp|website)_button\}$/)
+    if (btn) {
+      const url = btn[1] === 'rsvp' ? links?.rsvp : links?.website
+      return url ? ctaButtonHtml(url, btn[1] === 'rsvp' ? 'RSVP' : 'Visit our website', color) : ''
+    }
     const isHeading = /^##\s+/.test(p)
     const body = isHeading ? p.replace(/^##\s+/, '') : p
     const html = applyInlineMarkup(linkifyWith(escH(body), color)).replace(/\n/g, '<br>')
@@ -243,6 +261,8 @@ interface TemplateOpts {
   kicker?: string; title?: string; text: string; showBranding?: boolean
   accentColor: string; fontFamily: string; showLogo: boolean; templateId: string
   headerImage: string
+  bodyFont?: string
+  ctaLinks?: { rsvp?: string; website?: string }
   inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; rsvpButtonLabel?: string; rsvpLeadText?: string; websiteUrl?: string; websiteLabel?: string; closingText?: string }
 }
 
@@ -256,7 +276,8 @@ function brandedHtml(opts: TemplateOpts): string {
 // Cream card on beige background, logo header band, serif title, gold accents.
 function classicTemplate(opts: TemplateOpts): string {
   const ac = escH(opts.accentColor)
-  const paras = buildParas(opts.text, ac)
+  const paras = buildParas(opts.text, ac, opts.ctaLinks)
+  const bf = escH(opts.bodyFont || 'Helvetica,Arial,sans-serif')
 
   const headerBand = opts.headerImage
     ? `<tr><td style="padding:0"><img src="${opts.headerImage}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>` : ''
@@ -276,11 +297,11 @@ ${logoFooter}
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <style>@media (prefers-color-scheme: dark){.uv-bg{background:#111114!important}.uv-card{background:#1A1A1F!important;color:#EDE6DA!important}.uv-band{background:#111114!important}.uv-muted{color:#A79E92!important}.uv-kicker{color:#E3C878!important}}</style></head>
-<body class="uv-bg" style="margin:0;padding:24px 12px;background:#EFEAE1;font-family:Helvetica,Arial,sans-serif;color:#2C2222">
+<body class="uv-bg" style="margin:0;padding:24px 12px;background:#EFEAE1;font-family:${bf};color:#2C2222">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FBF8F3;border-radius:12px;overflow:hidden">
 ${headerBand}
-<tr><td style="padding:24px 26px 10px">
+<tr><td style="padding:24px 26px 10px;font-family:${bf}">
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
@@ -294,7 +315,8 @@ ${brandingFooter}
 // Clean white card, left accent border, sans-serif, minimal.
 function modernTemplate(opts: TemplateOpts): string {
   const ac = escH(opts.accentColor)
-  const paras = buildParas(opts.text, ac)
+  const paras = buildParas(opts.text, ac, opts.ctaLinks)
+  const bf = escH(opts.bodyFont || 'Helvetica,Arial,sans-serif')
 
   const headerBand = opts.headerImage
     ? `<tr><td style="padding:0"><img src="${opts.headerImage}" width="560" alt="" style="display:block;width:100%;height:auto;border:0"></td></tr>` : ''
@@ -314,11 +336,11 @@ ${logoFooter}
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <style>@media (prefers-color-scheme: dark){.uv-bg{background:#1A1A1D!important}.uv-card{background:#232328!important;color:#E8E8E8!important;border-color:#3A3A3F!important}.uv-muted{color:#888!important}.uv-kicker{color:${ac}!important}}</style></head>
-<body class="uv-bg" style="margin:0;padding:24px 12px;background:#F5F5F5;font-family:Helvetica,Arial,sans-serif;color:#1A1A1A">
+<body class="uv-bg" style="margin:0;padding:24px 12px;background:#F5F5F5;font-family:${bf};color:#1A1A1A">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FFFFFF;border-radius:8px;overflow:hidden;border-left:4px solid ${ac}">
 ${headerBand}
-<tr><td style="padding:24px 26px 10px">
+<tr><td style="padding:24px 26px 10px;font-family:${bf}">
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:600;letter-spacing:.1em;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:22px;font-weight:600;line-height:1.25;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
@@ -332,7 +354,8 @@ ${brandingFooter}
 // Soft sage tones, serif headings, leaf motif in header band.
 function botanicalTemplate(opts: TemplateOpts): string {
   const ac = escH(opts.accentColor)
-  const paras = buildParas(opts.text, ac)
+  const paras = buildParas(opts.text, ac, opts.ctaLinks)
+  const bf = escH(opts.bodyFont || 'Helvetica,Arial,sans-serif')
 
   const leafSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="24" viewBox="0 0 80 24" fill="none" style="display:block;margin:0 auto 6px"><path d="M40 22C30 18 22 12 20 4c6 2 14 6 20 14C46 10 54 6 60 4c-2 8-10 14-20 18z" fill="${ac}" opacity=".18"/><path d="M40 22V4" stroke="${ac}" stroke-width=".7" opacity=".25"/></svg>`
 
@@ -355,11 +378,11 @@ ${logoFooter}
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <style>@media (prefers-color-scheme: dark){.uv-bg{background:#0F1410!important}.uv-card{background:#1A1F1C!important;color:#DDE5DB!important}.uv-band{background:#151C17!important}.uv-muted{color:#8A9B8E!important}.uv-kicker{color:${ac}!important}}</style></head>
-<body class="uv-bg" style="margin:0;padding:24px 12px;background:#F4F7F2;font-family:Helvetica,Arial,sans-serif;color:#2C332C">
+<body class="uv-bg" style="margin:0;padding:24px 12px;background:#F4F7F2;font-family:${bf};color:#2C332C">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FFFFFF;border-radius:16px;overflow:hidden">
 ${headerBand}
-<tr><td style="padding:24px 26px 10px">
+<tr><td style="padding:24px 26px 10px;font-family:${bf}">
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}

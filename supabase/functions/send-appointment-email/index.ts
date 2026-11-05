@@ -33,7 +33,7 @@ serve(async (req) => {
 
   let body: {
     to: string[]; subject: string; body: string; ics?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string; htmlText?: string; signature?: string[]
-    templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean
+    templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; bodyFont?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean
   }
   try { body = await req.json() } catch {
     return new Response(JSON.stringify({ ok: false, error: 'Invalid JSON' }), {
@@ -89,6 +89,8 @@ serve(async (req) => {
     text: String(htmlText || text || '').slice(0, 10000),
     signature: sigLines,
     accentColor, showBranding, showLogo: showLogo || showBranding, headerImage,
+    headerFont: FONT_STACKS[String(body.designOpts?.fontFamily || '')] || FONT_STACKS['serif'],
+    bodyFont: FONT_STACKS[String(body.designOpts?.bodyFont || '')] || FONT_STACKS['sans-serif'],
   })
 
   if (isPreview) {
@@ -124,6 +126,13 @@ serve(async (req) => {
 // Everything passed in is plain text and is escaped here, so callers can't inject
 // markup. Black logo on cream; email apps that honour prefers-color-scheme swap
 // to the white logo on a dark band.
+// Email-safe font stacks, keyed by the ids the app stores (fontFamily = header, bodyFont = body).
+const FONT_STACKS: Record<string, string> = {
+  'serif': "Georgia,'Times New Roman',serif",
+  'palatino': "'Palatino Linotype',Palatino,'Book Antiqua',serif",
+  'sans-serif': 'Helvetica,Arial,sans-serif',
+  'trebuchet': "'Trebuchet MS',Verdana,sans-serif",
+}
 const LOGO_BASE = 'https://unionvault.app/assets'
 const escH = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 function linkifyWith(escaped: string, color: string): string {
@@ -138,7 +147,7 @@ function applyInlineMarkup(s: string): string {
     .replace(/__(.+?)__/g, '<u>$1</u>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
 }
-function brandedHtml(opts: { kicker?: string; title?: string; text: string; signature?: string[]; accentColor?: string; showBranding?: boolean; showLogo?: boolean; headerImage?: string }): string {
+function brandedHtml(opts: { kicker?: string; title?: string; text: string; signature?: string[]; accentColor?: string; showBranding?: boolean; showLogo?: boolean; headerImage?: string; headerFont?: string; bodyFont?: string }): string {
   const ac = escH(opts.accentColor || '#8a6a2c')
   const showBranding = opts.showBranding !== false
   const showLogo = opts.showLogo !== false
@@ -168,13 +177,13 @@ ${showLogo ? `<tr><td align="center" style="padding:0 26px 10px"><a href="https:
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
 <style>@media (prefers-color-scheme: dark){.uv-bg{background:#111114!important}.uv-card{background:#1A1A1F!important;color:#EDE6DA!important}.uv-band{background:#111114!important}.uv-muted{color:#A79E92!important}.uv-kicker{color:#E3C878!important}.uv-rule{border-top-color:#34343B!important}}</style></head>
-<body class="uv-bg" style="margin:0;padding:24px 12px;background:#EFEAE1;font-family:Helvetica,Arial,sans-serif;color:#2C2222">
+<body class="uv-bg" style="margin:0;padding:24px 12px;background:#EFEAE1;font-family:${escH(opts.bodyFont || "Helvetica,Arial,sans-serif")};color:#2C2222">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FBF8F3;border-radius:12px;overflow:hidden">
 ${headerBand}
-<tr><td style="padding:24px 26px 10px">
+<tr><td style="padding:24px 26px 10px;font-family:${escH(opts.bodyFont || "Helvetica,Arial,sans-serif")}">
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
-${opts.title ? `<div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
+${opts.title ? `<div style="font-family:${escH(opts.headerFont || "Georgia,'Times New Roman',serif")};font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
 ${signatureHtml}
 </td></tr>

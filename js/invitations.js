@@ -216,9 +216,11 @@ async function _invBatchSend(){
     const payload={ to:[(g.email||'').trim()], subject:'You\'re invited'+(names?' — '+names:''), body:msg,
       fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:'You\'re invited',
       replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
-      templateId:ed.templateId||'classic', guestId:g.id,
-      designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
-        headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
+      templateId:_emailTplId(ed.templateId), guestId:g.id,
+      designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
+        headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) },
+      ctaLinks:_ctaLinks() };
+    if(_tplHasBtn(msg,'rsvp')||_tplHasBtn(msg,'website')){ payload.htmlText=msg; payload.body=_ctaPlain(msg); }
     if(asset.file && asset.publicUrl) payload.attachment={ filename:asset.file.name||'invitation', path:asset.publicUrl };
     try{
       const r=await fetch(_SB_URL+'/functions/v1/send-guest-email',{ method:'POST',

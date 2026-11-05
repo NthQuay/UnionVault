@@ -666,8 +666,8 @@ async function _sendVendorBriefEmailNow(btn){
   const payload={ to:ctx.to, vendor_name:ctx.vendorName, brief_url:ctx.briefUrl, expiry_display:ctx.expiryDisplay||null,
     fromName:names||'', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
     intro_override:vbText.intro||null, button_label_override:vbText.buttonLabel||null, closing_override:vbText.closing||null,
-    templateId:ed.templateId||'classic',
-    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
+    templateId:_emailTplId(ed.templateId),
+    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
       headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
   let ok=false;
   try{
@@ -2902,7 +2902,7 @@ async function _apptEmailSendViaEdge(task, a, recipients){
   const ics=btoa(unescape(encodeURIComponent(_apptBuildIcs(task,a))));
   const token=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.access_token)||'';
   const ed=(typeof _commsDesignFor==='function'?_commsDesignFor('appt'):((STATE.settings&&STATE.settings.emailDesign)||{}));
-  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', showLogo:ed.showLogo!==false,
+  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
     headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) };
   const one=async(to)=>{
     try{

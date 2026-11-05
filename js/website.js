@@ -4549,7 +4549,7 @@ function _wbBuildSite(forDownload){
       // Shared Design settings — same object every other UnionVault-sent email reads from.
       const wwEd=(typeof _commsDesignFor==='function'?_commsDesignFor('ww'):((STATE.settings&&STATE.settings.emailDesign)||{}));
       const wwOwnerUid=_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'';
-      const wwDesignOpts={ accentColor:wwEd.accentColor||'#8a6a2c', showLogo:wwEd.showLogo!==false,
+      const wwDesignOpts={ accentColor:wwEd.accentColor||'#8a6a2c', fontFamily:wwEd.fontFamily||'serif', bodyFont:wwEd.bodyFont||'sans-serif', showLogo:wwEd.showLogo!==false,
         headerImage:_emailHeaderUrl(wwEd.headerImage,wwOwnerUid) };
 
       const chips=suggested.length?`<div class="ww-chips" id="ww-chips">${suggested.map(n=>`<button class="ww-chip" data-amt="${n}" onclick="window._wwPick(this)">${fmt(Number(n))}</button>`).join('')}<button class="ww-chip" data-amt="other" onclick="window._wwPick(this)">Other</button></div>`:'';
@@ -4838,7 +4838,7 @@ function _wbBuildSite(forDownload){
     venue:[STATE.event&&STATE.event.venue,STATE.event&&STATE.event.venueAddress].filter(Boolean).join(', '),
     siteUrl:_wbSiteUrl(),
     icsText:_uvIcsText,
-    designOpts:{ accentColor:_uvEd.accentColor||'#8a6a2c', showLogo:_uvEd.showLogo!==false,
+    designOpts:{ accentColor:_uvEd.accentColor||'#8a6a2c', fontFamily:_uvEd.fontFamily||'serif', bodyFont:_uvEd.bodyFont||'sans-serif', showLogo:_uvEd.showLogo!==false,
       headerImage:_emailHeaderUrl(_uvEd.headerImage,_uvOwnerUid) },
     titleOverride:_uvConfirmText.title||'',
     introOverride:_uvConfirmText.intro||'',

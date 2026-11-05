@@ -128,6 +128,24 @@ function _tplGreetingBreak(tpl){
 // `channel`: pass 'sms' to strip ** / * / __ / "## " formatting markup back to plain text
 // (there's no rich text in a text message) — omitted/'email' leaves it in place for the
 // branded HTML send to render as real tags.
+// ── RSVP / website buttons placed inside a template ─────────────────────────────────
+// A paragraph that is exactly {rsvp_button} or {website_button} becomes a real button in
+// the branded email (send-guest-email renders it from ctaLinks) and a plain link anywhere
+// text-only (SMS, the email's text alternative). The website one only exists once the
+// wedding website is published — otherwise it's dropped, so guests never get a dead link.
+function _ctaLinks(){
+  let web='';
+  try{ const w=typeof _wbSite==='function'&&_wbSite(); if(w&&w.published&&w.slug) web=_wbSiteUrl(); }catch(_){}
+  return { rsvp:_rsvpLink(), website:web };
+}
+function _tplHasBtn(text, kind){ return new RegExp('(^|\\n)\\s*\\{'+kind+'_button\\}\\s*(\\n|$)').test(text||''); }
+function _ctaPlain(text){
+  const L=_ctaLinks();
+  return String(text||'')
+    .replace(/(^|\n)[ \t]*\{rsvp_button\}[ \t]*(?=\n|$)/g, (m,a)=>a+'RSVP here: '+L.rsvp)
+    .replace(/(^|\n)[ \t]*\{website_button\}[ \t]*(?=\n|$)/g, (m,a)=>a+(L.website?'Our wedding website: '+L.website:''))
+    .replace(/\n{3,}/g,'\n\n').replace(/\s+$/,'');
+}
 function _fillTemplate(tpl, grp, channel){
   tpl=_tplGreetingBreak(tpl);
   const ev=STATE.event||{};
@@ -141,10 +159,11 @@ function _fillTemplate(tpl, grp, channel){
     '{names}':names,
     '{date}':_commsLongDate(ev.date)|| 'our wedding day',
     '{rsvp_by}':_commsLongDate((STATE.settings||{}).rsvpBy)|| 'your earliest convenience',
-    '{link}':_rsvpLink()
+    '{link}':_rsvpLink(),
+    '{website}':_ctaLinks().website
   };
-  let msg = (tpl||'').replace(/\{guest\}|\{names\}|\{date\}|\{rsvp_by\}|\{link\}/g, m=>map[m]!=null?map[m]:m);
-  if(channel==='sms') msg=_stripMd(msg);
+  let msg = (tpl||'').replace(/\{guest\}|\{names\}|\{date\}|\{rsvp_by\}|\{link\}|\{website\}/g, m=>map[m]!=null?map[m]:m);
+  if(channel==='sms') msg=_ctaPlain(_stripMd(msg));
   if(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()) msg += '\n\nSent via unionvault.app';
   return msg;
 }
@@ -457,22 +476,23 @@ function _ssMessage(){
   const s=_ss;
   let msg=s.base;
   const extra=[];
+  const ownRsvp=_tplHasBtn(s.base,'rsvp')||/\{link\}/.test(s.base), ownWeb=_tplHasBtn(s.base,'website');
   if(s.kind==='invite'){
-    extra.push('Kindly RSVP by '+(_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
+    if(!ownRsvp) extra.push('Kindly RSVP by '+(_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
     // Same gate as the Email invite's "Visit our website" button — never a dead link.
     const w=typeof _wbSite==='function'&&_wbSite();
-    if(w && w.published && w.slug) extra.push('For further wedding details, please check out our wedding website: '+_wbSiteUrl());
+    if(!ownWeb && w && w.published && w.slug) extra.push('For further wedding details, please check out our wedding website: '+_wbSiteUrl());
     extra.push('With love.');
     if(s.asset.viewUrl && s.addLink) extra.push('View your invitation: '+s.asset.viewUrl);
   } else if(s.kind==='savedate'){
-    const w=_wbSite(); if(w && w.published && w.slug) extra.push('Details: '+_wbSiteUrl());
+    const w=_wbSite(); if(!ownWeb && w && w.published && w.slug) extra.push('Details: '+_wbSiteUrl());
   } else if(s.kind==='reminder'){
-    extra.push('Kindly RSVP by '+(_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
+    if(!ownRsvp) extra.push('Kindly RSVP by '+(_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience')+' via '+_rsvpLink()+'.');
     extra.push('Thank you!');
   }
   // Each extra is its own paragraph (blank-line separated), not one run-on block.
   if(extra.length) msg=msg.replace(/\s+$/,'')+'\n\n'+extra.join('\n\n');
-  return msg;
+  return _ctaPlain(msg);
 }
 function _ssToggle(which){ if(!_ss) return; _ss[which]=!_ss[which]; _ssRender(); }
 function _ssPickTo(v){ if(_ss){ _ss.to=v; } }
@@ -2372,6 +2392,14 @@ function confirmDeleteGuest(id){
 }
 
 // ── Email payload builder (shared by _ssGo and _ssPreviewEmail) ──────────
+// If the couple placed an RSVP / website button in the text themselves, the automatic one
+// at the end is left out so guests don't get two.
+function _ctaDropPlaced(block, text){
+  if(!block) return block;
+  if(_tplHasBtn(text,'rsvp')){ delete block.rsvpUrl; delete block.rsvpByText; delete block.rsvpButtonLabel; delete block.rsvpLeadText; }
+  if(_tplHasBtn(text,'website')) delete block.websiteUrl;
+  return block;
+}
 function _ssBuildPayload(s, msg){
   if(!s) s=_ss; if(!msg) msg=_ssMessage();
   const names=_ssCoupleNames();
@@ -2381,9 +2409,16 @@ function _ssBuildPayload(s, msg){
   const payload={ to:s&&s.to?[s.to]:[], subject:_ssTitle+(names?' — '+names:''), body:msg,
     fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:_ssTitle,
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
-    templateId:ed.templateId||'classic',
-    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
-      headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
+    templateId:_emailTplId(ed.templateId),
+    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
+      headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) },
+    ctaLinks:_ctaLinks() };
+  // Buttons placed in the text stay as markers in htmlText for the email to draw.
+  if(s && (_tplHasBtn(s.base,'rsvp')||_tplHasBtn(s.base,'website'))){
+    payload.htmlText=s.base;
+    // Save the date's automatic "Details:" website line still applies unless a website button was placed.
+    if(s.kind==='savedate' && !_tplHasBtn(s.base,'website') && _ctaLinks().website) payload.htmlText=s.base.replace(/\s+$/,'')+'\n\nDetails: '+_ctaLinks().website;
+  }
   if(s&&s.attach && s.asset && s.asset.file && s.asset.publicUrl) payload.attachment={ filename:s.asset.file.name||'invitation', path:s.asset.publicUrl };
   // Lets the edge function tag the Resend send with who it went to, so a bounce/complaint
   // webhook can be attributed back to this guest (see _loadOnlineRsvps' email_issues merge).
@@ -2419,6 +2454,7 @@ function _ssBuildPayload(s, msg){
     const w=_wbSite();
     if(w && w.published && w.slug) block.websiteUrl=_wbSiteUrl();
     block.closingText='With love.';
+    _ctaDropPlaced(block, s.base);
     payload.inviteBlock=block;
   } else if(s && s.kind==='reminder'){
     // Reminder gets a real RSVP button (not Invite's quieter inline "by clicking here"
@@ -2432,6 +2468,7 @@ function _ssBuildPayload(s, msg){
       rsvpLeadText:'Please submit your RSVP by '+rsvpBy+' so we can ensure you\'re catered for. If you cannot make it, please still submit your RSVP to let us know.',
       closingText:'Thank you, we hope you can make it!',
     };
+    _ctaDropPlaced(payload.inviteBlock, s.base);
   } else if(s && s.kind==='savedate'){
     // A calendar invite for the wedding date itself — same client-side base64 pattern
     // _apptEmailSendViaEdge already uses for appointment .ics attachments.
@@ -2486,12 +2523,36 @@ function _emailHeaderUrl(hid, uid){
   if(hid==='none') return 'none';
   return hid&&uid ? _SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+uid+'/'+hid : '';
 }
+// Email templates on offer: Classic and Modern. Botanical was retired — anyone who had it
+// picked (app-wide or per email) now gets Classic.
+function _emailTplId(id){ return id==='modern'?'modern':'classic'; }
+// Email fonts: four email-safe stacks that display reliably in Gmail, Outlook and Apple
+// Mail. Ids are stored in fontFamily (header) / bodyFont; 'serif' and 'sans-serif' are
+// the ids the old Serif / Sans-serif toggle saved, so existing choices carry over.
+const _EMAIL_FONTS=[
+  {id:'serif',     label:'Classic serif', stack:"Georgia,'Times New Roman',serif"},
+  {id:'palatino',  label:'Elegant serif', stack:"'Palatino Linotype',Palatino,'Book Antiqua',serif"},
+  {id:'sans-serif',label:'Clean sans',    stack:"Helvetica,Arial,sans-serif"},
+  {id:'trebuchet', label:'Friendly sans', stack:"'Trebuchet MS',Verdana,sans-serif"},
+];
+function _emailFontPickerHtml(which, cur, itemKey, inEditor){
+  return `<div class="email-fonts" data-which="${which}">${_EMAIL_FONTS.map(f=>`<button type="button" class="email-fontopt" aria-pressed="${f.id===cur}" onclick="_emailFontPick('${which}','${f.id}','${itemKey}',${inEditor?'true':'false'},this)"><span class="aa" style="font-family:${_escAttr(f.stack)}">Aa</span>${f.label}</button>`).join('')}</div>`;
+}
+function _emailFontPick(which, id, itemKey, inEditor, btn){
+  // In the text editor: save to this email's own design without reopening the Design window.
+  _emailDesignSet(which, id, itemKey||undefined, inEditor);
+  if(inEditor && btn){
+    btn.closest('.email-fonts').querySelectorAll('.email-fontopt').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+    const pp=document.getElementById('comms-ed-pane-prev');
+    if(pp && !pp.hidden && typeof _commsEditPreview==='function') _commsEditPreview();
+  }
+}
 function _emailLogoLocked(){ return !!(typeof _sbSession!=='undefined'&&_sbSession) && typeof _uvIsPaid==='function' && !_uvIsPaid(); }
 function _openEmailDesignModal(itemKey){
   const universal=(STATE.settings&&STATE.settings.emailDesign)||{};
   const override=itemKey&&STATE.settings&&STATE.settings.commsDesign&&STATE.settings.commsDesign[itemKey];
   const src=override||universal;
-  const tplId=src.templateId||'classic';
+  const tplId=_emailTplId(src.templateId);
   const accent=src.accentColor||'#8a6a2c';
   const ff=src.fontFamily||'serif';
   const logoLocked=_emailLogoLocked();
@@ -2529,7 +2590,7 @@ function _openEmailDesignModal(itemKey){
   };
   const presetHtml=_COMMS_COLOR_PRESETS.map(c=>{
     const sel=c.toLowerCase()===accent.toLowerCase();
-    return `<button type="button" onclick="_emailDesignSet('accentColor','${c}'${arg})" title="${c}" aria-label="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};border:none;box-shadow:0 0 0 2px ${sel?'var(--ink)':'transparent'},0 0 0 1px var(--border);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">${sel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</button>`;
+    return `<button type="button" onclick="_emailDesignSet('accentColor','${c}'${arg})" title="${c}" aria-label="${c}" style="flex:0 1 26px;width:26px;min-width:0;height:auto;aspect-ratio:1;border-radius:50%;background:${c};border:none;box-shadow:0 0 0 2px ${sel?'var(--ink)':'transparent'},0 0 0 1px var(--border);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0">${sel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</button>`;
   }).join('');
   const body=`<div style="display:flex;flex-direction:column;gap:18px">
     ${banner}
@@ -2538,12 +2599,11 @@ function _openEmailDesignModal(itemKey){
       <div id="email-tpl-picker" style="display:flex;gap:10px;flex-wrap:wrap">
         ${tplThumb('classic','Classic','Cream card, warm tones','#F4EEE4','#FBF8F3',false)}
         ${tplThumb('modern','Modern','Clean white, accent border','#F5F5F5','#FFFFFF',true)}
-        ${tplThumb('botanical','Botanical','Sage green, natural feel','#E8EDE6','#FFFFFF',false)}
       </div>
     </div>`:''}
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:8px">Accent colour</div>
-      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px">${presetHtml}</div>
+      <div style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:12px">${presetHtml}</div>
       <div style="display:flex;align-items:center;gap:10px">
         <label style="position:relative;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);cursor:pointer;overflow:hidden;background:${accent};flex-shrink:0" title="Custom colour">
           <input type="color" id="email-accent-native" value="${accent}" onchange="_emailDesignSet('accentColor',this.value${arg})" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;margin:0"/>
@@ -2553,11 +2613,12 @@ function _openEmailDesignModal(itemKey){
       </div>
     </div>
     <div>
-      <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Font style</div>
-      <span class="inv-seg" style="display:inline-flex">
-        <button type="button" class="${ff==='serif'?'active':''}" onclick="_emailDesignSet('fontFamily','serif'${arg})" style="font-family:Georgia,serif">Serif</button>
-        <button type="button" class="${ff==='sans-serif'?'active':''}" onclick="_emailDesignSet('fontFamily','sans-serif'${arg})">Sans-serif</button>
-      </span>
+      <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Header font</div>
+      ${_emailFontPickerHtml('fontFamily', ff, itemKey||'', false)}
+    </div>
+    <div>
+      <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Body font</div>
+      ${_emailFontPickerHtml('bodyFont', src.bodyFont||'sans-serif', itemKey||'', false)}
     </div>
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Header image</div>
@@ -2598,7 +2659,7 @@ function _emailDesignSet(key, val, itemKey, skipRerender){
     if(!STATE.settings.commsDesign) STATE.settings.commsDesign={};
     if(!STATE.settings.commsDesign[itemKey]){
       const u=STATE.settings.emailDesign||{};
-      STATE.settings.commsDesign[itemKey]={ templateId:u.templateId||'classic', accentColor:u.accentColor||'#8a6a2c', fontFamily:u.fontFamily||'serif', showLogo:u.showLogo!==false, headerImage:u.headerImage||'' };
+      STATE.settings.commsDesign[itemKey]={ templateId:u.templateId||'classic', accentColor:u.accentColor||'#8a6a2c', fontFamily:u.fontFamily||'serif', bodyFont:u.bodyFont||'sans-serif', showLogo:u.showLogo!==false, headerImage:u.headerImage||'' };
     }
     STATE.settings.commsDesign[itemKey][key]=val;
   } else {
