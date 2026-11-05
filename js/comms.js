@@ -50,8 +50,25 @@ function _commsSetOrdinal(on){
   _commsRefresh();
 }
 
+// Two tabs: Templates (what each message says) and Sent (what's actually gone out).
+let _commsTab='templates';
+function _commsTabsHtml(){
+  return `<div class="comms-tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="${_commsTab==='templates'}" class="${_commsTab==='templates'?'on':''}" onclick="_commsSetTab('templates')">Templates</button>
+    <button type="button" role="tab" aria-selected="${_commsTab==='sent'}" class="${_commsTab==='sent'?'on':''}" onclick="_commsSetTab('sent')">Sent</button>
+  </div>`;
+}
+function _commsSetTab(t, nav){
+  _commsTab=t==='sent'?'sent':'templates';
+  navigate('comms');
+}
 function renderComms(c, actions){
   actions.innerHTML='';
+  if(_commsTab==='sent'){
+    c.innerHTML=_commsTabsHtml()+_slTabHtml();
+    _slRefresh(true);
+    return;
+  }
   if(!_commsItem(_commsSel)) _commsSel=_COMMS_ITEMS[0].key;
   const designBtnHtml=`<button type="button" onclick="_openEmailDesignModal()" style="display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-family:inherit;margin-top:2px">
         <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
@@ -75,7 +92,7 @@ function renderComms(c, actions){
       ${sec.name==='Email'?`<div style="margin-top:6px" onclick="_commsMnavClose()">${designBtnHtml}</div>`:''}
     </div>`).join('');
   const ordinalOn=_commsOrdinalOn();
-  c.innerHTML=`<div style="margin-bottom:10px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:760px">Every message UnionVault can send to a guest or vendor, in one place. RSVP alerts and gift notifications aren't here — those come to you, not your guests.</div>
+  c.innerHTML=_commsTabsHtml()+`<div style="margin-bottom:10px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:760px">Every message UnionVault can send to a guest or vendor, in one place. RSVP alerts and gift notifications aren't here — those come to you, not your guests.</div>
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;font-size:12px;color:var(--ink)">
     <input type="checkbox" ${ordinalOn?'checked':''} onchange="_commsSetOrdinal(this.checked)" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
     Use ordinal dates (4th, 21st, 22nd…) instead of plain numbers (4, 21, 22…)

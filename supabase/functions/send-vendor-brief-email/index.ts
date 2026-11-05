@@ -120,6 +120,11 @@ serve(async (req) => {
     console.error('Resend error:', r.status, await r.text())
     return json(502, { ok: false, error: 'Send failed' })
   }
+  const sent = await r.json().catch(() => ({})) as { id?: string }
+  await logSent(SB_URL, SB_SERVICE, [{
+    couple_id: user.id, kind: 'vendor', subject, to_email: toEmail, to_name: vendorName,
+    from_name: name, resend_id: sent.id || null, html,
+  }])
   return json(200, { ok: true })
 })
 
@@ -290,4 +295,19 @@ ${afterParas}
 </td></tr>
 ${brandingFooter}
 </table></td></tr></table></body></html>`
+}
+
+// ── Sent-emails log ──────────────────────────────────────────────────────────
+// One row per recipient in email_log (Communications → Sent). Best effort: a failed
+// write is logged and never fails the send itself.
+async function logSent(sbUrl: string, sbService: string, rows: Record<string, unknown>[]): Promise<void> {
+  if (!sbUrl || !sbService || !rows.length) return
+  try {
+    const r = await fetch(`${sbUrl}/rest/v1/email_log`, {
+      method: 'POST',
+      headers: { apikey: sbService, Authorization: `Bearer ${sbService}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(rows),
+    })
+    if (!r.ok) console.error('email_log insert failed', r.status, await r.text())
+  } catch (e) { console.error('email_log insert failed', e) }
 }

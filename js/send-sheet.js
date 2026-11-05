@@ -545,7 +545,10 @@ function _ssRender(open){
     ${toHtml}
     ${attachHtml}
     <div style="${lab}">Message</div>
-    <div id="ss-msg" style="border:.5px solid var(--border);border-radius:11px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--ink);background:var(--surface);white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto">${esc(msg)}</div>
+    ${mode==='email-direct'&&typeof _rteMdToHtml==='function'
+      // Email: shown styled (intro line, bold, italic) the way the guest will read it, not as ** and ## marks.
+      ?`<div id="ss-msg" class="ss-msg-styled">${_rteMdToHtml(msg)}</div>`
+      :`<div id="ss-msg" style="border:.5px solid var(--border);border-radius:11px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--ink);background:var(--surface);white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto">${esc(msg)}</div>`}
     ${mode==='share'?`<div style="font-size:11.5px;color:var(--muted);line-height:1.5">Your phone's share menu opens with the invitation attached and the message ready — choose ${esc(_ssMethodLabel(s.method))}, then the guest's chat.</div>`:''}
     ${mode==='email-direct'?`<div style="display:flex;align-items:center;gap:10px;margin-top:2px"><div style="font-size:11.5px;color:var(--muted);flex:1">Sent from invites@unionvault.app as "${esc(_ssCoupleNames()||'UnionVault')}" — replies come to you.</div><button type="button" class="btn btn-outline btn-sm" onclick="_ssPreviewEmail()" style="flex-shrink:0;font-size:11px">Preview email</button></div>`:''}
   </div>`;
@@ -2018,6 +2021,7 @@ function openEditGuest(id){
         ${(STATE.settings&&STATE.settings.rsvpBy)?`<div style="font-size:11px;color:var(--muted);margin-top:5px">Global date: ${_fmtRsvpDate((STATE.settings||{}).rsvpBy)} — leave blank to use this.</div>`:'<div style="font-size:11px;color:var(--muted);margin-top:5px">No global RSVP date set. You can set one in Settings → Templates.</div>'}
       `)}
     </div>
+    ${typeof _slGuestBoxHtml==='function'?_slGuestBoxHtml(g):''}
   </div>`,
   `<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px">
      <button class="btn btn-danger-ghost" onclick="deleteGuest('${id}')" style="display:inline-flex;align-items:center;gap:6px">
@@ -2028,6 +2032,7 @@ function openEditGuest(id){
        <button class="btn btn-primary" onclick="saveEditGuest('${id}')">Save</button>
      </div>
    </div>`);
+  if(typeof _slGuestBoxFill==='function') _slGuestBoxFill();
 }
 function saveEditGuest(id, quiet){
   const g=STATE.guests.find(x=>x.id===id);
@@ -2424,6 +2429,9 @@ function _ssBuildPayload(s, msg){
   // webhook can be attributed back to this guest (see _loadOnlineRsvps' email_issues merge).
   const _toGuest=s&&s.grp&&s.grp.members&&s.to?s.grp.members.find(g=>(g.email||'').trim()===s.to):null;
   if(_toGuest&&_toGuest.id) payload.guestId=_toGuest.id;
+  // For Communications → Sent: what this email is and who it went to.
+  payload.logKind=(s&&s.kind)||'savedate';
+  if(_toGuest&&_toGuest.name) payload.toNames=[_toGuest.name];
   // Invite email (sent via UnionVault): the greeting+intro renders as normal paragraphs
   // (htmlText), then the edge function splices in an embedded invitation image (or a
   // plain link for a PDF/non-image file) and a "click here" RSVP line as structured

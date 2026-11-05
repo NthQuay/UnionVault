@@ -2911,13 +2911,19 @@ async function _apptEmailSendViaEdge(task, a, recipients){
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||_SB_KEY),'apikey':_SB_KEY},
         body:JSON.stringify({to:[to],subject:m.subject,body:m.body,ics,kicker:m.kicker,title:m.title,htmlText:m.htmlText,signature:m.signature,
           fromName:_apptCoupleNames()||'', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
-          designOpts})
+          designOpts, toNames:[_apptNameForEmail(to)]})
       });
       return r.ok && (await r.json()).ok===true;
     }catch(_){ return false; }
   };
   const res=await Promise.all(recipients.map(one));
   return recipients.filter((_,i)=>!res[i]);
+}
+// Name to show for an address in Communications → Sent: a guest's or vendor's name, else blank.
+function _apptNameForEmail(em){
+  const e=String(em||'').trim().toLowerCase(); if(!e) return '';
+  const g=(STATE.guests||[]).find(x=>(x.email||'').trim().toLowerCase()===e); if(g) return g.name||'';
+  const v=(STATE.vendors||[]).find(x=>(x.email||'').trim().toLowerCase()===e); return v?(v.business||v.contact||''):'';
 }
 function _apptEmailSend(){
   const inp=document.getElementById('ci-cem-input'); if(inp){ const v=(inp.value||'').trim(); if(v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && !_apptEmailRecips.includes(v)) _apptEmailRecips.push(v); }

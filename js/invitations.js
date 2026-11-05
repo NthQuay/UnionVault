@@ -216,7 +216,7 @@ async function _invBatchSend(){
     const payload={ to:[(g.email||'').trim()], subject:'You\'re invited'+(names?' — '+names:''), body:msg,
       fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:'You\'re invited',
       replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
-      templateId:_emailTplId(ed.templateId), guestId:g.id,
+      templateId:_emailTplId(ed.templateId), guestId:g.id, logKind:'invite', toNames:[g.name||''],
       designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
         headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) },
       ctaLinks:_ctaLinks() };

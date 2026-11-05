@@ -250,6 +250,13 @@ Deno.serve(async (req: Request) => {
     });
 
     const emailData = await emailRes.json();
+    if (emailRes.ok && couple_id) {
+      await logSent(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", [{
+        couple_id, kind: "confirm", automatic: true, subject, to_email: toEmail,
+        to_name: joinN(memberList.map((m) => String(m.name || ""))).slice(0, 120) || null,
+        from_name: "UnionVault", resend_id: emailData?.id || null, html,
+      }]);
+    }
     return new Response(JSON.stringify(emailData), {
       status: emailRes.status,
       headers: { ...cors, "Content-Type": "application/json" },
@@ -333,4 +340,19 @@ ${paras}
 </td></tr>
 ${brandingFooter}
 </table></td></tr></table></body></html>`;
+}
+
+// ── Sent-emails log ──────────────────────────────────────────────────────────
+// One row per recipient in email_log (Communications → Sent). Best effort: a failed
+// write is logged and never fails the send itself.
+async function logSent(sbUrl: string, sbService: string, rows: Record<string, unknown>[]): Promise<void> {
+  if (!sbUrl || !sbService || !rows.length) return
+  try {
+    const r = await fetch(`${sbUrl}/rest/v1/email_log`, {
+      method: 'POST',
+      headers: { apikey: sbService, Authorization: `Bearer ${sbService}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(rows),
+    })
+    if (!r.ok) console.error('email_log insert failed', r.status, await r.text())
+  } catch (e) { console.error('email_log insert failed', e) }
 }

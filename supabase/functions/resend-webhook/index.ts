@@ -62,10 +62,32 @@ serve(async (req) => {
   let payload: { type?: string; data?: Record<string, unknown> }
   try { payload = JSON.parse(rawBody) } catch { return json(400, { ok: false, error: 'Invalid JSON' }) }
 
-  const kind = payload.type === 'email.bounced' ? 'bounced' : payload.type === 'email.complained' ? 'complained' : null
-  if (!kind) return json(200, { ok: true, ignored: payload.type }) // event type we don't act on — ack so Resend stops retrying
-
   const data = payload.data ?? {}
+
+  // Sent-emails log (Communications → Sent): delivered / bounced / complained update the
+  // row the sending function wrote, matched on Resend's email id. Best effort.
+  const logStatus = payload.type === 'email.delivered' ? 'delivered'
+    : payload.type === 'email.bounced' ? 'bounced'
+    : payload.type === 'email.complained' ? 'complained' : null
+  const emailId = typeof data.email_id === 'string' ? data.email_id : ''
+  if (logStatus && emailId) {
+    const det = (data.bounce ?? data.complaint ?? null) as Record<string, unknown> | null
+    const why = det ? String((det as { message?: unknown }).message ?? (det as { subType?: unknown }).subType ?? JSON.stringify(det)).slice(0, 300) : null
+    // A late "delivered" never overwrites a bounce or complaint already recorded.
+    const filter = logStatus === 'delivered' ? `&status=eq.sent` : ''
+    try {
+      const u = await fetch(`${SB_URL}/rest/v1/email_log?resend_id=eq.${encodeURIComponent(emailId)}${filter}`, {
+        method: 'PATCH',
+        headers: { apikey: SB_SERVICE, Authorization: `Bearer ${SB_SERVICE}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: logStatus, status_at: new Date().toISOString(), status_reason: why }),
+      })
+      if (!u.ok) console.error('resend-webhook: email_log update failed', u.status, await u.text())
+    } catch (e) { console.error('resend-webhook: email_log update failed', e) }
+  }
+
+  const kind = payload.type === 'email.bounced' ? 'bounced' : payload.type === 'email.complained' ? 'complained' : null
+  if (!kind) return json(200, { ok: true, logged: !!logStatus, ignored: logStatus ? undefined : payload.type }) // nothing more to do — ack so Resend stops retrying
+
   const tags = Array.isArray(data.tags) ? (data.tags as Array<{ name?: string; value?: string }>) : []
   const coupleId = tags.find((t) => t?.name === 'couple_id')?.value || ''
   const guestId = tags.find((t) => t?.name === 'guest_id')?.value || ''

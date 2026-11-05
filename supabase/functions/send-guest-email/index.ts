@@ -42,6 +42,7 @@ serve(async (req) => {
            attachment?: { filename?: string; path?: string }; ics?: string;
            templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; bodyFont?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean;
            htmlText?: string; guestId?: string; ctaLinks?: { rsvp?: string; website?: string };
+           logKind?: string; toNames?: string[];
            inviteBlock?: { imageSrc?: string; imageHref?: string; imageCaption?: string; fallbackLinkLabel?: string; fallbackLinkUrl?: string; rsvpUrl?: string; rsvpByText?: string; rsvpButtonLabel?: string; rsvpLeadText?: string; websiteUrl?: string; websiteLabel?: string; closingText?: string } }
   try { b = await req.json() } catch { return json(400, { ok: false, error: 'Invalid JSON' }) }
 
@@ -184,6 +185,14 @@ serve(async (req) => {
     console.error('Resend error:', r.status, await r.text())
     return json(502, { ok: false, error: 'Send failed' })
   }
+  const sent = await r.json().catch(() => ({})) as { id?: string }
+  const LOG_KINDS = ['savedate', 'invite', 'reminder']
+  const logKind = LOG_KINDS.includes(String(b.logKind || '')) ? String(b.logKind) : 'other'
+  const names = Array.isArray(b.toNames) ? b.toNames.map((n) => String(n ?? '').slice(0, 120)) : []
+  await logSent(SB_URL, SB_SERVICE, to.map((email, i) => ({
+    couple_id: user.id, kind: logKind, subject, to_email: email, to_name: names[i] || null,
+    guest_id: guestId || null, from_name: name, resend_id: sent.id || null, html,
+  })))
   return json(200, { ok: true })
 })
 
@@ -390,4 +399,19 @@ ${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac) : ''}
 </td></tr>
 ${brandingFooter}
 </table></td></tr></table></body></html>`
+}
+
+// ── Sent-emails log ──────────────────────────────────────────────────────────
+// One row per recipient in email_log (Communications → Sent). Best effort: a failed
+// write is logged and never fails the send itself.
+async function logSent(sbUrl: string, sbService: string, rows: Record<string, unknown>[]): Promise<void> {
+  if (!sbUrl || !sbService || !rows.length) return
+  try {
+    const r = await fetch(`${sbUrl}/rest/v1/email_log`, {
+      method: 'POST',
+      headers: { apikey: sbService, Authorization: `Bearer ${sbService}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(rows),
+    })
+    if (!r.ok) console.error('email_log insert failed', r.status, await r.text())
+  } catch (e) { console.error('email_log insert failed', e) }
 }

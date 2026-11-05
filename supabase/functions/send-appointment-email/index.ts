@@ -32,7 +32,7 @@ serve(async (req) => {
   }
 
   let body: {
-    to: string[]; subject: string; body: string; ics?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string; htmlText?: string; signature?: string[]
+    to: string[]; subject: string; body: string; ics?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string; htmlText?: string; signature?: string[]; toNames?: string[]
     templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; bodyFont?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean
   }
   try { body = await req.json() } catch {
@@ -117,6 +117,12 @@ serve(async (req) => {
     })
   }
 
+  const sent = await r.json().catch(() => ({})) as { id?: string }
+  const names = Array.isArray(body.toNames) ? body.toNames.map((n) => String(n ?? '').slice(0, 120)) : []
+  await logSent(SB_URL, SB_SERVICE, to.map((email, i) => ({
+    couple_id: user.id, kind: 'appointment', subject, to_email: String(email), to_name: names[i] || null,
+    from_name: name, resend_id: sent.id || null, html: payload.html,
+  })))
   return new Response(JSON.stringify({ ok: true }), {
     headers: { ...CORS, 'Content-Type': 'application/json' },
   })
@@ -189,4 +195,19 @@ ${signatureHtml}
 </td></tr>
 ${brandingFooter}
 </table></td></tr></table></body></html>`
+}
+
+// ── Sent-emails log ──────────────────────────────────────────────────────────
+// One row per recipient in email_log (Communications → Sent). Best effort: a failed
+// write is logged and never fails the send itself.
+async function logSent(sbUrl: string, sbService: string, rows: Record<string, unknown>[]): Promise<void> {
+  if (!sbUrl || !sbService || !rows.length) return
+  try {
+    const r = await fetch(`${sbUrl}/rest/v1/email_log`, {
+      method: 'POST',
+      headers: { apikey: sbService, Authorization: `Bearer ${sbService}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(rows),
+    })
+    if (!r.ok) console.error('email_log insert failed', r.status, await r.text())
+  } catch (e) { console.error('email_log insert failed', e) }
 }
