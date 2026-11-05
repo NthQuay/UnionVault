@@ -15,6 +15,7 @@ Read the latest `docs/sessions/HANDOFF_SESSION*.md` and `docs/CLAUDE_CODE_CONTEX
 
 ## Conventions (short form)
 
+- **GitHub repo is `NthQuay/UnionVault`** (the old `mandyjane/UnionVault` name only redirects). Start sessions with NthQuay/UnionVault as the source.
 - No build step, no bundler. `index.html` is the app shell; CSS in `css/`, JS in `js/`, loaded via `<script>` tags. Branch `main` only; `git push -u origin main`.
 - Bump `APP_BUILD` in `js/autocomplete.js` and `CACHE` in `sw.js` together on every app deploy. Add new JS/CSS files to the `SHELL` array in `sw.js`.
 - Visual changes: light + dark preview first, wait for Accept / Reject / Adjust.
