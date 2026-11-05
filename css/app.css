@@ -2857,3 +2857,52 @@ body.dark .orsvp-av{background:rgba(196,168,130,.16)!important;color:var(--gold)
 
 /* Online RSVPs card view: small icon before each contact detail */
 .orsvp-ci-ico{display:inline-block;vertical-align:-1px;margin-right:5px;color:var(--muted);flex-shrink:0}
+
+/* ── Communications: rich text editor (_rteHtml in comms.js) ── */
+.rte{display:flex;flex-direction:column;gap:8px;position:relative}
+.rte-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;position:relative}
+.rte-tb{height:32px;min-width:32px;padding:0 8px;border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.rte-tb.on{border-color:var(--gold-deep);color:var(--gold-deep);background:var(--parchment)}
+.rte-tb:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.rte-ins{margin-left:auto}
+.rte-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
+.rte-menu{position:absolute;right:0;top:38px;z-index:20;min-width:220px;max-width:calc(100vw - 48px);background:var(--cream);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.14);padding:6px;display:flex;flex-direction:column}
+body.dark .rte-menu{background:#1F1F24;box-shadow:0 12px 28px rgba(0,0,0,.45)}
+.rte-menu button{border:none;background:none;text-align:left;font-family:inherit;font-size:13px;color:var(--ink);padding:8px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.rte-menu button:hover{background:var(--parchment)}
+.rte-menu small{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.rte-menu-sep{height:1px;background:var(--border);margin:4px 6px}
+.rte-ed{font-size:14px;line-height:1.6;padding:12px 14px;outline:none;overflow-wrap:anywhere;cursor:text;white-space:normal}
+.rte-ed:focus{border-color:var(--gold)}
+.rte-ed p{margin:0 0 9px}
+.rte-ed p:last-child{margin-bottom:0}
+.rte-ed .rte-intro{font-size:16px;font-style:italic;font-weight:500}
+.rte-ed.is-empty{position:relative}
+.rte-ed.is-empty::before{content:attr(data-ph);position:absolute;left:14px;right:14px;top:12px;color:var(--muted);opacity:.7;pointer-events:none}
+.rte-tok{display:inline-block;background:var(--parchment);color:var(--gold-deep);border:1px solid var(--gold-med,var(--border));border-radius:6px;padding:0 6px;font-size:.88em;font-weight:600;font-style:normal;line-height:1.5;white-space:nowrap;user-select:all;vertical-align:baseline}
+body.dark .rte-tok{background:rgba(196,168,130,.16);border-color:rgba(196,168,130,.3);color:var(--gold)}
+.rte-btnrow{text-align:center;margin:10px 0!important}
+.rte-btn{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--gold);color:var(--gold-deep);background:var(--parchment);border-radius:8px;padding:5px 8px 5px 14px;font-size:13px;font-weight:600;user-select:none}
+body.dark .rte-btn{background:rgba(196,168,130,.12);color:var(--gold)}
+.rte-btn-x{border:none;background:none;color:var(--muted);font-size:16px;line-height:1;padding:0 4px;cursor:pointer}
+/* Edit window shell */
+.comms-ed{display:flex;flex-direction:column;gap:12px}
+.comms-ed-seg{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px}
+.comms-ed-seg button{flex:1;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);padding:7px 0;border-radius:7px;cursor:pointer}
+.comms-ed-seg button[aria-pressed="true"]{background:var(--gold-deep);color:#fff}
+body.dark .comms-ed-seg button[aria-pressed="true"]{background:var(--gold);color:#1C1C21}
+.comms-ed-pane{display:flex;flex-direction:column;gap:12px}
+.comms-ed-pane[hidden]{display:none}
+.comms-ed-tips{font-size:12px;color:var(--muted);line-height:1.55}
+.comms-ed-tips summary{cursor:pointer;color:var(--gold-deep);font-weight:600;list-style:none;display:inline-block}
+.comms-ed-tips summary::-webkit-details-marker{display:none}
+.comms-ed-tips[open] summary{margin-bottom:6px}
+.comms-ed-fonts{display:flex;flex-direction:column;gap:10px}
+.comms-ed-lbl{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.comms-ed-reset{margin-right:auto;border:none;background:none;font-family:inherit;font-size:12.5px;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0}
+/* Font pickers (edit window + Email Design window) */
+.email-fonts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.email-fontopt{min-width:0;text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:10px;padding:5px 10px 6px;font-family:inherit;font-size:11.5px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;line-height:1.3}
+.email-fontopt .aa{font-size:18px;line-height:1.25}
+.email-fontopt[aria-pressed="true"]{border-color:var(--gold-deep);box-shadow:0 0 0 1px var(--gold-deep)}
+.email-fontopt:focus-visible{outline:2px solid var(--gold);outline-offset:2px}

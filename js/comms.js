@@ -166,8 +166,9 @@ function _commsTokenFill(tpl){
     '{date}':_commsLongDate(ev.date)||_commsOrdinalize('Saturday, 1 January 2028'),
     '{rsvp_by}':_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience',
     '{link}':_rsvpLink(),
+    '{website}':_ctaLinks().website,
   };
-  return _tplGreetingBreak(tpl||'').replace(/\{guest\}|\{names\}|\{date\}|\{rsvp_by\}|\{link\}/g, m=>map[m]!=null?map[m]:m);
+  return _tplGreetingBreak(tpl||'').replace(/\{guest\}|\{names\}|\{date\}|\{rsvp_by\}|\{link\}|\{website\}/g, m=>map[m]!=null?map[m]:m);
 }
 // Mechanical RSVP CTA / sign-off appended after the editable template text — mirrors
 // _ssMessage()'s `extra` array in send-sheet.js, with sample data only (preview, not a
@@ -190,14 +191,18 @@ function _commsCtaLines(tplKind){
 // channel of invite/reminder, where the CTA becomes a separate structured block instead
 // of plain text (see _commsEmailPreviewPayload) — true everywhere else, matching
 // _ssBuildPayload's real behaviour.
-function _commsBaseText(tplKind, channel, includeCta){
-  let msg=_commsTokenFill(_inviteTpl(tplKind, channel));
+function _commsBaseText(tplKind, channel, includeCta, tplOverride){
+  const raw=tplOverride!=null?tplOverride:_inviteTpl(tplKind, channel);
+  let msg=_commsTokenFill(raw);
   if(includeCta){
-    const extra=_commsCtaLines(tplKind);
+    // Same rule as a real send: a button the couple placed replaces the automatic line.
+    const ownRsvp=_tplHasBtn(raw,'rsvp')||/\{link\}/.test(raw), ownWeb=_tplHasBtn(raw,'website');
+    const extra=_commsCtaLines(tplKind).filter(l=>!(ownRsvp&&/^Kindly RSVP/.test(l))&&!(ownWeb&&/website|^Details:/.test(l)));
     if(extra.length) msg=msg.replace(/\s+$/,'')+'\n\n'+extra.join('\n\n');
   }
   if(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid()) msg+='\n\nSent via unionvault.app';
-  return msg;
+  // Email keeps button markers for the email to draw; text-only gets plain links.
+  return channel==='sms'||includeCta?_ctaPlain(channel==='sms'?_stripMd(msg):msg):msg;
 }
 function _commsTplSettingsKey(tplKind, channel){
   const ch=channel==='email'?'Email':'Sms';
@@ -205,8 +210,8 @@ function _commsTplSettingsKey(tplKind, channel){
   if(tplKind==='savedate') return 'saveDateTemplate'+ch;
   return 'inviteTemplate'+ch;
 }
-function _commsSmsPreviewHtml(item){
-  const text=_commsBaseText(item.tplKind,'sms', true);
+function _commsSmsPreviewHtml(item, tplOverride){
+  const text=_commsBaseText(item.tplKind,'sms', true, tplOverride);
   return `<div style="max-width:380px;margin:0 auto;padding:6px 0">
     <div style="background:var(--parchment);border:1px solid var(--border);border-radius:16px 16px 16px 4px;padding:14px 16px;font-size:13.5px;line-height:1.55;white-space:pre-wrap">${_escHtml(text)}</div>
   </div>`;
@@ -214,19 +219,26 @@ function _commsSmsPreviewHtml(item){
 // Payload for the Email channel of Save the date / Invite / RSVP reminder — built the
 // same way _ssBuildPayload() builds a real send, so the preview can never drift from
 // what actually goes out.
-function _commsEmailPreviewPayload(item){
+function _commsEmailPreviewPayload(item, tplOverride){
   const ed=_commsDesignFor(item.key);
   const names=_ssCoupleNames();
-  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false,
+  const raw=tplOverride!=null?tplOverride:_inviteTpl(item.tplKind,'email');
+  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
     headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) };
   const titleMap={savedate:'Save the date', invite:'You\'re invited', reminder:'RSVP reminder'};
   const title=titleMap[item.tplKind];
   const payload={ preview:true, subject:title+(names?' — '+names:''), fromName:names||'UnionVault',
-    kicker:names?names+'\'s wedding':'', title, templateId:_emailTplId(ed.templateId), designOpts };
+    kicker:names?names+'\'s wedding':'', title, templateId:_emailTplId(ed.templateId), designOpts, ctaLinks:_ctaLinks() };
   if(item.tplKind==='savedate'){
-    payload.body=_commsBaseText('savedate','email', true);
+    payload.body=_commsBaseText('savedate','email', true, raw);
+    if(_tplHasBtn(raw,'rsvp')||_tplHasBtn(raw,'website')){
+      // Buttons the couple placed: the email draws them, so keep the markers.
+      payload.htmlText=_commsBaseText('savedate','email', false, raw);
+      const w=_ctaLinks().website;
+      if(w && !_tplHasBtn(raw,'website')) payload.htmlText=payload.htmlText.replace(/\s+$/,'')+'\n\nDetails: '+w;
+    }
   } else {
-    payload.htmlText=_commsBaseText(item.tplKind,'email', false);
+    payload.htmlText=_commsBaseText(item.tplKind,'email', false, raw);
     const rsvpBy=_commsLongDate((STATE.settings||{}).rsvpBy)||'your earliest convenience';
     const block={ rsvpUrl:_rsvpLink(), rsvpByText:rsvpBy, rsvpButtonLabel:'RSVP',
       closingText:item.tplKind==='invite'?'With love.':'Thank you, we hope you can make it!' };
@@ -242,7 +254,7 @@ function _commsEmailPreviewPayload(item){
     } else if(item.tplKind==='reminder'){
       block.rsvpLeadText='Please submit your RSVP by '+rsvpBy+' so we can ensure you\'re catered for. If you cannot make it, please still submit your RSVP to let us know.';
     }
-    payload.inviteBlock=block;
+    payload.inviteBlock=_ctaDropPlaced(block, raw);
   }
   return {endpoint:'send-guest-email', payload};
 }
@@ -252,7 +264,7 @@ function _commsEmailPreviewPayload(item){
 function _commsFixedPreviewPayload(key){
   const ed=_commsDesignFor(key);
   const ownerUid=_sbSession&&_sbSession.user&&_sbSession.user.id;
-  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', showLogo:ed.showLogo!==false,
+  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
     headerImage:_emailHeaderUrl(ed.headerImage,ownerUid) };
   const names=_ssCoupleNames();
   const ct=(STATE.settings&&STATE.settings.commsText)||{};
@@ -290,7 +302,7 @@ function _commsFixedPreviewPayload(key){
   }
   // vbrief
   const t=ct.vendorBrief||{};
-  const edFull={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', showLogo:ed.showLogo!==false, headerImage:designOpts.headerImage };
+  const edFull={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, headerImage:designOpts.headerImage };
   return {endpoint:'send-vendor-brief-email', payload:{ preview:true, fromName:names||'',
     intro_override:t.intro||null, button_label_override:t.buttonLabel||null, closing_override:t.closing||null,
     templateId:_emailTplId(ed.templateId), designOpts:edFull }};
@@ -311,16 +323,20 @@ async function _commsLoadPreview(){
     box.innerHTML=`<div style="padding:20px 4px;text-align:center;color:var(--muted);font-size:12px">Sign in to preview this email.</div>${plainBox}`;
     return;
   }
+  await _commsRenderEmail(box, endpoint, payload, ()=>_commsSel===item.key, 'comms-preview-frame');
+}
+// Fetches the branded HTML from the email function in preview mode and shows it in an
+// iframe sized to fit. `stillWanted()` guards against a newer request having replaced it.
+async function _commsRenderEmail(box, endpoint, payload, stillWanted, frameId){
   try{
     await _sbEnsureFreshToken();
     const r=await fetch(_SB_URL+'/functions/v1/'+endpoint,{ method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+_sbSession.access_token,'apikey':_SB_KEY},
       body:JSON.stringify(payload) });
     const data=await r.json();
-    if(_commsSel!==item.key) return; // selection changed while this was loading
+    if(!stillWanted()) return;
     if(!data.ok || !data.html){ box.innerHTML=`<div style="padding:30px 10px;text-align:center;color:var(--muted);font-size:12.5px">Preview unavailable.</div>`; return; }
     const w=Math.min(560, window.innerWidth-80);
-    const frameId='comms-preview-frame';
     box.innerHTML=`<div style="display:flex;justify-content:center"><iframe id="${frameId}" srcdoc="${_escHtml(data.html)}" sandbox="allow-same-origin" scrolling="no" style="width:100%;max-width:${w}px;height:200px;border:1px solid var(--border);border-radius:10px;background:#fff;display:block"></iframe></div>`;
     // The preview reads with the page's own scroll, not a boxed-in scroll area of its own —
     // grow the iframe to exactly fit the email instead of a fixed height.
@@ -333,7 +349,7 @@ async function _commsLoadPreview(){
       }catch(_){}
     };
   }catch(_){
-    if(_commsSel!==item.key) return;
+    if(!stillWanted()) return;
     box.innerHTML=`<div style="padding:30px 10px;text-align:center;color:var(--muted);font-size:12.5px">Preview failed — check your connection.</div>`;
   }
 }
@@ -370,28 +386,89 @@ function _commsEditClick(key){
 function _commsDesignClick(key){
   _openEmailDesignModal(key);
 }
+// Edit window shell: Edit / Preview tabs, the editor pane, folded Tips, the email's font
+// pickers, and a quiet "Reset to default" link.
+let _commsEditKey=null;
+function _commsEditShell(key, editHtml, tips){
+  const item=_commsItem(key);
+  const fonts=item&&item.branded?_commsFontRowsHtml(key):'';
+  return `<div class="comms-ed">
+    <div class="comms-ed-seg" role="group" aria-label="Edit or preview">
+      <button type="button" id="comms-ed-tab-edit" aria-pressed="true" onclick="_commsEditTab(false)">Edit</button>
+      <button type="button" id="comms-ed-tab-prev" aria-pressed="false" onclick="_commsEditTab(true)">Preview</button>
+    </div>
+    <div id="comms-ed-pane-edit" class="comms-ed-pane">
+      ${editHtml}
+      <details class="comms-ed-tips"><summary>Tips</summary>${tips}</details>
+      ${fonts}
+    </div>
+    <div id="comms-ed-pane-prev" class="comms-ed-pane" hidden><div id="comms-ed-prev"></div></div>
+  </div>`;
+}
+function _commsEditFooter(resetFn, saveFn){
+  return `<button type="button" class="comms-ed-reset" onclick="${resetFn}">Reset to default</button>
+    <button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="${saveFn}">Save</button>`;
+}
+const _COMMS_TIPS_EMAIL='Gold tags fill in for each guest when the email is sent. Select words and tap <b>B</b>, <i>I</i> or <u>U</u> to style them. <b>Aa Intro</b> turns the current line into the larger italic opener (email only). Enter starts a new paragraph; Shift+Enter starts a new line in the same paragraph.';
+const _COMMS_TIPS_SMS='Gold tags fill in for each guest when the message is sent. Text messages are plain text, so bold, italic and underline show as normal words. Enter starts a new paragraph; Shift+Enter starts a new line.';
+function _commsFontRowsHtml(key){
+  const ed=_commsDesignFor(key);
+  return `<div class="comms-ed-fonts">
+    <div><div class="comms-ed-lbl">Header font</div>${_emailFontPickerHtml('fontFamily', ed.fontFamily||'serif', key, true)}</div>
+    <div><div class="comms-ed-lbl">Body font</div>${_emailFontPickerHtml('bodyFont', ed.bodyFont||'sans-serif', key, true)}</div>
+  </div>`;
+}
+function _commsEditTab(prev){
+  const e=document.getElementById('comms-ed-tab-edit'), p=document.getElementById('comms-ed-tab-prev');
+  if(e) e.setAttribute('aria-pressed',String(!prev)); if(p) p.setAttribute('aria-pressed',String(prev));
+  const pe=document.getElementById('comms-ed-pane-edit'), pp=document.getElementById('comms-ed-pane-prev');
+  if(pe) pe.hidden=prev; if(pp) pp.hidden=!prev;
+  if(prev) _commsEditPreview();
+}
+// Preview of the UNSAVED draft: same builders as the page preview, fed the editor's text.
+function _commsEditPreview(){
+  const key=_commsEditKey, item=_commsItem(key), box=document.getElementById('comms-ed-prev');
+  if(!item||!box) return;
+  let built;
+  if(item.kind==='tpl'){
+    const md=_rteGet('comms-edit-ta');
+    if(item.channel==='sms'){ box.innerHTML=_commsSmsPreviewHtml(item, md); return; }
+    built=_commsEmailPreviewPayload(item, md);
+  } else {
+    const sub=_COMMS_FIXED_TEXT_KEY[key], ct=_commsEnsureCommsText(), was=ct[sub];
+    ct[sub]=_commsCollectFixed(key);
+    try{ built=_commsFixedPreviewPayload(key); } finally { if(was===undefined) delete ct[sub]; else ct[sub]=was; }
+  }
+  if(!_sbSession || !_sbSession.access_token){
+    box.innerHTML=`<div style="padding:20px 4px;text-align:center;color:var(--muted);font-size:12px">Sign in to preview this email.</div>`;
+    return;
+  }
+  box.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:240px;color:var(--muted);font-size:12.5px">Loading preview…</div>`;
+  const stamp=(_commsEditPreview._n=(_commsEditPreview._n||0)+1);
+  _commsRenderEmail(box, built.endpoint, built.payload, ()=>stamp===_commsEditPreview._n && !!document.getElementById('comms-ed-prev'), 'comms-ed-frame');
+}
 function _commsOpenEditModal(key){
   const item=_commsItem(key); if(!item) return;
+  _commsEditKey=key;
   if(item.kind==='tpl'){
     const cur=_inviteTpl(item.tplKind, item.channel);
-    const body=`<div style="display:flex;flex-direction:column;gap:12px">
-      <div style="font-size:12px;color:var(--muted);line-height:1.5">${_escHtml(_COMMS_TOKEN_HELP)}${item.channel==='email'?' '+_escHtml(_COMMS_MARKUP_HELP):''}</div>
-      ${item.channel==='email'?_commsToolbarHtml('comms-edit-ta'):''}
-      <textarea id="comms-edit-ta" class="form-input" style="min-height:160px;font-size:13px;line-height:1.5;resize:vertical">${_escHtml(cur)}</textarea>
-    </div>`;
-    const footer=`<button class="btn btn-outline btn-sm" onclick="_commsResetTpl('${key}')" style="margin-right:auto">Reset to default</button>
-      <button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
-      <button class="btn btn-primary btn-sm" onclick="_commsSaveTpl('${key}')">Save</button>`;
-    openModal(item.title+' · '+(item.channel==='email'?'Email':'SMS'), body, footer);
+    const email=item.channel==='email';
+    const editor=_rteHtml('comms-edit-ta', cur, {
+      toks: email?['guest','names','date','rsvp_by']:['guest','names','date','rsvp_by','link','website'],
+      btns: email, intro: email, fmt: email, minH:170 });
+    const body=_commsEditShell(key, editor, email?_COMMS_TIPS_EMAIL:_COMMS_TIPS_SMS);
+    openModal(item.title+' · '+(email?'Email':'SMS'), body, _commsEditFooter(`_commsResetTpl('${key}')`, `_commsSaveTpl('${key}')`));
+    _rteInitAll();
     return;
   }
   _commsOpenFixedEditModal(key);
 }
 function _commsSaveTpl(key){
   const item=_commsItem(key); if(!item) return;
-  const ta=document.getElementById('comms-edit-ta'); if(!ta) return;
+  if(!document.getElementById('comms-edit-ta')) return;
   if(!STATE.settings) STATE.settings={};
-  STATE.settings[_commsTplSettingsKey(item.tplKind, item.channel)]=ta.value;
+  STATE.settings[_commsTplSettingsKey(item.tplKind, item.channel)]=_rteGet('comms-edit-ta');
   saveToStorage();
   closeModalDirect();
   _commsRefresh();
@@ -411,15 +488,14 @@ function _commsResetTpl(key){
   closeModalDirect();
   _commsRefresh();
 }
-function _commsFieldHtml(id,label,val,ph,multiline){
+function _commsFieldHtml(id,label,val,ph,multiline,toks){
   const esc=_escHtml;
   return `<div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px">
-      <div style="font-size:11.5px;font-weight:600;color:var(--ink)">${esc(label)}</div>
-      ${multiline?_commsToolbarHtml(id):''}
-    </div>
+    <div style="font-size:11.5px;font-weight:600;color:var(--ink);margin-bottom:5px">${esc(label)}</div>
     ${multiline
-      ? `<textarea id="${id}" class="form-input" placeholder="${_escAttr(ph)}" style="min-height:70px;font-size:13px;line-height:1.5;resize:vertical">${esc(val)}</textarea>`
+      ? _rteHtml(id, val, {toks:toks||['names'], btns:false, intro:true, minH:90,
+          // the grey default wording, with tags written the way the editor shows them
+          ph:ph.replace(/\n+/g,' ').replace(/\{(\w+)\}/g,(m,k)=>_RTE_TOKENS[k]?'['+_RTE_TOKENS[k]+']':m)})
       : `<input id="${id}" class="form-input" value="${esc(val)}" placeholder="${_escAttr(ph)}" style="font-size:13px"/>`}
   </div>`;
 }
@@ -447,7 +523,7 @@ function _commsOpenFixedEditModal(key){
     title='Wishing Well details';
     fieldsHtml=[
       _commsFieldHtml('ww-title','Title',t.title||'',"{names}'s gift details",false),
-      _commsFieldHtml('ww-intro','Intro',t.intro||'',"We can't wait to celebrate with you! You can find our payment info below.",true),
+      _commsFieldHtml('ww-intro','Intro',t.intro||'',"We can't wait to celebrate with you! You can find our payment info below.",true,['names','amount']),
       _commsFieldHtml('ww-digital','Digital gifting note',t.digitalNote||'','Be sure to write your name/s in the reference so we know who to thank.',true),
       _commsFieldHtml('ww-physical','Physical gifting note',t.physicalNote||'','Place in a card and/or envelope with your name and drop it into the wishing well box on the wedding day.',true),
       _commsFieldHtml('ww-closing','Closing',t.closing||'','Thanks so much for your generosity!',true),
@@ -465,21 +541,18 @@ function _commsOpenFixedEditModal(key){
     const t=ct.vendorBrief||{};
     title='Vendor brief';
     fieldsHtml=[
-      _commsFieldHtml('vb-intro','Intro',t.intro||'',"Hi {vendor_name},\n\nPlease find your vendor brief for our wedding below. You won't need an account to view it.",true),
+      _commsFieldHtml('vb-intro','Intro',t.intro||'',"Hi {vendor_name},\n\nPlease find your vendor brief for our wedding below. You won't need an account to view it.",true,['names','vendor_name']),
       _commsFieldHtml('vb-btn','Button label',t.buttonLabel||'','View your brief',false),
-      _commsFieldHtml('vb-closing','Closing',t.closing||'',"Let us know if you have any questions.\n\nWarm regards,\n{names}",true),
+      _commsFieldHtml('vb-closing','Closing',t.closing||'',"Let us know if you have any questions.\n\nWarm regards,\n{names}",true,['names','vendor_name']),
     ].join('');
     note=_commsLockedNote("The vendor's name and their secure brief link.");
     saveFn='_commsSaveVbrief()';
   } else return;
-  const body=`<div style="display:flex;flex-direction:column;gap:14px">
-    <div style="font-size:12px;color:var(--muted);line-height:1.5">${_escHtml(_COMMS_MARKUP_HELP)}</div>
-    ${note}${fieldsHtml}
-  </div>`;
-  const footer=`<button class="btn btn-outline btn-sm" onclick="_commsResetFixed('${key}')" style="margin-right:auto">Reset to default</button>
-    <button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
-    <button class="btn btn-primary btn-sm" onclick="${saveFn}">Save</button>`;
-  openModal(title, body, footer);
+  _commsEditKey=key;
+  const body=_commsEditShell(key, `<div style="display:flex;flex-direction:column;gap:14px">${note}${fieldsHtml}</div>`,
+    'Leave a box empty to use the wording shown in grey. '+_COMMS_TIPS_EMAIL);
+  openModal(title, body, _commsEditFooter(`_commsResetFixed('${key}')`, saveFn));
+  _rteInitAll();
 }
 function _commsResetFixed(key){
   const sub=_COMMS_FIXED_TEXT_KEY[key]; if(!sub) return;
@@ -493,25 +566,199 @@ function _commsEnsureCommsText(){
   if(!STATE.settings.commsText) STATE.settings.commsText={};
   return STATE.settings.commsText;
 }
-function _commsFieldVal(id){ const el=document.getElementById(id); return el?el.value:''; }
-function _commsSaveConfirm(){
-  const ct=_commsEnsureCommsText();
-  ct.confirm={ title:_commsFieldVal('cf-title'), intro:_commsFieldVal('cf-intro'), closing:_commsFieldVal('cf-closing') };
+function _commsFieldVal(id){ const el=document.getElementById(id); if(!el) return ''; return el.classList.contains('rte-ed')?_rteGet(id):el.value; }
+function _commsCollectFixed(key){
+  const v=_commsFieldVal;
+  if(key==='confirm') return { title:v('cf-title'), intro:v('cf-intro'), closing:v('cf-closing') };
+  if(key==='ww') return { title:v('ww-title'), intro:v('ww-intro'), digitalNote:v('ww-digital'), physicalNote:v('ww-physical'), closing:v('ww-closing') };
+  if(key==='appt') return { signature:v('appt-sig') };
+  if(key==='vbrief') return { intro:v('vb-intro'), buttonLabel:v('vb-btn'), closing:v('vb-closing') };
+  return {};
+}
+function _commsSaveFixed(key){
+  _commsEnsureCommsText()[_COMMS_FIXED_TEXT_KEY[key]]=_commsCollectFixed(key);
   saveToStorage(); closeModalDirect(); _commsRefresh();
 }
-function _commsSaveWw(){
-  const ct=_commsEnsureCommsText();
-  ct.ww={ title:_commsFieldVal('ww-title'), intro:_commsFieldVal('ww-intro'), digitalNote:_commsFieldVal('ww-digital'),
-    physicalNote:_commsFieldVal('ww-physical'), closing:_commsFieldVal('ww-closing') };
-  saveToStorage(); closeModalDirect(); _commsRefresh();
+function _commsSaveConfirm(){ _commsSaveFixed('confirm'); }
+function _commsSaveWw(){ _commsSaveFixed('ww'); }
+function _commsSaveAppt(){ _commsSaveFixed('appt'); }
+function _commsSaveVbrief(){ _commsSaveFixed('vbrief'); }
+
+// ════════════════════════════════════════════════════════════════════════
+// Rich text editor for Communications templates
+// ════════════════════════════════════════════════════════════════════════
+// Edits the words the way they'll look: bold / italic / underline show as styled text,
+// "Aa Intro" makes the larger italic opener, and tokens appear as gold tags instead of
+// {curly} codes. Saved back in the same markup the senders already read (**bold**,
+// *italic*, __underline__, "## " intro lines, {tokens}, and {rsvp_button} /
+// {website_button} on their own line), so nothing downstream changes format.
+const _RTE_TOKENS={guest:'Guest name',names:"Couple's names",date:'Wedding date',rsvp_by:'RSVP-by date',link:'RSVP link',website:'Website link',vendor_name:'Vendor name',amount:'Gift amount'};
+const _RTE_TOKEN_EG={guest:'Olivia & James',names:'',date:'',rsvp_by:'',link:'',website:'',vendor_name:'Bloom Florals',amount:'$100.00'};
+const _RTE_BTNS={rsvp:'RSVP',website:'Visit our website'};
+function _rteTokHtml(k){ return `<span class="rte-tok" contenteditable="false" data-tok="${k}">${_escHtml(_RTE_TOKENS[k]||k)}</span>`; }
+function _rteBtnRowHtml(k){
+  return `<p class="rte-btnrow" contenteditable="false"><span class="rte-btn" data-btn="${k}">${_escHtml(_RTE_BTNS[k])}<button type="button" class="rte-btn-x" onclick="_rteRemoveBtn(this)" aria-label="Remove button">×</button></span></p>`;
 }
-function _commsSaveAppt(){
-  const ct=_commsEnsureCommsText();
-  ct.appt={ signature:_commsFieldVal('appt-sig') };
-  saveToStorage(); closeModalDirect(); _commsRefresh();
+function _rteMdToHtml(md){
+  const paras=String(md||'').replace(/\r/g,'').split(/\n{2,}/);
+  const html=paras.map(p=>{
+    const bm=p.trim().match(/^\{(rsvp|website)_button\}$/);
+    if(bm) return _rteBtnRowHtml(bm[1]);
+    let intro=false, body=p;
+    if(/^##\s+/.test(body)){ intro=true; body=body.replace(/^##\s+/,''); }
+    let h=_escHtml(body)
+      .replace(/\{(\w+)\}/g,(m,k)=>_RTE_TOKENS[k]?_rteTokHtml(k):m)
+      .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/__(.+?)__/g,'<u>$1</u>').replace(/\*(.+?)\*/g,'<i>$1</i>')
+      .replace(/\n/g,'<br>');
+    return `<p${intro?' class="rte-intro"':''}>${h||'<br>'}</p>`;
+  }).join('');
+  return html||'<p><br></p>';
 }
-function _commsSaveVbrief(){
-  const ct=_commsEnsureCommsText();
-  ct.vendorBrief={ intro:_commsFieldVal('vb-intro'), buttonLabel:_commsFieldVal('vb-btn'), closing:_commsFieldVal('vb-closing') };
-  saveToStorage(); closeModalDirect(); _commsRefresh();
+function _rteHtmlToMd(root){
+  // Markers hug the words: "**word** " not "**word **", and never span a line break.
+  const wrap=(inner,mk)=>inner.split('\n').map(line=>{
+    const m=line.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    return m[2]?m[1]+mk+m[2]+mk+m[3]:line;
+  }).join('\n');
+  const inline=n=>{
+    if(n.nodeType===3) return n.nodeValue.replace(/ /g,' ');
+    if(n.nodeType!==1) return '';
+    if(n.classList.contains('rte-tok')) return '{'+n.dataset.tok+'}';
+    if(n.classList.contains('rte-btn-x')) return '';
+    const tag=n.nodeName;
+    if(tag==='BR') return '\n';
+    const inner=[...n.childNodes].map(inline).join('');
+    if(tag==='B'||tag==='STRONG') return wrap(inner,'**');
+    if(tag==='I'||tag==='EM') return wrap(inner,'*');
+    if(tag==='U') return wrap(inner,'__');
+    if(tag==='SPAN'){
+      const st=n.style||{}; let out=inner;
+      if(st.textDecorationLine==='underline'||st.textDecoration==='underline') out=wrap(out,'__');
+      if(st.fontStyle==='italic') out=wrap(out,'*');
+      if(st.fontWeight==='bold'||+st.fontWeight>=600) out=wrap(out,'**');
+      return out;
+    }
+    if(tag==='DIV'||tag==='P') return '\n'+inner;
+    return inner;
+  };
+  const blocks=[]; let loose='';
+  const flush=()=>{ if(loose.trim()) blocks.push(loose); loose=''; };
+  [...root.childNodes].forEach(n=>{
+    if(n.nodeType===1 && (n.nodeName==='P'||n.nodeName==='DIV')){
+      flush();
+      if(n.classList.contains('rte-btnrow')){ const b=n.querySelector('[data-btn]'); if(b) blocks.push('{'+b.dataset.btn+'_button}'); return; }
+      const txt=[...n.childNodes].map(inline).join('').replace(/^\n+|\n+$/g,'');
+      if(!txt.trim()) return;
+      blocks.push((n.classList.contains('rte-intro')?'## ':'')+txt);
+    } else loose+=inline(n);
+  });
+  flush();
+  return blocks.map(b=>b.replace(/[ \t]+$/gm,'').replace(/\*\*\*\*|____/g,'')).join('\n\n').trim();
 }
+// opts: {toks:[keys], btns:bool, intro:bool, ph:'placeholder', minH:px}
+function _rteHtml(id, md, opts){
+  opts=opts||{};
+  const tb=(cmd,label,title)=>`<button type="button" class="rte-tb" data-cmd="${cmd}" title="${title}" aria-label="${title}" onmousedown="event.preventDefault()" onclick="_rteCmd('${id}','${cmd}')">${label}</button>`;
+  const toks=(opts.toks||[]).filter(k=>_RTE_TOKENS[k]);
+  const menu=(toks.length||opts.btns)?`<div class="rte-menu" id="${id}-menu" hidden>
+      ${toks.map(k=>`<button type="button" onmousedown="event.preventDefault()" onclick="_rteInsertTok('${id}','${k}')">${_escHtml(_RTE_TOKENS[k])}<small>${_escHtml(_rteTokExample(k))}</small></button>`).join('')}
+      ${opts.btns?`${toks.length?'<div class="rte-menu-sep"></div>':''}
+        <button type="button" onmousedown="event.preventDefault()" onclick="_rteInsertBtn('${id}','rsvp')">RSVP button<small>Guests tap to reply</small></button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="_rteInsertBtn('${id}','website')">Website button<small>Your wedding website</small></button>`:''}
+    </div>`:'';
+  return `<div class="rte" data-rte="${id}">
+    <div class="rte-bar" role="toolbar" aria-label="Formatting">
+      ${opts.fmt!==false?tb('bold','<b>B</b>','Bold')+tb('italic','<i>I</i>','Italic')+tb('underline','<u>U</u>','Underline'):''}
+      ${opts.intro!==false?`${opts.fmt!==false?'<span class="rte-sep"></span>':''}<button type="button" class="rte-tb rte-tb-wide" data-cmd="intro" title="Make this line a larger italic intro" onmousedown="event.preventDefault()" onclick="_rteIntro('${id}')">Aa Intro</button>`:''}
+      ${menu?`<button type="button" class="rte-tb rte-tb-wide rte-ins" id="${id}-ins" aria-haspopup="true" aria-expanded="false" onmousedown="_rteSaveSel('${id}');event.preventDefault()" onclick="_rteToggleMenu('${id}',event)">＋ Insert</button>${menu}`:''}
+    </div>
+    <div id="${id}" class="rte-ed form-input" contenteditable="true" spellcheck="true" data-ph="${_escAttr(opts.ph||'')}" style="min-height:${opts.minH||70}px"
+      onfocus="_rteFocus(this)" oninput="_rteEmptyCheck(this)" onpaste="_rtePaste(event)">${md?_rteMdToHtml(md):'<p><br></p>'}</div>
+  </div>`;
+}
+function _rteTokExample(k){
+  const ev=STATE.event||{}; const p1=ev.partner1||'', p2=ev.partner2||'';
+  if(k==='names') return (p1&&p2)?p1+' & '+p2:(p1||p2||'');
+  if(k==='date') return _commsLongDate(ev.date)||'';
+  if(k==='rsvp_by') return _commsLongDate((STATE.settings||{}).rsvpBy)||'';
+  if(k==='link') return 'Your RSVP page';
+  if(k==='website') return 'Your wedding website';
+  return _RTE_TOKEN_EG[k]||'';
+}
+const _rteSel={};
+function _rteSaveSel(id){
+  const ed=document.getElementById(id), s=window.getSelection();
+  if(ed&&s.rangeCount&&ed.contains(s.anchorNode)) _rteSel[id]=s.getRangeAt(0).cloneRange();
+}
+function _rteRestoreSel(id){
+  const ed=document.getElementById(id); if(!ed) return null;
+  ed.focus();
+  const s=window.getSelection(); let r=_rteSel[id];
+  if(!r||!ed.contains(r.startContainer)){ r=document.createRange(); r.selectNodeContents(ed.lastElementChild||ed); r.collapse(false); }
+  s.removeAllRanges(); s.addRange(r); return r;
+}
+function _rteFocus(ed){ try{ document.execCommand('defaultParagraphSeparator',false,'p'); }catch(_){} _rteSync(ed); }
+function _rteEmptyCheck(ed){ ed.classList.toggle('is-empty', !ed.textContent.trim() && !ed.querySelector('.rte-tok,.rte-btn')); }
+function _rtePaste(e){
+  // Plain text only: pasted web/email formatting would smuggle in styles the email can't show.
+  e.preventDefault();
+  const t=(e.clipboardData||window.clipboardData).getData('text/plain')||'';
+  try{ document.execCommand('insertText',false,t); }catch(_){}
+}
+function _rteCmd(id,cmd){ const ed=document.getElementById(id); if(!ed) return; ed.focus(); try{ document.execCommand(cmd,false,null); }catch(_){} _rteSync(ed); }
+function _rteBlock(ed){
+  const s=window.getSelection(); if(!s.rangeCount) return null;
+  let n=s.anchorNode; while(n&&n.parentNode!==ed) n=n.parentNode;
+  if(!n||n===ed) return null;
+  if(n.nodeType!==1||!(n.nodeName==='P'||n.nodeName==='DIV')){ try{ document.execCommand('formatBlock',false,'p'); }catch(_){} return _rteBlock(ed); }
+  return n;
+}
+function _rteIntro(id){
+  const ed=document.getElementById(id); if(!ed) return; ed.focus();
+  const p=_rteBlock(ed)||ed.querySelector('p'); if(p&&!p.classList.contains('rte-btnrow')) p.classList.toggle('rte-intro');
+  _rteSync(ed);
+}
+function _rteToggleMenu(id,e){
+  if(e) e.stopPropagation();
+  const m=document.getElementById(id+'-menu'), b=document.getElementById(id+'-ins'); if(!m) return;
+  document.querySelectorAll('.rte-menu').forEach(x=>{ if(x!==m) x.hidden=true; });
+  m.hidden=!m.hidden; if(b) b.setAttribute('aria-expanded',String(!m.hidden));
+}
+function _rteCloseMenus(){ document.querySelectorAll('.rte-menu').forEach(m=>m.hidden=true); document.querySelectorAll('.rte-ins').forEach(b=>b.setAttribute('aria-expanded','false')); }
+document.addEventListener('click',e=>{ if(!e.target.closest('.rte-menu')&&!e.target.closest('.rte-ins')) _rteCloseMenus(); });
+function _rteInsertTok(id,k){
+  const ed=document.getElementById(id); if(!ed) return;
+  const r=_rteRestoreSel(id); if(!r) return;
+  const tmp=document.createElement('span'); tmp.innerHTML=_rteTokHtml(k); const tok=tmp.firstChild;
+  r.deleteContents();
+  const pre=document.createRange(); pre.setStart(ed,0); pre.setEnd(r.startContainer,r.startOffset);
+  const before=pre.toString();
+  r.insertNode(document.createTextNode(' ')); r.insertNode(tok);
+  if(before && !/\s$/.test(before)) tok.before(document.createTextNode(' '));
+  const s=window.getSelection(), after=document.createRange(); after.setStartAfter(tok.nextSibling); after.collapse(true); s.removeAllRanges(); s.addRange(after);
+  _rteCloseMenus(); _rteEmptyCheck(ed); _rteSaveSel(id);
+}
+function _rteInsertBtn(id,k){
+  const ed=document.getElementById(id); if(!ed) return;
+  // One of each: a second RSVP button would just repeat itself.
+  const ex=ed.querySelector('.rte-btn[data-btn="'+k+'"]'); if(ex){ _rteCloseMenus(); ex.closest('.rte-btnrow').scrollIntoView({block:'nearest'}); return; }
+  _rteRestoreSel(id);
+  const tmp=document.createElement('div'); tmp.innerHTML=_rteBtnRowHtml(k); const row=tmp.firstChild;
+  const blk=_rteBlock(ed);
+  if(blk&&blk.nextSibling) ed.insertBefore(row,blk.nextSibling); else ed.appendChild(row);
+  if(!row.nextSibling){ const p=document.createElement('p'); p.innerHTML='<br>'; ed.appendChild(p); }
+  _rteCloseMenus(); _rteEmptyCheck(ed);
+}
+function _rteRemoveBtn(x){ const row=x.closest('.rte-btnrow'); const ed=row&&row.closest('.rte-ed'); if(row) row.remove(); if(ed) _rteEmptyCheck(ed); }
+function _rteSync(ed){
+  const wrap=ed&&ed.closest('.rte'); if(!wrap) return;
+  wrap.querySelectorAll('.rte-tb[data-cmd]').forEach(b=>{
+    const c=b.dataset.cmd; let on=false;
+    if(c==='intro'){ const s=window.getSelection(); let n=s.rangeCount?s.anchorNode:null; while(n&&n.parentNode!==ed) n=n.parentNode; on=!!(n&&n.classList&&n.classList.contains('rte-intro')); }
+    else { try{ on=document.queryCommandState(c); }catch(_){} }
+    b.classList.toggle('on',on);
+  });
+}
+document.addEventListener('selectionchange',()=>{ const a=document.activeElement; if(a&&a.classList&&a.classList.contains('rte-ed')) _rteSync(a); });
+function _rteInitAll(){ document.querySelectorAll('.rte-ed').forEach(_rteEmptyCheck); }
+function _rteGet(id){ const ed=document.getElementById(id); return ed?_rteHtmlToMd(ed):''; }
