@@ -2515,12 +2515,13 @@ async function _ssPreviewEmail(){
 // this overlay sits on top and closing it leaves whatever is underneath untouched.
 function _ssShowPreview(html){
   _ssClosePreview();
-  const w=Math.min(600,window.innerWidth-40);
+  const narrow=window.innerWidth<=600;
+  const w=narrow?window.innerWidth-24:Math.min(600,window.innerWidth-40);
   const ov=document.createElement('div');
   ov.id='ss-preview-overlay'; ov.className='modal-overlay'; ov.style.zIndex='1400';
   ov.innerHTML=`<div class="modal modal-fit" style="max-width:${w+48}px" onclick="event.stopPropagation()">
     <div class="modal-header"><div class="modal-title">Email preview</div><button class="modal-close" aria-label="Close preview" onclick="_ssClosePreview()">×</button></div>
-    <div class="modal-body"><div style="display:flex;justify-content:center"><iframe srcdoc="${_escHtml(html)}" sandbox="allow-same-origin" style="width:${w}px;height:480px;max-height:62vh;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe></div></div>
+    <div class="modal-body"><div style="display:flex;justify-content:center"><iframe srcdoc="${_escHtml(html)}" sandbox="allow-same-origin" onload="try{if(window.innerWidth<=600)this.contentDocument.body.style.padding='12px 4px'}catch(_){}" style="width:${w}px;max-width:100%;height:480px;max-height:62vh;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe></div></div>
     <div class="modal-footer"><button class="btn btn-outline btn-sm" onclick="_ssClosePreview()">Back</button></div>
   </div>`;
   document.body.appendChild(ov);

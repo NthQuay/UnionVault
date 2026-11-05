@@ -2992,3 +2992,9 @@ body.dark .sl-root,body.dark .sl-detail,body.dark .sl-gbox{--sl-ok:#8FBF7F;--sl-
 .ww-search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
 .ww-search input{width:100%;box-sizing:border-box;height:30px;font:inherit;font-size:12px;padding:0 8px 0 28px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--ink);outline:none}
 .ww-search input:focus{border-color:var(--gold)}
+
+/* Communications: on phones the email preview gets nearly the full card width */
+@media(max-width:600px){
+  #comms-detail{padding:16px 12px!important;min-width:0!important}
+  #comms-preview-box{margin-left:-6px;margin-right:-6px}
+}

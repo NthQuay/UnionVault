@@ -353,7 +353,9 @@ async function _commsRenderEmail(box, endpoint, payload, stillWanted, frameId){
     const data=await r.json();
     if(!stillWanted()) return;
     if(!data.ok || !data.html){ box.innerHTML=`<div style="padding:30px 10px;text-align:center;color:var(--muted);font-size:12.5px">Preview unavailable.</div>`; return; }
-    const w=Math.min(560, window.innerWidth-80);
+    // Phones: use the full width of the box (the old innerWidth-80 left a wide dark gutter either side).
+    const narrow=window.innerWidth<=600;
+    const w=narrow?Math.max(240,box.clientWidth||window.innerWidth-48):Math.min(560, window.innerWidth-80);
     box.innerHTML=`<div style="display:flex;justify-content:center"><iframe id="${frameId}" srcdoc="${_escHtml(data.html)}" sandbox="allow-same-origin" scrolling="no" style="width:100%;max-width:${w}px;height:200px;border:1px solid var(--border);border-radius:10px;background:#fff;display:block"></iframe></div>`;
     // The preview reads with the page's own scroll, not a boxed-in scroll area of its own —
     // grow the iframe to exactly fit the email instead of a fixed height.
@@ -361,6 +363,7 @@ async function _commsRenderEmail(box, endpoint, payload, stillWanted, frameId){
     if(frame) frame.onload=()=>{
       try{
         const doc=frame.contentDocument;
+        if(narrow&&doc&&doc.body) doc.body.style.padding='12px 4px';
         const h=doc&&doc.documentElement?doc.documentElement.scrollHeight:0;
         if(h) frame.style.height=(h+2)+'px';
       }catch(_){}

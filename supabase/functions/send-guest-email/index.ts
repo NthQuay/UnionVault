@@ -214,8 +214,10 @@ function applyInlineMarkup(s: string): string {
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
 }
 
-function buildParas(text: string, color: string, links?: { rsvp?: string; website?: string }): string {
+function buildParas(text: string, color: string, links?: { rsvp?: string; website?: string }, invHtml?: string): string {
   return String(text ?? '').trim().split(/\n{2,}/).map((p) => {
+    // {invitation_image} on its own line: the couple's invitation (image, or a link for a PDF) drawn right here.
+    if (/^\{invitation_image\}$/.test(p.trim())) return invHtml || ''
     const btn = p.trim().match(/^\{(rsvp|website)_button\}$/)
     if (btn) {
       const url = btn[1] === 'rsvp' ? links?.rsvp : links?.website
@@ -239,15 +241,26 @@ function ctaButtonHtml(url: string, label: string, color: string): string {
 // there's no image to show — a PDF, say), the RSVP CTA, an optional "visit our wedding
 // website" CTA, and a sign-off. Spliced in after the greeting/intro paragraphs built
 // from `text` above. Both Invite and the RSVP reminder email use this same block shape.
-function inviteBlockHtml(block: NonNullable<TemplateOpts['inviteBlock']>, color: string): string {
+// The invitation itself — an embedded, clickable image, or a plain link when there's no image
+// to show. `withCaption` is the legacy automatic version; a placed {invitation_image} has no
+// caption of its own (the couple writes whatever words they like next to it).
+function invitationHtml(block: NonNullable<TemplateOpts['inviteBlock']>, color: string, withCaption: boolean): string {
   const parts: string[] = []
   if (block.imageSrc) {
     const img = `<img src="${escH(block.imageSrc)}" alt="Invitation" style="display:block;width:100%;max-width:340px;height:auto;margin:0 auto;border-radius:8px;border:1px solid rgba(0,0,0,.08)">`
-    parts.push(`<div style="text-align:center;margin:2px 0 6px">${block.imageHref ? `<a href="${escH(block.imageHref)}" style="text-decoration:none">${img}</a>` : img}</div>`)
-    parts.push(`<div style="text-align:center;font-size:11.5px;color:#8a8077;margin:0 0 16px">${escH(block.imageCaption || 'Click on invite to open in new page.')}</div>`)
+    parts.push(`<div style="text-align:center;margin:2px 0 ${withCaption ? 6 : 16}px">${block.imageHref ? `<a href="${escH(block.imageHref)}" style="text-decoration:none">${img}</a>` : img}</div>`)
+    if (withCaption) parts.push(`<div style="text-align:center;font-size:11.5px;color:#8a8077;margin:0 0 16px">${escH(block.imageCaption || 'Click on invite to open in new page.')}</div>`)
   } else if (block.fallbackLinkUrl) {
     parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${escH(block.fallbackLinkLabel || 'View your invitation')}: <a href="${escH(block.fallbackLinkUrl)}" style="color:${escH(color)}">${escH(block.fallbackLinkUrl)}</a></p>`)
   }
+  return parts.join('')
+}
+const placesInvitation = (text: string) => /(^|\n)\s*\{invitation_image\}\s*(\n|$)/.test(text || '')
+
+function inviteBlockHtml(block: NonNullable<TemplateOpts['inviteBlock']>, color: string, placed = false): string {
+  const parts: string[] = []
+  // When the couple placed {invitation_image} themselves it is already drawn in the text.
+  if (!placed) parts.push(invitationHtml(block, color, true))
   if (block.rsvpUrl && block.rsvpButtonLabel) {
     if (block.rsvpLeadText) {
       parts.push(`<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${escH(block.rsvpLeadText)}</p>`)
@@ -285,7 +298,8 @@ function brandedHtml(opts: TemplateOpts): string {
 // Cream card on beige background, logo header band, serif title, gold accents.
 function classicTemplate(opts: TemplateOpts): string {
   const ac = escH(opts.accentColor)
-  const paras = buildParas(opts.text, ac, opts.ctaLinks)
+  const placed = placesInvitation(opts.text)
+  const paras = buildParas(opts.text, ac, opts.ctaLinks, opts.inviteBlock ? invitationHtml(opts.inviteBlock, ac, false) : '')
   const bf = escH(opts.bodyFont || 'Helvetica,Arial,sans-serif')
 
   const headerBand = opts.headerImage
@@ -314,7 +328,7 @@ ${headerBand}
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
-${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac) : ''}
+${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac, placed) : ''}
 </td></tr>
 ${brandingFooter}
 </table></td></tr></table></body></html>`
@@ -324,7 +338,8 @@ ${brandingFooter}
 // Clean white card, left accent border, sans-serif, minimal.
 function modernTemplate(opts: TemplateOpts): string {
   const ac = escH(opts.accentColor)
-  const paras = buildParas(opts.text, ac, opts.ctaLinks)
+  const placed = placesInvitation(opts.text)
+  const paras = buildParas(opts.text, ac, opts.ctaLinks, opts.inviteBlock ? invitationHtml(opts.inviteBlock, ac, false) : '')
   const bf = escH(opts.bodyFont || 'Helvetica,Arial,sans-serif')
 
   const headerBand = opts.headerImage
@@ -344,26 +359,29 @@ ${logoFooter}
 
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
-<style>@media (prefers-color-scheme: dark){.uv-bg{background:#1A1A1D!important}.uv-card{background:#232328!important;color:#E8E8E8!important;border-color:#3A3A3F!important}.uv-muted{color:#888!important}.uv-kicker{color:${ac}!important}}</style></head>
+<style>@media (prefers-color-scheme: dark){.uv-bg{background:#1A1A1D!important}.uv-card{background:#232328!important;color:#E8E8E8!important}.uv-muted{color:#888!important}.uv-kicker{color:${ac}!important}}</style></head>
 <body class="uv-bg" style="margin:0;padding:24px 12px;background:#F5F5F5;font-family:${bf};color:#1A1A1A">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:560px;background:#FFFFFF;border-radius:8px;overflow:hidden;border-left:4px solid ${ac}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;border-radius:8px;overflow:hidden"><tr>
+<td width="4" style="width:4px;background:${ac};font-size:0;line-height:0">&nbsp;</td>
+<td style="padding:0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="background:#FFFFFF">
 ${headerBand}
 <tr><td style="padding:24px 26px 10px;font-family:${bf}">
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:600;letter-spacing:.1em;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:22px;font-weight:600;line-height:1.25;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
-${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac) : ''}
+${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac, placed) : ''}
 </td></tr>
 ${brandingFooter}
-</table></td></tr></table></body></html>`
+</table></td></tr></table></td></tr></table></body></html>`
 }
 
 // ── Botanical template ───────────────────────────────────────────────────────
 // Soft sage tones, serif headings, leaf motif in header band.
 function botanicalTemplate(opts: TemplateOpts): string {
   const ac = escH(opts.accentColor)
-  const paras = buildParas(opts.text, ac, opts.ctaLinks)
+  const placed = placesInvitation(opts.text)
+  const paras = buildParas(opts.text, ac, opts.ctaLinks, opts.inviteBlock ? invitationHtml(opts.inviteBlock, ac, false) : '')
   const bf = escH(opts.bodyFont || 'Helvetica,Arial,sans-serif')
 
   const leafSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="24" viewBox="0 0 80 24" fill="none" style="display:block;margin:0 auto 6px"><path d="M40 22C30 18 22 12 20 4c6 2 14 6 20 14C46 10 54 6 60 4c-2 8-10 14-20 18z" fill="${ac}" opacity=".18"/><path d="M40 22V4" stroke="${ac}" stroke-width=".7" opacity=".25"/></svg>`
@@ -395,7 +413,7 @@ ${headerBand}
 ${opts.kicker ? `<div class="uv-kicker" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${ac};margin-bottom:8px">${escH(opts.kicker)}</div>` : ''}
 ${opts.title ? `<div style="font-family:${escH(opts.fontFamily)};font-size:24px;line-height:1.2;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${paras}
-${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac) : ''}
+${opts.inviteBlock ? inviteBlockHtml(opts.inviteBlock, ac, placed) : ''}
 </td></tr>
 ${brandingFooter}
 </table></td></tr></table></body></html>`
