@@ -2002,7 +2002,15 @@ body.dark .db-hero{background:#202127;border-color:#2E2D33}
   .db-hero-s1 [style*="font-size:36px"]{font-size:22px!important}
   .db-hero-s1 [style*="font-size:12px"][style*="text-transform:uppercase"]{font-size:10px!important}
   .db-hero-s1 [style*="margin-left:6px"]{margin-left:0!important}
-  .db-hero[style*="padding:40px 46px"]{padding:45px 46px!important}
+  /* Style 3 compact: smaller ring beside the names, tight padding */
+  .db-hero[style*="padding:40px 46px"]{padding:16px 18px!important;gap:16px!important;flex-wrap:nowrap!important;align-items:center!important}
+  .db-s3-ring{width:84px!important;height:84px!important}
+  .db-s3-ring svg{width:84px;height:84px}
+  .db-s3-ring [style*="font-size:38px"]{font-size:26px!important}
+  .db-s3-ring [style*="font-size:9px"]{font-size:7.5px!important;margin-top:1px!important}
+  .db-hero-s3 [style*="font-size:clamp(26px,4vw,44px)"]{font-size:28px!important}
+  .db-hero-s3 [style*="margin-top:12px"]{margin-top:6px!important}
+  .db-hero-s3 [style*="font-size:13px"]{font-size:12px!important}
   .db-hero[style*="padding:30px 46px"]{padding:16px 46px 18px!important}
   /* Tighten inner vertical spacing so date/location/countdown fit comfortably */
   .db-hero [style*="margin-bottom:14px"]{margin-bottom:8px!important}

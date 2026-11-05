@@ -622,7 +622,7 @@ function renderDashboard(c, actions){
     // Style 3 — progress ring
     heroHtml = `<div class="db-hero db-hero-s3" style="position:relative;border-radius:20px;padding:40px 46px;margin-bottom:24px;overflow:hidden;display:flex;align-items:center;gap:38px;flex-wrap:wrap">
       ${heroSwitcher}
-      ${totalDays!==null?`<div style="position:relative;width:128px;height:128px;flex-shrink:0">
+      ${totalDays!==null?`<div class="db-s3-ring" style="position:relative;width:128px;height:128px;flex-shrink:0">
         <svg width="128" height="128" viewBox="0 0 128 128">
           <circle cx="64" cy="64" r="58" fill="none" stroke="var(--border)" stroke-width="5"/>
           <circle class="gold-prog-stroke" cx="64" cy="64" r="58" fill="none" stroke="var(--gold)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${_ringCirc.toFixed(1)}" stroke-dashoffset="${_ringOffset.toFixed(1)}" transform="rotate(-90 64 64)"/>
