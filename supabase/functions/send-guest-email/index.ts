@@ -224,13 +224,17 @@ function buildParas(text: string, color: string, links?: { rsvp?: string; websit
       return url ? ctaButtonHtml(url, btn[1] === 'rsvp' ? 'RSVP' : 'Visit our website', color) : ''
     }
     // Paragraph size prefixes: "## " intro (larger italic), "### " large, "-# " small; none = normal.
-    const sz = p.match(/^(###|##|-#)\s+/)
-    const body = sz ? p.slice(sz[0].length) : p
+    // Optional alignment prefix first: "~c " centre, "~r " right; none = left.
+    const al = p.match(/^~([cr])\s+/)
+    const p2 = al ? p.slice(al[0].length) : p
+    const ta = al ? `text-align:${al[1] === 'c' ? 'center' : 'right'};` : ''
+    const sz = p2.match(/^(###|##|-#)\s+/)
+    const body = sz ? p2.slice(sz[0].length) : p2
     const html = applyInlineMarkup(linkifyWith(escH(body), color)).replace(/\n/g, '<br>')
-    if (sz && sz[1] === '##') return `<p style="margin:0 0 14px;font-size:17px;line-height:1.4;font-style:italic;font-weight:500">${html}</p>`
-    if (sz && sz[1] === '###') return `<p style="margin:0 0 14px;font-size:21px;line-height:1.35">${html}</p>`
-    if (sz && sz[1] === '-#') return `<p style="margin:0 0 14px;font-size:12px;line-height:1.5;color:#8a8077">${html}</p>`
-    return `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${html}</p>`
+    if (sz && sz[1] === '##') return `<p style="${ta}margin:0 0 14px;font-size:17px;line-height:1.4;font-style:italic;font-weight:500">${html}</p>`
+    if (sz && sz[1] === '###') return `<p style="${ta}margin:0 0 14px;font-size:21px;line-height:1.35">${html}</p>`
+    if (sz && sz[1] === '-#') return `<p style="${ta}margin:0 0 14px;font-size:12px;line-height:1.5;color:#8a8077">${html}</p>`
+    return `<p style="${ta}margin:0 0 14px;font-size:15px;line-height:1.6">${html}</p>`
   }).join('')
 }
 

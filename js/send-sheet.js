@@ -72,7 +72,7 @@ const _COMMS_MARKUP_HELP='Formatting: **bold**, *italic*, __underline__. Start a
 // it can render — so one template can be written once and still read cleanly everywhere.
 function _stripMd(text){
   return String(text||'')
-    .replace(/^(###|##|-#)\s+/gm,'')
+    .replace(/^~[cr]\s+/gm,'').replace(/^(###|##|-#)\s+/gm,'')
     .replace(/\*\*(.+?)\*\*/g,'$1')
     .replace(/__(.+?)__/g,'$1')
     .replace(/\*(.+?)\*/g,'$1');
