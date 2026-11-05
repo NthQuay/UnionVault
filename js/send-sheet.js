@@ -67,12 +67,12 @@ function _inviteTpl(kind, channel){
 // syntax) since it only needs to survive being typed in a plain textarea and rendered by
 // hand-rolled paragraph builders in half a dozen edge functions. A line starting "## " is
 // the one block-level convention: a larger italic "intro" line (see _DEFAULT_SAVEDATE_EMAIL_TPL).
-const _COMMS_MARKUP_HELP='Formatting: **bold**, *italic*, __underline__. Start a line with "## " for a larger, italic intro line (shown in Email only).';
+const _COMMS_MARKUP_HELP='Formatting: **bold**, *italic*, __underline__. Start a line with "## " for a larger italic intro, "### " for large, or "-# " for small text (shown in Email only).';
 // Strips all of the above back to plain text, for SMS/plain-text channels where none of
 // it can render — so one template can be written once and still read cleanly everywhere.
 function _stripMd(text){
   return String(text||'')
-    .replace(/^##\s+/gm,'')
+    .replace(/^(###|##|-#)\s+/gm,'')
     .replace(/\*\*(.+?)\*\*/g,'$1')
     .replace(/__(.+?)__/g,'$1')
     .replace(/\*(.+?)\*/g,'$1');

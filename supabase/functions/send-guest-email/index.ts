@@ -223,12 +223,14 @@ function buildParas(text: string, color: string, links?: { rsvp?: string; websit
       const url = btn[1] === 'rsvp' ? links?.rsvp : links?.website
       return url ? ctaButtonHtml(url, btn[1] === 'rsvp' ? 'RSVP' : 'Visit our website', color) : ''
     }
-    const isHeading = /^##\s+/.test(p)
-    const body = isHeading ? p.replace(/^##\s+/, '') : p
+    // Paragraph size prefixes: "## " intro (larger italic), "### " large, "-# " small; none = normal.
+    const sz = p.match(/^(###|##|-#)\s+/)
+    const body = sz ? p.slice(sz[0].length) : p
     const html = applyInlineMarkup(linkifyWith(escH(body), color)).replace(/\n/g, '<br>')
-    return isHeading
-      ? `<p style="margin:0 0 14px;font-size:17px;line-height:1.4;font-style:italic;font-weight:500">${html}</p>`
-      : `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${html}</p>`
+    if (sz && sz[1] === '##') return `<p style="margin:0 0 14px;font-size:17px;line-height:1.4;font-style:italic;font-weight:500">${html}</p>`
+    if (sz && sz[1] === '###') return `<p style="margin:0 0 14px;font-size:21px;line-height:1.35">${html}</p>`
+    if (sz && sz[1] === '-#') return `<p style="margin:0 0 14px;font-size:12px;line-height:1.5;color:#8a8077">${html}</p>`
+    return `<p style="margin:0 0 14px;font-size:15px;line-height:1.6">${html}</p>`
   }).join('')
 }
 

@@ -2893,6 +2893,13 @@ body.dark .rte-menu{background:#1F1F24;box-shadow:0 12px 28px rgba(0,0,0,.45)}
 .rte-ed p{margin:0 0 9px}
 .rte-ed p:last-child{margin-bottom:0}
 .rte-ed .rte-intro{font-size:16px;font-style:italic;font-weight:500}
+.rte-ed .rte-large{font-size:20px;line-height:1.35}
+.rte-ed .rte-small{font-size:12px;color:var(--muted)}
+.rte-szwrap{position:relative;display:inline-block}
+.rte-sizemenu{left:0;right:auto;top:36px;min-width:150px}
+.rte-sizemenu .rte-sz-small{font-size:12px;color:var(--muted)}
+.rte-sizemenu .rte-sz-large{font-size:18px}
+.rte-sizemenu .rte-sz-intro{font-style:italic;font-weight:500}
 .rte-ed.is-empty{position:relative}
 .rte-ed.is-empty::before{content:attr(data-ph);position:absolute;left:14px;right:14px;top:12px;color:var(--muted);opacity:.7;pointer-events:none}
 .rte-tok{display:inline-block;background:var(--parchment);color:var(--gold-deep);border:1px solid var(--gold-med,var(--border));border-radius:6px;padding:0 6px;font-size:.88em;font-weight:600;font-style:normal;line-height:1.5;white-space:nowrap;user-select:all;vertical-align:baseline}
@@ -2985,6 +2992,8 @@ body.dark .sl-root,body.dark .sl-detail,body.dark .sl-gbox{--sl-ok:#8FBF7F;--sl-
 .ss-msg-styled{border:.5px solid var(--border);border-radius:11px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--ink);background:var(--surface);overflow-wrap:anywhere;max-height:220px;overflow:auto}
 .ss-msg-styled p{margin:0 0 8px}.ss-msg-styled p:last-child{margin-bottom:0}
 .ss-msg-styled .rte-intro{font-size:15px;font-style:italic;font-weight:500}
+.ss-msg-styled .rte-large{font-size:18px}
+.ss-msg-styled .rte-small{font-size:11.5px;color:var(--muted)}
 /* Wishing Well → Cash gifts: search beside Sort */
 .ww-search{position:relative;flex:1 1 0;width:0;min-width:110px}
 .ww-sort-wrap{flex:0 0 118px}

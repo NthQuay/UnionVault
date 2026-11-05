@@ -430,7 +430,7 @@ function _commsEditFooter(resetFn, saveFn){
     <button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
     <button class="btn btn-primary btn-sm" onclick="${saveFn}">Save</button>`;
 }
-const _COMMS_TIPS_EMAIL='Gold tags fill in for each guest when the email is sent. Select words and tap <b>B</b>, <i>I</i> or <u>U</u> to style them. <b>Aa Intro</b> turns the current line into the larger italic opener (email only). Enter starts a new paragraph; Shift+Enter starts a new line in the same paragraph.';
+const _COMMS_TIPS_EMAIL='Gold tags fill in for each guest when the email is sent. Select words and tap <b>B</b>, <i>I</i> or <u>U</u> to style them. <b>Aa Size</b> sets the size of the paragraph you\'re in: small, normal, large or intro (larger italic). Email only. Enter starts a new paragraph; Shift+Enter starts a new line in the same paragraph.';
 const _COMMS_TIPS_SMS='Gold tags fill in for each guest when the message is sent. Text messages are plain text, so bold, italic and underline show as normal words. Enter starts a new paragraph; Shift+Enter starts a new line.';
 function _commsFontRowsHtml(key){
   const ed=_commsDesignFor(key);
@@ -624,13 +624,14 @@ function _rteMdToHtml(md){
   const html=paras.map(p=>{
     const bm=p.trim().match(/^\{(rsvp|website)_button\}$/);
     if(bm) return _rteBtnRowHtml(bm[1]);
-    let intro=false, body=p;
-    if(/^##\s+/.test(body)){ intro=true; body=body.replace(/^##\s+/,''); }
+    let cls='', body=p;
+    const szm=body.match(/^(###|##|-#)\s+/);
+    if(szm){ cls={'##':'rte-intro','###':'rte-large','-#':'rte-small'}[szm[1]]; body=body.slice(szm[0].length); }
     let h=_escHtml(body)
       .replace(/\{(\w+)\}/g,(m,k)=>_RTE_TOKENS[k]?_rteTokHtml(k):m)
       .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/__(.+?)__/g,'<u>$1</u>').replace(/\*(.+?)\*/g,'<i>$1</i>')
       .replace(/\n/g,'<br>');
-    return `<p${intro?' class="rte-intro"':''}>${h||'<br>'}</p>`;
+    return `<p${cls?' class="'+cls+'"':''}>${h||'<br>'}</p>`;
   }).join('');
   return html||'<p><br></p>';
 }
@@ -669,7 +670,7 @@ function _rteHtmlToMd(root){
       if(n.classList.contains('rte-btnrow')){ const b=n.querySelector('[data-btn]'); if(b) blocks.push('{'+b.dataset.btn+'_button}'); return; }
       const txt=[...n.childNodes].map(inline).join('').replace(/^\n+|\n+$/g,'');
       if(!txt.trim()) return;
-      blocks.push((n.classList.contains('rte-intro')?'## ':'')+txt);
+      blocks.push((n.classList.contains('rte-intro')?'## ':n.classList.contains('rte-large')?'### ':n.classList.contains('rte-small')?'-# ':'')+txt);
     } else loose+=inline(n);
   });
   flush();
@@ -689,7 +690,9 @@ function _rteHtml(id, md, opts){
   return `<div class="rte" data-rte="${id}">
     <div class="rte-bar" role="toolbar" aria-label="Formatting">
       ${opts.fmt!==false?tb('bold','<b>B</b>','Bold')+tb('italic','<i>I</i>','Italic')+tb('underline','<u>U</u>','Underline'):''}
-      ${opts.intro!==false?`${opts.fmt!==false?'<span class="rte-sep"></span>':''}<button type="button" class="rte-tb rte-tb-wide" data-cmd="intro" title="Make this line a larger italic intro" onmousedown="event.preventDefault()" onclick="_rteIntro('${id}')">Aa Intro</button>`:''}
+      ${opts.intro!==false?`${opts.fmt!==false?'<span class="rte-sep"></span>':''}<span class="rte-szwrap"><button type="button" class="rte-tb rte-tb-wide rte-szb" data-cmd="size" id="${id}-szb" title="Text size for this paragraph" aria-haspopup="true" aria-expanded="false" onmousedown="_rteSaveSel('${id}');event.preventDefault()" onclick="_rteToggleSize('${id}',event)">Aa Size ▾</button><div class="rte-menu rte-sizemenu" id="${id}-sizemenu" hidden>
+        ${[['small','Small','rte-sz-small'],['normal','Normal',''],['large','Large','rte-sz-large'],['intro','Intro','rte-sz-intro']].map(([k,l,c])=>`<button type="button" class="${c}" onmousedown="event.preventDefault()" onclick="_rteSize('${id}','${k}')">${l}</button>`).join('')}
+      </div></span>`:''}
       ${menu?`<button type="button" class="rte-tb rte-tb-wide rte-ins" id="${id}-ins" aria-haspopup="true" aria-expanded="false" onmousedown="_rteSaveSel('${id}');event.preventDefault()" onclick="_rteToggleMenu('${id}',event)">＋ Insert</button>${menu}`:''}
     </div>
     <div id="${id}" class="rte-ed form-input" contenteditable="true" spellcheck="true" data-ph="${_escAttr(opts.ph||'')}" style="min-height:${opts.minH||70}px"
@@ -733,6 +736,22 @@ function _rteBlock(ed){
   if(n.nodeType!==1||!(n.nodeName==='P'||n.nodeName==='DIV')){ try{ document.execCommand('formatBlock',false,'p'); }catch(_){} return _rteBlock(ed); }
   return n;
 }
+function _rteToggleSize(id,e){
+  if(e) e.stopPropagation();
+  const m=document.getElementById(id+'-sizemenu'), b=document.getElementById(id+'-szb'); if(!m) return;
+  const open=m.hidden; _rteCloseMenus();
+  m.hidden=!open; if(b) b.setAttribute('aria-expanded',String(open));
+}
+// Size applies to the whole paragraph the cursor is in: small / normal / large / intro (larger italic).
+function _rteSize(id,sz){
+  const ed=document.getElementById(id); if(!ed) return; ed.focus(); _rteRestoreSel(id);
+  const p=_rteBlock(ed)||ed.querySelector('p');
+  if(p&&!p.classList.contains('rte-btnrow')){
+    p.classList.remove('rte-small','rte-large','rte-intro');
+    if(sz!=='normal') p.classList.add('rte-'+sz);
+  }
+  _rteCloseMenus(); _rteSync(ed);
+}
 function _rteIntro(id){
   const ed=document.getElementById(id); if(!ed) return; ed.focus();
   const p=_rteBlock(ed)||ed.querySelector('p'); if(p&&!p.classList.contains('rte-btnrow')) p.classList.toggle('rte-intro');
@@ -744,8 +763,8 @@ function _rteToggleMenu(id,e){
   document.querySelectorAll('.rte-menu').forEach(x=>{ if(x!==m) x.hidden=true; });
   m.hidden=!m.hidden; if(b) b.setAttribute('aria-expanded',String(!m.hidden));
 }
-function _rteCloseMenus(){ document.querySelectorAll('.rte-menu').forEach(m=>m.hidden=true); document.querySelectorAll('.rte-ins').forEach(b=>b.setAttribute('aria-expanded','false')); }
-document.addEventListener('click',e=>{ if(!e.target.closest('.rte-menu')&&!e.target.closest('.rte-ins')) _rteCloseMenus(); });
+function _rteCloseMenus(){ document.querySelectorAll('.rte-menu').forEach(m=>m.hidden=true); document.querySelectorAll('.rte-ins,.rte-szb').forEach(b=>b.setAttribute('aria-expanded','false')); }
+document.addEventListener('click',e=>{ if(!e.target.closest('.rte-menu')&&!e.target.closest('.rte-ins')&&!e.target.closest('.rte-szb')) _rteCloseMenus(); });
 function _rteInsertTok(id,k){
   const ed=document.getElementById(id); if(!ed) return;
   const r=_rteRestoreSel(id); if(!r) return;
@@ -774,7 +793,7 @@ function _rteSync(ed){
   const wrap=ed&&ed.closest('.rte'); if(!wrap) return;
   wrap.querySelectorAll('.rte-tb[data-cmd]').forEach(b=>{
     const c=b.dataset.cmd; let on=false;
-    if(c==='intro'){ const s=window.getSelection(); let n=s.rangeCount?s.anchorNode:null; while(n&&n.parentNode!==ed) n=n.parentNode; on=!!(n&&n.classList&&n.classList.contains('rte-intro')); }
+    if(c==='size'){ const s=window.getSelection(); let n=s.rangeCount?s.anchorNode:null; while(n&&n.parentNode!==ed) n=n.parentNode; on=!!(n&&n.classList&&(n.classList.contains('rte-intro')||n.classList.contains('rte-small')||n.classList.contains('rte-large'))); }
     else { try{ on=document.queryCommandState(c); }catch(_){} }
     b.classList.toggle('on',on);
   });
