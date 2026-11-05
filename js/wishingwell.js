@@ -10,6 +10,12 @@ function _wwMethodLabel(m){ return ({payid:'PayID',bank:'Bank transfer',paypal:'
 
 function setWwTab(t){ wwTab=t; navigate('wishingwell'); }
 function setWwSort(s){ wwSort=s; navigate('wishingwell'); }
+// Cash gifts search: re-renders the page and puts the caret back in the box.
+let wwSearch='';
+function setWwSearch(v){
+  wwSearch=v; navigate('wishingwell');
+  const el=document.getElementById('ww-search'); if(el){ el.focus(); try{ el.setSelectionRange(v.length,v.length); }catch(_){} }
+}
 function setWwCols(n){ wwCols=n; navigate('wishingwell'); }
 
 // ══════════════════════════════════════════════

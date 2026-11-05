@@ -6220,7 +6220,7 @@ function renderWishingWell(c, actions){
   const count = (ww.contributions||[]).length;
   const thanksDue = _wwThanksDue();
 
-  actions.innerHTML = `<div id="ww-print-wrap" style="position:relative;display:inline-flex"><button class="btn-icon" onclick="_wwTogglePrintMenu(event)" title="Print options" aria-label="Print options" aria-haspopup="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div id="ww-print-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;width:215px;background:var(--cream);border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 24px rgba(26,26,24,.12);overflow:hidden"><button onclick="_wwClosePrintMenu();_wwPrintList()" style="width:100%;background:none;border:none;cursor:pointer;padding:11px 14px;text-align:left;font-size:12.5px;font-family:inherit;color:var(--ink);display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Print contribution list</button><button onclick="_wwClosePrintMenu();openWwPrintLabels()" style="width:100%;background:none;border:none;cursor:pointer;padding:11px 14px;text-align:left;font-size:12.5px;font-family:inherit;color:var(--ink);display:flex;align-items:center;gap:9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print post labels</button></div></div><button class="btn-icon" onclick="openWwSettings()" title="Wishing well settings" aria-label="Wishing well settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>`;
+  actions.innerHTML = `<div id="ww-print-wrap" style="position:relative;display:inline-flex"><button class="btn-icon" onclick="_wwTogglePrintMenu(event)" title="Print options" aria-label="Print options" aria-haspopup="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div id="ww-print-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;width:215px;background:var(--cream);border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 24px rgba(26,26,24,.12);overflow:hidden"><button onclick="_wwClosePrintMenu();_wwPrintList()" style="width:100%;background:none;border:none;cursor:pointer;padding:11px 14px;text-align:left;font-size:12.5px;font-family:inherit;color:var(--ink);display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Print contribution list</button><button onclick="_wwClosePrintMenu();openWwPrintLabels()" style="width:100%;background:none;border:none;cursor:pointer;padding:11px 14px;text-align:left;font-size:12.5px;font-family:inherit;color:var(--ink);display:flex;align-items:center;gap:9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print post labels</button></div></div>${wwTab==='preview'?'':`<button class="btn-icon" onclick="openWwSettings()" title="Wishing well details" aria-label="Wishing well details"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>`}`;
 
   const _tb=(id,label)=>`<button onclick="setWwTab('${id}')" style="font-size:13px;padding:8px 16px;border:none;cursor:pointer;${id!=='tracker'?'border-left:1px solid var(--border);':''}background:${wwTab===id?'var(--gold)':'transparent'};color:${wwTab===id?'#fff':'var(--muted)'};transition:all .15s">${label}</button>`;
   const tabs = `<div style="display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:22px;flex-wrap:wrap">
@@ -6234,9 +6234,11 @@ function renderWishingWell(c, actions){
 }
 
 function _wwTrackerHtml(ww, total, count, thanksDue){
-  const stats = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:18px 0 22px">
+  const thanksSent = (ww.contributions||[]).filter(x=>x.thanked).length;
+  const stats = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:18px 0 22px">
       <div style="background:var(--surface);border-radius:10px;padding:12px 14px"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink)">${count}</div><div style="font-size:11px;color:var(--muted)">contributor${count===1?'':'s'}</div></div>
       <div style="background:var(--surface);border-radius:10px;padding:12px 14px"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink)">${thanksDue}</div><div style="font-size:11px;color:var(--muted)">thank-you${thanksDue===1?'':'s'} due</div></div>
+      <div style="background:var(--surface);border-radius:10px;padding:12px 14px"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink)">${thanksSent}</div><div style="font-size:11px;color:var(--muted)">thank-you${thanksSent===1?'':'s'} sent</div></div>
     </div>`;
 
   const header = `<div style="background:var(--card,var(--cream));border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:18px">
@@ -6255,7 +6257,9 @@ function _wwTrackerHtml(ww, total, count, thanksDue){
     lowest: (a,b)=>(Number(a.amount)||0)-(Number(b.amount)||0),
     name:   (a,b)=>(a.name||'').localeCompare(b.name||'')
   };
-  const list = (ww.contributions||[]).slice().sort(_wwSortFns[wwSort]||_wwSortFns.newest);
+  const allList = (ww.contributions||[]).slice().sort(_wwSortFns[wwSort]||_wwSortFns.newest);
+  const _wq = (wwSearch||'').trim().toLowerCase();
+  const list = _wq ? allList.filter(x=>[x.name,x.address,_wwMethodLabel(x.method),x.note,x.message].filter(Boolean).join(' ').toLowerCase().includes(_wq)) : allList;
   const _sortOpts=[['newest','Newest first'],['oldest','Oldest first'],['highest','Highest amount'],['lowest','Lowest amount'],['name','Name A–Z']];
   const _colBtn=(n,icon)=>`<button onclick="setWwCols(${n})" title="${n} column${n>1?'s':''}" style="background:${wwCols===n?'var(--gold-deep)':'none'};color:${wwCols===n?'#fff':'var(--muted)'};border:1px solid ${wwCols===n?'var(--gold-deep)':'var(--border)'};border-radius:5px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0">${icon}</button>`;
   const colToggle = `<div class="ww-col-toggle" style="display:none;align-items:center;gap:4px;margin-left:auto">
@@ -6263,15 +6267,18 @@ function _wwTrackerHtml(ww, total, count, thanksDue){
       ${_colBtn(2,'<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="5" height="10" rx="1"/><rect x="8" y="2" width="5" height="10" rx="1"/></svg>')}
       ${_colBtn(3,'<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="0.5" y="2" width="3.5" height="10" rx="1"/><rect x="5.25" y="2" width="3.5" height="10" rx="1"/><rect x="10" y="2" width="3.5" height="10" rx="1"/></svg>')}
     </div>`;
-  const sortBar = list.length>1 ? `<div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap">
+  const sortBar = allList.length>1 ? `<div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap">
       <span style="font-size:12px;color:var(--muted);white-space:nowrap">Sort:</span>
       <select onchange="setWwSort(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--ink);cursor:pointer;outline:none">
         ${_sortOpts.map(([v,l])=>`<option value="${v}"${wwSort===v?' selected':''}>${l}</option>`).join('')}
       </select>
+      <div class="ww-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="ww-search" type="search" placeholder="Search name or address" aria-label="Search contributions" value="${_wwEsc(wwSearch||'')}" oninput="setWwSearch(this.value)" autocomplete="off"/></div>
       ${colToggle}
     </div>` : '';
   let listHtml;
-  if(!list.length){
+  if(!list.length && allList.length){
+    listHtml = sortBar+`<div style="padding:22px 10px;text-align:center;font-size:12.5px;color:var(--muted)">No contributions match “${_wwEsc(wwSearch)}”.</div>`;
+  } else if(!list.length){
     listHtml = `<div class="empty-state"><div class="empty-state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div><div class="empty-state-text">No contributions logged yet.<br>Add one as gifts arrive.</div></div>`;
   } else {
     // flex-wrap + justify-content:center (not grid-template-columns:repeat(n,1fr)):
@@ -6614,12 +6621,13 @@ function _wwPreviewHtml(ww){
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">How to contribute</div>
         <div style="font-size:13px;color:var(--ink);line-height:1.9">${payRows.join('<br>')}</div>
       </div>`
-    : `<div style="background:var(--surface);border-radius:12px;padding:16px;margin:16px 0;text-align:center;font-size:12.5px;color:var(--muted)">Add your payment details in Settings to show them here.</div>`;
+    : `<div style="background:var(--surface);border-radius:12px;padding:16px;margin:16px 0;text-align:center;font-size:12.5px;color:var(--muted)">Tap Add details to show your payment details here.</div>`;
 
   return `<div style="background:var(--warning-bg,rgba(201,161,74,.10));border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      This is a visual preview of how a public page would look. It doesn't process payments — guests pay via the details shown. Edit everything in Settings.
+      <span style="flex:1;min-width:0">This is a visual preview of how a public page would look. It doesn't process payments — guests pay via the details shown.</span>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin:-6px 0 14px"><button class="btn btn-primary btn-sm" onclick="openWwSettings()" style="display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add details</button></div>
     <div style="max-width:440px;margin:0 auto;background:var(--card,var(--cream));border:1px solid var(--border);border-radius:18px;overflow:hidden">
       <div style="background:var(--surface);padding:26px 22px;text-align:center;border-bottom:1px solid var(--border)">
         <div style="width:40px;height:40px;border-radius:50%;border:1.5px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;color:var(--gold-deep);margin-bottom:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div>
@@ -6744,6 +6752,9 @@ function _wwContribGroups(){
     seen.add(g.id);
     const n=(g.name||'').trim();
     if(!n) return;
+    // Plus-ones never appear on their own: they're shown with their host as a pair when
+    // attending, and otherwise left out (placeholders like "+1 (Beau Pashen)" included).
+    if(g.relationship==='Plus One' || /^\+1\b/.test(n) || (STATE.guests||[]).some(h=>h.plusOneId===g.id)) return;
     individuals.push({ name:n, address:(g.address||'').trim(), search:n, status:g.rsvp||'awaiting', kind:null });
   });
 
@@ -7322,7 +7333,7 @@ function openWwSettings(){
       </label>
     </div>`;
   const footer = `<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveWwSettings()">Save</button>`;
-  openModal('Wishing well settings', body, footer);
+  openModal('Wishing well details', body, footer);
 }
 
 function saveWwSettings(){
