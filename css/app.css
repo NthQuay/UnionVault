@@ -2970,8 +2970,8 @@ body.dark .sl-root,body.dark .sl-detail,body.dark .sl-gbox{--sl-ok:#8FBF7F;--sl-
 .ss-msg-styled p{margin:0 0 8px}.ss-msg-styled p:last-child{margin-bottom:0}
 .ss-msg-styled .rte-intro{font-size:15px;font-style:italic;font-weight:500}
 /* Wishing Well → Cash gifts: search beside Sort */
-.ww-search{position:relative;flex:1 1 0;width:0;min-width:90px}
-.ww-sort-wrap{flex:1 1 0;width:0;min-width:90px}
+.ww-search{position:relative;flex:1 1 0;width:0;min-width:110px}
+.ww-sort-wrap{flex:0 0 118px}
 .ww-sort-sel{display:block;width:100%;box-sizing:border-box;height:30px;font:inherit;font-size:12px;padding:0 8px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--ink);cursor:pointer;outline:none}
 .ww-search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
 .ww-search input{width:100%;box-sizing:border-box;height:30px;font:inherit;font-size:12px;padding:0 8px 0 28px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--ink);outline:none}
