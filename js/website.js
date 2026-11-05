@@ -6235,18 +6235,18 @@ function renderWishingWell(c, actions){
 
 function _wwTrackerHtml(ww, total, count, thanksDue){
   const thanksSent = (ww.contributions||[]).filter(x=>x.thanked).length;
-  const stats = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:18px 0 22px">
-      <div style="background:var(--surface);border-radius:10px;padding:12px 14px"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink)">${count}</div><div style="font-size:11px;color:var(--muted)">contributor${count===1?'':'s'}</div></div>
-      <div style="background:var(--surface);border-radius:10px;padding:12px 14px"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink)">${thanksDue}</div><div style="font-size:11px;color:var(--muted)">thank-you${thanksDue===1?'':'s'} due</div></div>
-      <div style="background:var(--surface);border-radius:10px;padding:12px 14px"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink)">${thanksSent}</div><div style="font-size:11px;color:var(--muted)">thank-you${thanksSent===1?'':'s'} sent</div></div>
+  const stats = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0 0">
+      <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${count}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">contributor${count===1?'':'s'}</div></div>
+      <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${thanksDue}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">thank-you${thanksDue===1?'':'s'} due</div></div>
+      <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${thanksSent}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">thank-you${thanksSent===1?'':'s'} sent</div></div>
     </div>`;
 
-  const header = `<div style="background:var(--card,var(--cream));border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:18px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+  const header = `<div style="background:var(--card,var(--cream));border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:9px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
         <span style="font-size:13px;color:var(--muted)">Gifted so far</span>
         <button class="btn btn-outline btn-sm" onclick="openWwContribution()" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Log a contribution</button>
       </div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--ink)">${fmt(total)}</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:26px;line-height:1.1;color:var(--ink)">${fmt(total)}</div>
       ${stats}
     </div>`;
 
@@ -6269,9 +6269,9 @@ function _wwTrackerHtml(ww, total, count, thanksDue){
     </div>`;
   const sortBar = allList.length>1 ? `<div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap">
       <span style="font-size:12px;color:var(--muted);white-space:nowrap">Sort:</span>
-      <select onchange="setWwSort(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--ink);cursor:pointer;outline:none">
+      <div class="ww-sort-wrap"><select class="ww-sort-sel" onchange="setWwSort(this.value)">
         ${_sortOpts.map(([v,l])=>`<option value="${v}"${wwSort===v?' selected':''}>${l}</option>`).join('')}
-      </select>
+      </select></div>
       <div class="ww-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="ww-search" type="search" placeholder="Search" aria-label="Search name or address" value="${_wwEsc(wwSearch||'')}" oninput="setWwSearch(this.value)" autocomplete="off"/></div>
       ${colToggle}
     </div>` : '';
