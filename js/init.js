@@ -420,6 +420,8 @@ async function _publicWeddingExtras(uid){
 // ── _showVendorPortal: read-only vendor brief (Option B style) ───────────────
 async function _showVendorPortal(token){
   let vendor={}, couple={}, theme={}, expired=false;
+  // Declared out here (not inside the fetch block) so the sections rendered further down can read them.
+  let sectionData={}, guestCountDisplay=null;
   try{
     // One RPC returns just this token's brief (the token table itself isn't publicly listable).
     const res = await fetch(`${_SB_URL}/rest/v1/rpc/vendor_brief`,{
@@ -435,10 +437,20 @@ async function _showVendorPortal(token){
       if(vendor.expires_at && new Date(vendor.expires_at) < new Date()){ expired=true; }
       // Shape it like the planner data the portal renders from.
       const vc = b.vendorCard||{};
-      couple = { event:b.event||{}, guestCount:b.guestCount||0,
+      // Guest count: when guests are still to reply, show the expected turnout (attending plus a share of
+      // the awaiting, in the same proportion as those who replied) with the confirmed number beside it.
+      const rawGc = b.guestCount;
+      if(rawGc && typeof rawGc==='object' && 'total' in rawGc){
+        const {attending=0, declined=0, awaiting=0} = rawGc;
+        const responded = attending + declined;
+        if(awaiting>0 && responded>0) guestCountDisplay = `~${attending + Math.round(awaiting*attending/responded)} expected (${attending} confirmed)`;
+        else if(attending>0) guestCountDisplay = `${attending} attending`;
+        else guestCountDisplay = rawGc.total ? String(rawGc.total) : null;
+      } else { guestCountDisplay = rawGc ? String(rawGc) : null; }
+      couple = { event:b.event||{},
                  vendors:[Object.assign({business:vendor.vendor_name}, vc)] };
       theme = b.theme||{};
-      const sectionData = b.sectionData||{};
+      sectionData = b.sectionData||{};
     } else { _showVendorError('not-found'); return; }
   }catch(e){ console.warn('Vendor portal error',e); _showVendorError('error'); return; }
 
@@ -454,14 +466,12 @@ async function _showVendorPortal(token){
 
   // Build booking rows from vendors list matching this token's vendor_name
   const matchedVendor = (couple.vendors||[]).find(v=>v.business===vendor.vendor_name||v.contact===vendor.vendor_name)||{};
-  const _gc=couple.guestCount;
-  const _gcVal=(_gc&&typeof _gc==='object')?_gc.total:_gc;
   const bookingRows=[
     ['Event date', dateStr||'TBC'],
     ['Venue', ev.venue||'TBC'],
     ['Service', matchedVendor.category||vendor.vendor_name||'—'],
     ['Setup time', matchedVendor.setupTime||'TBC'],
-    ['Guest count', _gcVal||'TBC']
+    ['Guest count', guestCountDisplay||'TBC']
   ].filter(([,v])=>v);
 
   const sections = Array.isArray(vendor.sections)&&vendor.sections.length ? vendor.sections : [];
@@ -479,7 +489,7 @@ async function _showVendorPortal(token){
     } else if(key==='checklist'){
       const arr=Array.isArray(data)?data:[];
       if(!arr.length) return '';
-      rows=arr.map(r=>{const done=r.done||r.completed;return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--pub-border)"><span style="font-size:14px;color:${done?'var(--pub-accent)':'var(--pub-border)'};line-height:1.3">${done?'✓':'○'}</span><span style="font-size:12.5px;color:var(--pub-ink)${done?';text-decoration:line-through;opacity:.6':''}">${_escHtml(r.task||r.title||r.name||'')}</span></div>`;}).join('');
+      rows=arr.map(r=>{const done=r.done||r.completed;return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--pub-border)"><span style="font-size:14px;color:${done?'var(--pub-accent)':'var(--pub-border)'};line-height:1.3">${done?'✓':'○'}</span><span style="font-size:12.5px;color:var(--pub-ink)${done?';text-decoration:line-through;opacity:.6':''}">${_escHtml(r.text||r.task||r.title||r.name||'')}</span></div>`;}).join('');
     } else if(key==='contacts'){
       const arr=Array.isArray(data)?data:[];
       if(!arr.length) return '';
@@ -487,7 +497,7 @@ async function _showVendorPortal(token){
     } else if(key==='budget'){
       const arr=Array.isArray(data)?data:[];
       if(!arr.length) return '';
-      rows=arr.map(r=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--pub-border)"><span style="font-size:12.5px;color:var(--pub-ink)">${_escHtml(r.item||r.description||r.name||'')}</span><span style="font-size:12.5px;font-weight:500;color:var(--pub-ink)">${r.amount!=null?'$'+Number(r.amount).toLocaleString('en-AU'):''}</span></div>`).join('');
+      rows=arr.map(r=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--pub-border)"><span style="font-size:12.5px;color:var(--pub-ink)">${_escHtml(r.item||r.description||r.name||'')}</span><span style="font-size:12.5px;font-weight:500;color:var(--pub-ink)">${(r.total!=null||r.amount!=null)?'$'+Number(r.total!=null?r.total:r.amount).toLocaleString('en-AU'):''}</span></div>`).join('');
     } else if(key==='notes'){
       const text=((data.brief||'')+(data.brief&&data.notes?'\n\n':'')+(data.notes||'')).trim();
       if(!text) return '';
