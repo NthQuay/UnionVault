@@ -418,6 +418,7 @@ function _commsWrapSelection(id, before, after){
 
 // ── Edit (gated to full access) ─────────────────────────────────────────────
 function _commsEditClick(key){
+  window._ssReturn=null;
   if(!_uvRequirePaid('editComms')) return;
   _commsOpenEditModal(key);
 }
@@ -447,7 +448,7 @@ function _commsEditShell(key, editHtml, tips){
 }
 function _commsEditFooter(resetFn, saveFn){
   return `<button type="button" class="comms-ed-reset" onclick="${resetFn}">Reset to default</button>
-    <button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button>
+    <button class="btn btn-outline btn-sm" onclick="closeModalDirect();if(typeof _ssReturnToSend==='function')_ssReturnToSend()">Cancel</button>
     <button class="btn btn-primary btn-sm" onclick="${saveFn}">Save</button>`;
 }
 const _COMMS_TIPS_EMAIL='Gold tags fill in for each guest when the email is sent. Select words and tap <b>B</b>, <i>I</i> or <u>U</u> to style them. <b>Aa Size</b> sets the size of the paragraph you\'re in: small, normal, large or intro (larger italic), and the align buttons set left, centre or right. Email only. Enter starts a new paragraph; Shift+Enter starts a new line in the same paragraph.';
@@ -518,6 +519,7 @@ function _commsSaveTpl(key){
   saveToStorage();
   closeModalDirect();
   _commsRefresh();
+  if(typeof _ssReturnToSend==='function') _ssReturnToSend();
 }
 function _commsResetTpl(key){
   const item=_commsItem(key); if(!item) return;
@@ -534,6 +536,7 @@ function _commsResetTpl(key){
   saveToStorage();
   closeModalDirect();
   _commsRefresh();
+  if(typeof _ssReturnToSend==='function') _ssReturnToSend();
 }
 function _commsFieldHtml(id,label,val,ph,multiline,toks){
   const esc=_escHtml;

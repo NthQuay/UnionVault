@@ -3102,7 +3102,17 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
 
 /* Timeline (mobile): times hug the left edge and shrink to give the cards more width */
 @media(max-width:640px){
-  .tl-row{grid-template-columns:48px minmax(0,1fr) !important;gap:8px !important}
-  .tl-row > .tl-time{text-align:left !important;padding-top:4px !important}
-  .tl-row > .tl-time > div{font-size:10.5px !important;letter-spacing:-.1px}
+  .tl-row{grid-template-columns:40px minmax(0,1fr) !important;gap:3px !important}
+  .tl-row > .tl-time{text-align:left !important;padding-top:5px !important;margin-left:-6px}
+  .tl-row > .tl-time > div{font-size:9.5px !important;letter-spacing:-.2px}
+  .tl-row > div:nth-child(2){padding-left:19px !important}
+  /* Song link: taller two-line card — start time on top, song name below, bigger play target */
+  .tl-row .song-chip{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"note start play" "note txt play";align-items:center;column-gap:9px;row-gap:3px;padding:11px 12px;min-height:58px;width:100%;box-sizing:border-box}
+  .tl-row .song-chip .sc-note{grid-area:note}
+  .tl-row .song-chip .sc-start{grid-area:start;justify-self:start}
+  .tl-row .song-chip .sc-txt{grid-area:txt;font-size:13px;white-space:normal;overflow:visible;line-height:1.3}
+  .tl-row .song-chip:not(:has(.sc-start)){grid-template-areas:"note txt play";min-height:50px}
+  .tl-row .song-chip .sc-play{grid-area:play;width:36px;height:36px;align-items:center;justify-content:center;border-radius:50%;background:rgba(139,115,85,.12)}
+  body.dark .tl-row .song-chip .sc-play{background:rgba(196,168,130,.18)}
+  .tl-row .song-chip .sc-play svg{width:16px;height:16px}
 }

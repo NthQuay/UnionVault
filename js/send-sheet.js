@@ -2598,15 +2598,36 @@ function _ssShowPreview(html){
   _ssClosePreview();
   const narrow=window.innerWidth<=600;
   const w=narrow?window.innerWidth-24:Math.min(600,window.innerWidth-40);
+  // Edit: only when previewing a real send (not the sample preview on the Design page)
+  const editBtn=(_ss&&_ssEditKey(_ss))?`<button class="btn btn-outline btn-sm" style="margin-right:auto;display:inline-flex;align-items:center;gap:6px" onclick="_ssEditFromPreview()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button>`:'';
   const ov=document.createElement('div');
   ov.id='ss-preview-overlay'; ov.className='modal-overlay'; ov.style.zIndex='1400';
   ov.innerHTML=`<div class="modal modal-fit" style="max-width:${w+48}px" onclick="event.stopPropagation()">
     <div class="modal-header"><div class="modal-title">Email preview</div><button class="modal-close" aria-label="Close preview" onclick="_ssClosePreview()">×</button></div>
     <div class="modal-body"><div style="display:flex;justify-content:center"><iframe srcdoc="${_escHtml(html)}" sandbox="allow-same-origin" onload="try{if(window.innerWidth<=600)this.contentDocument.body.style.padding='12px 4px'}catch(_){}" style="width:${w}px;max-width:100%;height:480px;max-height:62vh;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe></div></div>
-    <div class="modal-footer"><button class="btn btn-outline btn-sm" onclick="_ssClosePreview()">Back</button></div>
+    <div class="modal-footer">${editBtn}<button class="btn btn-outline btn-sm" onclick="_ssClosePreview()">Back</button></div>
   </div>`;
   document.body.appendChild(ov);
   document.addEventListener('keydown',_ssPreviewKey,true);
+}
+// Template key (Comms page) for the message this send sheet is using.
+function _ssEditKey(s){
+  const k={savedate:'sd',invite:'inv',reminder:'rem'}[s.kind]; if(!k) return '';
+  return k+'-'+((s.method==='email'&&s.signedIn)?'email':'sms');
+}
+// Edit from the preview: close the preview + send sheet, open the template editor, and come
+// back to the send sheet (with the updated text) once it's saved or cancelled.
+function _ssEditFromPreview(){
+  const s=_ss; if(!s) return;
+  const key=_ssEditKey(s); if(!key) return;
+  if(typeof _uvRequirePaid==='function' && !_uvRequirePaid('editComms')) return;
+  window._ssReturn={kind:s.kind,slotKey:s.slotKey,method:s.method};
+  _ssClosePreview(); _ss=null; _closeConfirm2Direct();
+  _commsOpenEditModal(key);
+}
+function _ssReturnToSend(){
+  const r=window._ssReturn; window._ssReturn=null;
+  if(r) _ssOpen(r.kind,r.slotKey,r.method);
 }
 function _ssClosePreview(){
   const ov=document.getElementById('ss-preview-overlay'); if(ov) ov.remove();
