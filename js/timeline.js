@@ -2508,6 +2508,15 @@ function guestTableHtml(list){
   const rowsHtml = slots.map(slot=>{
     const n=slot.members.length;
     const isGroup = slot.type!=='solo' && n>1;
+    // One shared address: when everyone in a couple/family who has an address has the SAME one (blank
+    // members count as sharing it), show it once, merged across the group — like the Guest Response Tracker.
+    const sharedAddr=(()=>{
+      if(n<2 || order.indexOf('address')<0) return null;
+      const filled=slot.members.filter(m=>(m.address||'').trim());
+      if(!filled.length) return null;
+      const sigs=new Set(filled.map(m=>m.address.trim().toLowerCase()));
+      return sigs.size===1?filled[0]:null;
+    })();
     return slot.members.map((g,i)=>{
       const st=(!g.rsvp||g.rsvp==='awaiting')?'awaiting':g.rsvp;
       const sel=bulkSelected.has(g.id);
@@ -2542,7 +2551,14 @@ function guestTableHtml(list){
         }
       }
 
-      const cells=editCell+connCell+cb+nameCell+order.map(k=>cellFor(g,k,st)).join('');
+      const cells=editCell+connCell+cb+nameCell+order.map(k=>{
+        if(k==='address' && sharedAddr){
+          if(i!==0) return '';
+          // Merged cell: edits go to every member in this group (data-gids), not just the first.
+          return textCellHtml(sharedAddr,'address',sharedAddr.address).replace('<td ',`<td rowspan="${n}" data-gids="${slot.members.map(m=>m.id).join(',')}" `);
+        }
+        return cellFor(g,k,st);
+      }).join('');
       // Top border on the first row of each slot; dashed between members within a group.
       const rowBorder = i===0 ? 'border-top:0.5px solid var(--border)' : (isGroup?'border-top:0.5px dashed var(--border)':'border-top:0.5px solid var(--border)');
       const rowDrop = reorderMode ? ` ondragover="groupDragOver(event,'${slot.key}')" ondragleave="groupDragLeave(event,'${slot.key}')" ondrop="groupDrop(event,'${slot.key}')"` : '';
@@ -2704,6 +2720,10 @@ function _gtSaveText(td,gid,key,val){
   val=(val||'').trim();
   if(key==='name'){ if(val) g.name=val; }
   else if(key==='role'){ if(val) g.relationship=val; else if(g.relationship && g.relationship!=='Couple' && g.relationship!=='Plus One') g.relationship='Guest'; }
+  else if(key==='address' && td && td.getAttribute && td.getAttribute('data-gids')){
+    // Merged shared-address cell: the new address applies to everyone in the group.
+    td.getAttribute('data-gids').split(',').forEach(id=>{ const m=STATE.guests.find(x=>x.id===id); if(m) m.address=val; });
+  }
   else { g[key]=val; }
   saveToStorage();
   renderGuestList();
