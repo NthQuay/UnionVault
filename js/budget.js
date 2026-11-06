@@ -801,7 +801,8 @@ function _renderChecklistAlertsBar(){
     }
     return html;
   }).join('');
-  const pinned = !!(STATE.settings && STATE.settings.checklistAlertsPinned);
+  // Stuck to the top by default; only an explicit unpin (the pin icon) lets it scroll away.
+  const pinned = _checklistAlertsPinned();
   const alertIcon=`<span style="color:${hasOverdue?'var(--red-deep)':'var(--red)'};display:inline-flex;flex-shrink:0">${triSvg}</span>`;
   const countBadge=`<span style="font-size:10px;color:${hasOverdue?'var(--red-deep)':'var(--red)'};background:${hasOverdue?'rgba(139,0,0,.08)':'rgba(192,57,43,.08)'};border-radius:9px;padding:1px 7px;flex-shrink:0">${all.length}</span>`;
   const pinBtn=_alertPinBtnHtml(pinned, '_toggleChecklistAlertsPin');
@@ -830,9 +831,10 @@ function _alertPinBtnHtml(pinned, fnName){
     <svg width="13" height="13" viewBox="0 0 24 24" fill="${fill}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v6l-2 4h10l-2-4V4"/><line x1="12" y1="14" x2="12" y2="21"/><line x1="8" y1="4" x2="16" y2="4"/></svg>
   </span>`;
 }
+function _checklistAlertsPinned(){ return !(STATE.settings && STATE.settings.checklistAlertsPinned===false); }
 function _toggleChecklistAlertsPin(){
   if(!STATE.settings) STATE.settings={};
-  STATE.settings.checklistAlertsPinned=!STATE.settings.checklistAlertsPinned;
+  STATE.settings.checklistAlertsPinned=!_checklistAlertsPinned();
   saveToStorage();
   navigate('checklist');
 }
