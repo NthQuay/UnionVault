@@ -775,12 +775,11 @@ function _rteToggleSize(id,e){
 }
 // Size applies to the whole paragraph the cursor is in: small / normal / large / intro (larger italic).
 function _rteSize(id,sz){
-  const ed=document.getElementById(id); if(!ed) return; ed.focus(); _rteRestoreSel(id);
-  const p=_rteBlock(ed)||ed.querySelector('p');
-  if(p&&!p.classList.contains('rte-btnrow')){
+  const ed=document.getElementById(id); if(!ed) return;
+  _rteSelBlocks(id).forEach(p=>{
     p.classList.remove('rte-small','rte-large','rte-intro');
     if(sz!=='normal') p.classList.add('rte-'+sz);
-  }
+  });
   _rteCloseMenus(); _rteSync(ed);
 }
 function _rteAlignIcon(a){
@@ -788,14 +787,40 @@ function _rteAlignIcon(a){
   const x=l=>a==='left'?2:a==='center'?(16-l)/2:14-l;
   return `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">${lines.map(([y,l])=>`<line x1="${x(l)}" y1="${y}" x2="${x(l)+l}" y2="${y}"/>`).join('')}</svg>`;
 }
+// The paragraphs the cursor is in, or that the highlighted text touches (not RSVP/website/invitation block rows).
+// Uses the live selection; falls back to the last one saved from the toolbar menus. Never "the last line".
+function _rteSelBlocks(id){
+  const ed=document.getElementById(id); if(!ed) return [];
+  const s=window.getSelection(); let r=null;
+  if(s.rangeCount && ed.contains(s.anchorNode) && ed.contains(s.focusNode)) r=s.getRangeAt(0);
+  else if(_rteSel[id] && ed.contains(_rteSel[id].startContainer)) r=_rteSel[id];
+  if(!r) return [];
+  const top=(n)=>{ while(n&&n.parentNode!==ed) n=n.parentNode; return n; };
+  let first=top(r.startContainer), last=top(r.endContainer);
+  // Selection sitting directly in the editor (between paragraphs): use the paragraph at that offset.
+  if(r.startContainer===ed) first=ed.childNodes[Math.min(r.startOffset,ed.childNodes.length-1)];
+  if(r.endContainer===ed) last=ed.childNodes[Math.max(0,Math.min(r.endOffset,ed.childNodes.length)-1)];
+  if(!first||!last) return [];
+  // A highlight that ends at the very start of the next paragraph (e.g. triple-click) doesn't include that paragraph.
+  if(first!==last){
+    const pre=document.createRange(); pre.selectNodeContents(last); pre.setEnd(r.endContainer,r.endOffset);
+    if(pre.toString()==='' && last.previousSibling) last=last.previousSibling;
+  }
+  const out=[]; let n=first;
+  while(n){
+    if(n.nodeType===1 && (n.nodeName==='P'||n.nodeName==='DIV') && !n.classList.contains('rte-btnrow')) out.push(n);
+    if(n===last) break;
+    n=n.nextSibling;
+  }
+  return out;
+}
 // Alignment is per paragraph, like size: left (default), centre or right.
 function _rteAlign(id,a){
-  const ed=document.getElementById(id); if(!ed) return; ed.focus(); _rteRestoreSel(id);
-  const p=_rteBlock(ed)||ed.querySelector('p');
-  if(p&&!p.classList.contains('rte-btnrow')){
+  const ed=document.getElementById(id); if(!ed) return;
+  _rteSelBlocks(id).forEach(p=>{
     p.classList.remove('rte-center','rte-right');
     if(a==='center') p.classList.add('rte-center'); else if(a==='right') p.classList.add('rte-right');
-  }
+  });
   _rteSync(ed);
 }
 function _rteIntro(id){
