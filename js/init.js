@@ -730,6 +730,9 @@ function _showVendorError(type){
       // Local data belongs to a different user — wipe it and reload so we fetch our own cloud data.
       try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
       try{ localStorage.setItem('uv_uid', _sbSession.user.id); }catch(_){}
+      // Without this, the beforeunload saveToStorage() writes the OTHER account's STATE
+      // straight back under the new uv_uid, and the next boot trusts it.
+      window._uvWipeInProgress = true;
       location.reload();
       return;
     }

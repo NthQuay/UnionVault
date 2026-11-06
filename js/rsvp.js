@@ -1045,6 +1045,20 @@ function _ageBandBadge(g){
   const m=_AGE_BAND_META[b];
   return `<span class="age-badge age-badge-${b}" style="font-size:9.5px;padding:1px 7px;border-radius:9px;white-space:nowrap;margin-left:6px;vertical-align:middle">${m.label}</span>`;
 }
+// "+1" badge for a plus-one guest (linked via a host's plusOneId, or marked +1 in
+// Relationship). Hidden while the name is still the "+1 (Host)" placeholder, since
+// that already says it; shows once the +1 has RSVP'd under their own name.
+function _isPlusOneGuest(g){
+  if(!g||!g.id) return false;
+  if(typeof _isPlusOneRel==='function'&&_isPlusOneRel(g)) return true;
+  return (STATE.guests||[]).some(h=>h.plusOneId===g.id);
+}
+function _plusOneBadge(g){
+  if(STATE.settings&&STATE.settings.showAgeBadges===false) return '';
+  if(!_isPlusOneGuest(g)) return '';
+  if(typeof _plusOnePlaceholderHost==='function'&&_plusOnePlaceholderHost(g.name)) return '';
+  return `<span class="age-badge age-badge-plusone" style="font-size:9.5px;padding:1px 7px;border-radius:9px;white-space:nowrap;margin-left:6px;vertical-align:middle">+1</span>`;
+}
 // Segmented control (matches .inv-seg). Writes the chosen band into a hidden
 // input (id) that the save handler reads. onChangeJs (optional) runs after set.
 function _ageBandSegHtml(id, current, onChangeJs){
@@ -1252,7 +1266,7 @@ function _orsvpRender(){
         const extras=hcHtml+dietChips;
         return `<div style="padding:10px 14px;border-bottom:1px solid var(--border)">
           <div class="orsvp-lvm st-a">
-            <span class="lvm-n" style="font-size:13px;font-weight:500;color:var(--ink)">${m.name}</span>
+            <span class="lvm-n" style="font-size:13px;font-weight:500;color:var(--ink)">${m.name}${_ageBandBadge(m)}${_plusOneBadge(m)}</span>
             ${extras?`<span class="lvm-d">${extras}</span>`:''}
             ${mealHtml?`<span class="lvm-m">${mealHtml}</span>`:''}
             <span class="lvm-b">${_badge(row.attending)}</span>
@@ -1285,7 +1299,7 @@ function _orsvpRender(){
         const meal=row.meal?`<span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:500;color:var(--ink)">${row.meal}</span>`:'';
         return `<div class="orsvp-lv-member" style="padding:7px 14px 7px 46px;border-bottom:1px solid var(--border)">
           <div class="orsvp-lvm st-a">
-            <span class="lvm-n" style="font-size:12.5px;font-weight:500;color:var(--ink)">${m.name}</span>
+            <span class="lvm-n" style="font-size:12.5px;font-weight:500;color:var(--ink)">${m.name}${_ageBandBadge(m)}${_plusOneBadge(m)}</span>
             ${chips?`<span class="lvm-d">${chips}</span>`:''}
             ${meal?`<span class="lvm-m">${meal}</span>`:''}
             <span class="lvm-b">${_badge(row.attending)}</span>
@@ -2666,8 +2680,9 @@ function rsvpTableHtml(list,statusMeta){
 
       // Name cell — per member.
       const pinStyle=namePinned?`;${_pinTd}`:'';
-      const note=(slot.type==='plusone'&&i===1)?'<span style="color:var(--muted);font-size:11px"> +1</span>':'';
-      const nameTd=`<td style="${td};padding-left:4px;white-space:nowrap${pinStyle}"><span style="font-size:13px;color:var(--ink)">${_escHtml(g.name)}${note}</span>${_ageBandBadge(g)}</td>`;
+      // Plus-ones get the "+1" pill (_plusOneBadge) instead of the old grey "+1" text.
+      const note='';
+      const nameTd=`<td style="${td};padding-left:4px;white-space:nowrap${pinStyle}"><span style="font-size:13px;color:var(--ink)">${_escHtml(g.name)}${note}</span>${_ageBandBadge(g)}${_plusOneBadge(g)}</td>`;
 
       // Group-level cells (Invite, Save the Date, Reminder) — rowspan on first row.
       const groupLevelTd=(content)=>isFirst?`<td${rs} style="${td};text-align:center;vertical-align:middle;white-space:nowrap">${content}</td>`:'';

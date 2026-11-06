@@ -182,6 +182,8 @@ body.dark .inv-seg button.active{background:#A2957A;color:#1B1A1E}
 body.dark .age-badge-child{background:rgba(138,166,200,.18);color:#8AA6C8}
 .age-badge-infant{background:rgba(154,79,149,.13);color:var(--sep-ink)}
 body.dark .age-badge-infant{background:rgba(216,169,211,.16);color:#D8A9D3}
+.age-badge-plusone{background:rgba(184,150,62,.15);color:var(--gold-deep)}
+body.dark .age-badge-plusone{background:rgba(201,168,76,.18);color:#D9BC6E}
 .rsvp-ageseg{display:inline-flex;border:.5px solid #E3D7C4;border-radius:6px;overflow:hidden;vertical-align:middle}
 body.dark .rsvp-ageseg{border-color:#6E6450}
 .rsvp-ageseg-btn{padding:3px 7px;background:#FBF8F3;color:#A2957A;border:none;cursor:pointer;font-size:10.5px;font-weight:600;font-family:'Inter',sans-serif;line-height:1;transition:all .15s}

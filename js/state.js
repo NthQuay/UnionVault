@@ -35,30 +35,30 @@ const STATE = {
     useRsvpCount: false,
     excludeChildrenPerHead: false,
     items: [
-      {id:'b-venue',name:'Venue',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl1',note:'',expanded:false,subItems:[
+      {id:'b-venue',name:'Venue',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl1',note:'',expanded:true,subItems:[
         {id:'bv1',name:'Hire fee',amount:0},{id:'bv2',name:'Chairs & furniture',amount:0},
         {id:'bv3',name:'Napery & linen',amount:0},{id:'bv4',name:'Lighting package',amount:0},
         {id:'bv5',name:'Audio/visual',amount:0},{id:'bv6',name:'Ceremony setup',amount:0}
       ]},
-      {id:'b-florals',name:'Florals',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl6',note:'',expanded:false,subItems:[]},
-      {id:'b-celebrant',name:'Celebrant / Officiant',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl2',note:'',expanded:false,subItems:[]},
-      {id:'b-catering',name:'Catering & Bar',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl7',note:'',expanded:false,subItems:[
+      {id:'b-florals',name:'Florals',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl6',note:'',expanded:true,subItems:[]},
+      {id:'b-celebrant',name:'Celebrant / Officiant',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl2',note:'',expanded:true,subItems:[]},
+      {id:'b-catering',name:'Catering & Bar',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl7',note:'',expanded:true,subItems:[
         {id:'bc1',name:'Food per head',amount:0},{id:'bc2',name:'Bar package',amount:0},
         {id:'bc3',name:'Wedding cake',amount:0},{id:'bc4',name:'Wait staff',amount:0}
       ]},
-      {id:'b-photo',name:'Photographer',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl4',note:'',expanded:false,subItems:[]},
-      {id:'b-gown',name:'Wedding Attire',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl3',note:'',expanded:false,subItems:[
+      {id:'b-photo',name:'Photographer',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl4',note:'',expanded:true,subItems:[]},
+      {id:'b-gown',name:'Wedding Attire',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl3',note:'',expanded:true,subItems:[
         {id:'ba1',name:'Gown / Suit',amount:0},{id:'ba2',name:'Shoes',amount:0},
         {id:'ba3',name:'Accessories',amount:0},{id:'ba4',name:'Bridesmaid attire',amount:0},
         {id:'ba5',name:'Groomswear',amount:0}
       ]},
-      {id:'b-rings',name:'Rings',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl12',note:'',expanded:false,subItems:[]},
-      {id:'b-beauty',name:'Hair & Makeup',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl9',note:'',expanded:false,subItems:[]},
-      {id:'b-music',name:'Entertainment',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl15',note:'',expanded:false,subItems:[]},
-      {id:'b-transport',name:'Transport',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl17',note:'',expanded:false,subItems:[]},
-      {id:'b-stationery',name:'Stationery & Invitations',total:0,deposit:0,paid:false,dueDate:'',checklistId:'',note:'',expanded:false,subItems:[]},
-      {id:'b-honeymoon',name:'Honeymoon',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl11',note:'',expanded:false,subItems:[]},
-      {id:'b-misc',name:'Miscellaneous',total:0,deposit:0,paid:false,dueDate:'',checklistId:'',note:'',expanded:false,subItems:[]},
+      {id:'b-rings',name:'Rings',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl12',note:'',expanded:true,subItems:[]},
+      {id:'b-beauty',name:'Hair & Makeup',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl9',note:'',expanded:true,subItems:[]},
+      {id:'b-music',name:'Entertainment',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl15',note:'',expanded:true,subItems:[]},
+      {id:'b-transport',name:'Transport',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl17',note:'',expanded:true,subItems:[]},
+      {id:'b-stationery',name:'Stationery & Invitations',total:0,deposit:0,paid:false,dueDate:'',checklistId:'',note:'',expanded:true,subItems:[]},
+      {id:'b-honeymoon',name:'Honeymoon',total:0,deposit:0,paid:false,dueDate:'',checklistId:'cl11',note:'',expanded:true,subItems:[]},
+      {id:'b-misc',name:'Miscellaneous',total:0,deposit:0,paid:false,dueDate:'',checklistId:'',note:'',expanded:true,subItems:[]},
     ]
   },
   tables: [

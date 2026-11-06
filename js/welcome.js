@@ -596,6 +596,26 @@ function wizardFinish(){
   }
   STATE.checklist = newChecklist;
 
+  // ── Pre-wedding events → Events page ───────────────────────────────
+  // Created for every tier (free accounts can't open Events yet, but the
+  // events are waiting there if they upgrade). Skips names that already exist
+  // so re-running the wizard never duplicates.
+  const WZ_PRE_EVENTS = {
+    "Hen's party":      {name:"Hen's Party",      type:"Hen's Party"},
+    "Buck's party":     {name:"Buck's Party",     type:"Buck's Party"},
+    "Rehearsal dinner": {name:"Rehearsal Dinner", type:"Rehearsal Dinner"},
+    "Engagement party": {name:"Engagement Party", type:"Engagement Party"},
+    "Day-after brunch": {name:"Day-after Brunch", type:"Recovery Brunch"}
+  };
+  if(!Array.isArray(STATE.events)) STATE.events = [];
+  [...document.querySelectorAll('#p5 .pill.on')].forEach(p=>{
+    const def = WZ_PRE_EVENTS[p.textContent.trim()];
+    if(!def) return;
+    const exists = STATE.events.some(e=>(e.name||'').trim().toLowerCase()===def.name.toLowerCase());
+    if(exists) return;
+    STATE.events.push({id:uid(), rsvps:{}, name:def.name, type:def.type, date:'', time:'', venueName:'', venueAddress:'', venueMapUrl:'', notes:''});
+  });
+
   // ── Guest entries for the couple ───────────────────────────────────
   if(!STATE.guests.length){
     const id1 = uid(), id2 = uid(), goh = "Guest's of Honour";
