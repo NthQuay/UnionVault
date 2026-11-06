@@ -565,6 +565,14 @@ function _ssRender(open){
   const blockedHtml = (s.method==='email' && s.blockedEmails && s.blockedEmails.length)
     ? `<div style="border:1px dashed var(--red);border-radius:11px;padding:10px 12px;font-size:12px;color:var(--red);line-height:1.5"><strong>Skipped:</strong> ${esc(s.blockedEmails.map(g=>g.name||g.email).join(', '))} — a previous email bounced or was marked as spam. Try another way to reach ${s.blockedEmails.length>1?'them':'this guest'}.</div>`
     : '';
+  // The template has a "Visit our website" button, but there's no published site to send people to —
+  // the button is left out of the message, so say so and point to where it gets published.
+  const siteNoticeHtml = (typeof _tplHasBtn==='function' && _tplHasBtn(s.base,'website') && !_ctaLinks().website)
+    ? `<div role="status" style="display:flex;gap:10px;align-items:flex-start;border:1px solid var(--gold);background:rgba(196,168,130,.14);border-radius:11px;padding:10px 12px;font-size:12px;line-height:1.5;color:var(--ink)">
+        <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex;margin-top:1px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+        <span style="min-width:0"><strong>Your website isn't published yet.</strong> This ${noun} has a "Visit our website" button, but it won't show until you publish your website. <button type="button" onclick="_ss=null;_closeConfirm2Direct();navigate('website')" style="border:none;background:none;padding:0;font:inherit;color:var(--gold-deep);font-weight:600;text-decoration:underline;cursor:pointer">Go to Website</button></span>
+      </div>`
+    : '';
   const sw=(on,fn,label)=>`<span class="toggle-switch"><input type="checkbox" ${on?'checked':''} onchange="${fn}" aria-label="${esc(label)}"/><span class="toggle-track"></span></span>`;
   const rowStyle='display:flex;align-items:center;gap:11px;border:.5px solid var(--border);border-radius:11px;padding:9px 10px;background:var(--surface)';
   const lab='font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)';
@@ -600,6 +608,7 @@ function _ssRender(open){
   const body=`<div style="display:flex;flex-direction:column;gap:11px">
     <div style="font-size:12.5px;color:var(--muted);margin-top:-6px">${esc(who)} · ${esc(_ssMethodLabel(s.method))}${contact?' · '+esc(contact):''}</div>
     ${blockedHtml}
+    ${siteNoticeHtml}
     ${toHtml}
     ${attachHtml}
     <div style="${lab}">Message</div>

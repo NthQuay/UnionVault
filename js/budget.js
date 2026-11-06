@@ -1845,7 +1845,7 @@ function renderBudgetSummaryBody(){
   const base=Math.max(budgetTotal,totalCost);
   const lbl=(t,btn,sw)=>`<span style="font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:5px;min-height:18px">${sw?`<span style="width:9px;height:9px;border-radius:2px;background:${sw};flex-shrink:0"></span>`:''}${t}${btn||''}</span>`;
   const val=(v,c,size)=>`<span style="${serif};font-size:${size||18}px;font-weight:600;color:${c};line-height:1.15;white-space:nowrap">${v}</span>`;
-  const fig=(t,v,c,btn,sw)=>`<div style="min-width:0;display:flex;flex-direction:column;gap:2px">${lbl(t,btn,sw)}${val(v,c)}</div>`;
+  const fig=(t,v,c,btn,sw)=>`<div class="bsum-fig" style="min-width:0;display:flex;flex-direction:column;gap:2px">${lbl(t,btn,sw)}${val(v,c)}</div>`;
   const gTitle=(t,v)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px"><span style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">${t}</span>${val(v,'var(--ink)',15)}</div>`;
   const G1='Your budget', G2='Of what\'s committed';
   const meter=(segs)=>`<div style="height:7px;border-radius:5px;background:var(--border);overflow:hidden;display:flex">${segs.map(s=>`<div style="width:${s[0]}%;background:${s[1]}"></div>`).join('')}</div>`;
@@ -1887,15 +1887,15 @@ function renderBudgetSummaryBody(){
   if(style===4){
     const circ=195, p=base?totalPaid/base:0, d=base?F.due/base:0;
     const pctFree=budgetTotal?Math.max(0,Math.round(F.rem/budgetTotal*100)):0;
-    const ring=`<svg width="44" height="44" viewBox="0 0 74 74" style="flex-shrink:0;margin-left:-2px" role="img" aria-label="Paid, left to pay and unallocated">
+    const ring=`<svg class="bsum-ring-svg" width="72" height="72" viewBox="0 0 74 74" style="flex-shrink:0;margin-left:-2px" role="img" aria-label="Paid, left to pay and unallocated">
         <circle cx="37" cy="37" r="31" fill="none" stroke="var(--border)" stroke-width="8"/>
         <circle cx="37" cy="37" r="31" fill="none" stroke="var(--green)" stroke-width="8" stroke-dasharray="${(circ*p).toFixed(1)} ${circ}" transform="rotate(-90 37 37)"/>
         <circle cx="37" cy="37" r="31" fill="none" stroke="${F.over?'var(--red)':'var(--gold)'}" stroke-width="8" stroke-dasharray="${(circ*d).toFixed(1)} ${circ}" stroke-dashoffset="${(-circ*p).toFixed(1)}" transform="rotate(-90 37 37)"/>
         <text x="37" y="35" text-anchor="middle" style="${serif};font-size:15px;font-weight:600;fill:var(--ink)">${F.over?'Over':(budgetTotal?pctFree+'%':'—')}</text>
-        <text x="37" y="47" text-anchor="middle" style="font-size:6.5px;fill:var(--muted);letter-spacing:.04em">${F.over?'BUDGET':'UNALLOCATED'}</text>
+        <text x="37" y="47" text-anchor="middle" style="font-size:5.6px;fill:var(--muted);letter-spacing:.02em">${F.over?'BUDGET':'UNALLOCATED'}</text>
       </svg>`;
     const a=`<div class="bsum-ring" style="display:flex;align-items:center;gap:12px;min-width:0">${ring}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;flex:1;min-width:0">${fig(F.remLbl,F.remVal,F.remColor)}${fig('Committed',fmt(totalCost),'var(--ink)')}${fig('Paid',fmt(totalPaid),'var(--green)')}${fig('Left to pay',fmt(F.due),'var(--gold-deep)')}</div></div>`;
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;flex:1;min-width:0">${fig(F.remLbl,F.remVal,F.remColor)}${fig('Committed',fmt(totalCost),'var(--ink)')}${fig('Paid',fmt(totalPaid),'var(--green)')}${fig('Left to pay',fmt(F.due),'var(--gold-deep)')}</div></div>`;
     const b=`<div class="bsum-ring" style="display:flex;align-items:center;gap:16px;min-width:0">${ring}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;flex:1;min-width:0">
         <div>${gTitle(G1,fmt(budgetTotal))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${fig('Committed',fmt(totalCost),'var(--ink)',allocBtn)}${fig(F.remLbl,F.remVal,F.remColor)}</div></div>
