@@ -3089,3 +3089,9 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
 .bsum-ring-b .bsum-fig > span:first-child{min-height:20px!important;align-items:center}
 .bsum-ring-b .bsum-fig{justify-content:flex-start}
 .bsum-ring-b > div > div > div:last-child{align-items:start}
+
+/* Desktop ring summary: the figures are sized to sit comfortably beside the bigger ring. */
+@media(min-width:561px){
+  .bsum-ring-b .bsum-fig > span:first-child{font-size:12px!important;letter-spacing:.07em;min-height:24px!important}
+  .bsum-ring-b .bsum-fig > span:last-child{font-size:30px!important;line-height:1.1!important}
+}

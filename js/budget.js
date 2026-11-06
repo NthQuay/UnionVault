@@ -1897,10 +1897,10 @@ function renderBudgetSummaryBody(){
         <text x="37" y="47" text-anchor="middle" style="font-size:5.6px;fill:var(--muted);letter-spacing:.02em">${F.over?'BUDGET':'UNALLOCATED'}</text>
       </svg>`;
     const a=`<div class="bsum-ring" style="display:flex;align-items:center;gap:12px;min-width:0">${ring}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;flex:1;min-width:0">${fig(F.remLbl,F.remVal,F.remColor)}${fig('Committed',fmt(totalCost),'var(--ink)')}${fig('Paid',fmt(totalPaid),'var(--green)')}${fig('Left to pay',fmt(F.due),'var(--gold-deep)')}</div></div>`;
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;flex:1;min-width:0">${fig('Committed',fmt(totalCost),'var(--ink)')}${fig(F.remLbl,F.remVal,F.remColor)}${fig('Paid',fmt(totalPaid),'var(--green)')}${fig('Left to pay',fmt(F.due),'var(--gold-deep)')}</div></div>`;
     // Desktop: the ring with the same four figures as on phones — no group headings above them.
     const b=`<div class="bsum-ring bsum-ring-b" style="display:flex;align-items:center;gap:26px;min-width:0">${ring}
-      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;flex:1;min-width:0">${fig(F.remLbl,F.remVal,F.remColor)}${fig('Committed',fmt(totalCost),'var(--ink)',allocBtn)}${fig('Paid',fmt(totalPaid),'var(--green)',depBtn)}${fig('Left to pay',fmt(F.due),'var(--gold-deep)',dueBtn)}</div></div>`;
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;flex:1;min-width:0">${fig('Committed',fmt(totalCost),'var(--ink)',allocBtn)}${fig(F.remLbl,F.remVal,F.remColor)}${fig('Paid',fmt(totalPaid),'var(--green)',depBtn)}${fig('Left to pay',fmt(F.due),'var(--gold-deep)',dueBtn)}</div></div>`;
     return wrapAB(a,b);
   }
 
