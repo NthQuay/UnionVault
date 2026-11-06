@@ -400,7 +400,42 @@ async function _showRsvpForm(coupleId){
   document.open();
   document.write(html);
   document.close();
-  if(typeof _uvOpenRsvp==='function') _uvOpenRsvp();
+  // Standalone RSVP page: just the form, on the site's own page colour, with the couple's names above it —
+  // none of the wedding website behind it. (The site's scripts finish after document.close() returns, so the
+  // old one-shot call to open the form found nothing to open and guests landed on the website instead.)
+  try{
+    const ev=STATE.event||{};
+    const names=[ev.partner1,ev.partner2].filter(Boolean).join(' & ');
+    let dateStr='';
+    if(ev.date){ const d=new Date(ev.date+'T00:00:00'); dateStr=isNaN(d)?ev.date:d.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}); }
+    const st=document.createElement('style');
+    st.id='uv-rsvp-only';
+    st.textContent='body > *:not(#uv-rsvp-overlay):not(#uv-rsvp-head):not(script):not(style){display:none!important}'
+      +'#uv-rsvp-overlay{background:transparent!important}.rfm-close{display:none!important}#uv-rsvp-sheet{border:1px solid rgba(0,0,0,.09)}'
+      +'#uv-rsvp-head{position:fixed;top:0;left:0;right:0;text-align:center;padding:26px 16px 0;z-index:9998;pointer-events:none}'
+      +'#uv-rsvp-head .n{font-size:13px;letter-spacing:.22em;text-transform:uppercase;opacity:.85}'
+      +'#uv-rsvp-head .d{font-size:12px;opacity:.6;margin-top:6px;letter-spacing:.04em}';
+    (document.head||document.documentElement).appendChild(st);
+    if(names||dateStr){
+      const head=document.createElement('div');
+      head.id='uv-rsvp-head';
+      head.innerHTML=(names?`<div class="n">${_escHtml(names)}</div>`:'')+(dateStr?`<div class="d">${_escHtml(dateStr)}</div>`:'');
+      document.body.appendChild(head);
+    }
+  }catch(e){ console.warn('RSVP-only styling failed',e); }
+  let _tries=0;
+  const _openWhenReady=()=>{
+    if(typeof window._uvOpenRsvp==='function'){
+      window._uvOpenRsvp();
+      // There's no website to fall back to, so closing (e.g. after the thank-you screen) just resets the form.
+      const orig=window._uvCloseRsvp;
+      if(typeof orig==='function' && !orig._rsvpOnly){
+        window._uvCloseRsvp=function(){ orig(); window._uvOpenRsvp(); };
+        window._uvCloseRsvp._rsvpOnly=true;
+      }
+    } else if(_tries++<100) setTimeout(_openWhenReady,50);
+  };
+  _openWhenReady();
 }
 
 // Public pages get guest names/groupings, meal settings and the wishing well (minus
