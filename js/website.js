@@ -7508,7 +7508,7 @@ function renderVisionboard(c,actions){
       <div style="font-family:'Cormorant Garamond',serif;font-size:${_titleSz};font-weight:500;color:${inkColor};margin-bottom:2px;line-height:1.2">${item.title}</div>
       ${dense?'':`<div style="font-size:${_catSz};color:${mutedInk};font-style:italic">${item.category}</div>`}
       ${vbBudgetChip(item)}
-      ${(!dense && item.notes)?`<div style="font-size:${big?'12px':'11px'};color:${mutedInk};margin-top:5px;line-height:1.5">${item.notes}</div>`:''}
+      ${(!dense && item.notes)?`<div style="font-size:${big?'12px':'11px'};color:${mutedInk};margin-top:5px;line-height:1.5;white-space:pre-wrap">${_escHtml(item.notes)}</div>`:''}
       ${item.link?`<a href="${item.link}" target="_blank" rel="noopener" style="font-size:${_linkSz};color:${mutedInk};text-decoration:underline;margin-top:4px;display:inline-flex;align-items:center;gap:${dense?'3px':'4px'};font-style:italic;max-width:100%;min-width:0;overflow:hidden"><svg width="${_linkIc}" height="${_linkIc}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${_escHtml(_urlDomain(item.link))}</span></a>`:''}
     </div>`}`;
   }
@@ -7600,7 +7600,7 @@ function renderVisionboard(c,actions){
       ${vbPageImagesOnly?'':`<div style="padding:18px 20px 22px">
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:${mutedInk};margin-bottom:6px">${first.category}</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:${inkColor};line-height:1.2;margin-bottom:6px">${first.title}</div>
-        ${first.notes?`<div style="font-size:12.5px;color:${mutedInk};line-height:1.6">${first.notes}</div>`:''}
+        ${first.notes?`<div style="font-size:12.5px;color:${mutedInk};line-height:1.6;white-space:pre-wrap">${_escHtml(first.notes)}</div>`:''}
         ${first.link?`<a href="${first.link}" target="_blank" rel="noopener" style="font-size:11px;color:${mutedInk};text-decoration:underline;margin-top:8px;display:inline-flex;align-items:center;gap:4px;font-style:italic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>${_escHtml(_urlDomain(first.link))}</a>`:''}
       </div>`}
     </div>`:'';
@@ -7620,7 +7620,7 @@ function renderVisionboard(c,actions){
         ${_mediaUrl(item.image)?`<img src="${_mediaUrl(item.image)}" alt="${item.title}" style="width:100%;display:block;object-fit:cover;max-height:${160+((idx%3)*60)}px${vbPageImagesOnly?';border-radius:8px':''}" onerror="this.style.display='none'"/>`:''}
         ${vbPageImagesOnly?'':`<div style="padding:8px 10px 10px">
           <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:${inkColor}">${item.title}</div>
-          ${item.notes?`<div style="font-size:10px;color:${mutedInk};margin-top:3px;line-height:1.4">${item.notes}</div>`:''}
+          ${item.notes?`<div style="font-size:10px;color:${mutedInk};margin-top:3px;line-height:1.4;white-space:pre-wrap">${_escHtml(item.notes)}</div>`:''}
         </div>`}
       </div>
     </div>`;}).join('');}

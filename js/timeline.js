@@ -299,7 +299,7 @@ function _tlOpenMasterView(){
             ${it.location?`<span style="display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${_escHtml(it.location)}</span>`:''}
             ${it.who?`<span style="display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${_escHtml(it.who)}</span>`:''}
           </div>`:''}
-          ${it.notes?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.45">${it.notes.replace(/</g,'&lt;')}</div>`:''}
+          ${it.notes?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.45;white-space:pre-wrap">${it.notes.replace(/</g,'&lt;')}</div>`:''}
           <div style="margin-top:6px"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:1px 7px;border-radius:8px;background:${it._bg};color:${it._color}"><span style="width:5px;height:5px;border-radius:50%;background:${it._color}"></span>${_escHtml(it._source)}</span></div>
         </div>
       </div>
@@ -338,7 +338,7 @@ function _tlPrintMaster(){
         <div style="font-size:15px;font-weight:600;margin-bottom:2px">${_escHtml(it.title||'Untitled')} <span style="font-size:10px;font-weight:600;color:${cat.color};text-transform:uppercase;letter-spacing:.05em;margin-left:6px">${cat.label}</span></div>
         ${meta?`<div style="font-size:12px;color:#666">${_escHtml(meta)}</div>`:''}
         <div style="font-size:10px;font-weight:600;color:${it._color};margin-top:3px">${_escHtml(it._source)}</div>
-        ${it.notes?`<div style="font-size:12px;color:#888;margin-top:2px">${_escHtml(it.notes)}</div>`:''}
+        ${it.notes?`<div style="font-size:12px;color:#888;margin-top:2px;white-space:pre-wrap">${_escHtml(it.notes)}</div>`:''}
       </td>
     </tr>`;
   }).join('');
@@ -618,7 +618,7 @@ function renderTimeline(c, actions){
               ${it.who?`<span style="display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${it.who}</span>`:''}
             </div>`:''}
             ${(()=>{ const lv=it.vendorId&&(STATE.vendors||[]).find(x=>x.id===it.vendorId); if(!lv) return ''; const sm=_vendorStatusMeta(lv.status); return `<div style="margin-top:7px"><button type="button" onclick="event.stopPropagation();_goToVendor('${lv.id}')" title="${_escHtml(lv.business||'Vendor')}" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;border-radius:7px;padding:2px 8px;background:${sm.bg};color:${sm.fg};border:.5px solid ${sm.fg};cursor:pointer;max-width:100%"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M2 5h20v3a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M4 11v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9"/><path d="M9 21v-6h6v6"/></svg><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(lv.business||'Vendor')}</span></button></div>`; })()}
-            ${it.notes?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.45">${it.notes.replace(/</g,'&lt;')}</div>`:''}
+            ${it.notes?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.45;white-space:pre-wrap">${it.notes.replace(/</g,'&lt;')}</div>`:''}
             ${tlSongChipHtml(it)}
           </div>
         </div>
@@ -1075,7 +1075,7 @@ function printTimeline(mode){
       <td style="padding:10px 0;vertical-align:top;border-bottom:1px solid #eee">
         <div style="font-size:15px;font-weight:600;margin-bottom:2px">${(it.title||'').replace(/</g,'&lt;')} <span style="font-size:10px;font-weight:600;color:${cat.color};text-transform:uppercase;letter-spacing:.05em;margin-left:6px">${cat.label}</span></div>
         ${meta?`<div style="font-size:12px;color:#666">${meta.replace(/</g,'&lt;')}</div>`:''}
-        ${it.notes?`<div style="font-size:12px;color:#888;margin-top:2px">${it.notes.replace(/</g,'&lt;')}</div>`:''}
+        ${it.notes?`<div style="font-size:12px;color:#888;margin-top:2px;white-space:pre-wrap">${it.notes.replace(/</g,'&lt;')}</div>`:''}
         ${songHtml}
       </td>
     </tr>`;

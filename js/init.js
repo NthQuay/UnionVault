@@ -506,7 +506,7 @@ async function _showVendorPortal(token){
     if(key==='timeline'){
       const arr=Array.isArray(data)?data:[];
       if(!arr.length) return '';
-      rows=arr.slice().sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(r=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--pub-border)"><span style="font-size:12px;color:var(--pub-accent);min-width:52px;flex-shrink:0;font-weight:500">${_escHtml(r.time||'')}</span><div><div style="font-size:12.5px;font-weight:500;color:var(--pub-ink)">${_escHtml(r.title||'')}${r.location?`<span style="font-weight:400;color:var(--pub-text)"> · ${_escHtml(r.location)}</span>`:''}</div>${r.notes?`<div style="font-size:11.5px;color:var(--pub-text);margin-top:2px">${_escHtml(r.notes)}</div>`:''}</div></div>`).join('');
+      rows=arr.slice().sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(r=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--pub-border)"><span style="font-size:12px;color:var(--pub-accent);min-width:52px;flex-shrink:0;font-weight:500">${_escHtml(r.time||'')}</span><div><div style="font-size:12.5px;font-weight:500;color:var(--pub-ink)">${_escHtml(r.title||'')}${r.location?`<span style="font-weight:400;color:var(--pub-text)"> · ${_escHtml(r.location)}</span>`:''}</div>${r.notes?`<div style="font-size:11.5px;color:var(--pub-text);margin-top:2px;white-space:pre-wrap">${_escHtml(r.notes)}</div>`:''}</div></div>`).join('');
     } else if(key==='checklist'){
       const arr=Array.isArray(data)?data:[];
       if(!arr.length) return '';
