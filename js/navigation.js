@@ -4,6 +4,11 @@ let _currentPage='dashboard';
 function navigate(page){
   // Invitations folded into the RSVP & Invites page.
   if(page==='invitation') page='rsvp-mgr';
+  // Communications is reached from Settings and from RSVP & Invites: remember which, for its Back button.
+  if(page==='comms' && _currentPage && _currentPage!=='comms'){
+    window._commsBackTo=_currentPage;
+    try{ sessionStorage.setItem('uv_comms_back',_currentPage); }catch(_){}
+  }
   // Paid-page gate: signed-in free users cannot access premium pages
   if(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid() && typeof _UV_PAID_PAGES!=='undefined' && _UV_PAID_PAGES.has(page)){
     _uvShowUpgradeModal(page); return;

@@ -62,8 +62,17 @@ function _commsSetTab(t, nav){
   _commsTab=t==='sent'?'sent':'templates';
   navigate('comms');
 }
+// "Back" to wherever Communications was opened from (Settings or RSVP & Invites).
+function _commsBackBtnHtml(){
+  let from=window._commsBackTo;
+  if(!from){ try{ from=sessionStorage.getItem('uv_comms_back'); }catch(_){} }
+  if(!from || from==='comms') from='settings';
+  const names={settings:'Settings','rsvp-mgr':'RSVP & Invites',dashboard:'Dashboard',guests:'Guest List',website:'Website',vendors:'Vendors'};
+  const label=names[from]||'previous page';
+  return `<button type="button" class="btn btn-outline btn-sm" onclick="navigate('${from}')" aria-label="Back to ${_escHtml(label)}" title="Back to ${_escHtml(label)}" style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back</button>`;
+}
 function renderComms(c, actions){
-  actions.innerHTML='';
+  actions.innerHTML=_commsBackBtnHtml();
   if(_commsTab==='sent'){
     c.innerHTML=_commsTabsHtml()+_slTabHtml();
     _slRefresh(true);
