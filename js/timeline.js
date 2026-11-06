@@ -507,6 +507,16 @@ function tlRenderMusicView(){
     <div class="music-count">${all.length} song${all.length!==1?'s':''} tagged · across ${moments} moment${moments!==1?'s':''}</div>`;
 }
 
+// Print and Share live in one button when both are available (so the header isn't crowded on phones).
+function _tlTogglePSMenu(e){
+  if(e) e.stopPropagation();
+  const m=document.getElementById('tl-ps-menu'); if(!m) return;
+  if(m.style.display==='block'){ m.style.display='none'; return; }
+  m.style.display='block';
+  const close=ev=>{ if(!m.contains(ev.target)){ m.style.display='none'; document.removeEventListener('click',close); } };
+  setTimeout(()=>document.addEventListener('click',close),0);
+}
+function _tlClosePSMenu(){ const m=document.getElementById('tl-ps-menu'); if(m) m.style.display='none'; }
 function renderTimeline(c, actions){
   _tlEnsureTimelines();
   // If no active timeline selected (or __master__), show list view
@@ -528,10 +538,15 @@ function renderTimeline(c, actions){
   const _pubCount = (STATE.timeline||[]).filter(x=>x.pub).length;
   actions.innerHTML = `
     <button class="btn btn-outline btn-sm tl-tb-btn" onclick="_tlBackToList()" title="Back to timelines" style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span class="tl-tb-label">All</span></button>
-    <button class="btn btn-outline btn-sm tl-tb-btn" onclick="printTimeline(_tlView==='music'?'music':'')" title="${_tlView==='music'?'Print the music sheet':'Print or save as PDF'}" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
+    ${_sbSession && _pubCount > 0
+      ? `<span id="tl-ps-wrap" style="position:relative;display:inline-flex"><button class="btn btn-outline btn-sm tl-tb-btn" onclick="_tlTogglePSMenu(event)" title="Print or share" aria-label="Print or share" aria-haspopup="true" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg><span class="tl-tb-label">Print / Share</span></button>
+        <div id="tl-ps-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;width:230px;background:var(--cream);border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 24px rgba(26,26,24,.12);overflow:hidden">
+          <button type="button" onclick="_tlClosePSMenu();printTimeline(_tlView==='music'?'music':'')" style="width:100%;background:none;border:none;cursor:pointer;padding:11px 14px;text-align:left;font-size:12.5px;font-family:inherit;color:var(--ink);display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>${_tlView==='music'?'Print the music sheet':'Print or save as PDF'}</button>
+          <button type="button" onclick="_tlClosePSMenu();_shareRunSheet()" style="width:100%;background:none;border:none;cursor:pointer;padding:11px 14px;text-align:left;font-size:12.5px;font-family:inherit;color:var(--ink);display:flex;align-items:center;gap:9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share run sheet link</button>
+        </div></span>`
+      : `<button class="btn btn-outline btn-sm tl-tb-btn" onclick="printTimeline(_tlView==='music'?'music':'')" title="${_tlView==='music'?'Print the music sheet':'Print or save as PDF'}" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span class="tl-tb-label">Print${_tlView==='music'?' music':''}</span>
-    </button>
-    ${_sbSession && _pubCount > 0 ? `<button class="btn btn-outline btn-sm tl-tb-btn" onclick="_shareRunSheet()" title="Share run sheet link" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="tl-tb-label">Share</span></button>` : ''}
+    </button>`}
     <button class="btn btn-primary btn-sm tl-tb-btn" onclick="openAddTimelineItem()" title="Add Moment" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="tl-tb-label">Add Moment</span></button>`;
 
   const items = tlSorted();
