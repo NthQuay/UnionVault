@@ -12,6 +12,13 @@
      show up as a solid dark square on an all-light screen. */
   color-scheme:light;
 }
+/* The app's native widgets follow the app's theme even when landing.css (loaded later) flips the whole
+   page to dark for a dark-mode phone — it did that whenever <html> had no data-theme="light", which left
+   checkboxes solid dark on light screens. Set on <body> so it wins over anything set on <html>. */
+body{color-scheme:light}
+body.dark{color-scheme:dark}
+/* …except the landing / sign-in screen, which deliberately follows the phone's dark mode. */
+@media(prefers-color-scheme:dark){html:not([data-theme="light"]) #welcome-overlay{color-scheme:dark}}
 /* ── DARK MODE ── */
 body.dark{
   color-scheme:dark;

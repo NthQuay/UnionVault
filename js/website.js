@@ -4877,12 +4877,15 @@ function _wbBuildSite(forDownload){
   const _uvHasStep3=_fPhone.show||_fEmail.show||_fAddr.show||_fSong.show||_fNotes.show||_uvCustomFields.length>0;
   const _uvNumSteps=1+(_uvHasStep2?1:0)+(_uvHasStep3?1:0);
   const _uvWeddingDate=_escHtml((STATE.settings&&STATE.settings.weddingDate)||_uvRsvp.date||'');
+  // Native widgets (checkboxes, radios, date pickers) follow the page's OWN colours, not the guest's
+  // phone setting — a dark-mode phone otherwise draws dark checkboxes on a light wedding page.
+  const _uvScheme=(()=>{const c=String(t2.background||t2.page||'#ffffff').trim();const m=c.match(/^#([0-9a-f]{6})$/i);if(!m) return 'light';const n=parseInt(m[1],16);return(((n>>16)&255)*299+((n>>8)&255)*587+(n&255)*114)/1000<128?'dark':'light';})();
   const _uvPal=(()=>{const p=_uvRsvp.palette||'sage';const ps={sage:{accent:'#5C7D6B',ink:'#2D3D35'},ivory:{accent:'#A08050',ink:'#3A3020'},blush:{accent:'#C0745A',ink:'#3D2820'},midnight:{accent:'#7B95C8',ink:'#D0D8E8'},slate:{accent:'#8AA4A8',ink:'#CAD3D6'}};if(p==='custom'){const cc=_uvRsvp.customColors||{};return {accent:cc.accent||'#5C7D6B',ink:cc.ink||_wbInk(cc.accent||'#5C7D6B')};}return ps[p]||ps.sage;})();
   const _uvCoupleName=_escHtml(_wbCouple());
   const _uvModal=_uvCoupleId?`<style>
 #uv-rsvp-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px;overscroll-behavior:none}
 #uv-rsvp-overlay.open{display:flex}
-#uv-rsvp-sheet{background:${t2.background||t2.page};color:${t2.text};border-radius:18px;max-height:calc(100dvh - 32px);overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:520px;box-shadow:0 8px 48px rgba(0,0,0,.32)}
+#uv-rsvp-sheet{color-scheme:${_uvScheme};background:${t2.background||t2.page};color:${t2.text};border-radius:18px;max-height:calc(100dvh - 32px);overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:520px;box-shadow:0 8px 48px rgba(0,0,0,.32)}
 .rfm-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 4px;position:sticky;top:0;background:${t2.background||t2.page};z-index:1}
 .rfm-title{font-family:${t2.headFont};font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:${t2.heading};font-weight:600}
 .rfm-close{background:none;border:none;cursor:pointer;color:${t2.text};opacity:.55;font-size:24px;line-height:1;padding:2px 8px;border-radius:4px;transition:opacity .15s}
@@ -5611,6 +5614,7 @@ function _wbBuildSite(forDownload){
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:${(()=>{const c=String(t2.background||t2.page||'#ffffff').trim();const m=c.match(/^#([0-9a-f]{6})$/i);if(!m) return 'light';const n=parseInt(m[1],16);return(((n>>16)&255)*299+((n>>8)&255)*587+(n&255)*114)/1000<128?'dark':'light';})()}}
 body{background:${t2.background||t2.page};color:${t2.text};font-family:${t2.bodyFont};font-size:${scb(16)}px;line-height:1.7}
 nav{position:sticky;top:0;z-index:100;background:${t2.background||t2.page};padding:${sp(16)}px;border-bottom:1px solid ${t2.heading}1A}
 main{background:${t2.background||t2.page}}
