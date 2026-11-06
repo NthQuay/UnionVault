@@ -1896,10 +1896,13 @@ function renderBudgetSummaryBody(){
       </svg>`;
     const a=`<div class="bsum-ring" style="display:flex;align-items:center;gap:12px;min-width:0">${ring}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;flex:1;min-width:0">${fig(F.remLbl,F.remVal,F.remColor)}${fig('Committed',fmt(totalCost),'var(--ink)')}${fig('Paid',fmt(totalPaid),'var(--green)')}${fig('Left to pay',fmt(F.due),'var(--gold-deep)')}</div></div>`;
-    const b=`<div class="bsum-ring" style="display:flex;align-items:center;gap:16px;min-width:0">${ring}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;flex:1;min-width:0">
-        <div>${gTitle(G1,fmt(budgetTotal))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${fig('Committed',fmt(totalCost),'var(--ink)',allocBtn)}${fig(F.remLbl,F.remVal,F.remColor)}</div></div>
-        <div>${gTitle(G2,fmt(totalCost))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${fig('Paid',fmt(totalPaid),'var(--green)',depBtn)}${fig('Left to pay',fmt(F.due),'var(--gold-deep)',dueBtn)}</div></div></div></div>`;
+    // Desktop: each group's total sits right beside its heading (not pushed to the far edge), and the
+    // figures under it are label-over-amount pairs, evenly spaced.
+    const gT=(t,v)=>`<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px"><span style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap">${t}</span>${val(v,'var(--ink)',17)}</div>`;
+    const b=`<div class="bsum-ring bsum-ring-b" style="display:flex;align-items:center;gap:22px;min-width:0">${ring}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1;min-width:0">
+        <div>${gT(G1,fmt(budgetTotal))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">${fig('Committed',fmt(totalCost),'var(--ink)',allocBtn)}${fig(F.remLbl,F.remVal,F.remColor)}</div></div>
+        <div>${gT(G2,fmt(totalCost))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">${fig('Paid',fmt(totalPaid),'var(--green)',depBtn)}${fig('Left to pay',fmt(F.due),'var(--gold-deep)',dueBtn)}</div></div></div></div>`;
     return wrapAB(a,b);
   }
 

@@ -3080,3 +3080,12 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
 @media(min-width:561px){.bsum-ring-svg{width:60px;height:60px}}
 /* Budget ring summary: more room between the ring and the figures beside it. */
 @media(max-width:560px){.bsum-ring{gap:18px!important}}
+
+/* Ring summary, round two: desktop ring bigger; phones inset the whole ring row so it isn't hard against the left edge. */
+.bsum-ring-svg{margin-left:0!important}
+@media(min-width:561px){.bsum-ring-svg{width:92px;height:92px}}
+@media(max-width:560px){.bsum-a .bsum-ring{padding-left:12px;padding-right:6px}}
+/* Desktop ring layout: every label row is the same height (some carry a little list button), so the amounts line up. */
+.bsum-ring-b .bsum-fig > span:first-child{min-height:20px!important;align-items:center}
+.bsum-ring-b .bsum-fig{justify-content:flex-start}
+.bsum-ring-b > div > div > div:last-child{align-items:start}
