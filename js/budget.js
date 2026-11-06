@@ -576,7 +576,8 @@ function _renderBudgetAlertsBar(){
       <span>${a.label}${a.overdue?'':` — ${fmtBudgetDate(a.date)}`}${a.overdue?` (${fmtBudgetDate(a.date)})`:''}</span>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:auto;opacity:.6"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`).join('');
-  const pinned = !!(STATE.settings && STATE.settings.budgetAlertsPinned);
+  // Stuck to the top by default; only an explicit unpin (the pin icon) lets it scroll away.
+  const pinned = _budgetAlertsPinned();
   // Header: collapsed shows an alert icon next to the chevron; count badge always shown.
   const alertIcon = `<span style="color:${hasOverdue?'var(--red-deep)':'var(--red)'};display:inline-flex;flex-shrink:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>`;
   const countBadge = `<span style="font-size:10px;color:${hasOverdue?'var(--red-deep)':'var(--red)'};background:${hasOverdue?'rgba(139,0,0,.08)':'rgba(192,57,43,.08)'};border-radius:9px;padding:1px 7px;flex-shrink:0">${all.length}</span>`;
@@ -604,9 +605,10 @@ function _toggleBudgetAlerts(){
   saveToStorage();
   navigate('budget');
 }
+function _budgetAlertsPinned(){ return !(STATE.settings && STATE.settings.budgetAlertsPinned===false); }
 function _toggleBudgetAlertsPin(){
   if(!STATE.settings) STATE.settings={};
-  STATE.settings.budgetAlertsPinned=!STATE.settings.budgetAlertsPinned;
+  STATE.settings.budgetAlertsPinned=!_budgetAlertsPinned();
   saveToStorage();
   navigate('budget');
 }
@@ -1896,13 +1898,9 @@ function renderBudgetSummaryBody(){
       </svg>`;
     const a=`<div class="bsum-ring" style="display:flex;align-items:center;gap:12px;min-width:0">${ring}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;flex:1;min-width:0">${fig(F.remLbl,F.remVal,F.remColor)}${fig('Committed',fmt(totalCost),'var(--ink)')}${fig('Paid',fmt(totalPaid),'var(--green)')}${fig('Left to pay',fmt(F.due),'var(--gold-deep)')}</div></div>`;
-    // Desktop: each group's total sits right beside its heading (not pushed to the far edge), and the
-    // figures under it are label-over-amount pairs, evenly spaced.
-    const gT=(t,v)=>`<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px"><span style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap">${t}</span>${val(v,'var(--ink)',17)}</div>`;
-    const b=`<div class="bsum-ring bsum-ring-b" style="display:flex;align-items:center;gap:22px;min-width:0">${ring}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1;min-width:0">
-        <div>${gT(G1,fmt(budgetTotal))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">${fig('Committed',fmt(totalCost),'var(--ink)',allocBtn)}${fig(F.remLbl,F.remVal,F.remColor)}</div></div>
-        <div>${gT(G2,fmt(totalCost))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">${fig('Paid',fmt(totalPaid),'var(--green)',depBtn)}${fig('Left to pay',fmt(F.due),'var(--gold-deep)',dueBtn)}</div></div></div></div>`;
+    // Desktop: the ring with the same four figures as on phones — no group headings above them.
+    const b=`<div class="bsum-ring bsum-ring-b" style="display:flex;align-items:center;gap:26px;min-width:0">${ring}
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;flex:1;min-width:0">${fig(F.remLbl,F.remVal,F.remColor)}${fig('Committed',fmt(totalCost),'var(--ink)',allocBtn)}${fig('Paid',fmt(totalPaid),'var(--green)',depBtn)}${fig('Left to pay',fmt(F.due),'var(--gold-deep)',dueBtn)}</div></div>`;
     return wrapAB(a,b);
   }
 
