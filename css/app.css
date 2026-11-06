@@ -2152,8 +2152,15 @@ body.dark .gt-mp-av{background:rgba(196,168,130,.16);color:var(--gold)}
   .grid-4{grid-template-columns:repeat(2,1fr)}
   .modal{max-width:100%;border-radius:12px}
   /* Budget hero buttons: larger icons on mobile. */
-  #bg-inv-btn .bg-btn-ico{width:16px!important;height:16px!important}
-  #bg-add-btn .bg-add-plus svg{width:16px!important;height:16px!important}
+  #bg-reports-btn .bg-btn-ico,#bg-inv-btn .bg-btn-ico{width:19px!important;height:19px!important}
+  #bg-add-btn .bg-add-plus svg{width:20px!important;height:20px!important}
+  /* They were being squeezed (down to ~19px wide on a 360px phone) because the top bar let them shrink,
+     and at 30px tall they were hard to hit. Keep them a fixed, comfortable size. */
+  #topbar-actions{flex-shrink:0}
+  /* The title block reserves 150px, which pushed the cog off a 360px screen once the buttons stopped shrinking; the Budget title only needs ~80px. */
+  .topbar:has(#bg-add-btn) > div[style*="min-width:150px"]{min-width:80px!important}
+  #bg-reports-btn,#bg-inv-btn,#bg-add-btn{flex-shrink:0;height:38px;min-width:40px}
+  #bg-reports-btn.bg-icon-only,#bg-inv-btn.bg-icon-only,#bg-add-btn.bg-icon-only{width:40px!important;min-width:40px}
 }
 
 /* MISC */
