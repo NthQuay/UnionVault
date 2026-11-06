@@ -6235,9 +6235,9 @@ function renderWishingWell(c, actions){
 
 function _wwTrackerHtml(ww, total, count, thanksDue){
   const thanksSent = (ww.contributions||[]).filter(x=>x.thanked).length;
-  const cardsWritten = (ww.contributions||[]).filter(x=>x.cardWritten).length;
-  const stats = `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0 0">
-      <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${count}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">contributor${count===1?'':'s'}</div></div>
+  const cardsWritten = (ww.contributions||[]).filter(x=>x.cardWritten && !x.thanked).length;
+  const totalContribs = (ww.contributions||[]).length;
+  const stats = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0 0">
       <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${thanksDue}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">thank-you${thanksDue===1?'':'s'} due</div></div>
       <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${cardsWritten}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">card${cardsWritten===1?'':'s'} written</div></div>
       <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${thanksSent}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">thank-you${thanksSent===1?'':'s'} sent</div></div>
@@ -6248,7 +6248,10 @@ function _wwTrackerHtml(ww, total, count, thanksDue){
         <span style="font-size:13px;color:var(--muted)">Gifted so far</span>
         <button class="btn btn-outline btn-sm" onclick="openWwContribution()" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Log a contribution</button>
       </div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:26px;line-height:1.1;color:var(--ink)">${fmt(total)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <span style="font-family:'Cormorant Garamond',serif;font-size:26px;line-height:1.1;color:var(--ink)">${fmt(total)}</span>
+        <span style="font-size:12px;color:var(--muted);white-space:nowrap"><b style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--ink)">${totalContribs}</b> contribution${totalContribs===1?'':'s'}</span>
+      </div>
       ${stats}
     </div>`;
 
@@ -6306,9 +6309,9 @@ function _wwRowHtml(x){
   const meta = [_wwMethodLabel(x.method), x.date?fmtBudgetDate(x.date):''].filter(Boolean).join(' · ');
   const thankBtn = thanked
     ? `<button onclick="toggleWwThanked('${x.id}')" title="Thanked — click to undo" aria-label="Thanked" style="background:none;border:none;cursor:pointer;color:var(--green,#5C8A4E);display:inline-flex;padding:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
-    : `<button onclick="toggleWwThanked('${x.id}')" title="Mark thank-you sent" aria-label="Thank-you pending" style="background:none;border:none;cursor:pointer;color:var(--gold-deep);display:inline-flex;padding:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>`;
-  const cardW = !!x.cardWritten;
-  const cardBtn = `<button onclick="toggleWwCardWritten('${x.id}')" title="${cardW?'Thank-you card written — click to undo':'Mark thank-you card written'}" aria-label="${cardW?'Thank-you card written':'Thank-you card not written'}" style="background:none;border:none;cursor:pointer;color:${cardW?'var(--green,#5C8A4E)':'var(--gold-deep)'};display:inline-flex;padding:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="${cardW?'currentColor':'none'}" fill-opacity="${cardW?'.15':'0'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>`;
+    : `<button onclick="toggleWwThanked('${x.id}')" title="Mark thank-you sent" aria-label="Thank-you pending" style="background:none;border:none;cursor:pointer;color:var(--gold-deep);display:inline-flex;padding:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button>`;
+  const cardW = !!x.cardWritten || thanked;
+  const cardBtn = `<button onclick="toggleWwCardWritten('${x.id}')" title="${thanked?'Card written (thank-you sent)':cardW?'Thank-you card written — click to undo':'Mark thank-you card written'}" aria-label="${cardW?'Thank-you card written':'Thank-you card not written'}" style="background:none;border:none;cursor:pointer;color:${cardW?'var(--green,#5C8A4E)':'var(--gold-deep)'};display:inline-flex;padding:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="${cardW?'currentColor':'none'}" fill-opacity="${cardW?'.15':'0'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>`;
   const _resolveContribAddr=(x)=>{
     if((x.address||'').trim()) return x.address.trim();
     const nl=(x.name||'').trim().toLowerCase();
@@ -6913,7 +6916,7 @@ function openWwContribution(id){
         <input type="checkbox" id="ww-cardwritten" ${x&&x.cardWritten?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)"/> Thank-you card written
       </label>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer">
-        <input type="checkbox" id="ww-thanked" ${x&&x.thanked?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)"/> Thank-you already sent
+        <input type="checkbox" id="ww-thanked" ${x&&x.thanked?'checked':''} onchange="if(this.checked)document.getElementById('ww-cardwritten').checked=true" style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)"/> Thank-you already sent
       </label>
     </div>`;
   const footer = `<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveWwContribution()">${id?'Save':'Add contribution'}</button>`;
@@ -6995,7 +6998,7 @@ function saveWwContribution(){
   const note = (document.getElementById('ww-note').value||'').trim();
   const address = (document.getElementById('ww-address').value||'').trim();
   const thanked = document.getElementById('ww-thanked').checked;
-  const cardWritten = document.getElementById('ww-cardwritten').checked;
+  const cardWritten = document.getElementById('ww-cardwritten').checked || thanked;
   if(!name && !amount){ closeModalDirect(); return; }
   if(!STATE.wishingwell.contributions) STATE.wishingwell.contributions=[];
   if(_wwEditId){
@@ -7012,11 +7015,11 @@ function saveWwContribution(){
 
 function toggleWwCardWritten(id){
   const x = (STATE.wishingwell.contributions||[]).find(c=>c.id===id);
-  if(x){ x.cardWritten=!x.cardWritten; saveToStorage(); navigate('wishingwell'); }
+  if(x && !x.thanked){ x.cardWritten=!x.cardWritten; saveToStorage(); navigate('wishingwell'); }
 }
 function toggleWwThanked(id){
   const x = (STATE.wishingwell.contributions||[]).find(c=>c.id===id);
-  if(x){ x.thanked=!x.thanked; saveToStorage(); navigate('wishingwell'); }
+  if(x){ x.thanked=!x.thanked; if(x.thanked) x.cardWritten=true; saveToStorage(); navigate('wishingwell'); }
 }
 
 function deleteWwContribution(id){
@@ -7098,7 +7101,7 @@ function _wwPrintList(){
       <td style="padding:6px 10px">${(c.method||'—').replace(/&/g,'&amp;')}</td>
       <td style="padding:6px 10px">${c.date||'—'}</td>
       <td style="padding:6px 10px;word-break:break-word">${(c.address||'').trim().replace(/&/g,'&amp;').replace(/</g,'&lt;')}</td>
-      <td style="padding:6px 10px;text-align:center">${c.cardWritten?'✓':'—'}</td>
+      <td style="padding:6px 10px;text-align:center">${(c.cardWritten||c.thanked)?'✓':'—'}</td>
       <td style="padding:6px 10px;text-align:center">${c.thanked?'✓':'—'}</td>
     </tr>`;
   }).join('');
