@@ -3078,3 +3078,5 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
 .bsum-ring .bsum-fig > span:first-child{min-height:12px!important;line-height:1.1}
 .bsum-ring-svg{width:72px;height:72px}
 @media(min-width:561px){.bsum-ring-svg{width:60px;height:60px}}
+/* Budget ring summary: more room between the ring and the figures beside it. */
+@media(max-width:560px){.bsum-ring{gap:18px!important}}
