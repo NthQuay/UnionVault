@@ -3099,3 +3099,10 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
 /* Timeline cards: the card column may shrink below its content, so a long song row or location wraps/ellipsises
    inside the card instead of pushing the card off the right edge of a phone. */
 .tl-row > div{min-width:0}
+
+/* Timeline (mobile): times hug the left edge and shrink to give the cards more width */
+@media(max-width:640px){
+  .tl-row{grid-template-columns:48px minmax(0,1fr) !important;gap:8px !important}
+  .tl-row > .tl-time{text-align:left !important;padding-top:4px !important}
+  .tl-row > .tl-time > div{font-size:10.5px !important;letter-spacing:-.1px}
+}

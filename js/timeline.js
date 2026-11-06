@@ -284,7 +284,7 @@ function _tlOpenMasterView(){
     const meta = [it.location, it.who].filter(Boolean);
     rows += `
     <div class="tl-row" style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:start">
-      <div style="text-align:right;padding-top:2px">
+      <div class="tl-time" style="text-align:right;padding-top:2px">
         <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap">${tlTo12h(it.time)||'—'}</div>
       </div>
       <div style="position:relative;padding-left:24px;padding-bottom:${next?'4px':'0'}">
@@ -599,7 +599,7 @@ function renderTimeline(c, actions){
       const meta = [it.location, it.who].filter(Boolean);
       rows += `
       <div class="tl-row" style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:start;cursor:pointer" onclick="openEditTimelineItem('${it.id}')">
-        <div style="text-align:right;padding-top:2px">
+        <div class="tl-time" style="text-align:right;padding-top:2px">
           <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap">${tlTo12h(it.time)||'—'}</div>
         </div>
         <div style="position:relative;padding-left:24px;padding-bottom:${next?'4px':'0'}">
@@ -967,14 +967,15 @@ async function _showPublicRunSheet(coupleId){
 
   let partner1='', partner2='', date='', venue='', timeline=[];
   try{
-    // Fetch couple's saved state from Supabase cloud_saves table
-    const r = await fetch(`${_SB_URL}/rest/v1/cloud_saves?couple_id=eq.${encodeURIComponent(coupleId)}&order=saved_at.desc&limit=1`, {
-      headers:{ 'apikey':_SB_KEY, 'Authorization':'Bearer '+_SB_KEY }
+    // public_run_sheet RPC: event names/date/venue + only the moments marked visible (pub)
+    const r = await fetch(`${_SB_URL}/rest/v1/rpc/public_run_sheet`, {
+      method:'POST',
+      headers:{ 'apikey':_SB_KEY, 'Authorization':'Bearer '+_SB_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify({ uid: coupleId })
     });
     if(r.ok){
-      const rows = await r.json();
-      if(rows && rows.length){
-        const data = rows[0].data || {};
+      const data = await r.json();
+      if(data){
         const ev = data.event || {};
         partner1 = ev.partner1||''; partner2 = ev.partner2||'';
         date = ev.date||''; venue = ev.venue||'';
