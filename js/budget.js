@@ -865,10 +865,20 @@ function _positionPinnedAlerts(page){
     const cs=getComputedStyle(above);
     let aboveCssTop=parseFloat(cs.top); if(isNaN(aboveCssTop)) aboveCssTop=0;
     const aboveH=above.getBoundingClientRect().height;
-    const stickTop=Math.max(0, Math.round(aboveCssTop + aboveH));
+    // The budget page can be zoomed (Text size). getBoundingClientRect() reports on-screen pixels but `top`
+    // is measured in the zoomed page's own pixels, so convert the height back or the banner sticks too
+    // high (zoom < 1, tucked behind the summary) or too low (zoom > 1).
+    const mc=document.getElementById('main-content');
+    const zoom=(mc&&parseFloat(getComputedStyle(mc).zoom))||1;
+    const stickTop=Math.max(0, Math.round(aboveCssTop + aboveH/zoom));
     el.style.setProperty('--alert-pin-top', stickTop+'px');
   };
   apply();
+  // If the summary changes height later (fonts loading, collapsing it, a different figure style), re-measure.
+  try{
+    if(window._pinRO){ window._pinRO.disconnect(); }
+    if(typeof ResizeObserver==='function'){ window._pinRO=new ResizeObserver(()=>apply()); window._pinRO.observe(above); }
+  }catch(_){}
   // Re-measure once more after layout settles (fonts, reflow) so the offset is exact.
   requestAnimationFrame(apply);
 }
