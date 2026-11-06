@@ -505,6 +505,12 @@ function _openVendorBriefModal(vendorName){
 
   const esc = _escHtml;
   const prefill = vendorName || '';
+  // Suggestions for the Vendor name box: the business names already on the vendor list.
+  const vendorOpts = (STATE.vendors||[])
+    .filter(v=>v.business&&v.business.trim())
+    .sort((a,b)=>(a.business||'').localeCompare(b.business||''))
+    .map(v=>`<option value="${esc(v.business.trim())}">`)
+    .join('');
   const sections = [
     {id:'timeline', label:'Day timeline'},
     {id:'budget', label:'Budget summary'},
@@ -530,8 +536,9 @@ function _openVendorBriefModal(vendorName){
         <div class="vbm-title">Create vendor brief</div>
         <div class="vbm-sub">Generate a secure, shareable link for your vendor — no account needed.</div>
         <div class="vbm-label">Vendor name</div>
-        <input id="vbm-vendor-name" type="text" class="input" placeholder="e.g. Bloom &amp; Co." value="${esc(prefill)}"
+        <input id="vbm-vendor-name" type="text" class="input" placeholder="e.g. Bloom &amp; Co." value="${esc(prefill)}" list="vbm-vendor-list" autocomplete="off"
           style="width:100%;box-sizing:border-box;margin-bottom:16px;font-size:13px;padding:9px 11px;border:.5px solid var(--border);border-radius:8px;background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif">
+        <datalist id="vbm-vendor-list">${vendorOpts}</datalist>
         <div class="vbm-label">Sections to share</div>
         <div class="vbm-chips">${chipsHtml}</div>
         <div class="vbm-label">Expiry (optional)</div>

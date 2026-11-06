@@ -91,12 +91,7 @@ function buildDashVisionHtml(){
 
   // In Edit Layout mode, show a compact X-Small / Small / Medium / Large picker
   // that writes through setVbSize so the dashboard and the full board stay in sync.
-  const sizePicker = dashEditMode ? `<div onclick="event.stopPropagation()" style="pointer-events:none;display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;width:100%"><span style="font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--muted)">SHOW</span><div style="pointer-events:none;display:inline-flex;border:.5px solid var(--border);border-radius:8px;overflow:hidden">
-    ${[['6','6'],['12','12'],['18','18'],['all','All']].map(([k,lbl],i)=>{
-      const active=String(_dashCount)===k;
-      return `<button type="button" onclick="setVbDashCount('${k}')" title="Show ${lbl==='All'?'all':lbl} cards" style="${i>0?'border-left:.5px solid var(--border);':''}border:none;${active?'background:var(--gold-deep);color:#fff;font-weight:600;':'background:transparent;color:var(--muted);font-weight:500;'}padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;pointer-events:auto">${lbl}</button>`;
-    }).join('')}
-  </div><div style="pointer-events:none;display:inline-flex;border:.5px solid var(--border);border-radius:8px;overflow:hidden">
+  const sizePicker = dashEditMode ? `<div onclick="event.stopPropagation()" style="pointer-events:none;display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;width:100%"><div style="pointer-events:none;display:inline-flex;border:.5px solid var(--border);border-radius:8px;overflow:hidden">
     ${[['xsmall','XS','X-Small'],['small','S','Small'],['medium','M','Medium'],['large','L','Large']].map(([k,lbl,full],i)=>{
       const active=vbSize===k;
       return `<button type="button" onclick="setVbSize('${k}')" title="${full}" style="${i>0?'border-left:.5px solid var(--border);':''}border:none;${active?'background:var(--gold-deep);color:#fff;font-weight:600;':'background:transparent;color:var(--muted);font-weight:500;'}padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;pointer-events:auto">${lbl}</button>`;

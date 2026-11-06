@@ -413,7 +413,10 @@ let _vluSort   = 'rating';
 let _vluLayout = 'grid';
 let _vluProfileId = null;
 
-function _vendorLookupOpen(){  _vendorLookupOn = true;  _vluView='browse'; _vluMsgVendorId=null; _vluMsgSrc=null; _vluMsgPick=null; navigate('vendors'); }
+// Vendor Look Up is not live yet: every entry point (Vendors card, dashboard widget) lands here.
+const _VLU_COMING_SOON = true;
+function _vluSoonToast(){ if(typeof _showInfoToast==='function') _showInfoToast('Vendor Look Up is coming soon.',null,null); }
+function _vendorLookupOpen(){  if(_VLU_COMING_SOON){ _vluSoonToast(); return; }  _vendorLookupOn = true;  _vluView='browse'; _vluMsgVendorId=null; _vluMsgSrc=null; _vluMsgPick=null; navigate('vendors'); }
 function _vendorLookupClose(){ _vendorLookupOn = false; _vluView='browse'; _vluMsgVendorId=null; _vluMsgSrc=null; _vluMsgPick=null; navigate('vendors'); }
 function _vluGoMyVendors(){ _vendorLookupClose(); }
 
@@ -850,6 +853,7 @@ function _vluIconSvg(spec){
 
 /* Open Look Up already filtered to a category. */
 function _vluOpenCat(luCat){
+  if(_VLU_COMING_SOON){ _vluSoonToast(); return; }
   _vluCat = luCat || 'All';
   _vluQ = '';
   _vluView = 'browse';
@@ -919,7 +923,7 @@ function buildDashVendorLookupHtml(){
     return `<div class="vlu-dw-row">
       <span class="vlu-dw-ic open">${_vluIconSvg(k.icon)}</span>
       <span class="vlu-dw-name open">${esc(cat)}</span>
-      <button class="vlu-dw-tag need" onclick="event.stopPropagation();_vluOpenCat('${jq(k.lu)}')" title="Find a ${esc(cat.toLowerCase())} in the directory">Find →</button>
+      <button class="vlu-dw-tag need vlu-dw-soon" disabled aria-disabled="true" onclick="event.stopPropagation()" title="Finding vendors in the directory is coming soon">Coming soon</button>
     </div>`;
   }).join('');
 
@@ -942,7 +946,7 @@ function buildDashVendorLookupHtml(){
     <div class="db-widget-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px">
       <span style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:500;color:var(--ink)">Vendors</span>
       <span style="display:inline-flex;align-items:center;gap:10px">
-        ${_dwVendEdit?'':`<button class="vlu-dw-link" onclick="event.stopPropagation();_vendorLookupOpen()">Look Up
+        ${_dwVendEdit?'':`<button class="vlu-dw-link vlu-dw-soon" disabled aria-disabled="true" title="Vendor Look Up — coming soon" onclick="event.stopPropagation()">Look Up · Coming soon
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>`}
         <button class="vlu-dw-edit${_dwVendEdit?' on':''}" onclick="event.stopPropagation();_dwVendToggleEdit()" aria-pressed="${_dwVendEdit}">${_dwVendEdit?'Done':'Edit list'}</button>

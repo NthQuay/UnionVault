@@ -17,7 +17,7 @@ function setVbDashPinned(ids){ if(!STATE.settings) STATE.settings={}; STATE.sett
 function openVbDashPicker(){
   const allItems=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
   let _dc=STATE.settings.vbDashCount; if(_dc===undefined||_dc===null) _dc=12;
-  const maxSel=_dc==='all'?allItems.length:_dc;
+  const maxSel=allItems.length; // no limit: the dashboard shows exactly the ideas you pick
   const isDark=document.body.classList.contains('dark');
   const goldDeep=getComputedStyle(document.documentElement).getPropertyValue('--gold-deep').trim()||'#B89A6A';
   const inkColor=isDark?'#C8BFB0':'#3A2E20';
@@ -36,7 +36,7 @@ function openVbDashPicker(){
   ov.innerHTML=`<div style="background:${isDark?'#18151F':'#FFFDF8'};border-radius:16px;width:min(580px,100%);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.4);overflow:hidden">
     <div style="padding:18px 20px 14px;border-bottom:1px solid ${borderC};flex-shrink:0">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:${inkColor};margin-bottom:4px">Choose ideas for dashboard</div>
-      <div style="font-size:13px;color:${mutedInk}">Select up to <strong id="vbdp-max-lbl">${maxLabel}</strong> ideas · <span id="vbdp-count-lbl" style="color:${goldDeep};font-weight:600">0 selected</span> · <button type="button" onclick="document.querySelectorAll('.vbdp-card.vbdp-on').forEach(c=>c.click())" style="border:none;background:transparent;color:${mutedInk};font-size:13px;cursor:pointer;padding:0;text-decoration:underline">Clear all</button></div>
+      <div style="font-size:13px;color:${mutedInk}">Pick the ideas to show on your dashboard · <span id="vbdp-count-lbl" style="color:${goldDeep};font-weight:600">0 selected</span> · <button type="button" onclick="document.querySelectorAll('.vbdp-card.vbdp-on').forEach(c=>c.click())" style="border:none;background:transparent;color:${mutedInk};font-size:13px;cursor:pointer;padding:0;text-decoration:underline">Clear all</button></div>
     </div>
     <div id="vbdp-grid" style="padding:16px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));grid-auto-rows:max-content;align-content:start;min-height:0;flex:1 1 auto;gap:10px">
       ${allItems.map(item=>{
@@ -77,7 +77,6 @@ function _vbdpToggle(card){
     const chk=card.querySelector('div[style*="position:absolute"]');
     if(chk) chk.remove();
   } else {
-    if(selected.length>=maxSel){ return; }
     card.classList.add('vbdp-on');
     card.style.borderColor=goldDeep;
     card.style.boxShadow=`0 0 0 2px ${goldDeep}40`;
@@ -100,9 +99,9 @@ function _vbdpUpdateCount(){
   if(lbl) lbl.textContent=`${n} selected`;
   const done=ov.querySelector('#vbdp-done-btn');
   if(done){ done.disabled=n===0; done.style.opacity=n===0?'.5':'1'; }
-  // Dim unchosen cards when at max
-  ov.querySelectorAll('.vbdp-card:not(.vbdp-on)').forEach(c=>{ c.style.opacity=(n>=maxSel&&maxSel>0&&_dc!=='all')?'.45':'1'; c.style.pointerEvents=(n>=maxSel&&maxSel>0&&_dc!=='all')?'none':''; });
-  ov.querySelectorAll('.vbdp-card.vbdp-on').forEach(c=>{ c.style.opacity='1'; c.style.pointerEvents=''; });
+  // No limit, so no card is ever dimmed or blocked.
+  ov.querySelectorAll('.vbdp-card').forEach(c=>{ c.style.opacity='1'; c.style.pointerEvents=''; });
+
 }
 
 function _vbdpConfirm(){
