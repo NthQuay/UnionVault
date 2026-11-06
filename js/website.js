@@ -6238,9 +6238,9 @@ function _wwTrackerHtml(ww, total, count, thanksDue){
   const cardsWritten = (ww.contributions||[]).filter(x=>x.cardWritten && !x.thanked).length;
   const totalContribs = (ww.contributions||[]).length;
   const stats = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0 0">
-      <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${thanksDue}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">thank-you${thanksDue===1?'':'s'} due</div></div>
-      <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${cardsWritten}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">card${cardsWritten===1?'':'s'} written</div></div>
-      <div style="background:var(--surface);border-radius:10px;padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${thanksSent}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">thank-you${thanksSent===1?'':'s'} sent</div></div>
+      <div class="ww-stat" style="padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${thanksDue}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">thank-you${thanksDue===1?'':'s'} due</div></div>
+      <div class="ww-stat" style="padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${cardsWritten}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">card${cardsWritten===1?'':'s'} written</div></div>
+      <div class="ww-stat" style="padding:7px 10px"><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.15;color:var(--ink)">${thanksSent}</div><div style="font-size:10.5px;line-height:1.25;color:var(--muted)">thank-you${thanksSent===1?'':'s'} sent</div></div>
     </div>`;
 
   const header = `<div style="background:var(--card,var(--cream));border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:9px">

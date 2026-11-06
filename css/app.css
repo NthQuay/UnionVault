@@ -3024,3 +3024,7 @@ body.dark .sl-root,body.dark .sl-detail,body.dark .sl-gbox{--sl-ok:#8FBF7F;--sl-
   .rte-bar .rte-lbl{display:none}
   .rte-bar .rte-sep{margin:0 1px}
 }
+
+/* Wishing Well due / written / sent tiles: a visible edge in both themes */
+.ww-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px}
+body.dark .ww-stat{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14)}
