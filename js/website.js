@@ -6917,7 +6917,7 @@ function openWwContribution(id){
         <div id="ww-address-hint" style="font-size:11px;color:var(--muted);margin-top:4px;display:none">From guest profile — edit to override</div>
       </div>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer">
-        <input type="checkbox" id="ww-cardwritten" ${x&&x.cardWritten?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)"/> Thank-you card written
+        <input type="checkbox" id="ww-cardwritten" ${x&&(x.cardWritten||x.thanked)?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)"/> Thank-you card written
       </label>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer">
         <input type="checkbox" id="ww-thanked" ${x&&x.thanked?'checked':''} onchange="if(this.checked)document.getElementById('ww-cardwritten').checked=true" style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)"/> Thank-you already sent
@@ -7023,7 +7023,8 @@ function toggleWwCardWritten(id){
 }
 function toggleWwThanked(id){
   const x = (STATE.wishingwell.contributions||[]).find(c=>c.id===id);
-  if(x){ x.thanked=!x.thanked; if(x.thanked) x.cardWritten=true; saveToStorage(); navigate('wishingwell'); }
+  // Sent implies written, and un-sending never takes written away (older sent gifts only had "sent" saved).
+  if(x){ if(x.thanked) x.cardWritten=true; x.thanked=!x.thanked; if(x.thanked) x.cardWritten=true; saveToStorage(); navigate('wishingwell'); }
 }
 
 function deleteWwContribution(id){
