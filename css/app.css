@@ -3111,7 +3111,9 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
   .tl-row .song-chip .sc-note{grid-area:note}
   .tl-row .song-chip .sc-start{grid-area:start;justify-self:start}
   .tl-row .song-chip .sc-txt{grid-area:txt;font-size:13px;white-space:normal;overflow:visible;line-height:1.3}
-  .tl-row .song-chip:not(:has(.sc-start)){grid-template-areas:"note txt play";min-height:50px}
+  .tl-row .song-chip:not(:has(.sc-start)){grid-template-areas:"note txt play";min-height:0;padding:7px 10px}
+  .tl-row .song-chip:not(:has(.sc-start)) .sc-play{width:28px;height:28px}
+  .tl-row .song-chip:not(:has(.sc-start)) .sc-play svg{width:13px;height:13px}
   .tl-row .song-chip .sc-play{grid-area:play;width:36px;height:36px;align-items:center;justify-content:center;border-radius:50%;background:rgba(139,115,85,.12)}
   body.dark .tl-row .song-chip .sc-play{background:rgba(196,168,130,.18)}
   .tl-row .song-chip .sc-play svg{width:16px;height:16px}
