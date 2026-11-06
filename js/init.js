@@ -348,50 +348,36 @@ function _isDarkHex(hex){
   return (r*0.299+g*0.587+b*0.114)<128;
 }
 async function _showRsvpForm(coupleId){
-  // Render the full wedding website then auto-open the RSVP modal.
-  // This reuses _wbBuildSite() so the RSVP modal stays in sync with
-  // the website RSVP button — one code path for both entry points.
+  // Stand-alone RSVP page: builds the same RSVP form the website uses (_wbBuildSite) and shows only that.
+  // The data comes from one function, rsvp_page(uid), which needs NO published website — a couple can take
+  // RSVPs without using the website at all — and returns only what the form needs.
   const _fullGuests = STATE.guests;
+  let _page=null;
   try{
-    const [r2, _ex]=await Promise.all([
-      fetch(`${_SB_URL}/rest/v1/planner_data?select=section,data&user_id=eq.${encodeURIComponent(coupleId)}&section=in.(website,event,timeline,inspo)`,{
-        headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY}
-      }),
-      _publicWeddingExtras(coupleId)
-    ]);
-    if(Array.isArray(_ex.guests)) STATE.guests=_ex.guests;
-    if(Array.isArray(_ex.families)) STATE.families=_ex.families;
-    if(_ex.settings && typeof _ex.settings==='object') STATE.settings=Object.assign(STATE.settings||{},_ex.settings);
-    if(_ex.wishingwell && typeof _ex.wishingwell==='object') STATE.wishingwell=_ex.wishingwell;
-    if(r2.ok){
-      const rows=await r2.json();
-      rows.forEach(r=>{
-        if(r.section==='website')    STATE.website=r.data||{};
-        if(r.section==='event')      STATE.event=r.data||{};
-        if(r.section==='timeline')   STATE.timeline=r.data||[];
-        if(r.section==='inspo')      STATE.inspo=r.data||{};
-      });
-    }
+    const r=await fetch(`${_SB_URL}/rest/v1/rpc/rsvp_page`,{
+      method:'POST',
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({uid:coupleId})
+    });
+    if(r.ok){ const d=await r.json(); if(d && typeof d==='object') _page=d; }
   }catch(e){ console.warn('RSVP data fetch failed',e); }
-
-  // Check publish gate — unpublished sites are private to the owner. This link (?rsvp=uid)
-  // is the one actually sent to guests via invites (the {link} token resolves to it), so it
-  // needs the same gate _showPublicWeddingSite() applies to the #slug link — without this,
-  // "Site published" OFF only hid the site from the hash-based URL, not from the RSVP link
-  // guests are actually given, which still rendered the full site unconditionally.
-  const _isOwner = _sbSession && _sbSession.user && _sbSession.user.id === coupleId;
-  _wbSite(); // normalise STATE.website (ensures w.published defaults to false)
-  if(!STATE.website.published && !_isOwner){
-    const ev=STATE.event||{};
-    const names=[ev.partner1,ev.partner2].filter(Boolean).join(' & ')||'This wedding site';
-    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Inter',sans-serif;flex-direction:column;gap:18px;text-align:center;padding:40px;background:#FBF8F3">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="1.2" stroke-linecap="round" opacity=".7"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      <div style="font-size:17px;font-weight:500;color:#4A3F35">${_escHtml(names)}</div>
-      <div style="font-size:13.5px;color:#9A8C7A;max-width:280px;line-height:1.6">This site is coming soon. Check back later!</div>
+  if(!_page){
+    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Inter',sans-serif;flex-direction:column;gap:14px;text-align:center;padding:40px;background:#FBF8F3">
+      <div style="font-size:17px;font-weight:500;color:#4A3F35">This RSVP link isn't working</div>
+      <div style="font-size:13.5px;color:#9A8C7A;max-width:300px;line-height:1.6">Please check the link in your invitation, or ask the couple to send it again.</div>
     </div>`;
-    STATE.guests = _fullGuests;
     return;
   }
+  const _ex=_page.extras||{};
+  if(Array.isArray(_ex.guests)) STATE.guests=_ex.guests;
+  if(Array.isArray(_ex.families)) STATE.families=_ex.families;
+  if(_ex.settings && typeof _ex.settings==='object') STATE.settings=Object.assign(STATE.settings||{},_ex.settings);
+  if(_ex.wishingwell && typeof _ex.wishingwell==='object') STATE.wishingwell=_ex.wishingwell;
+  STATE.website=_page.website||{};
+  STATE.event=_page.event||{};
+  STATE.timeline=[];
+  STATE.inspo={};
+  _wbSite(); // normalise STATE.website (fills in defaults)
 
   _wbPublicOwnerUid = coupleId;
   const html=_wbBuildSite();

@@ -283,7 +283,7 @@ function _tlOpenMasterView(){
     }
     const meta = [it.location, it.who].filter(Boolean);
     rows += `
-    <div class="tl-row" style="display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:start">
+    <div class="tl-row" style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:start">
       <div style="text-align:right;padding-top:2px">
         <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap">${tlTo12h(it.time)||'—'}</div>
       </div>
@@ -598,7 +598,7 @@ function renderTimeline(c, actions){
       }
       const meta = [it.location, it.who].filter(Boolean);
       rows += `
-      <div class="tl-row" style="display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:start;cursor:pointer" onclick="openEditTimelineItem('${it.id}')">
+      <div class="tl-row" style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:start;cursor:pointer" onclick="openEditTimelineItem('${it.id}')">
         <div style="text-align:right;padding-top:2px">
           <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap">${tlTo12h(it.time)||'—'}</div>
         </div>
