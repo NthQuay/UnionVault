@@ -38,13 +38,13 @@ function openVbDashPicker(){
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:${inkColor};margin-bottom:4px">Choose ideas for dashboard</div>
       <div style="font-size:13px;color:${mutedInk}">Select up to <strong id="vbdp-max-lbl">${maxLabel}</strong> ideas · <span id="vbdp-count-lbl" style="color:${goldDeep};font-weight:600">0 selected</span> · <button type="button" onclick="document.querySelectorAll('.vbdp-card.vbdp-on').forEach(c=>c.click())" style="border:none;background:transparent;color:${mutedInk};font-size:13px;cursor:pointer;padding:0;text-decoration:underline">Clear all</button></div>
     </div>
-    <div id="vbdp-grid" style="padding:16px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+    <div id="vbdp-grid" style="padding:16px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));grid-auto-rows:max-content;align-content:start;min-height:0;flex:1 1 auto;gap:10px">
       ${allItems.map(item=>{
         const imgUrl=_mediaUrl(item.image);
         const sel=currentPinned.includes(item.id);
         return`<div class="vbdp-card${sel?' vbdp-on':''}" data-id="${item.id}" onclick="_vbdpToggle(this)" style="position:relative;border-radius:10px;overflow:hidden;background:${cardBg};border:2px solid ${sel?goldDeep:borderC};cursor:pointer;transition:border-color .15s,box-shadow .15s;box-shadow:${sel?`0 0 0 2px ${goldDeep}40`:'none'}">
-          ${imgUrl?`<img src="${imgUrl}" style="width:100%;height:90px;object-fit:cover;display:block" onerror="this.style.display='none'"/>`:
-            `<div style="width:100%;height:90px;display:flex;align-items:center;justify-content:center;background:${isDark?'#2A2535':'#F3EDE3'}"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="${mutedInk}" stroke-width="1.4"><rect x="3" y="3" width="16" height="16" rx="3"/><path d="M3 15l4-4 4 4 3-5 5 5"/></svg></div>`}
+          ${imgUrl?`<img class="vbdp-img" src="${imgUrl}" style="width:100%;object-fit:cover;display:block" onerror="this.style.display='none'"/>`:
+            `<div class="vbdp-img" style="width:100%;display:flex;align-items:center;justify-content:center;background:${isDark?'#2A2535':'#F3EDE3'}"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="${mutedInk}" stroke-width="1.4"><rect x="3" y="3" width="16" height="16" rx="3"/><path d="M3 15l4-4 4 4 3-5 5 5"/></svg></div>`}
           <div style="padding:5px 7px 7px"><div style="font-size:11.5px;color:${inkColor};line-height:1.3;font-family:'Cormorant Garamond',serif">${_escHtml(item.title)}</div>${item.category?`<div style="font-size:9.5px;color:${mutedInk};font-style:italic;margin-top:1px">${_escHtml(item.category)}</div>`:''}</div>
           ${sel?`<div style="position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:${goldDeep};display:flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg></div>`:''}
         </div>`;

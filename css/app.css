@@ -3035,3 +3035,7 @@ body.dark .sl-root,body.dark .sl-detail,body.dark .sl-gbox{--sl-ok:#8FBF7F;--sl-
 /* Wishing Well due / written / sent tiles: a visible edge in both themes */
 .ww-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px}
 body.dark .ww-stat{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14)}
+
+/* Dashboard "Choose ideas" picker: thumbnails keep their height; bigger on phones so they can be seen */
+.vbdp-img{height:90px}
+@media(max-width:600px){.vbdp-img{height:140px}}
