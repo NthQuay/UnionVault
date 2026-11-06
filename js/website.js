@@ -6311,11 +6311,13 @@ function _wwInitials(name){ const p=String(name||'').trim().split(/\s+/).filter(
 function _wwRowHtml(x){
   const thanked = !!x.thanked;
   const meta = [_wwMethodLabel(x.method), x.date?fmtBudgetDate(x.date):''].filter(Boolean).join(' · ');
-  const thankBtn = thanked
-    ? `<button onclick="toggleWwThanked('${x.id}')" title="Thanked — click to undo" aria-label="Thanked" style="background:none;border:none;cursor:pointer;color:var(--green,#5C8A4E);display:inline-flex;padding:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`
-    : `<button onclick="toggleWwThanked('${x.id}')" title="Mark thank-you sent" aria-label="Thank-you pending" style="background:none;border:none;cursor:pointer;color:var(--gold-deep);display:inline-flex;padding:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button>`;
+  const _stepTick=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const _stepEnv=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>`;
+  const _stepPen=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+  // Solid green circle = done, dashed grey circle = not yet.
+  const thankBtn = `<button class="ww-step${thanked?' on':''}" onclick="toggleWwThanked('${x.id}')" title="${thanked?'Thank-you sent — click to undo':'Mark thank-you sent'}" aria-label="${thanked?'Thank-you sent':'Thank-you not sent'}" aria-pressed="${thanked}">${thanked?_stepTick:_stepEnv}</button>`;
   const cardW = !!x.cardWritten || thanked;
-  const cardBtn = `<button onclick="toggleWwCardWritten('${x.id}')" title="${thanked?'Card written (thank-you sent)':cardW?'Thank-you card written — click to undo':'Mark thank-you card written'}" aria-label="${cardW?'Thank-you card written':'Thank-you card not written'}" style="background:none;border:none;cursor:pointer;color:${cardW?'var(--green,#5C8A4E)':'var(--gold-deep)'};display:inline-flex;padding:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="${cardW?'currentColor':'none'}" fill-opacity="${cardW?'.15':'0'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>`;
+  const cardBtn = `<button class="ww-step${cardW?' on':''}" onclick="toggleWwCardWritten('${x.id}')" title="${thanked?'Card written (thank-you sent)':cardW?'Thank-you card written — click to undo':'Mark thank-you card written'}" aria-label="${cardW?'Thank-you card written':'Thank-you card not written'}" aria-pressed="${cardW}">${_stepPen}</button>`;
   const _resolveContribAddr=(x)=>{
     if((x.address||'').trim()) return x.address.trim();
     const nl=(x.name||'').trim().toLowerCase();
@@ -6372,7 +6374,7 @@ function _wwRowHtml(x){
       </div>
       <div style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;align-self:flex-start;margin-top:1px">
         <span style="font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--ink)">${fmt(Number(x.amount)||0)}</span>
-        ${cardBtn}${thankBtn}
+        <span style="display:inline-flex;gap:6px;align-items:center;margin:0 2px">${cardBtn}${thankBtn}</span>
         <div class="dots-menu">
           <button class="dots-btn" onclick="toggleDots(event,'wwdots-${x.id}')">···</button>
           <div class="dots-dropdown hidden" id="wwdots-${x.id}">

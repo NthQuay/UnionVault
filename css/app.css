@@ -3046,3 +3046,9 @@ body.dark .ww-stat{background:rgba(255,255,255,.05);border-color:rgba(255,255,25
 /* Dashboard "Choose ideas" picker: thumbnails keep their height; bigger on phones so they can be seen */
 .vbdp-img{height:90px}
 @media(max-width:600px){.vbdp-img{height:140px}}
+
+/* Wishing Well thank-you steps: solid green circle = done, dashed grey circle = not yet */
+.ww-step{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex-shrink:0;background:none;border:1.5px dashed var(--muted);color:var(--muted);opacity:.8;transition:background .15s,color .15s,opacity .15s}
+.ww-step:hover{opacity:1;border-color:var(--gold-deep);color:var(--gold-deep)}
+.ww-step.on{background:var(--green,#5C8A4E);border:1.5px solid var(--green,#5C8A4E);color:#fff;opacity:1}
+.ww-step.on:hover{filter:brightness(1.08);color:#fff}
