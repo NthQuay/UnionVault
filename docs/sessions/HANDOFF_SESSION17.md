@@ -41,6 +41,8 @@ Repo `NthQuay/UnionVault`, branch `main`. Live build **v508**. Supabase `hzafdlf
 - Resend webhook (`email.delivered`) confirmed working by the user — R1/R2 done.
 - Branch `claude/busy-ptolemy-3ri5ri` (SEO pages + social media kit) is intentionally kept for later; all other stale branches deleted.
 - Not yet tested: the Edit-in-preview return-to-send-sheet round trip after Save/Cancel on a real send; a real `?runsheet=` link on a real account.
+- **Sign-up bug fixed (live in DB, after v508):** new accounts failed with "Database error saving new user" because trigger function `public.create_user_profile()` (on `auth.users`) used an unqualified `user_profiles` with no search_path, so under Supabase Auth it raised `relation "user_profiles" does not exist`. Now schema-qualified with `set search_path to 'public'` (`supabase/migrations/20261108_fix_create_user_profile.sql`). Verified by a rolled-back insert with search_path=auth; **not yet confirmed by a real sign-up in the app** — the user was about to re-create `liamamanda14@gmail.com` to test the setup wizard.
+- User confirmed v508 is live and working on their phone (earlier "v506" report was a stale cache). If the Run-sheet song card ever looks unchanged, the Music tab (`.music-card`, `.mc-link`, `.mc-start`) is a separate, untouched view.
 
 ## Open items (carried over)
 R1 Resend webhook must send `email.delivered` (user action). R2 confirm a real send appears in Communications → Sent. P3 VB wallpaper dedup. P5 remove debug `console.log` in `_lpSignIn()`. P7 test public RSVP flow. P11 verify cross-account privacy fix.
