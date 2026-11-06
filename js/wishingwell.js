@@ -1,7 +1,10 @@
 // WISHING WELL
 // ══════════════════════════════════════════════
 let wwTab = 'tracker';
-let wwSort = 'newest'; // 'newest'|'oldest'|'highest'|'lowest'|'name'
+let wwSort = 'newest'; // 'newest'|'oldest'|'highest'|'lowest'|'name'|'due'|'written'|'sent'
+// Which thank-you step a gift is at, for sorting: sent wins, then written, else due.
+function _wwStepOf(x){ return x.thanked?'sent':(x.cardWritten?'written':'due'); }
+function _wwStepRank(x,order){ return order.indexOf(_wwStepOf(x)); }
 let wwCols = 1;
 function _wwEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function _wwTotal(){ return (STATE.wishingwell.contributions||[]).reduce((t,x)=>t+(Number(x.amount)||0),0); }

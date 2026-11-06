@@ -6264,12 +6264,16 @@ function _wwTrackerHtml(ww, total, count, thanksDue){
     oldest: (a,b)=>(a.date||'').localeCompare(b.date||''),
     highest:(a,b)=>(Number(b.amount)||0)-(Number(a.amount)||0),
     lowest: (a,b)=>(Number(a.amount)||0)-(Number(b.amount)||0),
-    name:   (a,b)=>(a.name||'').localeCompare(b.name||'')
+    name:   (a,b)=>(a.name||'').localeCompare(b.name||''),
+    // By thank-you step (due = no card yet, written = card written not sent, sent); ties newest first.
+    due:    (a,b)=>_wwStepRank(a,['due','written','sent'])-_wwStepRank(b,['due','written','sent'])||(b.date||'').localeCompare(a.date||''),
+    written:(a,b)=>_wwStepRank(a,['written','due','sent'])-_wwStepRank(b,['written','due','sent'])||(b.date||'').localeCompare(a.date||''),
+    sent:   (a,b)=>_wwStepRank(a,['sent','written','due'])-_wwStepRank(b,['sent','written','due'])||(b.date||'').localeCompare(a.date||'')
   };
   const allList = (ww.contributions||[]).slice().sort(_wwSortFns[wwSort]||_wwSortFns.newest);
   const _wq = (wwSearch||'').trim().toLowerCase();
   const list = _wq ? allList.filter(x=>[x.name,x.address,_wwMethodLabel(x.method),x.note,x.message].filter(Boolean).join(' ').toLowerCase().includes(_wq)) : allList;
-  const _sortOpts=[['newest','Newest first'],['oldest','Oldest first'],['highest','Highest amount'],['lowest','Lowest amount'],['name','Name A–Z']];
+  const _sortOpts=[['newest','Newest first'],['oldest','Oldest first'],['highest','Highest amount'],['lowest','Lowest amount'],['name','Name A–Z'],['due','Due first'],['written','Written first'],['sent','Sent first']];
   const _colBtn=(n,icon)=>`<button onclick="setWwCols(${n})" title="${n} column${n>1?'s':''}" style="background:${wwCols===n?'var(--gold-deep)':'none'};color:${wwCols===n?'#fff':'var(--muted)'};border:1px solid ${wwCols===n?'var(--gold-deep)':'var(--border)'};border-radius:5px;width:26px;height:26px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0">${icon}</button>`;
   const colToggle = `<div class="ww-col-toggle" style="display:none;align-items:center;gap:4px;margin-left:auto">
       ${_colBtn(1,'<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="10" height="10" rx="1"/></svg>')}
