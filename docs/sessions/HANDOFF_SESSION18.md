@@ -27,3 +27,11 @@ Repo `NthQuay/UnionVault`, branch `main`. Live build **v509**. Supabase `hzafdlf
 
 ## Open items
 R2 confirm a real send appears in Communications → Sent. P7 real public RSVP end to end. Vendor list view has no Inspiration row (cards only). `claude/busy-ptolemy-3ri5ri` kept for later.
+
+## v509.1 — Website format styles (accepted)
+- Picker shows **Classic · Modern · Editorial · Atelier** (`_wbFormatPickerHtml`, `WB_FORMATS`). Stored keys unchanged so saved sites keep their look: `modern` = Classic, `editorial` = Modern; new `magazine` = Editorial, `atelier` = Atelier. Classic/Modern site output verified identical to v509 (only the font link + a selector that only matches new formats differ).
+- Editorial / Atelier (`_fx` in `_wbBuildSite`): each section's first photo is the feature, alternating sides (`_fxAlt`; an image block set Left/Right keeps that side); further photos stay in the text. No photo → text-only `fx-plain`.
+  - Editorial: magazine cover header (topbar, masthead names, cover lines, issue date), "Nº 0n — Label" eyebrows, drop cap. Phones: side by side 50/50 with a frosted (`backdrop-filter`) text panel edging into the photo.
+  - Atelier: big names + tall photo header, tinted panels, outline numbers. Phones: photo 74% alternating, text box overlapping.
+- `_wbSetFormat`: switches heading font to Bodoni Moda / Playfair Display only if it's still the default (or format-set); restores on switching back; `_wbFont('headFont')` clears the auto flag. Bodoni Moda added to `WB_FONTS` + site font link.
+- Tested: picker clicks, edge cases (no photos/date, hero below, side nav, single name, hidden names) in all 4 formats at 1280/390 (no errors, no h-scroll), full RSVP regression incl. an Editorial-themed RSVP page.

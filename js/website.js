@@ -1326,7 +1326,10 @@ function _wbSetFormat(k){
   if(t.format===k) return;
   const autoNow = t.fmtFontAuto && WB_FORMAT_FONT[t.format] && t.headFont===WB_FORMAT_FONT[t.format];
   if(autoNow){ t.headFont=t.fmtFontPrev||t.headFont; delete t.fmtFontAuto; delete t.fmtFontPrev; }
-  if(WB_FORMAT_FONT[k]){
+  // Only when the heading font is still the default (or was set by a format) — a font the
+  // couple picked themselves is never overridden.
+  const isDefault = t.fmtFontAuto || !t.headFont || t.headFont==="'Cormorant Garamond',serif";
+  if(WB_FORMAT_FONT[k] && isDefault){
     if(!t.fmtFontAuto){ t.fmtFontPrev=t.headFont; }
     t.headFont=WB_FORMAT_FONT[k]; t.fmtFontAuto=true;
   }
