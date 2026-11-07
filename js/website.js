@@ -6175,12 +6175,26 @@ section.fx h2{font-weight:400}
   .fx-topbar{padding:${sp(10)}px 16px}
   .fx-lines{padding:0 18px ${sp(26)}px 18px;max-width:none}
   .fx-issue{display:none}
-  section.fx-spread{display:flex;flex-direction:column;min-height:0;padding:${sp(30)}px 0 ${sp(36)}px}
-  .fx-fig{width:72%;aspect-ratio:4/5;align-self:flex-start;order:0!important}
-  section.fx-spread.flip .fx-fig{align-self:flex-end}
-  .fx-copy{position:relative;z-index:2;width:86%;align-self:flex-end;margin-top:-110px;padding:${sp(26)}px 20px ${sp(28)}px;background:${t2.background||t2.page};border:1px solid ${t2.heading}22;box-shadow:0 18px 40px -24px rgba(0,0,0,.35)}
-  section.fx-spread.flip .fx-copy{align-self:flex-start}
-  section.fx-spread.band .fx-copy{background:${t2.band}}
+  /* Phones keep the spread SIDE BY SIDE, just smaller: photo ~40%, text beside it. */
+  section.fx-spread{grid-template-columns:40% minmax(0,1fr);min-height:0}
+  section.fx-spread.flip{grid-template-columns:minmax(0,1fr) 40%}
+  .fx-fig{min-height:${sp(260)}px}
+  .fx-copy{padding:${sp(26)}px 14px ${sp(26)}px 16px;justify-content:center}
+  section.fx-spread.flip .fx-copy{padding:${sp(26)}px 16px ${sp(26)}px 14px}
+  .fx-copy .fx-eyebrow{font-size:${scb(8)}px;letter-spacing:.2em;margin-bottom:${sp(8)}px}
+  section.fx-spread h2{font-size:${sch(25)}px;margin-bottom:${sp(10)}px}
+  .fx-copy .intro{font-size:${scs(13)}px;line-height:1.5;margin-bottom:${sp(12)}px}
+  .fx-copy .intro::first-letter{font-size:3em}
+  .fx-copy .para{font-size:${scs(13)}px;line-height:1.55}
+  .fx-copy dl div{display:block;padding:${sp(6)}px 0}
+  .fx-copy dt{width:auto;font-size:${scb(8.5)}px;padding-top:0}
+  .fx-copy dd{font-size:${scs(12.5)}px;line-height:1.4}
+  .fx-copy .maplink{margin-left:0;display:inline-block;font-size:${scb(11)}px}
+  .fx-copy .sched li{gap:8px;padding:${sp(7)}px 0}
+  .fx-copy .sched .t{width:52px;font-size:${scb(10)}px;letter-spacing:.02em;padding-top:2px}
+  .fx-copy .sched .d b{font-size:${sch(14)}px;line-height:1.3}
+  .fx-copy .sched .d i{font-size:${scs(11)}px}
+  .fx-copy .sched-label{font-size:${sch(14)}px}
 }
 `:''}
 ${t2.format==='atelier'?`
