@@ -1,5 +1,5 @@
-// Label of the permanent "Dietary requirements" meal option on the RSVP form.
-const _MEAL_DIET_LABEL='Dietary requirements';
+// Label of the permanent "Alternative meal" option on the RSVP form (for guests none of the meals suit).
+const _MEAL_DIET_LABEL='Alternative meal';
 // WEBSITE BUILDER
 // ══════════════════════════════════════════════
 // The guest-facing site. Content is NOT stored twice: sections read from the planner
@@ -4876,7 +4876,7 @@ function _wbBuildSite(forDownload){
   const _uvLockPw=_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'');
   const _uvDietaryOn=!(_uvRfields.dietary===false);
   const _uvHasStep2=_uvMealOn||_uvDietaryOn;
-  // Permanent "Dietary requirements" meal option (couple can hide it in Meal Settings).
+  // Permanent "Alternative meal" option (couple can hide it in Meal Settings).
   // Picking it opens that guest's Dietary requirements; a normal meal leaves it closed.
   const _uvMealDietOn=_uvMealOn&&_uvDietaryOn&&STATE.settings.mealDietaryOn!==false;
   const _uvMealDietChip=_uvMealDietOn?`<div class="meal-chip meal-chip-diet" data-meal="${_escHtml(_MEAL_DIET_LABEL)}" data-dietmeal="1" onclick="window._uvChooseMeal(this)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>${_escHtml(_MEAL_DIET_LABEL)}</div>`:'';
@@ -4959,7 +4959,7 @@ function _wbBuildSite(forDownload){
 .meal-chip.on{border-color:${_uvPal.accent};background:${_uvPal.accent}22}
 .meal-chip-diet{display:inline-flex;align-items:center;gap:5px;border-style:dashed}
 .meal-chip-diet.on{border-style:solid}
-.diet-meal-hint{display:none;font-size:11.5px;opacity:.75;margin:0 0 8px;font-style:italic}
+.diet-meal-hint{display:none;font-size:11px;line-height:1.4;opacity:.75;margin:0 0 6px;font-style:italic}
 .diet-accordion.dm .diet-meal-hint{display:block}
 .diet-accordion{margin-top:4px}
 .diet-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:4px 0;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left}
@@ -4969,8 +4969,9 @@ function _wbBuildSite(forDownload){
 .diet-accordion.open .diet-chevron{transform:rotate(180deg)}
 .diet-body{display:none;padding:10px 0 4px}
 .diet-accordion.open .diet-body{display:block}
-.chip-row{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
-.diet-chip{display:inline-flex;align-items:center;gap:3px;padding:4px;border-radius:5px;border:none;background:transparent;font-size:11px;color:${t2.text};cursor:pointer;transition:all .15s;user-select:none}
+.chip-row{display:grid;grid-template-columns:repeat(3,max-content);justify-content:space-between;gap:2px 6px}
+@media(max-width:340px){.chip-row{grid-template-columns:repeat(3,minmax(0,1fr))}.diet-chip{white-space:normal}}
+.diet-chip{display:inline-flex;align-items:center;gap:3px;padding:3px 4px;white-space:nowrap;line-height:1.35;border-radius:5px;border:none;background:transparent;font-size:11px;color:${t2.text};cursor:pointer;transition:all .15s;user-select:none}
 .diet-chip.on{color:${_uvPal.accent};font-weight:600}
 .chip-check{width:12px;height:12px;border-radius:2px;border:1.5px solid ${t2.heading}28;background:${t2.background||t2.page};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .diet-chip.on .chip-check{background:${_uvPal.accent};border-color:${_uvPal.accent};color:${_uvPal.ink}}
@@ -5098,7 +5099,7 @@ function _wbBuildSite(forDownload){
   var GG=_gd?JSON.parse(_gd.dataset.guests||'[]'):[];
   var GSearch=_gd?JSON.parse(_gd.dataset.search||'[]'):[];
   var byId={};GG.forEach(function(g){byId[g.id]=g;});
-  var DIET=[['vegetarian','Vegetarian'],['pescatarian','Pescatarian'],['vegan','Vegan'],['halal','Halal'],['kosher','Kosher'],['lactose','Lactose intolerant'],['gluten','Gluten intolerant'],['allergy','Allergy'],['other','Other']];
+  var DIET=[['vegetarian','Vegetarian'],['pescatarian','Pescatarian'],['vegan','Vegan'],['halal','Halal'],['kosher','Kosher'],['lactose','Lactose-free'],['gluten','Gluten-free'],['allergy','Allergy'],['other','Other']];
   var CHK='<svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="2,6 5,9 10,3"/></svg>';
   var CHEVRON='<svg class="diet-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,5 7,9 11,5"/></svg>';
   function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -5408,7 +5409,7 @@ function _wbBuildSite(forDownload){
         var _dm=mealPick[m.id]===_MEAL_DIET_LABEL;
         html+='<div class="diet-accordion'+(_dm?' open dm':'')+'" onclick="window._uvToggleDiet(this)" style="margin-top:12px">';
         html+='<button class="diet-toggle" type="button"><span class="diet-toggle-label">Dietary requirements</span>'+CHEVRON+'</button>';
-        html+='<div class="diet-body"><p class="diet-meal-hint">Let us know what you need and we\\'ll arrange a meal to suit.</p><div class="chip-row">';
+        html+='<div class="diet-body"><p class="diet-meal-hint">Tell us what you need and we\\'ll arrange an alternative. Only an allergy? Pick your meal above and tick Allergy instead.</p><div class="chip-row">';
         var dSel=dietSel[m.id]||new Set();
         DIET.forEach(function(d){
           var key=d[0],label=d[1];
