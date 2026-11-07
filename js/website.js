@@ -1012,6 +1012,7 @@ function _wbThemeBody(){
         <span class="inv-seg">
           <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
           <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
+          <button type="button" class="${t.align==='right'?'active':''}" onclick="_wbSet('align','right')">Right</button>
         </span>
       </div>
       <div style="margin-bottom:20px">
@@ -1019,6 +1020,7 @@ function _wbThemeBody(){
         <span class="inv-seg">
           <button type="button" class="${(t.bodyAlign||'left')==='left'?'active':''}" onclick="_wbSet('bodyAlign','left')">Left</button>
           <button type="button" class="${t.bodyAlign==='center'?'active':''}" onclick="_wbSet('bodyAlign','center')">Centre</button>
+          <button type="button" class="${t.bodyAlign==='right'?'active':''}" onclick="_wbSet('bodyAlign','right')">Right</button>
           <button type="button" class="${t.bodyAlign==='justify'?'active':''}" onclick="_wbSet('bodyAlign','justify')">Justify</button>
         </span>
       </div>
@@ -1296,8 +1298,8 @@ function _wbCorners(c){
 const WB_FORMATS = [
   {k:'modern',   label:'Classic'},
   {k:'editorial',label:'Modern'},
-  {k:'magazine', label:'Editorial'},
-  {k:'atelier',  label:'Atelier'}
+  {k:'magazine', label:'Editorial', isNew:true},
+  {k:'atelier',  label:'Atelier',   isNew:true}
 ];
 function _wbFormatThumb(k){
   const box='height:46px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;overflow:hidden;position:relative';
@@ -1310,7 +1312,8 @@ function _wbFormatPickerHtml(t){
   return `<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
       <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:4px">FORMAT STYLE</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${WB_FORMATS.map(f=>{const on=t.format===f.k;return `<div onclick="_wbSetFormat('${f.k}')" style="cursor:pointer;border:1.5px solid ${on?'var(--gold)':'var(--border)'};background:${on?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+        ${WB_FORMATS.map(f=>{const on=t.format===f.k;return `<div onclick="_wbSetFormat('${f.k}')" style="cursor:pointer;border:1.5px solid ${on?'var(--gold)':'var(--border)'};background:${on?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s;position:relative">
+          ${f.isNew?`<span style="position:absolute;top:-7px;right:-6px;z-index:2;background:var(--gold);color:#fff;font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:9px;box-shadow:0 1px 4px rgba(0,0,0,.18);font-family:Inter,sans-serif">New</span>`:''}
           ${_wbFormatThumb(f.k)}
           <div style="font-size:11px;font-weight:500;color:${on?'var(--gold)':'var(--sub)'}">${f.label}${on?' ✓':''}</div>
         </div>`;}).join('')}
@@ -1459,6 +1462,7 @@ function _wbRepaintTheme(){
         <span class="inv-seg">
           <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
           <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
+          <button type="button" class="${t.align==='right'?'active':''}" onclick="_wbSet('align','right')">Right</button>
         </span>
       </div>
       <div style="margin-bottom:20px">
@@ -1466,6 +1470,7 @@ function _wbRepaintTheme(){
         <span class="inv-seg">
           <button type="button" class="${(t.bodyAlign||'left')==='left'?'active':''}" onclick="_wbSet('bodyAlign','left')">Left</button>
           <button type="button" class="${t.bodyAlign==='center'?'active':''}" onclick="_wbSet('bodyAlign','center')">Centre</button>
+          <button type="button" class="${t.bodyAlign==='right'?'active':''}" onclick="_wbSet('bodyAlign','right')">Right</button>
           <button type="button" class="${t.bodyAlign==='justify'?'active':''}" onclick="_wbSet('bodyAlign','justify')">Justify</button>
         </span>
       </div>
@@ -2754,6 +2759,7 @@ function _wbLayoutHtml(key){
         <span class="inv-seg">
           <button type="button" class="${l.align==='left'?'active':''}" onclick="_wbLaySet('${key}','align','left')">Left</button>
           <button type="button" class="${l.align==='center'?'active':''}" onclick="_wbLaySet('${key}','align','center')">Centre</button>
+          <button type="button" class="${l.align==='right'?'active':''}" onclick="_wbLaySet('${key}','align','right')">Right</button>
         </span>
       </div>
       ${_wbHasBody(key)?`<div>
@@ -2761,6 +2767,7 @@ function _wbLayoutHtml(key){
         <span class="inv-seg">
           <button type="button" class="${l.body==='left'?'active':''}" onclick="_wbLaySet('${key}','body','left')">Left</button>
           <button type="button" class="${l.body==='center'?'active':''}" onclick="_wbLaySet('${key}','body','center')">Centre</button>
+          <button type="button" class="${l.body==='right'?'active':''}" onclick="_wbLaySet('${key}','body','right')">Right</button>
           ${_wbIsProse(key)?`<button type="button" class="${l.body==='justify'?'active':''}" onclick="_wbLaySet('${key}','body','justify')">Justify</button>`:''}
         </span>
       </div>`:''}
@@ -4328,8 +4335,9 @@ function _wbBuildSite(forDownload){
     // Two independent aligns. `lft` = the heading and intro; `b-*` = the section's own
     // content. v121 and earlier had only `lft`, and the body was hardcoded left in the
     // CSS — so choosing Centre centred the heading and silently did nothing below it.
-    const body = (l.body==='center'||l.body==='justify') ? l.body : 'left';
-    const cls = [extra||'', band?'band':'', left?'lft':'', 'b-'+body].filter(Boolean).join(' ');
+    const right = l.align==='right';
+    const body = (l.body==='center'||l.body==='justify'||l.body==='right') ? l.body : 'left';
+    const cls = [extra||'', band?'band':'', left?'lft':'', right?'rgt':'', 'b-'+body].filter(Boolean).join(' ');
 
     const blocks=_wbBlocks(k).filter(b=>!b.off);
     let feat='', featBlk=null;
@@ -5016,7 +5024,7 @@ function _wbBuildSite(forDownload){
   const _allSh=[_shPart,_bvInner,_bvOuter].filter(Boolean).join(',');
   const secShadow=_allSh?`box-shadow:${_allSh}`:'';
   const secBorder=_cv>0?`;border:1px solid rgba(0,0,0,${(_cv/100*0.12).toFixed(3)});border-radius:${Math.round(_cv/100*14)}px;padding-left:28px;padding-right:28px`:'';
-  const secAlign = t2.align==='left'?'left':'center';
+  const secAlign = t2.align==='left'?'left':(t2.align==='right'?'right':'center');
   // The mark's colourway, resolved once from the PAGE colour — that is what the footer sits
   // on. Not the accent, and not the app's own theme (which is Mandy's, not her guests').
   const brand = _wbBrand(t2.page);
@@ -6022,8 +6030,28 @@ h2{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(24)}px,4vw,$
 .intro{max-width:52ch;margin:0 auto ${sp(24)}px;color:${t2.text};font-size:${scs(15)}px}
 section.lft .intro{margin-left:0}
 h2+.imgs-grid,h2+.imgs-rows,.intro+.imgs-grid,.intro+.imgs-rows{margin-top:${sp(18)}px}
-.para{max-width:60ch;margin:0 auto ${sp(16)}px;font-size:${scs(16)}px;text-align:${(['left','center','justify'].includes(t2.bodyAlign)?t2.bodyAlign:'left')};${t2.bodyAlign==='justify'?'hyphens:auto;-webkit-hyphens:auto;':''}color:${t2.text}}
+.para{max-width:60ch;margin:0 auto ${sp(16)}px;font-size:${scs(16)}px;text-align:${(['left','center','right','justify'].includes(t2.bodyAlign)?t2.bodyAlign:'left')};${t2.bodyAlign==='justify'?'hyphens:auto;-webkit-hyphens:auto;':''}color:${t2.text}}
 section.lft .para{margin-left:0}
+/* Right alignment (heading/intro = .rgt, body = .b-right; site-wide via secAlign). Text runs
+   to the right edge and its block sits against it — the mirror of Left. */
+section.rgt{text-align:right}
+section.rgt .intro{margin-left:auto;margin-right:0}
+section.rgt .edit-eyebrow{text-align:right}
+section.rgt h2::after{margin-left:auto;margin-right:0}
+section.b-right .para{text-align:right;margin-left:auto;margin-right:0}
+section.b-right dl{text-align:right}
+section.b-right dl div{flex-direction:column;gap:2px;text-align:right}
+section.b-right dt{width:auto;padding-top:0}
+section.b-right .sched{text-align:right}
+section.b-right .sched li{flex-direction:row-reverse;text-align:right}
+section.b-right .sched-label{text-align:right}
+section.b-right .lks{align-items:flex-end}
+section.b-right .btns{justify-content:flex-end}
+section.b-right .stays,section.b-right .faq{text-align:right}
+section.b-right .faq summary{flex-direction:row-reverse;gap:10px}
+${secAlign==='right'?`section:not(.lft):not(.rgt) .intro{margin-left:auto;margin-right:0}
+section:not(.lft):not(.rgt) h2::after{margin-left:auto;margin-right:0}`:''}
+${t2.bodyAlign==='right'?`.para{margin-left:auto;margin-right:0}`:''}
 section.b-center .para{text-align:center}
 section.b-justify .para{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
 section.b-justify .intro{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
@@ -6250,6 +6278,10 @@ section.fx-spread+section,section+section.fx-spread{margin-top:0}
 .fx-copy .intro,.fx-copy .para{margin-left:0;max-width:44ch}
 .fx-copy dl,.fx-copy .imgs-grid,.fx-copy .imgs-rows{max-width:480px}
 section.fx-plain h2{margin-bottom:${sp(18)}px}
+section.fx-spread.rgt{text-align:right}
+section.fx-spread.rgt .fx-copy .intro,section.fx-spread.b-right .fx-copy .para{margin-left:auto;margin-right:0}
+section.fx-spread.b-right .fx-copy dl,section.fx-spread.b-right .fx-copy .imgs-grid,section.fx-spread.b-right .fx-copy .imgs-rows,section.fx-spread.b-right .fx-copy .sched{margin-left:auto}
+section.fx-spread.rgt .fx-copy .intro::first-letter{float:none;padding:0;font-size:inherit;line-height:inherit;color:inherit}
 header.fx-cover,header.fx-atelier-head{padding:0;text-align:left}
 .fx-cover-extra{text-align:center;padding:${sp(28)}px 24px}
 `:''}
