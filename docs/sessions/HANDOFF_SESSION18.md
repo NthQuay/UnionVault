@@ -64,3 +64,9 @@ Audit found most wizard answers were saved but never read (vibe, formality, sett
 - **Vendor brief**: ceremony time, venue/space rows, formality, ceremony setting, style; booking row values now escaped.
 - Budget: new per-head item starts from estimated guests (manual-count mode). Email issue line: both venues; typed times kept as typed (was "3:00 PM" → "3:00am").
 - Tested: full wizard run light/dark, data written, tailoring, timeline shift (+30 min), rename propagation, website 4 formats, old-format data (Church → ceremonySetting), 12 pages no errors, phone 390 no overflow, vendor brief with mocked RPC.
+
+## v509.6 — Guest count: Estimated / RSVP count (accepted)
+- Event Details → **Guest count** with an Estimated / RSVP count switch (`_detGuestsInner`, `_detSetGuestSource`, `_detSetGuestEstimate` in js/details.js). The switch IS `STATE.budget.useRsvpCount` — same setting as Budget's per-head guest count, so the two pages always agree.
+- RSVP count = `_rsvpPerHeadCount()` (infants never; children per "Exclude children"), shown with attending total, what isn't counted, how many still to reply, and the old estimate.
+- `_evFillPerHeadEstimate(prev, n)`: per-head budget items that are blank or still equal the previous estimate follow a new estimate; switching back to Estimated (either page) fills blank ones. Counts typed on an item are left alone.
+- Vendor brief: with no replies yet, Guest count shows "~N estimated".
