@@ -2481,7 +2481,7 @@ function _ssBuildPayload(s, msg){
   const payload={ to:s&&s.to?[s.to]:[], subject:_ssTitle+(names?' — '+names:''), body:msg,
     fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:_ssTitle,
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
-    templateId:_emailTplId(ed.templateId),
+    templateId:_emailTplId(ed.templateId), issue:_emailIssue(),
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
       headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) },
     ctaLinks:_ctaLinks() };
@@ -2655,9 +2655,22 @@ function _emailHeaderUrl(hid, uid){
   if(hid==='none') return 'none';
   return hid&&uid ? _SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+uid+'/'+hid : '';
 }
-// Email templates on offer: Classic and Modern. Botanical was retired — anyone who had it
-// picked (app-wide or per email) now gets Classic.
-function _emailTplId(id){ return id==='modern'?'modern':'classic'; }
+// Email templates on offer: Classic, Modern, Editorial and Atelier. Botanical was retired —
+// anyone who had it picked (app-wide or per email) now gets Classic. Editorial and Atelier
+// exist only in send-guest-email; the vendor brief email (forVendor) offers Classic/Modern,
+// so those two fall back to Classic there.
+function _emailTplId(id, forVendor){
+  if(id==='modern') return 'modern';
+  if(!forVendor && (id==='editorial'||id==='atelier')) return id;
+  return 'classic';
+}
+// Names / date / time / venue for the Editorial and Atelier email layouts (masthead,
+// cover lines, details panel). The server validates and escapes every field.
+function _emailIssue(){
+  const ev=STATE.event||{};
+  const time=ev.time?(typeof _fmtEventTime==='function'?_fmtEventTime(ev.time):ev.time):'';
+  return { names:_ssCoupleNames(), date:/^\d{4}-\d{2}-\d{2}$/.test(ev.date||'')?ev.date:'', time:time||'', venue:(ev.venue||'').trim() };
+}
 // Email fonts: four email-safe stacks that display reliably in Gmail, Outlook and Apple
 // Mail. Ids are stored in fontFamily (header) / bodyFont; 'serif' and 'sans-serif' are
 // the ids the old Serif / Sans-serif toggle saved, so existing choices carry over.
@@ -2684,7 +2697,7 @@ function _openEmailDesignModal(itemKey){
   const universal=(STATE.settings&&STATE.settings.emailDesign)||{};
   const override=itemKey&&STATE.settings&&STATE.settings.commsDesign&&STATE.settings.commsDesign[itemKey];
   const src=override||universal;
-  const tplId=_emailTplId(src.templateId);
+  const tplId=_emailTplId(src.templateId, itemKey==='vbrief');
   const accent=src.accentColor||'#8a6a2c';
   const ff=src.fontFamily||'serif';
   const logoLocked=_emailLogoLocked();
@@ -2703,10 +2716,16 @@ function _openEmailDesignModal(itemKey){
         ? `<div style="display:flex;align-items:center;gap:10px;background:var(--parchment);border:1px solid var(--gold-med,var(--border));border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ink)"><span style="flex:1">Custom design for <strong>${_escHtml(item?item.title:'this email')}</strong> — the app-wide design below no longer applies to it.</span><button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignResetItem('${itemKey}')" style="flex-shrink:0;font-size:10.5px">Reset to app-wide</button></div>`
         : `<div style="font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;line-height:1.5">Currently using the app-wide <strong style="color:var(--ink)">Email design</strong>. Changing anything below gives <strong style="color:var(--ink)">${_escHtml(item?item.title:'this email')}</strong> its own design instead.</div>`)
     : '';
-  const tplThumb=(id,name,desc,bandColor,cardColor,borderLeft)=>{
+  // Editorial / Atelier thumbnails: a tiny masthead or stacked names, so the four cards read
+  // as four different designs at a glance.
+  const tplMini={
+    editorial:`<div style="height:28px;background:#FBF8F3;display:flex;align-items:center;justify-content:center;font-family:'Bodoni Moda',Didot,Georgia,serif;font-size:11px;letter-spacing:.04em;color:#1D1916;text-transform:uppercase">A <i style="font-size:8px;text-transform:none">&amp;</i> L</div>`,
+    atelier:`<div style="height:28px;background:#F6F1EA;display:flex;align-items:center;gap:6px;padding:0 8px"><span style="font-family:'Playfair Display',Georgia,serif;font-size:10px;line-height:.9;color:#1D1916">A<br><i style="color:${accent};font-size:7px">&amp;</i> L</span><span style="flex:1;height:20px;background:linear-gradient(160deg,#D9C7B2,#9C8572)"></span></div>`
+  };
+  const tplThumb=(id,name,desc,bandColor,cardColor,borderLeft,isNew)=>{
     const sel=tplId===id;
     return `<button type="button" onclick="_emailDesignSet('templateId','${id}'${arg})" style="flex:1;min-width:100px;max-width:160px;border:2px solid ${sel?'var(--gold)':'var(--border)'};border-radius:12px;padding:0;overflow:hidden;cursor:pointer;background:var(--cream);display:flex;flex-direction:column;text-align:left;position:relative${sel?';box-shadow:0 0 0 2px var(--gold-fade)':''}">
-      <div style="height:28px;background:${bandColor};${borderLeft?'border-left:4px solid '+accent:''}"></div>
+      ${tplMini[id]||`<div style="height:28px;background:${bandColor};${borderLeft?'border-left:4px solid '+accent:''}"></div>`}
       <div style="padding:8px 10px;background:${cardColor}">
         <div style="width:70%;height:4px;background:${accent};border-radius:2px;margin-bottom:5px;opacity:.6"></div>
         <div style="width:100%;height:3px;background:var(--muted);border-radius:2px;margin-bottom:3px;opacity:.2"></div>
@@ -2714,7 +2733,7 @@ function _openEmailDesignModal(itemKey){
         <div style="width:60%;height:3px;background:var(--muted);border-radius:2px;opacity:.2"></div>
       </div>
       <div style="padding:6px 10px 8px;border-top:1px solid var(--border)">
-        <div style="font-size:11px;font-weight:600;color:var(--ink)">${name}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:5px">${name}${isNew?`<span style="background:var(--gold);color:#fff;font-size:7.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:1px 5px;border-radius:7px">New</span>`:''}</div>
         <div style="font-size:9.5px;color:var(--muted);line-height:1.3;margin-top:1px">${desc}</div>
       </div>
       ${sel?'<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>':''}
@@ -2731,7 +2750,10 @@ function _openEmailDesignModal(itemKey){
       <div id="email-tpl-picker" style="display:flex;gap:10px;flex-wrap:wrap">
         ${tplThumb('classic','Classic','Cream card, warm tones','#F4EEE4','#FBF8F3',false)}
         ${tplThumb('modern','Modern','Clean white, accent border','#F5F5F5','#FFFFFF',true)}
+        ${itemKey==='vbrief'?'':tplThumb('editorial','Editorial','Magazine cover, side-by-side spread','#FBF8F3','#FBF8F3',false,true)}
+        ${itemKey==='vbrief'?'':tplThumb('atelier','Atelier','Big names, tinted panels','#F6F1EA','#F6F1EA',false,true)}
       </div>
+      ${(!itemKey && (tplId==='editorial'||tplId==='atelier'))?`<div style="font-size:11px;color:var(--muted);margin-top:7px;line-height:1.45">Vendor brief emails use Classic with this template.</div>`:''}
     </div>`:''}
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:8px">Accent colour</div>
