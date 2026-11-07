@@ -1158,7 +1158,9 @@ function _saveCeremonyDetails(){
   if(!STATE.event) STATE.event={};
   STATE.event.religion=_otherSelectValue('ven-religion');
   STATE.event.officiant=_otherSelectValue('ven-officiant');
-  STATE.event.ceremonyVenue=_otherSelectValue('ven-cervenue');
+  // Ceremony setting (a vision: Garden, Church…). The ceremony venue's real name lives in
+  // the Venues card and saves as it's typed.
+  if(document.getElementById('ven-cersetting')) STATE.event.ceremonySetting=_otherSelectValue('ven-cersetting');
   saveToStorage();
   const m=document.getElementById('ven-cer-saved'); if(m){ m.style.display='inline'; setTimeout(()=>{ try{m.style.display='none';}catch(_){} },1600); }
 }

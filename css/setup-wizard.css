@@ -264,3 +264,13 @@ body.dark .inp::placeholder { color: var(--muted); }
 .wz-foot .btn-next:hover { opacity: .87; }
 .wz-foot .btn-next:active { transform: scale(.97); }
 .wz-foot .btn-next.finish { background: var(--green); }
+
+/* ── Wedding party names (step 5) ─────────────── */
+.wz-nm-tog { display:block; background:none; border:none; padding:0; margin-top:3px; font-family:inherit; font-size:11.5px; font-weight:600; color:var(--accent); cursor:pointer; }
+.step-row-info span:empty { display:none; }
+.wz-names { display:none; flex-wrap:wrap; gap:6px; padding:0 0 12px; border-bottom:1px solid var(--border); }
+.wz-names.open { display:flex; }
+.wz-names .inp { flex:1 1 150px; padding:7px 10px; font-size:12.5px; }
+.step-row.nm-open { border-bottom:none; }
+.sum-dest { font-size:10.5px; font-weight:600; color:var(--accent); margin-top:6px; letter-spacing:.01em; }
+.sum-dest:empty { display:none; }

@@ -643,25 +643,27 @@
           <input class="inp" type="date" id="i-date">
         </div>
         <div class="form-group" style="margin-bottom:0">
-          <label class="lbl">Time of Day</label>
-          <select class="sel" id="i-tod">
-            <option>Morning (before noon)</option>
-            <option selected>Afternoon (12pm &#8211; 4pm)</option>
-            <option>Evening (after 4pm)</option>
-          </select>
+          <label class="lbl">Ceremony time <span class="opt">(optional)</span></label>
+          <input class="inp" type="time" id="i-time">
         </div>
       </div>
       <div class="form-group" style="margin-top:14px">
-        <label class="lbl">Reception Venue</label>
-        <input class="inp" id="i-venue" placeholder="e.g. The Grand Pavilion">
-      </div>
-      <div class="form-group">
         <label class="lbl">Ceremony Type</label>
         <div class="pill-group">
-          <div class="pill" data-grp="cer" onclick="wzSinglePill(this)">Civil / Celebrant</div>
-          <div class="pill" data-grp="cer" onclick="wzSinglePill(this)">Religious</div>
-          <div class="pill" data-grp="cer" onclick="wzSinglePill(this)">Symbolic</div>
-          <div class="pill" data-grp="cer" onclick="wzSinglePill(this)">Elopement</div>
+          <div class="pill" data-grp="cer" onclick="wzSinglePill(this);wzCerTypeChanged()">Civil / Celebrant</div>
+          <div class="pill" data-grp="cer" onclick="wzSinglePill(this);wzCerTypeChanged()">Religious</div>
+          <div class="pill" data-grp="cer" onclick="wzSinglePill(this);wzCerTypeChanged()">Symbolic</div>
+          <div class="pill" data-grp="cer" onclick="wzSinglePill(this);wzCerTypeChanged()">Elopement</div>
+        </div>
+        <div class="form-row" id="wz-rel-group" style="display:none;margin:10px 0 0">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="lbl">Religion</label>
+            <select class="sel" id="i-religion"><option value="">&#8212;</option></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="lbl">Married by a</label>
+            <select class="sel" id="i-officiant"><option value="">&#8212;</option></select>
+          </div>
         </div>
       </div>
       <div class="form-group">
@@ -673,17 +675,24 @@
           <div class="pill" data-grp="loc" onclick="wzSinglePill(this)">Destination</div>
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="lbl">Separate ceremony venue?</label>
+      <div class="form-group">
+        <label class="lbl">Ceremony &amp; reception</label>
         <div class="pill-group">
-          <div class="pill" data-grp="sep" onclick="wzSinglePill(this);wzToggleCerVenue(true)">Yes &#8212; different venue</div>
-          <div class="pill" data-grp="sep" onclick="wzSinglePill(this);wzToggleCerVenue(false)">No &#8212; same venue</div>
+          <div class="pill on" data-grp="sep" data-mode="same" onclick="wzSinglePill(this);wzSetVenueMode('same')">Same venue</div>
+          <div class="pill" data-grp="sep" data-mode="different" onclick="wzSinglePill(this);wzSetVenueMode('different')">Different venues</div>
         </div>
       </div>
-      <div class="form-group" id="cer-venue-group" style="display:none;margin-top:14px;margin-bottom:0">
-        <label class="lbl">Ceremony Venue Name</label>
-        <input class="inp" id="i-cer-venue" placeholder="e.g. St Paul's Cathedral">
+      <div class="form-row" style="margin-bottom:0">
+        <div class="form-group" id="cer-venue-group" style="display:none;margin-bottom:0">
+          <label class="lbl">Ceremony venue</label>
+          <input class="inp" id="i-cer-venue" placeholder="e.g. St Paul's Cathedral" oninput="wzRenderSpaces()">
+        </div>
+        <div class="form-group" id="rec-venue-group" style="margin-bottom:0;grid-column:1/-1">
+          <label class="lbl" id="i-venue-lbl">Venue</label>
+          <input class="inp" id="i-venue" placeholder="e.g. The Grand Pavilion" oninput="wzRenderSpaces()">
+        </div>
       </div>
+      <div id="wz-spaces" style="margin-top:14px"></div>
     </div>
 
     <!-- Step 3: Size & Style -->
@@ -706,6 +715,10 @@
         </div>
       </div>
       <div class="form-group">
+        <label class="lbl">Ceremony setting you imagine <span class="opt">(optional)</span></label>
+        <div class="pill-group" id="wz-cer-setting"></div>
+      </div>
+      <div class="form-group">
         <label class="lbl">Vibe <span class="opt">(pick any that fit)</span></label>
         <div class="pill-group">
           <div class="pill" onclick="wzTogglePill(this)">Romantic</div>
@@ -724,7 +737,7 @@
       </div>
       <div class="div" style="margin:14px 0"></div>
       <div class="form-group" style="margin-bottom:0">
-        <label class="lbl">Wedding palette <span class="opt">(optional &#8212; pre-wires your website theme &amp; app accent)</span></label>
+        <label class="lbl">Wedding palette <span class="opt">(optional &#8212; fills your Inspiration palette &amp; email colour)</span></label>
         <div class="pal-role">Primary colour</div>
         <div class="pal-grid" id="pal-grid"></div>
         <div class="pal-custom-row">
@@ -779,7 +792,7 @@
     <div class="step-panel" id="p5">
       <div style="margin-bottom:16px">
         <div class="step-row" id="sr-bm">
-          <div class="step-row-info"><b>Bridesmaids</b><span>Including Maid / Matron of Honour</span></div>
+          <div class="step-row-info"><b>Bridesmaids</b><span>Including Maid / Matron of Honour</span><button type="button" class="wz-nm-tog" id="nmt-bm" onclick="wzToggleNames('bm')">+ Add names</button></div>
           <div class="step-ctrl">
             <button class="step-btn" onclick="wzAdj('bm',-1)">&#8722;</button>
             <div class="step-val" id="sv-bm">4</div>
@@ -787,8 +800,9 @@
             <button class="unk-btn" id="unk-bm" onclick="wzToggleUnk('bm')">Not sure</button>
           </div>
         </div>
+        <div class="wz-names" id="nm-bm"></div>
         <div class="step-row" id="sr-gm">
-          <div class="step-row-info"><b>Groomsmen</b><span>Including Best Man</span></div>
+          <div class="step-row-info"><b>Groomsmen</b><span>Including Best Man</span><button type="button" class="wz-nm-tog" id="nmt-gm" onclick="wzToggleNames('gm')">+ Add names</button></div>
           <div class="step-ctrl">
             <button class="step-btn" onclick="wzAdj('gm',-1)">&#8722;</button>
             <div class="step-val" id="sv-gm">4</div>
@@ -796,8 +810,9 @@
             <button class="unk-btn" id="unk-gm" onclick="wzToggleUnk('gm')">Not sure</button>
           </div>
         </div>
+        <div class="wz-names" id="nm-gm"></div>
         <div class="step-row" id="sr-fg">
-          <div class="step-row-info"><b>Flower girls</b><span></span></div>
+          <div class="step-row-info"><b>Flower girls</b><span></span><button type="button" class="wz-nm-tog" id="nmt-fg" onclick="wzToggleNames('fg')">+ Add names</button></div>
           <div class="step-ctrl">
             <button class="step-btn" onclick="wzAdj('fg',-1)">&#8722;</button>
             <div class="step-val" id="sv-fg">1</div>
@@ -805,8 +820,9 @@
             <button class="unk-btn" id="unk-fg" onclick="wzToggleUnk('fg')">Not sure</button>
           </div>
         </div>
+        <div class="wz-names" id="nm-fg"></div>
         <div class="step-row" id="sr-pb">
-          <div class="step-row-info"><b>Page boys / Ring bearers</b><span></span></div>
+          <div class="step-row-info"><b>Page boys / Ring bearers</b><span></span><button type="button" class="wz-nm-tog" id="nmt-pb" onclick="wzToggleNames('pb')">+ Add names</button></div>
           <div class="step-ctrl">
             <button class="step-btn" onclick="wzAdj('pb',-1)">&#8722;</button>
             <div class="step-val" id="sv-pb">0</div>
@@ -814,6 +830,7 @@
             <button class="unk-btn" id="unk-pb" onclick="wzToggleUnk('pb')">Not sure</button>
           </div>
         </div>
+        <div class="wz-names" id="nm-pb"></div>
       </div>
       <div class="form-group" style="margin-bottom:12px">
         <label class="lbl">Pre-wedding events</label>
@@ -826,7 +843,7 @@
         </div>
       </div>
       <div class="notice">
-        Party numbers help pre-fill attire tasks and budget categories. Each person can be added to your guest list anytime.
+        Names you add go straight to your guest list, tagged Bridal Party. Attire tasks are added to your checklist for each role you have.
       </div>
     </div>
 
@@ -852,38 +869,44 @@
           </svg>
         </div>
         <div class="sum-title" id="sum-title">Let the planning begin!</div>
-        <div class="sum-sub">Here's everything you've set up — all of it editable anytime from your Event Details and Settings.</div>
+        <div class="sum-sub">Here's everything you've set up, and where it goes — all of it editable anytime.</div>
       </div>
       <div class="sum-grid">
         <div class="sum-card">
           <div class="sum-card-lbl">The Couple</div>
           <div class="sum-card-val" id="sum-couple">&#8212;</div>
           <div class="sum-card-sub" id="sum-roles">&#8212;</div>
+          <div class="sum-dest" id="sum-dest-couple">&#8594; Event Details · Guests</div>
         </div>
         <div class="sum-card">
           <div class="sum-card-lbl">The Day</div>
           <div class="sum-card-val" id="sum-date">&#8212;</div>
           <div class="sum-card-sub" id="sum-countdown"></div>
+          <div class="sum-dest" id="sum-dest-date">&#8594; Event Details · Website · Emails</div>
         </div>
         <div class="sum-card">
           <div class="sum-card-lbl">Venue</div>
           <div class="sum-card-val" id="sum-venue">&#8212;</div>
           <div class="sum-card-sub" id="sum-setting-disp">&#8212;</div>
+          <div class="sum-dest" id="sum-dest-venue">&#8594; Event Details → Venues · Timeline</div>
         </div>
         <div class="sum-card">
           <div class="sum-card-lbl">Budget &amp; Guests</div>
           <div class="sum-card-val" id="sum-budget">&#8212;</div>
           <div class="sum-card-sub" id="sum-guests">&#8212;</div>
+          <div class="sum-dest" id="sum-dest-budget">&#8594; Budget · per-head items</div>
         </div>
         <div class="sum-card">
           <div class="sum-card-lbl">Ceremony</div>
           <div class="sum-card-val" id="sum-ceremony">&#8212;</div>
           <div class="sum-card-sub" id="sum-formality-disp">&#8212;</div>
+          <div class="sum-dest" id="sum-dest-ceremony">&#8594; Event Details → Ceremony</div>
         </div>
         <div class="sum-card">
           <div class="sum-card-lbl">Wedding Party</div>
           <div class="sum-card-val" id="sum-party">&#8212;</div>
           <div class="sum-card-sub" id="sum-party-sub">Bridesmaids &amp; Groomsmen</div>
+          <div class="sum-dest" id="sum-dest-party"></div>
         </div>
       </div>
       <div class="sum-tags" id="sum-tags" style="margin-bottom:10px;display:none;flex-wrap:wrap;gap:6px;align-items:center"></div>

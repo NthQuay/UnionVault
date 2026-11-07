@@ -190,7 +190,7 @@ function _tlRenderListView(c, actions){
   actions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="_tlAddTimeline()" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="tl-tb-label">Add Timeline</span></button>`;
 
   const dateLine = STATE.event.date ? fmtDate(STATE.event.date) : '';
-  const venueLine = STATE.event.venue || '';
+  const venueLine = (typeof _evVenueLine==='function' ? _evVenueLine() : '') || STATE.event.venue || '';
   let header = `<div style="color:var(--muted);font-size:14px;margin-bottom:20px">${[dateLine,venueLine].filter(Boolean).join(' &nbsp;·&nbsp; ')||'Manage your wedding day schedules'}</div>`;
 
   let cardsHtml = '';
@@ -741,6 +741,21 @@ function _tlCatDelete(id){
   _tlRenderManageCatsModal();
 }
 
+// Location shortcuts: the couple's rooms/spaces and venue(s) from Event Details.
+function _tlLocChipsHtml(cur){
+  const opts = typeof _evLocationOptions==='function' ? _evLocationOptions() : [];
+  if(!opts.length) return '';
+  const c=String(cur||'').trim();
+  return `<div class="tl-loc-chips" id="tl-loc-chips">${opts.map(o=>`<button type="button" class="tl-loc-chip${o===c?' on':''}" data-loc="${_escHtml(o)}" onclick="_tlPickLoc(this)">${_escHtml(o)}</button>`).join('')}</div>`;
+}
+function _tlPickLoc(btn){
+  const inp=document.getElementById('tl-loc'); if(!inp) return;
+  inp.value=btn.dataset.loc||''; _tlLocChipsSync();
+}
+function _tlLocChipsSync(){
+  const v=((document.getElementById('tl-loc')||{}).value||'').trim();
+  document.querySelectorAll('#tl-loc-chips .tl-loc-chip').forEach(b=>b.classList.toggle('on', b.dataset.loc===v));
+}
 function timelineFormBody(it){
   it = it || { time:'', title:'', location:'', who:'', notes:'', cat:'reception' };
   return `
@@ -754,7 +769,7 @@ function timelineFormBody(it){
     </div>
     <div class="form-group" style="margin-top:6px"><label class="form-label">Moment</label><input class="form-input" id="tl-title" placeholder="e.g. First Dance" value="${(it.title||'').replace(/"/g,'&quot;')}"/></div>
     <div class="form-row" style="margin-top:6px">
-      <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tl-loc" placeholder="e.g. Ballroom" value="${(it.location||'').replace(/"/g,'&quot;')}"/></div>
+      <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tl-loc" placeholder="e.g. Ballroom" value="${(it.location||'').replace(/"/g,'&quot;')}" oninput="_tlLocChipsSync()"/>${_tlLocChipsHtml(it.location||'')}</div>
       <div class="form-group"><label class="form-label">Who / Vendor</label><input class="form-input" id="tl-who" placeholder="e.g. Photographer" value="${(it.who||'').replace(/"/g,'&quot;')}"/></div>
     </div>
     <div class="form-group" style="margin-top:6px"><label class="form-label">Notes</label><textarea class="form-input" id="tl-notes" rows="2" placeholder="Optional details..." style="resize:vertical">${(it.notes||'').replace(/</g,'&lt;')}</textarea></div>
@@ -1055,7 +1070,7 @@ function _tlPrintNames(){ const p1=STATE.event.partner1||'', p2=STATE.event.part
 function _tlDateVenue(tl){
   const ev=tl&&tl.linkedEventId?(STATE.events||[]).find(e=>e.id===tl.linkedEventId):null;
   if(ev) return { date: ev.date?fmtDate(ev.date):'', venue: ev.venueName||'' };
-  return { date: STATE.event.date?fmtDate(STATE.event.date):'', venue: STATE.event.venue||'' };
+  return { date: STATE.event.date?fmtDate(STATE.event.date):'', venue: (typeof _evVenueLine==='function' ? _evVenueLine() : '') || STATE.event.venue||'' };
 }
 function _tlPrintSubLine(){ const dv=_tlDateVenue(typeof _tlActiveTimeline==='function'?_tlActiveTimeline():null); return [dv.date,dv.venue].filter(Boolean).join(' · '); }
 

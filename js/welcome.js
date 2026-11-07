@@ -28,6 +28,7 @@ const WZ_PALETTES2 = [
   {name:'Lavender',   hex:'#9A90B8'},
 ];
 let wzSelPalIdx = -1, wzSelPalIdx2 = -1;
+let wzPalSet = false, wzPalSet2 = false;   // the couple actually picked a colour
 
 function wzBuildPalette(){
   const g = document.getElementById('pal-grid');
@@ -43,26 +44,26 @@ function wzBuildPalette(){
 }
 
 function wzSelectPalette(idx){
-  wzSelPalIdx = idx;
+  wzSelPalIdx = idx; wzPalSet = true;
   document.querySelectorAll('#pal-grid .pal-swatch').forEach((s,i)=>s.classList.toggle('on',i===idx));
   wzApplyAccent(WZ_PALETTES[idx].hex);
   const cp = document.getElementById('pal-custom');
   if(cp) cp.value = WZ_PALETTES[idx].hex;
 }
 function wzSelectPalette2(idx){
-  wzSelPalIdx2 = idx;
+  wzSelPalIdx2 = idx; wzPalSet2 = true;
   document.querySelectorAll('#pal-grid2 .pal-swatch2').forEach((s,i)=>s.classList.toggle('on',i===idx));
   wzApplyAccent2(WZ_PALETTES2[idx].hex);
   const cp = document.getElementById('pal-custom2');
   if(cp) cp.value = WZ_PALETTES2[idx].hex;
 }
 function wzSelectCustomPalette(hex){
-  wzSelPalIdx = -1;
+  wzSelPalIdx = -1; wzPalSet = true;
   document.querySelectorAll('#pal-grid .pal-swatch').forEach(s=>s.classList.remove('on'));
   wzApplyAccent(hex);
 }
 function wzSelectCustomPalette2(hex){
-  wzSelPalIdx2 = -1;
+  wzSelPalIdx2 = -1; wzPalSet2 = true;
   document.querySelectorAll('#pal-grid2 .pal-swatch2').forEach(s=>s.classList.remove('on'));
   wzApplyAccent2(hex);
 }
@@ -98,10 +99,10 @@ function wzPronounPill(el, col){
 // ── Checklist data ──────────────────────────────────────────────────
 const WZ_CATS = [
   {cat:'Getting Started', tasks:['Pick your wedding date','Agree on a rough budget','Research & visit venues','Create a vision board','Choose your colour scheme']},
-  {cat:'Venue',           tasks:['Book ceremony venue','Book reception venue','Venue site visit','Confirm AV & sound system','Venue layout walkthrough']},
+  {cat:'Venue',           tasks:['Book ceremony venue','Book reception venue','Venue site visit','Confirm AV & sound system','Venue layout walkthrough','Arrange wet-weather backup']},
   {cat:'Stationery',      tasks:['Send save the dates','Design and order invitations','Send formal invitations','Print ceremony programs','Design menus & place cards','Send RSVP reminders','Order thank you cards']},
   {cat:'Ceremony',        tasks:['Hire celebrant / officiant','Lodge notice of intended marriage','Write personal vows','Plan ceremony music','Plan processional order','Organise rehearsal']},
-  {cat:'Attire',          tasks:['Order bridal gown','Dress alterations & fittings','Order groom\'s suit / attire','Bridesmaid dresses','Groomswear','Wedding shoes','Flower girl outfits','Purchase accessories']},
+  {cat:'Attire',          tasks:['Order bridal gown','Dress alterations & fittings','Order groom\'s suit / attire','Bridesmaid dresses','Groomswear','Wedding shoes','Flower girl outfits','Page boy outfits','Purchase accessories']},
   {cat:'Beauty',          tasks:['Book hair & makeup artist','Hair & makeup trial','Book spray tan','Nail appointment','Prepare day-of emergency kit']},
   {cat:'Media',           tasks:['Book photographer','Book videographer','Plan photo shot list','Book photo booth','Book drone footage','Arrange engagement shoot']},
   {cat:'Catering',        tasks:['Book caterer','Schedule menu tasting','Book cake tasting','Finalise menu & dietary notes','Order wedding cake','Confirm bar package','Arrange grazing table']},
@@ -110,7 +111,7 @@ const WZ_CATS = [
   {cat:'Logistics',       tasks:['Finalise guest list','Arrange guest transport','Book wedding party transport','Block accommodation for guests','Hire on-the-day coordinator','Create seating plan','Finalise floorplan','Finalise run sheet / timeline','Finalise day-of timeline']},
   {cat:'Rings',           tasks:['Purchase wedding rings','Ring engraving','Ring box & presentation']},
   {cat:'Honeymoon',       tasks:['Book honeymoon flights','Book honeymoon accommodation','Purchase travel insurance','Plan honeymoon activities','Organise travel wallet & currency']},
-  {cat:'Legal',           tasks:['Collect marriage certificate','Name change — passport','Name change — driver\'s licence','Name change — bank accounts']},
+  {cat:'Legal',           tasks:['Check destination marriage requirements','Collect marriage certificate','Name change — passport','Name change — driver\'s licence','Name change — bank accounts']},
   {cat:'Pre-Wedding',     tasks:['Plan hen\'s party','Plan buck\'s party','Plan rehearsal dinner','Plan engagement party','Plan day-after brunch']},
   {cat:'Website & Digital',tasks:['Set up wedding website','Configure RSVP form','Share wedding website with guests','Create gift registry link']},
   {cat:'Gifts',           tasks:['Set up physical gift registry','Configure wishing well','Write & send thank you notes','Assign gift tracking']},
@@ -185,6 +186,34 @@ function wzInitTS(){
   wzTs = {};
   WZ_CATS.forEach(({cat,tasks})=>tasks.forEach(t=>{ wzTs[cat+'||'+t] = WZ_DEFAULT_ON.has(t); }));
 }
+// Checklist tailoring: answers from earlier steps tick (or untick) the tasks they make
+// relevant. A chip the couple has tapped themselves is never changed again.
+const wzClManual = new Set();
+function wzTailorChecklist(){
+  const pill = grp => { const e=document.querySelector(`[data-grp="${grp}"].on`); return e ? e.textContent.trim() : ''; };
+  const cer = pill('cer'), loc = pill('loc');
+  const want = {};   // task text → true (tick) / false (untick)
+  const on  = (...t)=>t.forEach(x=>want[x]=true);
+  const off = (...t)=>t.forEach(x=>want[x]=false);
+  if(loc==='Outdoor only' || loc==='Both') on('Arrange wet-weather backup');
+  if(loc==='Destination') on('Block accommodation for guests','Arrange guest transport','Check destination marriage requirements');
+  if(wzVenueMode==='different') on('Book reception venue','Book wedding party transport');
+  if(cer==='Civil / Celebrant' || cer==='Religious') on('Lodge notice of intended marriage');
+  if(cer==='Religious') on('Organise rehearsal');
+  if(cer==='Symbolic') off('Lodge notice of intended marriage','Collect marriage certificate');
+  if(cer==='Elopement') off('Send save the dates','Design and order invitations','Send formal invitations','Send RSVP reminders','Create seating plan','Book DJ or band','Reception centrepieces','Arrange guest transport','Print ceremony programs','Design menus & place cards');
+  const has = k => !wzUnknowns[k] && wzStepVals[k] > 0;
+  if(has('bm')) on('Bridesmaid dresses');
+  if(has('gm')) on('Groomswear');
+  if(has('fg')) on('Flower girl outfits');
+  if(has('pb')) on('Page boy outfits');
+  const PRE = {"Hen's party":"Plan hen's party","Buck's party":"Plan buck's party","Rehearsal dinner":"Plan rehearsal dinner","Engagement party":"Plan engagement party","Day-after brunch":"Plan day-after brunch"};
+  document.querySelectorAll('#p5 .pill.on').forEach(p=>{ const t=PRE[p.textContent.trim()]; if(t) on(t); });
+  WZ_CATS.forEach(({cat,tasks})=>tasks.forEach(t=>{
+    const key = cat+'||'+t;
+    if(t in want && !wzClManual.has(key)) wzTs[key] = want[t];
+  }));
+}
 function wzSelCount(){ return Object.values(wzTs).filter(Boolean).length; }
 function wzTotCount(){ return Object.keys(wzTs).length; }
 
@@ -222,7 +251,7 @@ function wzUpdCLStats(){
 function wzFilterCL(v){ wzClQ = v; wzRenderCL(); }
 function wzToggleAll(){
   const nv = wzSelCount() < wzTotCount();
-  Object.keys(wzTs).forEach(k=>wzTs[k] = nv);
+  Object.keys(wzTs).forEach(k=>{ wzTs[k] = nv; wzClManual.add(k); });
   wzRenderCL();
 }
 
@@ -271,7 +300,7 @@ function wzNav(dir){
       : 'wzSlideIn .22s cubic-bezier(.22,.61,.36,1)';
     inPanel.classList.add('visible');
   }
-  if(wzCur === 6) wzRenderCL();
+  if(wzCur === 6){ wzTailorChecklist(); wzRenderCL(); }
   wzRenderBar();
   wzUpdateUI();
 }
@@ -354,25 +383,32 @@ function wzUpdateUI(){
       if(scnEl) scnEl.textContent = '';
     }
 
-    // Venue + setting + time of day
+    // Venue(s) + spaces
     const venueVal = ((document.getElementById('i-venue')||{}).value||'').trim();
+    const cerVenueVal = ((document.getElementById('i-cer-venue')||{}).value||'').trim();
     const svEl = document.getElementById('sum-venue');
     const ssEl = document.getElementById('sum-setting-disp');
-    if(svEl) svEl.textContent = venueVal || 'Not set';
+    const vLine = wzVenueMode==='different' ? [cerVenueVal, venueVal].filter(Boolean).join(' & ') : venueVal;
+    if(svEl) svEl.textContent = vLine || 'Not set';
+    const spNames = wzSpaces.map(x=>String(x.name||'').trim()).filter(Boolean);
     const settingPill = document.querySelector('[data-grp="loc"].on');
-    const todSel = document.getElementById('i-tod');
-    const todMap = {'Morning (before noon)':'Morning','Afternoon (12pm – 4pm)':'Afternoon','Evening (after 4pm)':'Evening'};
-    const todTxt = todSel ? (todMap[todSel.value] || todSel.value) : '';
-    const settingTxt = settingPill ? settingPill.textContent : '';
-    if(ssEl) ssEl.textContent = [settingTxt,todTxt].filter(Boolean).join(' · ') || '—';
+    const timeVal = (document.getElementById('i-time')||{}).value||'';
+    const timeTxt = timeVal && typeof tlTo12h==='function' ? tlTo12h(timeVal) : timeVal;
+    if(ssEl) ssEl.textContent = spNames.length ? spNames.join(' · ') : ([settingPill?settingPill.textContent:'', timeTxt].filter(Boolean).join(' · ') || '—');
+    const sdv = document.getElementById('sum-dest-venue');
+    if(sdv) sdv.textContent = spNames.length ? '\u2192 Event Details \u2192 Venues \u00b7 Timeline locations' : '\u2192 Event Details \u2192 Venues';
+    if(scnEl && timeTxt) scnEl.textContent = [scnEl.textContent, 'Ceremony '+timeTxt].filter(Boolean).join(' \u00b7 ');
 
-    // Ceremony + formality
+    // Ceremony: type · setting imagined, then religion / officiant / venue name
     const cerPill = document.querySelector('[data-grp="cer"].on');
-    const fmPill  = document.querySelector('[data-grp="fm"].on');
+    const csetPill = document.querySelector('[data-grp="cset"].on');
     const scerEl  = document.getElementById('sum-ceremony');
     const sfmEl   = document.getElementById('sum-formality-disp');
-    if(scerEl) scerEl.textContent = cerPill ? cerPill.textContent : '—';
-    if(sfmEl)  sfmEl.textContent  = fmPill  ? fmPill.textContent  : '—';
+    if(scerEl) scerEl.textContent = [cerPill?cerPill.textContent.trim():'', csetPill?csetPill.textContent.trim():''].filter(Boolean).join(' \u00b7 ') || '—';
+    const relV = cerPill && cerPill.textContent.trim()==='Religious' ? ((document.getElementById('i-religion')||{}).value||'') : '';
+    const offV = cerPill && cerPill.textContent.trim()==='Religious' ? ((document.getElementById('i-officiant')||{}).value||'')
+               : (cerPill && cerPill.textContent.trim()==='Civil / Celebrant' ? 'Celebrant' : '');
+    if(sfmEl) sfmEl.textContent = [relV, offV, wzVenueMode==='different'?cerVenueVal:''].filter(Boolean).join(' \u00b7 ') || '—';
 
     // Budget + guests
     const budgetAmt = parseFloat((document.getElementById('i-budget-wz')||{}).value)||0;
@@ -392,6 +428,9 @@ function wzUpdateUI(){
     const spEl  = document.getElementById('sum-party');
     const spbEl = document.getElementById('sum-party-sub');
     if(spEl) spEl.textContent = `${bv} + ${gv}`;
+    const namedN = ['bm','gm','fg','pb'].reduce((n,k)=>n+wzNames[k].filter(x=>x&&x.trim()).length,0);
+    const sdp = document.getElementById('sum-dest-party');
+    if(sdp) sdp.textContent = namedN ? `\u2192 Guests (${namedN} named, tagged Bridal Party) \u00b7 Checklist` : '\u2192 Checklist attire tasks';
     if(spbEl){
       let partySub = 'Bridesmaids & Groomsmen';
       if((fv!==0&&fv!=='0')||(pv!==0&&pv!=='0'))
@@ -401,11 +440,14 @@ function wzUpdateUI(){
 
     // Vibe tags
     const vibes = [...document.querySelectorAll('#p3 .pill.on:not([data-grp])')].map(p=>p.textContent.trim()).filter(Boolean);
+    const fmOn = document.querySelector('[data-grp="fm"].on');
+    if(fmOn) vibes.push(fmOn.textContent.trim());
     const tagsEl = document.getElementById('sum-tags');
     if(tagsEl){
       if(vibes.length){
-        tagsEl.innerHTML = '<span style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);align-self:center">Vibe&nbsp;</span>'+
-          vibes.map(v=>`<span class="sum-tag">${wzEscH(v)}</span>`).join('');
+        tagsEl.innerHTML = '<span style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);align-self:center">Style&nbsp;</span>'+
+          vibes.map(v=>`<span class="sum-tag">${wzEscH(v)}</span>`).join('')+
+          '<span class="sum-dest" style="margin:0 0 0 4px;align-self:center">\u2192 Inspiration \u00b7 Event Details \u00b7 Website dress code</span>';
         tagsEl.style.display = 'flex';
       } else {
         tagsEl.style.display = 'none';
@@ -421,7 +463,7 @@ function wzUpdateUI(){
     const palEl = document.getElementById('sum-pal');
     if(palEl)
       palEl.innerHTML = `<div class="sum-pal-dots"><div class="sum-pal-dot" style="background:${c1}"></div><div class="sum-pal-dot" style="background:${c2}"></div></div>`+
-        `<div class="sum-pal-info"><strong>Wedding palette</strong><small>${wzEscH(pn1)} &amp; ${wzEscH(pn2)}</small></div>`;
+        `<div class="sum-pal-info"><strong>Wedding palette</strong><small>${wzEscH(pn1)} &amp; ${wzEscH(pn2)}</small><div class="sum-dest">\u2192 Inspiration palette \u00b7 email colour</div></div>`;
 
     wzUpdCLStats();
   }
@@ -445,9 +487,84 @@ function wzSinglePill(el){
   document.querySelectorAll(`[data-grp="${grp}"]`).forEach(p=>p.classList.remove('on'));
   el.classList.add('on');
 }
-function wzToggleCerVenue(show){
-  const g = document.getElementById('cer-venue-group');
-  if(g) g.style.display = show ? 'flex' : 'none';
+// ── The Day: ceremony type → religion / officiant ─────────────────────
+function wzCerTypeChanged(){
+  const on = document.querySelector('[data-grp="cer"].on');
+  const t  = on ? on.textContent.trim() : '';
+  const g  = document.getElementById('wz-rel-group');
+  if(g) g.style.display = t === 'Religious' ? '' : 'none';
+}
+function wzFillSelect(id, options){
+  const sel = document.getElementById(id);
+  if(!sel || sel.options.length > 1) return;
+  options.forEach(o=>sel.add(new Option(o, o)));
+}
+
+// ── The Day: venues + rooms & spaces ───────────────────────────────────
+let wzVenueMode = 'same';
+let wzSpaces = [];       // same shape as STATE.event.spaces
+let wzSpOpen = false;
+function wzSetVenueMode(mode){
+  wzVenueMode = mode === 'different' ? 'different' : 'same';
+  const diff = wzVenueMode === 'different';
+  const cg = document.getElementById('cer-venue-group');
+  const rg = document.getElementById('rec-venue-group');
+  const lb = document.getElementById('i-venue-lbl');
+  if(cg) cg.style.display = diff ? '' : 'none';
+  if(rg) rg.style.gridColumn = diff ? '' : '1/-1';
+  if(lb) lb.textContent = diff ? 'Reception venue' : 'Venue';
+  wzRenderSpaces();
+}
+function wzVenueOf(part){
+  const rec = ((document.getElementById('i-venue')||{}).value||'').trim();
+  const cer = ((document.getElementById('i-cer-venue')||{}).value||'').trim();
+  if(part === 'ceremony' && wzVenueMode === 'different') return cer || 'Ceremony venue';
+  return rec || (wzVenueMode === 'different' ? 'Reception venue' : 'Your venue');
+}
+function wzRenderSpaces(){
+  const host = document.getElementById('wz-spaces');
+  if(!host || typeof _evSpacesBlockHtml !== 'function') return;
+  host.innerHTML = _evSpacesBlockHtml({spaces:wzSpaces, open:wzSpOpen, venueOf:wzVenueOf, inputCls:'inp', ns:'wzSp'});
+}
+function wzSpToggle(){ wzSpOpen = !wzSpOpen; wzRenderSpaces(); }
+function wzSpSet(key, value){ _evSpacesSet(wzSpaces, key, value); }
+function wzSpRename(){ /* nothing to follow yet during setup */ }
+function wzSpAdd(){ wzSpaces.push({id:uid(), part:'other', name:''}); wzSpOpen = true; wzRenderSpaces(); }
+function wzSpDel(id){ wzSpaces = wzSpaces.filter(s=>s.id !== id); wzRenderSpaces(); }
+
+// ── Style: ceremony setting you imagine (single, tap again to clear) ────
+function wzBuildCerSetting(){
+  const g = document.getElementById('wz-cer-setting');
+  if(!g || typeof CEREMONY_VENUE_OPTIONS === 'undefined') return;
+  g.innerHTML = CEREMONY_VENUE_OPTIONS.map(o=>`<div class="pill" data-grp="cset" onclick="wzCerSettingPill(this)">${wzEscH(o)}</div>`).join('');
+}
+function wzCerSettingPill(el){
+  const was = el.classList.contains('on');
+  document.querySelectorAll('[data-grp="cset"]').forEach(p=>p.classList.remove('on'));
+  if(!was) el.classList.add('on');
+}
+
+// ── Wedding party names ─────────────────────────────────────────────────
+const wzNames  = {bm:[], gm:[], fg:[], pb:[]};
+const wzNmOpen = {bm:false, gm:false, fg:false, pb:false};
+function wzToggleNames(k){
+  wzNmOpen[k] = !wzNmOpen[k];
+  wzRenderNames(k);
+}
+function wzRenderNames(k){
+  const box = document.getElementById('nm-'+k);
+  const tog = document.getElementById('nmt-'+k);
+  const row = document.getElementById('sr-'+k);
+  if(!box) return;
+  const open = wzNmOpen[k];
+  box.classList.toggle('open', open);
+  if(row) row.classList.toggle('nm-open', open);
+  if(tog) tog.textContent = open ? '\u2212 Hide names' : (wzNames[k].some(n=>n&&n.trim()) ? 'Edit names' : '+ Add names');
+  if(!open){ box.innerHTML=''; return; }
+  const n = Math.max(wzUnknowns[k] ? 1 : wzStepVals[k], wzNames[k].filter(x=>x&&x.trim()).length, 1);
+  let h = '';
+  for(let i=0;i<n;i++) h += `<input class="inp" maxlength="80" placeholder="Name (optional)" value="${wzEscH(wzNames[k][i]||'').replace(/"/g,'&quot;')}" oninput="wzNames['${k}'][${i}]=this.value">`;
+  box.innerHTML = h;
 }
 function wzTogglePronouns(){
   const panel = document.getElementById('pr-panel');
@@ -465,6 +582,7 @@ function wzAdj(k, d){
   wzStepVals[k] = Math.max(0, wzStepVals[k]+d);
   const sv = document.getElementById('sv-'+k);
   if(sv) sv.textContent = wzStepVals[k];
+  if(wzNmOpen[k]) wzRenderNames(k);
 }
 function wzToggleUnk(k){
   wzUnknowns[k] = !wzUnknowns[k];
@@ -476,6 +594,7 @@ function wzToggleUnk(k){
     b.style.opacity       = wzUnknowns[k] ? '0.3' : '1';
     b.style.pointerEvents = wzUnknowns[k] ? 'none' : '';
   });
+  if(wzNmOpen[k]) wzRenderNames(k);
 }
 
 // ── Checklist chip click (delegated) ─────────────────────────────────
@@ -483,7 +602,7 @@ document.addEventListener('click', function(e){
   const chip = e.target.closest('.cl-chip');
   if(!chip) return;
   const key = chip.dataset.key;
-  if(key && key in wzTs){ wzTs[key] = !wzTs[key]; wzRenderCL(); }
+  if(key && key in wzTs){ wzTs[key] = !wzTs[key]; wzClManual.add(key); wzRenderCL(); }
 });
 
 // ── Finish ────────────────────────────────────────────────────────────
@@ -506,31 +625,33 @@ function wizardFinish(){
   const pr1 = pr1Custom || (pr1Pill ? pr1Pill.textContent.trim() : '');
   const pr2 = pr2Custom || (pr2Pill ? pr2Pill.textContent.trim() : '');
 
-  // Step 2
+  // Step 2 — the day, ceremony, venues
   const dateVal     = (document.getElementById('i-date')||{}).value||'';
-  const todEl       = document.getElementById('i-tod');
-  const timeOfDay   = todEl ? todEl.value : '';
+  const timeVal     = (document.getElementById('i-time')||{}).value||'';
   const venue       = ((document.getElementById('i-venue')||{}).value||'').trim();
-  const cerVenueEl  = document.getElementById('i-cer-venue');
-  const cerVenueGrp = document.getElementById('cer-venue-group');
-  const cerVenueSep = cerVenueGrp && cerVenueGrp.style.display !== 'none';
-  const cerVenue    = cerVenueSep ? ((cerVenueEl||{}).value||'').trim() : '';
+  const cerVenue    = wzVenueMode==='different' ? ((document.getElementById('i-cer-venue')||{}).value||'').trim() : '';
   const cerPill     = document.querySelector('[data-grp="cer"].on');
   const locPill     = document.querySelector('[data-grp="loc"].on');
   const ceremonyType = cerPill ? cerPill.textContent.trim() : '';
   const setting      = locPill ? locPill.textContent.trim() : '';
+  const religion  = ceremonyType==='Religious' ? ((document.getElementById('i-religion')||{}).value||'') : '';
+  const officiant = ceremonyType==='Religious' ? ((document.getElementById('i-officiant')||{}).value||'')
+                  : (ceremonyType==='Civil / Celebrant' ? 'Celebrant' : '');
+  const spaces = wzSpaces.map(x=>({id:x.id||uid(), part:x.part, name:String(x.name||'').trim()})).filter(x=>x.name);
 
   // Step 3
   const gcSlider  = document.getElementById('i-guest-count');
   const guestCount = gcSlider ? parseInt(gcSlider.value)||0 : 0;
   const fmPill    = document.querySelector('[data-grp="fm"].on');
   const formality = fmPill ? fmPill.textContent.trim() : '';
+  const csetPill  = document.querySelector('[data-grp="cset"].on');
+  const ceremonySetting = csetPill ? csetPill.textContent.trim() : '';
   const vibe      = [...document.querySelectorAll('#p3 .pill.on:not([data-grp])')].map(p=>p.textContent.trim()).filter(Boolean);
 
-  // Palette
+  // Palette (only what the couple actually picked)
   const wz = document.querySelector('.wz-wrap');
-  const accentColor  = (wz&&wz.style.getPropertyValue('--accent'))  || '';
-  const accentColor2 = (wz&&wz.style.getPropertyValue('--accent2')) || '';
+  const accentColor  = wzPalSet  ? ((wz&&wz.style.getPropertyValue('--accent'))  || '').trim() : '';
+  const accentColor2 = wzPalSet2 ? ((wz&&wz.style.getPropertyValue('--accent2')) || '').trim() : '';
 
   // Step 4
   const budgetAmt  = parseFloat((document.getElementById('i-budget-wz')||{}).value)||0;
@@ -553,10 +674,15 @@ function wizardFinish(){
   STATE.event.pronouns1    = pr1;
   STATE.event.pronouns2    = pr2;
   STATE.event.date         = dateVal;
+  STATE.event.time         = timeVal;
   STATE.event.venue        = venue;
-  if(cerVenueSep) STATE.event.ceremonyVenue = cerVenue;
-  STATE.event.timeOfDay    = timeOfDay;
+  STATE.event.venueMode    = wzVenueMode;
+  STATE.event.ceremonyVenue = cerVenue;
+  STATE.event.spaces       = spaces;
   STATE.event.ceremonyType = ceremonyType;
+  if(religion)  STATE.event.religion  = religion;
+  if(officiant) STATE.event.officiant = officiant;
+  STATE.event.ceremonySetting = ceremonySetting;
   STATE.event.setting      = setting;
   STATE.event.formality    = formality;
   STATE.event.vibe         = vibe;
@@ -565,12 +691,38 @@ function wizardFinish(){
   STATE.event.partyGroomsmen   = gmVal;
   STATE.event.partyFlowerGirls = fgVal;
   STATE.event.partyPageBoys    = pbVal;
+  delete STATE.event.timeOfDay;
 
   STATE.settings.partner1Title = t1;
   STATE.settings.partner2Title = t2;
   STATE.settings.currency      = currency;
-  if(accentColor)  STATE.settings.accentColor  = accentColor;
-  if(accentColor2) STATE.settings.accentColor2 = accentColor2;
+
+  // Palette → the Inspiration palette (what the dashboard tint and vision board use)
+  // and the default accent for emails, unless the couple already chose one there.
+  if(accentColor || accentColor2){
+    if(!STATE.inspo || typeof STATE.inspo!=='object') STATE.inspo = {colors:[], items:[]};
+    if(!Array.isArray(STATE.inspo.colors)) STATE.inspo.colors = [];
+    if(!Array.isArray(STATE.inspo.customColors)) STATE.inspo.customColors = [];
+    const known = (typeof WEDDING_COLORS!=='undefined') ? WEDDING_COLORS.map(c=>String(c.hex).toLowerCase()) : [];
+    [[accentColor, wzSelPalIdx>=0?WZ_PALETTES[wzSelPalIdx].name:'Wedding colour'],
+     [accentColor2, wzSelPalIdx2>=0?WZ_PALETTES2[wzSelPalIdx2].name:'Wedding accent']].forEach(([hex,name])=>{
+      if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+      // Use the swatch's own spelling when it's one of the Inspiration colours (selection matches exactly).
+      const sw = (typeof WEDDING_COLORS!=='undefined') ? WEDDING_COLORS.find(c=>String(c.hex).toLowerCase()===hex.toLowerCase()) : null;
+      hex = sw ? sw.hex : hex.toUpperCase();
+      if(!STATE.inspo.colors.some(c=>String(c).toUpperCase()===hex)) STATE.inspo.colors.push(hex);
+      // A colour that isn't one of the Inspiration swatches is listed as a custom colour so it shows (selected).
+      if(!known.includes(hex.toLowerCase()) && !STATE.inspo.customColors.some(c=>String(c.hex).toUpperCase()===hex))
+        STATE.inspo.customColors.push({hex, name});
+    });
+    STATE.settings.accentColor  = accentColor;
+    STATE.settings.accentColor2 = accentColor2;
+    if(/^#[0-9a-fA-F]{6}$/.test(accentColor)){
+      if(!STATE.settings.emailDesign) STATE.settings.emailDesign = {templateId:'classic', accentColor:'#8a6a2c', fontFamily:'serif', showLogo:true, headerImage:''};
+      const cur = String(STATE.settings.emailDesign.accentColor||'').toLowerCase();
+      if(!cur || cur==='#8a6a2c') STATE.settings.emailDesign.accentColor = accentColor;
+    }
+  }
 
   STATE.budget.total = budgetAmt;
 
@@ -627,6 +779,27 @@ function wizardFinish(){
     if(!STATE.tagDefs[goh]) STATE.tagDefs[goh] = {color:'#B8963E', icon:'sparkle'};
   }
 
+  // ── Wedding party names → Guests, tagged Bridal Party ─────────────
+  const PARTY_ROLES = {bm:['Bridesmaid','adult'], gm:['Groomsman','adult'], fg:['Flower girl','child'], pb:['Page boy','child']};
+  const bp = 'Bridal Party';
+  let addedParty = 0;
+  Object.keys(PARTY_ROLES).forEach(k=>{
+    const [role, band] = PARTY_ROLES[k];
+    wzNames[k].map(n=>String(n||'').trim().slice(0,80)).filter(Boolean).forEach(name=>{
+      if(STATE.guests.some(g=>String(g.name||'').trim().toLowerCase()===name.toLowerCase())) return;
+      STATE.guests.push({id:uid(), name, prefix:'', rsvp:'awaiting', dietary:[], tags:[bp], phone:'', email:'', address:'',
+        coupleId:null, plusOneId:null, plusOne:false, relationship:role, isMain:true, listType:'A', ageBand:band});
+      addedParty++;
+    });
+  });
+  if(addedParty){
+    if(!STATE.tagDefs) STATE.tagDefs = {};
+    if(!STATE.tagDefs[bp]) STATE.tagDefs[bp] = {color:'#5C8A4E', icon:'star'};
+  }
+
+  // ── Starter Timeline → the couple's own places and ceremony time ──
+  wzFitStarterTimeline();
+
   // ── Finalise ───────────────────────────────────────────────────────
   if(typeof applySuggestedChecklistDueDates === 'function') applySuggestedChecklistDueDates();
   saveToStorage();
@@ -635,11 +808,54 @@ function wizardFinish(){
   if(typeof navigate !== 'undefined') navigate('dashboard');
 }
 
+// The starter Timeline (Guests Arrive … Last Dance) comes with placeholder locations
+// ("Ceremony lawn", "Ballroom") and a 3pm ceremony. Swap in the couple's own spaces —
+// or the venue, when no space is named — and move the whole day so "Ceremony Begins"
+// sits at their ceremony time. Only moments still exactly as shipped are touched.
+const WZ_TL_STARTER = {
+  tl1:{time:'14:30', loc:'Ceremony lawn',  part:'ceremony'},
+  tl2:{time:'15:00', loc:'Ceremony lawn',  part:'ceremony'},
+  tl3:{time:'15:30', loc:'Garden terrace', part:'cocktail'},
+  tl4:{time:'16:00', loc:'Garden',         part:'ceremony'},
+  tl5:{time:'17:00', loc:'Ballroom',       part:'reception'},
+  tl6:{time:'17:30', loc:'Ballroom',       part:'reception'},
+  tl7:{time:'18:45', loc:'Ballroom',       part:'reception'},
+  tl8:{time:'19:30', loc:'Dance floor',    part:'reception'},
+  tl9:{time:'23:00', loc:'Ballroom',       part:'reception'}
+};
+function wzFitStarterTimeline(){
+  const seen = new Set(), items = [];
+  [STATE.timeline].concat((STATE.timelines||[]).map(t=>t&&t.items)).forEach(list=>(Array.isArray(list)?list:[]).forEach(it=>{
+    if(it && WZ_TL_STARTER[it.id] && !seen.has(it)){ seen.add(it); items.push(it); }
+  }));
+  if(!items.length) return;
+  items.forEach(it=>{
+    const d = WZ_TL_STARTER[it.id];
+    if(it.location !== d.loc) return;
+    const place = (typeof _evSpace==='function' && _evSpace(d.part)) || (typeof _evPartVenue==='function' && _evPartVenue(d.part)) || '';
+    if(place) it.location = place;
+  });
+  const T = String(STATE.event.time||'');
+  const untouched = items.every(it=>it.time===WZ_TL_STARTER[it.id].time);
+  if(!/^\d{2}:\d{2}$/.test(T) || !untouched) return;
+  const mins = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
+  const shift = mins(T) - mins('15:00');
+  if(!shift) return;
+  items.forEach(it=>{
+    const m = Math.min(23*60+59, Math.max(0, mins(it.time)+shift));
+    it.time = String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+  });
+}
+
 // Alias kept for any legacy references
 function welcomeFinish(){ wizardFinish(); }
 
 // ── Boot ──────────────────────────────────────────────────────────────
 wzInitTS();
 wzBuildPalette();
+wzBuildCerSetting();
+if(typeof RELIGION_OPTIONS !== 'undefined') wzFillSelect('i-religion', RELIGION_OPTIONS);
+if(typeof OFFICIANT_OPTIONS !== 'undefined') wzFillSelect('i-officiant', OFFICIANT_OPTIONS);
+wzRenderSpaces();
 wzRenderBar();
 wzUpdateUI();

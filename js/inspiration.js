@@ -159,13 +159,15 @@ function renderInspo(c,actions){
   const allSelected=STATE.inspo.colors||[];
 
   // Jump-to items
-  const jumpItems=[{id:'inspo-palette',label:'Colours'},...inspoCats().map(cat=>({id:'inspo-'+cat.replace(/[^a-zA-Z0-9]/g,'-'),label:cat}))];
+  const jumpItems=[{id:'inspo-style',label:'Style'},{id:'inspo-palette',label:'Colours'},...inspoCats().map(cat=>({id:'inspo-'+cat.replace(/[^a-zA-Z0-9]/g,'-'),label:cat}))];
 
   let html=`
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px;padding:12px 14px;background:var(--surface);border-radius:12px;border:1px solid var(--border);align-items:center">
     <span style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:4px">Jump to</span>
     ${jumpItems.map(j=>`<button onclick="document.getElementById('${j.id}')?.scrollIntoView({behavior:'smooth',block:'start'})" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold-deep)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--ink)'">${j.label}</button>`).join('')}
   </div>`;
+
+  html+=`<div id="inspo-style" class="card inspo-style-card" style="scroll-margin-top:20px;margin-bottom:22px">${_inspoStyleInner()}</div>`;
 
   html+=`<div id="inspo-palette" style="scroll-margin-top:20px"><div class="palette-section">
     <button type="button" class="toggle-section-btn${_inspoCollapsed.has('inspo-palette')?'':' open'}" onclick="_toggleInspoSection(this,'inspo-palette')" style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500">
@@ -804,3 +806,33 @@ function toggleVisionboard(id){
 }
 
 // ══════════════════════════════════════════════
+
+// ── Our style (vibe / formality / setting) ───────────────────────────────────
+// Set in the setup wizard; the same STATE.event fields as Event Details (formality) and
+// the vendor brief. Vibe is multi-select; formality and setting are one each (tap again to clear).
+function _inspoStyleInner(){
+  const ev=STATE.event||{};
+  const vibe=Array.isArray(ev.vibe)?ev.vibe:[];
+  const pills=(kind, list, isOn)=>list.map(v=>`<button type="button" class="inspo-style-pill${isOn(v)?' on':''}" onclick="_inspoStyleTap('${kind}',this.dataset.v)" data-v="${_escHtml(v)}">${_escHtml(v)}</button>`).join('');
+  const lbl=t=>`<div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 7px">${t}</div>`;
+  return `<div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--ink)">Our style</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:2px">From your setup — tap to change. Shared with vendors in your brief.</div>
+    ${lbl('Vibe')}<div class="inspo-style-pills">${pills('vibe', EV_VIBES, v=>vibe.includes(v))}</div>
+    <div class="inspo-style-two">
+      <div>${lbl('Formality')}<div class="inspo-style-pills">${pills('formality', EV_FORMALITY, v=>ev.formality===v)}</div></div>
+      <div>${lbl('Setting')}<div class="inspo-style-pills">${pills('setting', EV_SETTINGS, v=>ev.setting===v)}</div></div>
+    </div>`;
+}
+function _inspoStyleTap(kind, v){
+  if(!STATE.event) STATE.event={};
+  const ev=STATE.event;
+  if(kind==='vibe'){
+    const arr=Array.isArray(ev.vibe)?ev.vibe.slice():[];
+    const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v);
+    ev.vibe=arr;
+  } else if(kind==='formality' || kind==='setting'){
+    ev[kind] = ev[kind]===v ? '' : v;
+  } else return;
+  saveToStorage();
+  const host=document.getElementById('inspo-style'); if(host) host.innerHTML=_inspoStyleInner();
+}

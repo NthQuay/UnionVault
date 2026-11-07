@@ -2105,7 +2105,12 @@ function toggleSubPerHead(pid,sid){
   const s=b?.subItems?.find(x=>x.id===sid);
   if(!s)return;
   if(s.perHead){ s.perHead=false; s.guestCount=0; s.pricePerHead=0; subCalcExpanded.delete(sid); }
-  else { s.perHead=true; s.perItem=false; s.itemCount=0; s.pricePerItem=0; subCalcExpanded.add(sid); }
+  else {
+    s.perHead=true; s.perItem=false; s.itemCount=0; s.pricePerItem=0; subCalcExpanded.add(sid);
+    // Start from the estimated guest count (setup / Event Details) when counting by hand.
+    const est=Number(STATE.event&&STATE.event.guestCount)||0;
+    if(!STATE.budget.useRsvpCount && !(Number(s.guestCount)>0) && est>0) s.guestCount=est;
+  }
   saveToStorage(); navigate('budget');
 }
 function updateSubGuestCount(pid,sid,val){

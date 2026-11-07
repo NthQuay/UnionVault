@@ -2664,8 +2664,11 @@ function _emailTplId(id){
 // cover lines, details panel). The server validates and escapes every field.
 function _emailIssue(){
   const ev=STATE.event||{};
-  const time=ev.time?(typeof _fmtEventTime==='function'?_fmtEventTime(ev.time):ev.time):'';
-  return { names:_ssCoupleNames(), date:/^\d{4}-\d{2}-\d{2}$/.test(ev.date||'')?ev.date:'', time:time||'', venue:(ev.venue||'').trim() };
+  // "15:30" from a time picker → "3:30pm"; anything typed by hand ("3:00 PM") is shown as typed.
+  const _t=String(ev.time||'').trim();
+  const time=/^\d{1,2}:\d{2}$/.test(_t)&&typeof _fmtEventTime==='function'?_fmtEventTime(_t):_t;
+  const venue=(typeof _evVenueLine==='function'?_evVenueLine(ev):'')||(ev.venue||'');
+  return { names:_ssCoupleNames(), date:/^\d{4}-\d{2}-\d{2}$/.test(ev.date||'')?ev.date:'', time:time||'', venue:String(venue).trim() };
 }
 // Email fonts: four email-safe stacks that display reliably in Gmail, Outlook and Apple
 // Mail. Ids are stored in fontFamily (header) / bodyFont; 'serif' and 'sans-serif' are

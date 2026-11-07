@@ -487,13 +487,27 @@ async function _showVendorPortal(token){
 
   // Build booking rows from vendors list matching this token's vendor_name
   const matchedVendor = (couple.vendors||[]).find(v=>v.business===vendor.vendor_name||v.contact===vendor.vendor_name)||{};
+  // Venues + rooms/spaces: one venue → "Venue" plus each part's space; two venues →
+  // Ceremony and Reception rows with their own space.
+  if(typeof _evNormalize==='function') _evNormalize(ev);
+  const _bDiff = typeof _evDiff==='function' && _evDiff(ev);
+  const _bSp = part => typeof _evSpace==='function' ? _evSpace(part, ev) : '';
+  const _bPlace = part => typeof _evPlace==='function' ? _evPlace(part, ev) : '';
+  const venueRows = _bDiff
+    ? [['Ceremony', _bPlace('ceremony')||'TBC'], _bSp('cocktail')?['Cocktail hour', _bPlace('cocktail')]:null, ['Reception', _bPlace('reception')||'TBC']]
+    : [['Venue', ev.venue||'TBC'], _bSp('ceremony')?['Ceremony', _bSp('ceremony')]:null, _bSp('cocktail')?['Cocktail hour', _bSp('cocktail')]:null, _bSp('reception')?['Reception', _bSp('reception')]:null];
+  const _bTime = /^\d{1,2}:\d{2}$/.test(String(ev.time||'').trim()) && typeof tlTo12h==='function' ? tlTo12h(String(ev.time).trim()) : String(ev.time||'');
   const bookingRows=[
     ['Event date', dateStr||'TBC'],
-    ['Venue', ev.venue||'TBC'],
+    _bTime?['Ceremony time', _bTime]:null,
+    ...venueRows,
     ['Service', matchedVendor.category||vendor.vendor_name||'—'],
     ['Setup time', matchedVendor.setupTime||'TBC'],
-    ['Guest count', guestCountDisplay||'TBC']
-  ].filter(([,v])=>v);
+    ['Guest count', guestCountDisplay||'TBC'],
+    ev.formality?['Formality', ev.formality]:null,
+    ev.ceremonySetting?['Ceremony setting', ev.ceremonySetting]:null,
+    (Array.isArray(ev.vibe)&&ev.vibe.length)?['Style', ev.vibe.join(', ')]:null
+  ].filter(r=>r && r[1]);
 
   const sections = Array.isArray(vendor.sections)&&vendor.sections.length ? vendor.sections : [];
   const _sectionLabels={timeline:'Day-of Timeline',checklist:'Checklist',contacts:'Other Contacts',budget:'Budget',notes:'Notes'};
@@ -563,8 +577,8 @@ async function _showVendorPortal(token){
           <span style="font-size:13px;font-weight:600;color:var(--pub-ink)">Your booking</span>
         </div>
         ${bookingRows.map(([k,v],i)=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:9px 16px;gap:12px${i?';border-top:1px solid var(--pub-border)':''}">
-          <span style="font-size:12px;color:var(--pub-text);flex-shrink:0">${k}</span>
-          <span style="font-size:13px;color:var(--pub-ink);font-weight:500;text-align:right">${k==='Guest count'?`<span style="font-size:17px;font-family:'Cormorant Garamond',serif">${v}</span>`:v}</span>
+          <span style="font-size:12px;color:var(--pub-text);flex-shrink:0">${_escHtml(k)}</span>
+          <span style="font-size:13px;color:var(--pub-ink);font-weight:500;text-align:right">${k==='Guest count'?`<span style="font-size:17px;font-family:'Cormorant Garamond',serif">${_escHtml(String(v))}</span>`:_escHtml(String(v))}</span>
         </div>`).join('')}
       </div>
       ${inspoHtml}

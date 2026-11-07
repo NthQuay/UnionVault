@@ -3122,3 +3122,48 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
   body.dark .tl-row .song-chip .sc-play{background:rgba(196,168,130,.18)}
   .tl-row .song-chip .sc-play svg{width:16px;height:16px}
 }
+
+/* ── Venues: Same/Different toggle + Rooms & spaces (Event Details + setup wizard) ── */
+.uv-seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+.uv-seg button{padding:7px 14px;border-radius:100px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:12.5px;font-family:inherit;cursor:pointer;transition:all .14s}
+.uv-seg button:hover{border-color:var(--gold)}
+.uv-seg button.on{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:600}
+.uv-sp{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+.uv-sp-head{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;background:none;border:none;cursor:pointer;text-align:left;font-family:inherit;color:var(--ink)}
+.uv-sp-head>svg{flex-shrink:0;color:var(--gold-deep)}
+.uv-sp-title{flex:1;min-width:0;font-size:13px}
+.uv-sp-title b{font-weight:600}
+.uv-sp-title i{font-style:normal;font-size:11.5px;color:var(--muted)}
+.uv-sp-title small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uv-sp-chev{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--gold-deep);flex-shrink:0}
+.uv-sp-body{border-top:1px solid var(--border);padding:4px 14px 12px}
+.uv-sp-row{display:grid;grid-template-columns:118px minmax(0,1fr) 24px;gap:10px;align-items:center;padding:8px 0}
+.uv-sp-row+.uv-sp-row{border-top:1px solid var(--border)}
+.uv-sp-lbl{font-size:12.5px;font-weight:600;color:var(--ink);min-width:0}
+.uv-sp-lbl small{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uv-sp-row input{font-size:13px}
+.uv-sp-del{background:none;border:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;padding:0}
+.uv-sp-del:hover{color:var(--red)}
+.uv-sp-add{background:none;border:none;padding:0;margin-top:8px;font-size:12px;font-weight:600;color:var(--gold-deep);cursor:pointer;font-family:inherit}
+.uv-sp-hint{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.45}
+@media (max-width:460px){
+  .uv-sp-row{grid-template-columns:minmax(0,1fr) 24px;gap:6px 8px}
+  .uv-sp-row .uv-sp-lbl{grid-column:1/-1}
+}
+/* Timeline: location shortcuts under the Location field */
+.tl-loc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.tl-loc-chip{padding:4px 10px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:11.5px;cursor:pointer;font-family:inherit}
+.tl-loc-chip:hover{border-color:var(--gold)}
+.tl-loc-chip.on{border-color:var(--gold);color:var(--gold-deep);font-weight:600}
+/* Inspiration → Our style */
+.inspo-style-pills{display:flex;flex-wrap:wrap;gap:6px}
+.inspo-style-pill{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:12px;font-family:inherit;cursor:pointer;transition:all .14s}
+.inspo-style-pill:hover{border-color:var(--gold)}
+.inspo-style-pill.on{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:600}
+.inspo-style-two{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+@media (max-width:640px){.inspo-style-two{grid-template-columns:1fr}}
+/* Event Details: date/time and guests/formality pairs — date & time pickers can't shrink, so stack on phones */
+.det-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
+.det-pair .form-input{min-width:0;width:100%}
+@media (max-width:520px){.det-pair{grid-template-columns:1fr}}
+.details-two-col>div{min-width:0}

@@ -2644,7 +2644,10 @@ function _wbAddSection(presetKey){
   const w=_wbSite();
   const p=WB_CUSTOM_PRESETS.find(x=>x.key===presetKey);
   const id='cs'+uid();
-  w.custom[id]={ name:p?p.name:'New section', body:p?p.body:'' };
+  // Dress code starts from the formality chosen in setup / Event Details.
+  const _fm=String((STATE.event&&STATE.event.formality)||'').trim();
+  const _body = (p && p.key==='dress' && _fm) ? `${_fm}.` : (p?p.body:'');
+  w.custom[id]={ name:p?p.name:'New section', body:_body };
   w.on[id]=true;
   // Drop it in before RSVP, which is a locked tail-ender and should stay last.
   const r=w.order.indexOf('rsvp');
@@ -4688,6 +4691,16 @@ function _wbBuildSite(forDownload){
       // whenever Mandy happened to build on a Mac. The site's own script swaps it at load.
       const mapA = (addr)=>`<a class="maplink" data-addr="${_escHtml(addr)}" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer">Map</a>`;
       const dh=(w.details||{}).hide||{};
+      // Venues + rooms/spaces (Event Details → Venues). One venue: its spaces are listed by
+      // part of the day. Two venues: Ceremony and Reception each get their venue + space.
+      if(typeof _evNormalize==='function') _evNormalize(e);
+      const _vDiff = typeof _evDiff==='function' && _evDiff(e);
+      const _vSp = part => typeof _evSpace==='function' ? _evSpace(part, e) : '';
+      const _vPlace = part => typeof _evPlace==='function' ? _evPlace(part, e) : '';
+      // Time from the planner's time picker is "15:30"; show it as "3:30 PM". Typed text stays as typed.
+      const _vTime = /^\d{1,2}:\d{2}$/.test(String(e.time||'').trim()) && typeof tlTo12h==='function' ? tlTo12h(String(e.time).trim()) : String(e.time||'');
+      const _vSpLine = [['ceremony','Ceremony'],['cocktail','Cocktail hour'],['reception','Reception']]
+        .filter(([p])=>_vSp(p)).map(([p,l])=>`${l} · ${_escHtml(_vSp(p))}`).join('<br>');
       if(t.format==='editorial'){
         // Editorial details: centered typographic stack, no label columns
         const parts=[];
@@ -4697,19 +4710,36 @@ function _wbBuildSite(forDownload){
           const _mos=['January','February','March','April','May','June','July','August','September','October','November','December'];
           parts.push(`<p class="ed-date">${_escHtml(_days[_d.getDay()]+', '+_d.getDate()+' '+_mos[_d.getMonth()]+' '+_d.getFullYear())}</p>`);
         }
-        if(!dh.time && e.time) parts.push(`<p class="ed-sub">Ceremony begins at ${_escHtml(e.time)}</p>`);
-        if(!dh.venue && e.venue) parts.push(`<p class="ed-venue">${_escHtml(e.venue)}</p>`);
-        if(!dh.ceremony && e.ceremonyVenue) parts.push(`<p class="ed-sub">${_escHtml(e.ceremonyVenue)}</p>`);
-        if(!dh.address && e.venueAddress) parts.push(`<p class="ed-sub">${_escHtml(e.venueAddress)} ${mapA(e.venueAddress)}</p>`);
+        if(!dh.time && e.time) parts.push(`<p class="ed-sub">Ceremony begins at ${_escHtml(_vTime)}</p>`);
+        if(_vDiff){
+          // Two venues: each with its room/space and its own map.
+          if(!dh.ceremony && (e.ceremonyVenue||_vSp('ceremony'))){
+            parts.push(`<p class="ed-venue">${_escHtml(_vPlace('ceremony'))}</p><p class="ed-sub">Ceremony</p>`);
+            if(!dh.address && e.ceremonyVenueAddress) parts.push(`<p class="ed-sub">${_escHtml(e.ceremonyVenueAddress)} ${mapA(e.ceremonyVenueAddress)}</p>`);
+          }
+          if(!dh.venue && (e.venue||_vSp('reception'))) parts.push(`<p class="ed-venue">${_escHtml(_vPlace('reception'))}</p><p class="ed-sub">Reception${_vSp('cocktail')?` · cocktail hour in ${_escHtml(_vSp('cocktail'))}`:''}</p>`);
+          if(!dh.address && e.venueAddress) parts.push(`<p class="ed-sub">${_escHtml(e.venueAddress)} ${mapA(e.venueAddress)}</p>`);
+        } else {
+          if(!dh.venue && e.venue) parts.push(`<p class="ed-venue">${_escHtml(e.venue)}</p>`);
+          if(!dh.venue && _vSpLine) parts.push(`<p class="ed-sub">${_vSpLine}</p>`);
+          if(!dh.address && e.venueAddress) parts.push(`<p class="ed-sub">${_escHtml(e.venueAddress)} ${mapA(e.venueAddress)}</p>`);
+        }
         return wrap(k, parts.length?`<div class="ed-details">${parts.join('')}</div>`:'');
       }
-      const rows=[
+      const rows=(_vDiff ? [
+        (!dh.ceremony && (e.ceremonyVenue||_vSp('ceremony')))?['Ceremony', _escHtml(_vPlace('ceremony'))+((!dh.address && e.ceremonyVenueAddress)?'<br>'+_escHtml(e.ceremonyVenueAddress)+' '+mapA(e.ceremonyVenueAddress):'')]:null,
+        (!dh.venue && _vSp('cocktail'))?['Cocktail hour', _escHtml(_vPlace('cocktail'))]:null,
+        (!dh.venue && (e.venue||_vSp('reception')))?['Reception', _escHtml(_vPlace('reception'))+((!dh.address && e.venueAddress)?'<br>'+_escHtml(e.venueAddress)+' '+mapA(e.venueAddress):'')]:null
+      ] : [
         (!dh.venue && e.venue)?['Venue', _escHtml(e.venue)]:null,
         (!dh.address && e.venueAddress)?['Address', _escHtml(e.venueAddress)+' '+mapA(e.venueAddress)]:null,
-        (!dh.ceremony && e.ceremonyVenue)?['Ceremony', _escHtml(e.ceremonyVenue)]:null,
+        (!dh.ceremony && _vSp('ceremony'))?['Ceremony', _escHtml(_vSp('ceremony'))]:null,
+        (!dh.venue && _vSp('cocktail'))?['Cocktail hour', _escHtml(_vSp('cocktail'))]:null,
+        (!dh.venue && _vSp('reception'))?['Reception', _escHtml(_vSp('reception'))]:null
+      ]).concat([
         (!dh.date && e.date)?['Date', _escHtml(fmtDate(e.date))]:null,
-        (!dh.time && e.time)?['Time', _escHtml(e.time)]:null
-      ].filter(Boolean);
+        (!dh.time && e.time)?['Time', _escHtml(_vTime)]:null
+      ]).filter(Boolean);
       return wrap(k, rows.length?`<dl>${rows.map(r=>`<div><dt>${_escHtml(r[0])}</dt><dd>${r[1]}</dd></div>`).join('')}</dl>`:'');
     }
     if(k==='schedule'){

@@ -6,7 +6,7 @@ function renderDetails(c, actions){
 
   // Ceremony details (moved here from the Vendors page). Field IDs and save
   // logic are unchanged so the existing handlers keep working.
-  const ev=STATE.event||{};
+  const ev=_evNormalize(STATE.event||(STATE.event={}));
   const cerHide=(s&&s.hideCeremonyDetails);
   const hideRel=cerHide||(s&&s.hideReligion);
   const hideOff=cerHide||(s&&s.hideOfficiant);
@@ -14,18 +14,8 @@ function renderDetails(c, actions){
   const cerFields=[];
   if(!hideRel) cerFields.push(`<div><label class="form-label">Religion</label>${_otherSelectHtml('ven-religion', RELIGION_OPTIONS, ev.religion||'')}</div>`);
   if(!hideOff) cerFields.push(`<div><label class="form-label">Married by a</label>${_otherSelectHtml('ven-officiant', OFFICIANT_OPTIONS, ev.officiant||'')}${_cerLinkHtml('officiant', ev.officiant, ev.officiantVendorId)}</div>`);
-  if(!hideVen) cerFields.push(`<div><label class="form-label">Ceremony venue</label>${_otherSelectHtml('ven-cervenue', CEREMONY_VENUE_OPTIONS, ev.ceremonyVenue||'')}${_cerLinkHtml('venue', ev.ceremonyVenue, ev.venueVendorId)}</div>`);
+  if(!hideVen) cerFields.push(`<div><label class="form-label">Ceremony setting</label>${_otherSelectHtml('ven-cersetting', CEREMONY_VENUE_OPTIONS, ev.ceremonySetting||'')}<div style="font-size:11.5px;color:var(--muted);margin-top:5px">The kind of setting you imagine — for planning and your vendor brief.</div></div>`);
   const anyCer = !hideRel || !hideOff || !hideVen;
-  const cerBlock = anyCer ? `
-  <div class="section-eyebrow" style="margin-bottom:8px;margin-top:8px">Your Event</div>
-  <div class="section-title" style="margin-bottom:16px">Ceremony details</div>
-  <div class="card" style="max-width:640px;margin-bottom:24px">
-    <div style="display:flex;flex-direction:column;gap:12px">
-      ${cerFields.join('')}
-    </div>
-    <button class="btn btn-outline btn-sm" onclick="_saveCeremonyDetails()" style="margin-top:12px;display:inline-flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save ceremony details</button>
-    <span id="ven-cer-saved" style="font-size:11.5px;color:var(--green);margin-left:10px;display:none">Saved.</span>
-  </div>` : '';
 
   const EVENT_PRESETS = ['Bachelor Party','Bachelorette Party','Engagement Party','Bridal Shower','Rehearsal Dinner','Other…'];
 
@@ -47,7 +37,7 @@ function renderDetails(c, actions){
       Back to Dashboard
     </button>
   </div>
-  <div class="details-two-col" style="display:grid;grid-template-columns:${anyCer?'1fr 1fr':'1fr'};gap:24px;margin-bottom:24px;align-items:start">
+  <div class="details-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;align-items:start">
     <div>
       <div class="section-eyebrow" style="margin-bottom:8px">Your Event</div>
       <div class="section-title" style="margin-bottom:24px">Wedding Details</div>
@@ -63,19 +53,31 @@ function renderDetails(c, actions){
             <input class="form-input" value="${e.partner2||''}" placeholder="First name" oninput="STATE.event.partner2=this.value;updateTopbarSub();saveToStorage()"/>
           </div>
         </div>
-        <div class="form-row">
+        <div class="form-row det-pair">
           <div class="form-group">
             <label class="form-label">Wedding Date</label>
             <input class="form-input" type="date" value="${e.date||''}" onchange="onWeddingDateChange(this.value)"/>
           </div>
           <div class="form-group">
-            <label class="form-label">Venue Name</label>
-            <input class="form-input" value="${e.venue||''}" placeholder="Venue name" oninput="STATE.event.venue=this.value;saveToStorage()"/>
+            <label class="form-label">Ceremony time</label>
+            ${(!e.time || /^\d{2}:\d{2}$/.test(e.time)) ? `<input class="form-input" type="time" value="${_escHtml(e.time||'')}" oninput="STATE.event.time=this.value;saveToStorage()"/>`
+              : `<input class="form-input" value="${_escHtml(e.time)}" placeholder="e.g. 3:00 PM" oninput="STATE.event.time=this.value;saveToStorage()"/>`}
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Venue Address</label>
-          <input class="form-input" value="${e.venueAddress||''}" placeholder="Street, suburb, state" oninput="STATE.event.venueAddress=this.value;saveToStorage()"/>
+        <div class="form-row det-pair">
+          <div class="form-group">
+            <label class="form-label">Estimated guests</label>
+            <input class="form-input" type="number" min="0" step="1" inputmode="numeric" value="${Number(e.guestCount)>0?Number(e.guestCount):''}" placeholder="e.g. 120" oninput="STATE.event.guestCount=Math.max(0,parseInt(this.value,10)||0);saveToStorage()"/>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Pre-fills new per-head budget items.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Formality</label>
+            <select class="form-input" onchange="STATE.event.formality=this.value;saveToStorage()">
+              <option value="" ${!e.formality?'selected':''}>—</option>
+              ${EV_FORMALITY.map(f=>`<option value="${f}" ${e.formality===f?'selected':''}>${f}</option>`).join('')}
+            </select>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Also on Inspiration → Our style.</div>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Partner Titles</label>
@@ -108,8 +110,9 @@ function renderDetails(c, actions){
       </div>
     </div>
     </div>
-    ${anyCer ? `<div>
+    <div>
       <div class="section-eyebrow cer-eyebrow-spacer" style="margin-bottom:8px;visibility:hidden" aria-hidden="true">Your Event</div>
+    ${anyCer ? `
       <div class="section-title" style="margin-bottom:24px">Ceremony details</div>
       <div class="card">
         <div style="display:flex;flex-direction:column;gap:12px">
@@ -117,8 +120,10 @@ function renderDetails(c, actions){
         </div>
         <button class="btn btn-outline btn-sm" onclick="_saveCeremonyDetails()" style="margin-top:12px;display:inline-flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save ceremony details</button>
         <span id="ven-cer-saved" style="font-size:11.5px;color:var(--green);margin-left:10px;display:none">Saved.</span>
-      </div>
-    </div>` : ''}
+      </div>` : ''}
+      <div class="section-title" style="margin:${anyCer?'28px':'0'} 0 24px">Venues</div>
+      <div class="card"><div id="det-venues">${_detVenuesInner()}</div></div>
+    </div>
   </div>
 
   <div class="section-eyebrow" style="margin-bottom:8px;margin-top:8px">Additional</div>
@@ -132,7 +137,7 @@ function renderDetails(c, actions){
   </div>`;
   // Live-update the "+ Add" button while typing a custom (Other) officiant/venue.
   const oOff=document.getElementById('ven-officiant-other'); if(oOff) oOff.addEventListener('input',()=>_cerRefreshLink('officiant','ven-officiant'));
-  const oVen=document.getElementById('ven-cervenue-other'); if(oVen) oVen.addEventListener('input',()=>_cerRefreshLink('venue','ven-cervenue'));
+
 }
 
 function _detOptsMenuHtml(){
@@ -240,3 +245,181 @@ function saveDetailsAndConfirm(btn){
 }
 
 // ══════════════════════════════════════════════
+
+// ══════════════════════════════════════════════
+// VENUES & ROOMS / SPACES
+// ══════════════════════════════════════════════
+// STATE.event holds:
+//   venueMode            'same' (one venue for the day) | 'different' (separate ceremony venue)
+//   venue / venueAddress the reception venue, or THE venue when it's all in one place
+//   ceremonyVenue / ceremonyVenueAddress   the ceremony venue's real name (different venues only)
+//   ceremonySetting      the kind of setting imagined for the ceremony (Garden, Church…)
+//   spaces               [{id, part:'ceremony'|'cocktail'|'reception'|'other', name}]
+// Spaces are the rooms within a venue ("Courtyard Garden", "Rosewood Room"); they are the
+// locations offered in the Timeline and shown on the website, run sheet and vendor brief.
+const EV_FORMALITY=['Relaxed','Smart Casual','Semi-Formal','Black Tie'];
+const EV_SETTINGS=['Indoor only','Outdoor only','Both','Destination'];
+const EV_VIBES=['Romantic','Rustic','Boho','Elegant','Garden Party','Modern Minimalist','Vintage','Beach / Coastal','Whimsical','Classic','Industrial','Luxe'];
+const EV_SPACE_PARTS=[
+  {part:'ceremony',  label:'Ceremony',      ph:'e.g. Courtyard Garden'},
+  {part:'cocktail',  label:'Cocktail hour', ph:'e.g. Terrace'},
+  {part:'reception', label:'Reception',     ph:'e.g. Ballroom'}
+];
+// Older accounts: "Ceremony venue" was a dropdown of venue TYPES (Church, Garden…).
+// A type moves to ceremonySetting; anything typed in ("Other…") is a real venue name.
+function _evNormalize(ev){
+  ev = ev || STATE.event; if(!ev) return ev;
+  if(!Array.isArray(ev.spaces)) ev.spaces=[];
+  const types = (typeof CEREMONY_VENUE_OPTIONS!=='undefined') ? CEREMONY_VENUE_OPTIONS : [];
+  if(ev.ceremonyVenue && types.includes(ev.ceremonyVenue)){
+    if(!ev.ceremonySetting) ev.ceremonySetting = ev.ceremonyVenue;
+    ev.ceremonyVenue = '';
+  }
+  if(ev.venueMode!=='same' && ev.venueMode!=='different') ev.venueMode = ev.ceremonyVenue ? 'different' : 'same';
+  return ev;
+}
+function _evDiff(ev){ ev=ev||STATE.event||{}; return ev.venueMode==='different'; }
+function _evSpace(part, ev){
+  ev=ev||STATE.event||{};
+  const s=(Array.isArray(ev.spaces)?ev.spaces:[]).find(x=>x&&x.part===part);
+  return s ? String(s.name||'').trim() : '';
+}
+// The venue each part of the day is at — cocktail hour follows the reception.
+function _evPartVenue(part, ev){
+  ev=ev||STATE.event||{};
+  if(part==='ceremony' && _evDiff(ev)) return String(ev.ceremonyVenue||'').trim();
+  return String(ev.venue||'').trim();
+}
+function _evPartAddress(part, ev){
+  ev=ev||STATE.event||{};
+  if(part==='ceremony' && _evDiff(ev)) return String(ev.ceremonyVenueAddress||'').trim();
+  return String(ev.venueAddress||'').trim();
+}
+// "Courtyard Garden, Stonefields Estate" — whichever of space / venue are set.
+function _evPlace(part, ev){ return [_evSpace(part,ev), _evPartVenue(part,ev)].filter(Boolean).join(', '); }
+// Short "where": the venue, or "Ceremony venue & Reception venue".
+function _evVenueLine(ev){
+  ev=ev||STATE.event||{};
+  const r=String(ev.venue||'').trim();
+  if(!_evDiff(ev)) return r;
+  const c=String(ev.ceremonyVenue||'').trim();
+  return [c,r].filter(Boolean).join(' & ');
+}
+// Timeline location choices: every named space, then the venue(s).
+function _evLocationOptions(ev){
+  ev=ev||STATE.event||{};
+  const out=[]; const add=n=>{ n=String(n||'').trim(); if(n && !out.includes(n)) out.push(n); };
+  (Array.isArray(ev.spaces)?ev.spaces:[]).forEach(s=>add(s&&s.name));
+  if(_evDiff(ev)) add(ev.ceremonyVenue);
+  add(ev.venue);
+  return out;
+}
+
+// Shared "Rooms & spaces" block (wizard + Event Details). o = {
+//   spaces, open, venueOf(part)→name, inputCls, ns (handler prefix, e.g. 'wzSp' / '_detSp') }
+// Handlers called: <ns>Toggle(), <ns>Set(key,value), <ns>Rename(key,input), <ns>Add(), <ns>Del(id)
+function _evSpacesBlockHtml(o){
+  const sp=Array.isArray(o.spaces)?o.spaces:[];
+  const named=sp.filter(s=>s&&String(s.name||'').trim()).map(s=>String(s.name).trim());
+  const summary = o.open ? 'Ceremony, cocktail hour, reception — and any others'
+    : (named.length ? named.join(' · ') : 'e.g. Courtyard Garden, Library Bar, Rosewood Room');
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const row=(key,label,sub,val,ph,del,part)=>`<div class="uv-sp-row">
+      <div class="uv-sp-lbl">${esc(label)}<small data-part="${part}">${esc(sub)}</small></div>
+      <input class="${o.inputCls}" value="${esc(val)}" placeholder="${esc(ph)}" maxlength="80"
+        onfocus="this.dataset.old=this.value" oninput="${o.ns}Set('${key}',this.value)" onchange="${o.ns}Rename('${key}',this)">
+      ${del?`<button type="button" class="uv-sp-del" onclick="${o.ns}Del('${key}')" title="Remove" aria-label="Remove space">&times;</button>`:'<span></span>'}
+    </div>`;
+  const body = o.open ? `<div class="uv-sp-body">
+      ${EV_SPACE_PARTS.map(p=>{ const s=sp.find(x=>x&&x.part===p.part); return row(p.part,p.label,o.venueOf(p.part),s?s.name:'',p.ph,false,p.part); }).join('')}
+      ${sp.filter(s=>s&&s.part==='other').map(s=>row(s.id,'Other space',o.venueOf('reception'),s.name,'e.g. Bridal Suite',true,'reception')).join('')}
+      <button type="button" class="uv-sp-add" onclick="${o.ns}Add()">+ Add another space</button>
+      <div class="uv-sp-hint">Used as locations in your Timeline, and shown on your website, run sheet and vendor briefs.</div>
+    </div>` : '';
+  return `<div class="uv-sp${o.open?' open':''}">
+    <button type="button" class="uv-sp-head" onclick="${o.ns}Toggle()" aria-expanded="${o.open?'true':'false'}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="12" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+      <span class="uv-sp-title"><b>Rooms &amp; spaces</b> <i>(optional)</i><small>${esc(summary)}</small></span>
+      <span class="uv-sp-chev">${o.open?'Hide':(named.length?'Edit':'Add')} <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="${o.open?'18 15 12 9 6 15':'6 9 12 15 18 9'}"/></svg></span>
+    </button>${body}
+  </div>`;
+}
+// Update a spaces array in place: key is a part ('ceremony'…) or an 'other' space's id.
+function _evSpacesSet(arr, key, value){
+  const v=String(value||'').slice(0,80);
+  let s=arr.find(x=>x&&(x.part===key&&key!=='other'||x.id===key));
+  if(!s){ if(!EV_SPACE_PARTS.some(p=>p.part===key)) return; s={id:uid(), part:key, name:''}; arr.push(s); }
+  s.name=v;
+}
+// A space was renamed: Timeline moments using the old name follow it.
+function _evRenameTimelineLocation(oldName, newName){
+  oldName=String(oldName||'').trim(); newName=String(newName||'').trim();
+  if(!oldName || !newName || oldName===newName) return 0;
+  let n=0; const seen=new Set();
+  const lists=[STATE.timeline].concat((STATE.timelines||[]).map(t=>t&&t.items));
+  lists.forEach(items=>(Array.isArray(items)?items:[]).forEach(it=>{
+    if(!it || seen.has(it)) return; seen.add(it);
+    if(String(it.location||'').trim()===oldName){ it.location=newName; n++; }
+  }));
+  return n;
+}
+
+// Event Details handlers
+let _detSpOpen=false;
+function _detSpToggle(){ _detSpOpen=!_detSpOpen; _detRenderVenues(); }
+function _detSpSet(key, value){ _evNormalize(); _evSpacesSet(STATE.event.spaces, key, value); saveToStorage(); }
+function _detSpRename(key, input){
+  const n=_evRenameTimelineLocation(input.dataset.old, input.value);
+  input.dataset.old=input.value;
+  if(n){ saveToStorage(); if(typeof _showInfoToast==='function') _showInfoToast(`Updated ${n} Timeline moment${n===1?'':'s'}.`, null, null); }
+}
+function _detSpAdd(){ _evNormalize(); STATE.event.spaces.push({id:uid(), part:'other', name:''}); saveToStorage(); _detSpOpen=true; _detRenderVenues(); }
+function _detSpDel(id){ _evNormalize(); STATE.event.spaces=STATE.event.spaces.filter(s=>s.id!==id); saveToStorage(); _detRenderVenues(); }
+function _detSetVenueMode(mode){ _evNormalize(); STATE.event.venueMode=mode; saveToStorage(); _detRenderVenues(); }
+function _detVenueField(key, el){
+  _evNormalize();
+  STATE.event[key]=el.value;
+  saveToStorage();
+  if(key==='ceremonyVenue' && typeof _cerRefreshLink==='function') _cerRefreshLink('venue','ven-cervenue',true);
+  // Keep each space's "at <venue>" caption in step, without redrawing the inputs.
+  document.querySelectorAll('#det-venues .uv-sp-lbl small[data-part]').forEach(sm=>{ sm.textContent=_detVenueOf(sm.dataset.part); });
+}
+function _detVenueOf(part){
+  const diff=_evDiff();
+  return _evPartVenue(part)||(part==='ceremony'&&diff?'Ceremony venue':diff?'Reception venue':'Your venue');
+}
+function _detVenuesInner(){
+  const ev=_evNormalize();
+  const diff=_evDiff(ev);
+  const esc=_escHtml;
+  const venueOf=_detVenueOf;
+  return `
+    <label class="form-label">Ceremony &amp; reception</label>
+    <div class="uv-seg" role="group" aria-label="Ceremony and reception venues">
+      <button type="button" class="${diff?'':'on'}" onclick="_detSetVenueMode('same')">Same venue</button>
+      <button type="button" class="${diff?'on':''}" onclick="_detSetVenueMode('different')">Different venues</button>
+    </div>
+    ${diff?`
+    <div class="form-group" style="margin-top:14px">
+      <label class="form-label">Ceremony venue</label>
+      <input class="form-input" id="ven-cervenue" value="${esc(ev.ceremonyVenue||'')}" placeholder="e.g. St Paul's Cathedral" oninput="_detVenueField('ceremonyVenue',this)"/>
+      ${typeof _cerLinkHtml==='function'?_cerLinkHtml('venue', ev.ceremonyVenue, ev.venueVendorId):''}
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label class="form-label">Ceremony venue address</label>
+      <input class="form-input" value="${esc(ev.ceremonyVenueAddress||'')}" placeholder="Street, suburb, state" oninput="_detVenueField('ceremonyVenueAddress',this)"/>
+    </div>`:''}
+    <div class="form-group" style="margin-top:14px">
+      <label class="form-label">${diff?'Reception venue':'Venue name'}</label>
+      <input class="form-input" value="${esc(ev.venue||'')}" placeholder="${diff?'e.g. The Grand Pavilion':'Venue name'}" oninput="_detVenueField('venue',this)"/>
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label class="form-label">${diff?'Reception venue address':'Venue address'}</label>
+      <input class="form-input" value="${esc(ev.venueAddress||'')}" placeholder="Street, suburb, state" oninput="_detVenueField('venueAddress',this)"/>
+    </div>
+    <div style="margin-top:14px">${_evSpacesBlockHtml({spaces:ev.spaces, open:_detSpOpen, venueOf, inputCls:'form-input', ns:'_detSp'})}</div>`;
+}
+function _detRenderVenues(){
+  const host=document.getElementById('det-venues'); if(!host) return;
+  host.innerHTML=_detVenuesInner();
+}
