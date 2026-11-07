@@ -2291,7 +2291,7 @@ function _mealSetupHtml(){
       ${!opts.length?`<div style="font-size:11px;color:var(--red);margin-top:8px">Add at least one option — the Meal column stays hidden until you do.</div>`:''}
       <label style="display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--ink);cursor:pointer;margin-top:12px">
         <input type="checkbox" ${STATE.settings.mealDietaryOn!==false?'checked':''} onchange="_mealDietSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;margin-top:2px"/>
-        <span>Show an “Alternative meal” option<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:2px">For guests none of your meals suit. Choosing it opens their dietary requirements on the RSVP form so they can tell you what they need.</span></span>
+        <span>Show an “Alternative meal” option<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:2px">For vegetarian, pescatarian or vegan guests none of your meals suit. They pick one, it counts as their meal, and the matching dietary box is ticked.</span></span>
       </label>
       <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 10px"/>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:${childrenOn?'10px':'0'}">

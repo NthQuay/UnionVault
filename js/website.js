@@ -1,5 +1,8 @@
-// Label of the permanent "Alternative meal" option on the RSVP form (for guests none of the meals suit).
+// "Alternative meal" option on the RSVP form: for vegetarian / pescatarian / vegan guests none of the
+// couple's meals suit. Picking it reveals those three (minus any already on the menu); the pick becomes
+// the guest's meal and ticks the matching dietary box.
 const _MEAL_DIET_LABEL='Alternative meal';
+const _MEAL_ALT_OPTS=[['Vegetarian','vegetarian'],['Pescatarian','pescatarian'],['Vegan','vegan']];
 // WEBSITE BUILDER
 // ══════════════════════════════════════════════
 // The guest-facing site. Content is NOT stored twice: sections read from the planner
@@ -4877,9 +4880,9 @@ function _wbBuildSite(forDownload){
   const _uvDietaryOn=!(_uvRfields.dietary===false);
   const _uvHasStep2=_uvMealOn||_uvDietaryOn;
   // Permanent "Alternative meal" option (couple can hide it in Meal Settings).
-  // Picking it opens that guest's Dietary requirements; a normal meal leaves it closed.
   const _uvMealDietOn=_uvMealOn&&_uvDietaryOn&&STATE.settings.mealDietaryOn!==false;
-  const _uvMealDietChip=_uvMealDietOn?`<div class="meal-chip meal-chip-diet" data-meal="${_escHtml(_MEAL_DIET_LABEL)}" data-dietmeal="1" onclick="window._uvChooseMeal(this)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>${_escHtml(_MEAL_DIET_LABEL)}</div>`:'';
+  const _uvAltFor=list=>{const have=new Set((list||[]).map(x=>String(x||'').trim().toLowerCase()));return _MEAL_ALT_OPTS.filter(([lab])=>!have.has(lab.toLowerCase())).map(([lab])=>lab);};
+  const _uvMealDietChip=list=>{if(!_uvMealDietOn)return '';const alts=_uvAltFor(list);if(!alts.length)return '';return `<div class="meal-chip meal-chip-diet" data-meal="${_escHtml(_MEAL_DIET_LABEL)}" data-dietmeal="1" data-alts="${_escHtml(alts.join('|'))}" onclick="window._uvChooseMeal(this)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>${_escHtml(_MEAL_DIET_LABEL)}</div>`;};
   const _uvHasStep3=_fPhone.show||_fEmail.show||_fAddr.show||_fSong.show||_fNotes.show||_uvCustomFields.length>0;
   const _uvNumSteps=1+(_uvHasStep2?1:0)+(_uvHasStep3?1:0);
   const _uvWeddingDate=_escHtml((STATE.settings&&STATE.settings.weddingDate)||_uvRsvp.date||'');
@@ -4959,8 +4962,11 @@ function _wbBuildSite(forDownload){
 .meal-chip.on{border-color:${_uvPal.accent};background:${_uvPal.accent}22}
 .meal-chip-diet{display:inline-flex;align-items:center;gap:5px;border-style:dashed}
 .meal-chip-diet.on{border-style:solid}
-.diet-meal-hint{display:none;font-size:11px;line-height:1.4;opacity:.75;margin:0 0 6px;font-style:italic}
-.diet-accordion.dm .diet-meal-hint{display:block}
+.alt-pills{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:-8px 0 14px}
+.alt-pills[hidden]{display:none}
+.alt-pills-lbl{font-size:11px;opacity:.7;margin-right:2px}
+.alt-pill{padding:3px 10px;border-radius:14px;border:1px solid ${t2.heading}28;background:transparent;font-size:11.5px;color:${t2.text};cursor:pointer;font-family:inherit}
+.alt-pill.on{border-color:${_uvPal.accent};background:${_uvPal.accent}22;font-weight:600}
 .diet-accordion{margin-top:4px}
 .diet-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:4px 0;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left}
 .diet-toggle-label{font-size:13px;font-weight:500;color:${t2.heading};display:flex;align-items:center;gap:6px}
@@ -5076,8 +5082,8 @@ function _wbBuildSite(forDownload){
       <button class="rf-nav-next" id="rf-next" onclick="window._uvRsvpNext()" disabled>Next &#8594;</button>
     </div>
     <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-search='${_uvGuestSearchJson}' data-couple="${_uvCoupleId}" data-wdate="${_uvWeddingDate}" data-custom='${_uvCustomJson}' data-lock="${_uvLockEnabled?'1':'0'}" data-lockpw="${_uvLockPw}"></div>
-    ${_uvMealHtml?`<template id="uv-rf-meal-tmpl"><div class="rf-chips">${_uvMealHtml}${_uvMealDietChip}</div></template>`:''}
-    ${_uvChildMealHtml?`<template id="uv-rf-children-meal-tmpl"><div class="rf-chips">${_uvChildMealHtml}${_uvMealDietChip}</div></template>`:''}
+    ${_uvMealHtml?`<template id="uv-rf-meal-tmpl"><div class="rf-chips">${_uvMealHtml}${_uvMealDietChip(_uvMealOpts)}</div></template>`:''}
+    ${_uvChildMealHtml?`<template id="uv-rf-children-meal-tmpl"><div class="rf-chips">${_uvChildMealHtml}${_uvMealDietChip(_uvChildMealOpts)}</div></template>`:''}
     </div>
   </div>
 </div>
@@ -5091,7 +5097,9 @@ function _wbBuildSite(forDownload){
   var _rfStep=1;
   var _mealOn=${_uvMealOn?'true':'false'},_childMealEnabled=${_uvChildMealEnabled?'true':'false'},_highChairOn=${_uvHighChairOn?'true':'false'};
   var _dietaryOn=${_uvDietaryOn?'true':'false'};
-  var _MEAL_DIET_LABEL=${JSON.stringify(_MEAL_DIET_LABEL)};
+  var _MEAL_DIET_LABEL=${JSON.stringify(_MEAL_DIET_LABEL)},_MEAL_ALT_OPTS=${JSON.stringify(_MEAL_ALT_OPTS)};
+  var altOpen={},autoDiet={};
+  function _altKey(v){for(var i=0;i<_MEAL_ALT_OPTS.length;i++){if(_MEAL_ALT_OPTS[i][0]===v)return _MEAL_ALT_OPTS[i][1];}return null;}
   var _phoneReq=${_fPhone.show&&_fPhone.required?'true':'false'},_emailReq=${_fEmail.show&&_fEmail.required?'true':'false'},_addrReq=${_fAddr.show&&_fAddr.required?'true':'false'};
   var group=[],plus1Names={},dietSel={},dietNotes={},mealPick={};
   var _groupSelected=false,_lastSearchGroups=[];
@@ -5340,7 +5348,7 @@ function _wbBuildSite(forDownload){
   };
   window._uvCloseRsvp=function(){
     var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.remove('open');document.body.style.overflow='';}
-    group=[];plus1Names={};dietSel={};dietNotes={};mealPick={};_rfStep=1;_groupSelected=false;_lastSearchGroups=[];
+    group=[];plus1Names={};dietSel={};dietNotes={};mealPick={};altOpen={};autoDiet={};_rfStep=1;_groupSelected=false;_lastSearchGroups=[];
     _rfWizPanels.forEach(function(pid){var p=document.getElementById('rf-'+pid);if(p)p.classList.remove('active');});
     var s1=document.getElementById('rf-step1');if(s1)s1.classList.add('active');
     var sd=document.getElementById('rf-step-done');if(sd){sd.classList.remove('active');sd.innerHTML='';}
@@ -5394,9 +5402,19 @@ function _wbBuildSite(forDownload){
             wrap2.querySelectorAll('.meal-chip').forEach(function(btn){
               btn.dataset.mid=m.id;
               btn.setAttribute('onclick','window._uvChooseMeal(this)');
+              var _alts=btn.dataset.alts?btn.dataset.alts.split('|'):[];
               if(mealPick[m.id]===btn.dataset.meal)btn.classList.add('on');
+              else if(btn.dataset.dietmeal==='1'&&(altOpen[m.id]||_alts.indexOf(mealPick[m.id])>=0))btn.classList.add('on');
             });
             html+='<p class="field-label">'+lbl2+'</p><div class="meal-chips">'+wrap2.innerHTML+'</div>';
+            var _ac=wrap2.querySelector('.meal-chip-diet');
+            if(_ac){
+              var _al=_ac.dataset.alts.split('|');
+              var _show=_ac.classList.contains('on');
+              html+='<div class="alt-pills" data-mid="'+m.id+'"'+(_show?'':' hidden')+'><span class="alt-pills-lbl">Choose one:</span>';
+              _al.forEach(function(a){html+='<button type="button" class="alt-pill'+(mealPick[m.id]===a?' on':'')+'" data-mid="'+m.id+'" data-alt="'+_esc(a)+'" onclick="window._uvChooseAlt(this)">'+_esc(a)+'</button>';});
+              html+='</div>';
+            }
           }else if(useCh){
             html+='<p class="field-label" style="font-style:italic;opacity:.65">A children\\'s meal will be provided</p>';
           }
@@ -5406,11 +5424,10 @@ function _wbBuildSite(forDownload){
         html+='<label class="rf-hc-label"><input type="checkbox" data-hcid="'+m.id+'" '+(mealPick[m.id+'-hc']?'checked':'')+' onchange="mealPick[this.dataset.hcid+\\'-hc\\']=this.checked"> <span>High chair required</span></label>';
       }
       if(_dietaryOn){
-        var _dm=mealPick[m.id]===_MEAL_DIET_LABEL;
-        html+='<div class="diet-accordion'+(_dm?' open dm':'')+'" onclick="window._uvToggleDiet(this)" style="margin-top:12px">';
-        html+='<button class="diet-toggle" type="button"><span class="diet-toggle-label">Dietary requirements</span>'+CHEVRON+'</button>';
-        html+='<div class="diet-body"><p class="diet-meal-hint">Tell us what you need and we\\'ll arrange an alternative. Only an allergy? Pick your meal above and tick Allergy instead.</p><div class="chip-row">';
+        html+='<div class="diet-accordion" onclick="window._uvToggleDiet(this)" style="margin-top:12px">';
         var dSel=dietSel[m.id]||new Set();
+        html+='<button class="diet-toggle" type="button"><span class="diet-toggle-label">Dietary requirements'+(dSel.size?'<span class="diet-count">'+dSel.size+'</span>':'')+'</span>'+CHEVRON+'</button>';
+        html+='<div class="diet-body"><div class="chip-row">';
         DIET.forEach(function(d){
           var key=d[0],label=d[1];
           var dataDiet=(key==='allergy'||key==='other')?' data-diet="'+key+'"':'';
@@ -5433,13 +5450,49 @@ function _wbBuildSite(forDownload){
     body.innerHTML=html;
   }
 
+  // Tick/untick one dietary box for a guest (keeps dietSel, the chip and the count badge in step).
+  function _setDiet(sec,mid,key,on){
+    if(!dietSel[mid])dietSel[mid]=new Set();
+    if(on)dietSel[mid].add(key);else dietSel[mid].delete(key);
+    if(!sec)return;
+    var chip=sec.querySelector('.diet-chip[data-key="'+key+'"]');if(chip)chip.classList.toggle('on',on);
+    var acc=sec.querySelector('.diet-accordion');if(!acc)return;
+    var count=acc.querySelectorAll('.diet-chip.on').length;
+    var badge=acc.querySelector('.diet-count');
+    if(badge){badge.textContent=count;badge.style.display=count?'':'none';}
+    else if(count){var lb=acc.querySelector('.diet-toggle-label');var b=document.createElement('span');b.className='diet-count';b.textContent=count;lb.appendChild(b);}
+  }
+  function _clearAutoDiet(sec,id){
+    if(autoDiet[id]){_setDiet(sec,id,autoDiet[id],false);delete autoDiet[id];}
+  }
   window._uvChooseMeal=function(btn){
-    var id=btn.dataset.mid,ml=btn.dataset.meal;mealPick[id]=ml;
+    var id=btn.dataset.mid,ml=btn.dataset.meal;
+    var sec0=btn.closest('.guest-section');
+    var pills=sec0&&sec0.querySelector('.alt-pills');
+    if(btn.dataset.dietmeal==='1'){
+      // Not a meal yet: the guest still has to pick Vegetarian / Pescatarian / Vegan.
+      altOpen[id]=true;
+      if(_altKey(mealPick[id])===null||!pills||!pills.querySelector('.alt-pill.on'))mealPick[id]=null;
+      if(pills)pills.hidden=false;
+    }else{
+      altOpen[id]=false;mealPick[id]=ml;
+      if(pills){pills.hidden=true;pills.querySelectorAll('.alt-pill').forEach(function(p){p.classList.remove('on');});}
+      _clearAutoDiet(sec0,id);
+    }
     btn.closest('.meal-chips').querySelectorAll('.meal-chip').forEach(function(c){c.classList.remove('on');});
     btn.classList.add('on');
-    var sec0=btn.closest('.guest-section');var acc0=sec0&&sec0.querySelector('.diet-accordion');
-    if(acc0){var _isDm=btn.dataset.dietmeal==='1';acc0.classList.toggle('dm',_isDm);if(_isDm)acc0.classList.add('open');}
     var sec=btn.closest('.guest-section');if(sec){var err=sec.querySelector('.meal-error');if(err)err.remove();var chips=sec.querySelector('.meal-chips');if(chips){chips.style.outline='';chips.style.padding='';}}
+    _checkStep2();
+  };
+  window._uvChooseAlt=function(pill){
+    var id=pill.dataset.mid,val=pill.dataset.alt,key=_altKey(val);
+    var sec=pill.closest('.guest-section');
+    pill.parentElement.querySelectorAll('.alt-pill').forEach(function(p){p.classList.remove('on');});
+    pill.classList.add('on');
+    mealPick[id]=val;
+    _clearAutoDiet(sec,id);
+    if(key&&!(dietSel[id]&&dietSel[id].has(key))){_setDiet(sec,id,key,true);autoDiet[id]=key;}
+    if(sec){var err=sec.querySelector('.meal-error');if(err)err.remove();var chips=sec.querySelector('.meal-chips');if(chips){chips.style.outline='';chips.style.padding='';}}
     _checkStep2();
   };
   window._uvToggleDiet=function(el){
@@ -5526,7 +5579,7 @@ function _wbBuildSite(forDownload){
         var sections=document.querySelectorAll('#step2-body .guest-section');
         var allChosen=true;
         sections.forEach(function(sec){
-          var g2=sec.querySelector('.meal-chip.on,.rf-meal-chip.on');
+          var g2=sec.querySelector('.meal-chip.on:not(.meal-chip-diet),.rf-meal-chip.on,.alt-pill.on');
           var isInfSec=sec.querySelector('.field-label[style*="italic"]');
           if(!g2&&!isInfSec){
             allChosen=false;
