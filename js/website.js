@@ -3853,6 +3853,7 @@ function _wbBlockBody(key,b){
 
   const has=b.ids.length>0;
   return `<div class="wb-blk-body">
+    ${_wbFeatPanelHtml(key,b)}
     <div class="wb-tiles">
       ${tiles}
       <button type="button" class="wb-tile-add" title="Add an image" onclick="_wbImgAdd('${key}','${b.id}')">
@@ -3891,10 +3892,114 @@ function _wbBlockBody(key,b){
           <button type="button" class="${b.side==='right'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','side','right')">Right</button>
         </span>
       </div>
-      ${b.side==='full'?'':`<div class="wb-blk-hint">Whatever block comes next sits beside these images on a wide screen. <b>On a phone it stacks underneath</b> — below 700px, Left and Right both simply mean "above". Most guests will open this on a phone.</div>`}
+      ${(_wbIsFxFormat() && (_wbFeatInfo(key)||{}).b===b)
+        ? `<div class="wb-blk-hint">In ${_wbSite().theme.format==='atelier'?'Atelier':'Editorial'}, <b>Full</b> lets the featured photo alternate sides automatically; <b>Left</b> or <b>Right</b> keeps it on that side — on phones too.</div>`
+        : (b.side==='full'?'':`<div class="wb-blk-hint">Whatever block comes next sits beside these images on a wide screen. <b>On a phone it stacks underneath</b> — below 700px, Left and Right both simply mean "above". Most guests will open this on a phone.</div>`)}
     `}
   </div>`;
 }
+
+// ── FEATURED PHOTO CROP (Editorial / Atelier).
+// In those formats a section's first photo becomes its feature, cropped to fill a frame
+// beside the text — a different shape on desktop and phone. b.feat = {id, pos, zoom}
+// belongs to THAT photo: if the first photo changes, the old crop no longer applies.
+// zoom is anchored to `cover` (100 = fills the frame), unlike the hero, because the
+// feature always fills its frame — there is no band colour to show around it.
+function _wbIsFxFormat(){ const f=(_wbSite().theme||{}).format; return f==='magazine'||f==='atelier'; }
+function _wbFeatInfo(key){
+  for(const b of _wbBlocks(key)){
+    if(b.off || b.type!=='img') continue;
+    const id=(b.ids||[]).find(x=>!_mediaMissing(x));
+    if(id) return {b,id};
+  }
+  return null;
+}
+function _wbFeatCrop(b,id){
+  const f=(b&&b.feat&&b.feat.id===id)?b.feat:{};
+  const pos=(typeof f.pos==='string'&&/%/.test(f.pos))?f.pos:'50% 50%';
+  const zoom=Math.max(100,Math.min(250,Number(f.zoom)||100));
+  return {pos,zoom};
+}
+function _wbFeatImgCss(c){
+  return `object-position:${c.pos};transform:scale(${c.zoom/100});transform-origin:${c.pos}`;
+}
+function _wbFeatFrames(){
+  return (_wbSite().theme.format==='atelier')
+    ? [['all','Desktop & phone','4/5','118px']]
+    : [['d','Desktop','16/15','150px'],['m','Phone','2/3','94px']];
+}
+function _wbFeatPanelHtml(key,b){
+  if(!_wbIsFxFormat()) return '';
+  const fi=_wbFeatInfo(key);
+  if(!fi || fi.b!==b) return '';
+  const c=_wbFeatCrop(b,fi.id);
+  const src=_mediaUrl(fi.id);
+  const frames=_wbFeatFrames().map(([k,lbl,ar,w])=>`<div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+      <div class="wb-fx-frame" data-key="${key}" data-bid="${b.id}"
+           onmousedown="_wbFeatPickStart(event,'${key}','${b.id}')" ontouchstart="_wbFeatPickStart(event,'${key}','${b.id}')"
+           style="position:relative;width:${w};aspect-ratio:${ar};overflow:hidden;border-radius:6px;border:1px solid var(--border);cursor:crosshair;background:var(--surface);touch-action:none">
+        <img class="wb-fx-img" src="${src}" alt="" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;${_wbFeatImgCss(c)}"/>
+        <span class="wb-hero-pin wb-fx-pin" style="left:${_wbHeroPct(c.pos,0)}%;top:${_wbHeroPct(c.pos,1)}%"></span>
+      </div>
+      <span style="font-size:10.5px;color:var(--muted)">${lbl}</span>
+    </div>`).join('');
+  return `<div class="wb-fx-panel" id="wb-fx-${b.id}" style="border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:10px;background:var(--cream)">
+    <div class="wb-slot-lbl" style="margin-bottom:4px">Featured photo</div>
+    <div class="wb-blk-hint" style="margin:0 0 8px">The first photo sits beside the text. Drag either preview to choose which part stays in view.</div>
+    <div style="display:flex;gap:12px;align-items:flex-start;justify-content:center;margin-bottom:8px">${frames}</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="wb-slot-lbl" id="wb-fx-zl-${b.id}" style="white-space:nowrap;min-width:78px">Zoom · ${c.zoom}%</span>
+      <input type="range" min="100" max="250" step="1" value="${c.zoom}" oninput="_wbFeatZoom('${key}','${b.id}',this.value)" style="flex:1;accent-color:var(--gold)"/>
+      <button type="button" class="wb-blk-addbtn" style="flex-shrink:0" onclick="_wbFeatCentre('${key}','${b.id}')">Centre</button>
+    </div>
+  </div>`;
+}
+function _wbFeatSet(key,bid,patch){
+  const b=_wbBlock(key,bid); if(!b) return null;
+  const fi=_wbFeatInfo(key); if(!fi||fi.b!==b) return null;
+  const cur=_wbFeatCrop(b,fi.id);
+  b.feat=Object.assign({id:fi.id,pos:cur.pos,zoom:cur.zoom},patch);
+  return _wbFeatCrop(b,fi.id);
+}
+function _wbFeatPaint(bid,c){
+  const p=document.getElementById('wb-fx-'+bid); if(!p) return;
+  p.querySelectorAll('.wb-fx-img').forEach(im=>{im.style.objectPosition=c.pos;im.style.transform=`scale(${c.zoom/100})`;im.style.transformOrigin=c.pos;});
+  p.querySelectorAll('.wb-fx-pin').forEach(pin=>{pin.style.left=_wbHeroPct(c.pos,0)+'%';pin.style.top=_wbHeroPct(c.pos,1)+'%';});
+  const zl=document.getElementById('wb-fx-zl-'+bid); if(zl) zl.textContent='Zoom · '+c.zoom+'%';
+}
+function _wbFeatZoom(key,bid,v){
+  const c=_wbFeatSet(key,bid,{zoom:Math.max(100,Math.min(250,Number(v)||100))}); if(!c) return;
+  _wbFeatPaint(bid,c); saveToStorage(); _wbLiveSoon();
+}
+function _wbFeatCentre(key,bid){
+  const c=_wbFeatSet(key,bid,{pos:'50% 50%'}); if(!c) return;
+  _wbFeatPaint(bid,c); saveToStorage(); _wbLiveSoon();
+}
+let _wbFeatDrag=null; // {key,bid,frame}
+function _wbFeatPickStart(e,key,bid){
+  _wbFeatDrag={key,bid,frame:e.currentTarget};
+  _wbFeatPickMove(e);
+  if(e.cancelable) e.preventDefault();
+}
+function _wbFeatPickMove(e){
+  if(!_wbFeatDrag) return;
+  const r=_wbFeatDrag.frame.getBoundingClientRect();
+  const t=(e.touches&&e.touches[0])?e.touches[0]:e;
+  const x=Math.max(0,Math.min(100,Math.round((t.clientX-r.left)/r.width*100)));
+  const y=Math.max(0,Math.min(100,Math.round((t.clientY-r.top)/r.height*100)));
+  const c=_wbFeatSet(_wbFeatDrag.key,_wbFeatDrag.bid,{pos:x+'% '+y+'%'});
+  if(c){ _wbFeatPaint(_wbFeatDrag.bid,c); _wbLiveSoon(); }
+  if(e.cancelable) e.preventDefault();
+}
+function _wbFeatPickEnd(){
+  if(!_wbFeatDrag) return;
+  _wbFeatDrag=null;
+  saveToStorage();
+}
+window.addEventListener('mousemove', _wbFeatPickMove);
+window.addEventListener('mouseup',   _wbFeatPickEnd);
+window.addEventListener('touchmove', _wbFeatPickMove, {passive:false});
+window.addEventListener('touchend',  _wbFeatPickEnd);
 
 // ── Block drag.
 //
@@ -4412,7 +4517,7 @@ function _wbBuildSite(forDownload){
       if(!sideSet) _fxAlt++;
       const fxCls=['fx','fx-spread',imgRight?'flip':'',cls].filter(Boolean).join(' ');
       return `<section id="${k}" class="${fxCls}">
-      <figure class="fx-fig"><img src="${_mediaUrl(feat)}" alt="" loading="lazy"/></figure>
+      <figure class="fx-fig"><img src="${_mediaUrl(feat)}" alt="" loading="lazy" style="${_escHtml(_wbFeatImgCss(_wbFeatCrop(featBlk,feat)))}"/></figure>
       <div class="fx-copy">${inner}</div>${t.format==='atelier'?`
       <span class="fx-num" aria-hidden="true">${fxNoStr}</span>`:''}
     </section>`;
