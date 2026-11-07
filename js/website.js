@@ -5185,7 +5185,7 @@ function _wbBuildSite(forDownload){
 #uv-rsvp-sheet .rf-pill{padding:10px 12px;border-radius:8px;border:1.5px solid ${t2.heading}22;background:${t2.background||t2.page};text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:${t2.text};transition:all .15s;user-select:none;font-family:inherit}
 #uv-rsvp-sheet .rf-pill.yes{background:#EAF3EC;border-color:#3D9454;color:#1F6B38}
 #uv-rsvp-sheet .rf-pill.no{background:#F7EFED;border-color:#C05840;color:#8B3324}
-#uv-rsvp-sheet .rf-pill.rf-yn{padding:9px 13px;white-space:nowrap;min-height:40px}
+#uv-rsvp-sheet .rf-pill.rf-ic{width:44px;height:44px;border-radius:50%;padding:0;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .member-st{display:block;font-size:11.5px;margin-top:2px;color:${t2.text};opacity:.6}
 .member-st.yes{color:${_uvScheme==='dark'?'#7BC28A':'#1F6B38'};opacity:1}
 .member-st.no{color:${_uvScheme==='dark'?'#FCA5A5':'#8B3324'};opacity:1}
@@ -5200,6 +5200,10 @@ function _wbBuildSite(forDownload){
 .p1-name-wrap{padding:2px 0 10px}
 .plus-one-name-input.p1-box{border:1.5px solid ${t2.heading}28;border-radius:10px;padding:11px 12px;margin:0;text-align:left}
 .plus-one-name-input.p1-box:focus{border-color:${_uvPal.accent}}
+.p1-nm{font-size:15px;color:${t2.text};overflow-wrap:anywhere}
+.p1-edit{background:none;border:none;padding:0;margin-left:8px;font-family:inherit;font-size:12px;color:${_uvPal.accent};text-decoration:underline;cursor:pointer}
+.p1-add{display:inline-flex;align-items:center;gap:6px;background:none;border:1.5px dashed ${t2.heading}30;border-radius:20px;padding:7px 13px;font-family:inherit;font-size:13px;color:${_uvPal.accent};cursor:pointer}
+.p1-slot .p1-box{width:100%}
 .plus-one-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${t2.text};margin:0 0 4px;opacity:.7}
 .guest-section{padding:12px 0;text-align:left}
 .guest-section+.guest-section{border-top:1px solid ${t2.heading}12}
@@ -5551,19 +5555,33 @@ function _wbBuildSite(forDownload){
     _checkStep1();
   };
 
-  // Step 1 rows: the name keeps the row; short "✓ Yes" / "✗ No" buttons on the right,
-  // and once answered the choice is spelled out under the name ("✓ Attending" / "✗ Declined").
+  // Step 1 rows: the name keeps the row; round ✓ / ✗ buttons on the right and the
+  // choice spelled out under the name ("✓ Attending" / "✗ Declined").
   function _attSt(m,yesT,noT){
     var c=m.att===true?' yes':m.att===false?' no':'';
-    if(m.att!==true&&m.att!==false) return '';
-    var t=m.att===true?'&#10003; '+(yesT||'Attending'):'&#10007; '+(noT||'Declined');
+    var t=m.att===true?'&#10003; '+(yesT||'Attending'):m.att===false?'&#10007; '+(noT||'Declined'):'Tap &#10003; or &#10007;';
     return '<span class="member-st'+c+'">'+t+'</span>';
   }
   function _attBtns(i,m,who){
     var w=_esc(who);
-    return '<div class="rf-pills"><button type="button" class="rf-pill rf-yn'+(m.att===true?' yes':'')+'" aria-label="'+w+': yes" aria-pressed="'+(m.att===true)+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Yes</button>'+
-      '<button type="button" class="rf-pill rf-yn'+(m.att===false?' no':'')+'" aria-label="'+w+': no" aria-pressed="'+(m.att===false)+'" onclick="window._rfSetAtt('+i+',false)">&#10007; No</button></div>';
+    return '<div class="rf-pills"><button type="button" class="rf-pill rf-ic'+(m.att===true?' yes':'')+'" aria-label="'+w+': yes" aria-pressed="'+(m.att===true)+'" onclick="window._rfSetAtt('+i+',true)">&#10003;</button>'+
+      '<button type="button" class="rf-pill rf-ic'+(m.att===false?' no':'')+'" aria-label="'+w+': no" aria-pressed="'+(m.att===false)+'" onclick="window._rfSetAtt('+i+',false)">&#10007;</button></div>';
   }
+  var p1Edit={};
+  function _p1Slot(pid){
+    var nm=plus1Names[pid]||'';
+    if(p1Edit[pid]) return '<input class="plus-one-name-input p1-box" type="text" placeholder="Their full name" value="'+_esc(nm)+'" data-pid="'+pid+'" oninput="window._uvSetP1Name(this)" onblur="window._uvP1Done(this)" onkeydown="if(event.keyCode===13)this.blur()" autocomplete="name">';
+    if(String(nm).trim()) return '<span class="p1-nm">'+_esc(nm)+'</span><button type="button" class="p1-edit" onclick="window._uvP1Edit(this)">Edit</button>';
+    return '<button type="button" class="p1-add" onclick="window._uvP1Edit(this)">+ Add their name</button>';
+  }
+  // Swap just the name slot (not the whole list) so a tap on ✓ / ✗ or Next still lands.
+  function _p1Redraw(pid,focus){
+    var sl=document.querySelector('.p1-slot[data-pid="'+pid+'"]');if(!sl)return;
+    sl.innerHTML=_p1Slot(pid);
+    var inp=sl.querySelector('input');if(focus&&inp){inp.focus();var v=inp.value;inp.value='';inp.value=v;}
+  }
+  window._uvP1Edit=function(btn){var sl=btn.closest('.p1-slot');if(!sl)return;var pid=sl.getAttribute('data-pid');p1Edit[pid]=true;_p1Redraw(pid,true);};
+  window._uvP1Done=function(inp){var pid=inp.getAttribute('data-pid');p1Edit[pid]=false;_p1Redraw(pid,false);_checkStep1();};
   function _renderAttendance(){
     var container=document.getElementById('attend-members');if(!container)return;
     var html='';
@@ -5577,10 +5595,12 @@ function _wbBuildSite(forDownload){
       group.forEach(function(m,i){
         if(!m.isPlus1)return;
         var pn=_esc(plus1Names[m.id]||'');
-        // Ask first ("Will you be bringing a plus one?"); only a yes opens the name box.
-        html+='<div class="plus-one-added"><div class="member-row"><div class="member-name">Will you be bringing a plus one?'+_attSt(m,'Bringing a plus one','Not bringing one')+'</div>'+_attBtns(i,m,'Bringing a plus one')+'</div>'+
-          (m.att===true?'<div class="p1-name-wrap"><p class="plus-one-label">Their full name</p><input class="plus-one-name-input p1-box" type="text" placeholder="e.g. Jordan Smith" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" autocomplete="name"></div>':'')+
-          '</div>';
+        // Ask first ("Will you be bringing a plus one?"). A yes swaps the question for their
+        // name: a box while typing, then the name as plain text with Edit, or a dashed
+        // "+ Add their name" button if it's left empty.
+        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><div class="member-name">'+
+          (m.att===true?'<div class="p1-slot" data-pid="'+m.id+'">'+_p1Slot(m.id)+'</div>':'Will you be bringing a plus one?')+
+          _attSt(m,'Attending','Not bringing one')+'</div>'+_attBtns(i,m,'Bringing a plus one')+'</div></div>';
       });
     }
     container.innerHTML=html;
@@ -5588,6 +5608,7 @@ function _wbBuildSite(forDownload){
 
   window._rfSetAtt=function(i,val){
     if(!group[i])return;group[i].att=val;
+    if(group[i].isPlus1) p1Edit[group[i].id]=!!(val&&!String(plus1Names[group[i].id]||'').trim());
     // A guest who declines can't bring a plus one: their plus one is declined too.
     if(val===false&&!group[i].isPlus1){
       var gid=group[i].id;
