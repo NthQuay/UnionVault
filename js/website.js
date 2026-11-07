@@ -5198,11 +5198,15 @@ function _wbBuildSite(forDownload){
 .plus-one-name-input{padding:9px 12px;font-size:14px;font-family:inherit;color:${t2.text};background:transparent;border:none;border-bottom:1.5px solid ${t2.heading}28;outline:none;width:100%;margin-bottom:8px;border-radius:0;box-sizing:border-box}
 .plus-one-name-input:focus{border-color:${_uvPal.accent}}
 .p1-name-wrap{padding:2px 0 10px}
-.plus-one-name-input.p1-box{border:1.5px solid ${t2.heading}28;border-radius:10px;padding:11px 12px;margin:0;text-align:left}
+.plus-one-name-input.p1-box{border:1px solid ${t2.heading}18;border-radius:10px;padding:10px 12px;margin:0;text-align:left}
+.plus-one-name-input.p1-box:focus{border-color:${_uvPal.accent}88}
+.plus-one-name-input.p1-box.p1-missing,.plus-one-name-input.p1-box.p1-missing:focus{border-color:#DC2626aa;box-shadow:0 0 0 3px #DC262614}
+.p1-err{font-size:11.5px;color:#C0392B;margin:4px 0 0}
+.plus-one-added .plus-one-label{margin:0}
+.plus-one-added .member-row{padding-top:2px}
 .plus-one-name-input.p1-box:focus{border-color:${_uvPal.accent}}
 .p1-nm{font-size:15px;color:${t2.text};overflow-wrap:anywhere}
 .p1-edit{background:none;border:none;padding:0;margin-left:8px;font-family:inherit;font-size:12px;color:${_uvPal.accent};text-decoration:underline;cursor:pointer}
-.p1-add{display:inline-flex;align-items:center;gap:6px;background:none;border:1.5px dashed ${t2.heading}30;border-radius:20px;padding:7px 13px;font-family:inherit;font-size:13px;color:${_uvPal.accent};cursor:pointer}
 .p1-slot .p1-box{width:100%}
 .plus-one-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${t2.text};margin:0 0 4px;opacity:.7}
 .guest-section{padding:12px 0;text-align:left}
@@ -5570,9 +5574,8 @@ function _wbBuildSite(forDownload){
   var p1Edit={};
   function _p1Slot(pid){
     var nm=plus1Names[pid]||'';
-    if(p1Edit[pid]) return '<input class="plus-one-name-input p1-box" type="text" placeholder="Their full name" value="'+_esc(nm)+'" data-pid="'+pid+'" oninput="window._uvSetP1Name(this)" onblur="window._uvP1Done(this)" onkeydown="if(event.keyCode===13)this.blur()" autocomplete="name">';
-    if(String(nm).trim()) return '<span class="p1-nm">'+_esc(nm)+'</span><button type="button" class="p1-edit" onclick="window._uvP1Edit(this)">Edit</button>';
-    return '<button type="button" class="p1-add" onclick="window._uvP1Edit(this)">+ Add their name</button>';
+    if(p1Edit[pid]||!String(nm).trim()) return '<input class="plus-one-name-input p1-box" type="text" placeholder="Their full name (required)" required aria-required="true" value="'+_esc(nm)+'" data-pid="'+pid+'" oninput="window._uvSetP1Name(this)" onblur="window._uvP1Done(this)" onkeydown="if(event.keyCode===13)this.blur()" autocomplete="name">';
+    return '<span class="p1-nm">'+_esc(nm)+'</span><button type="button" class="p1-edit" onclick="window._uvP1Edit(this)">Edit</button>';
   }
   // Swap just the name slot (not the whole list) so a tap on ✓ / ✗ or Next still lands.
   function _p1Redraw(pid,focus){
@@ -5581,7 +5584,7 @@ function _wbBuildSite(forDownload){
     var inp=sl.querySelector('input');if(focus&&inp){inp.focus();var v=inp.value;inp.value='';inp.value=v;}
   }
   window._uvP1Edit=function(btn){var sl=btn.closest('.p1-slot');if(!sl)return;var pid=sl.getAttribute('data-pid');p1Edit[pid]=true;_p1Redraw(pid,true);};
-  window._uvP1Done=function(inp){var pid=inp.getAttribute('data-pid');p1Edit[pid]=false;_p1Redraw(pid,false);_checkStep1();};
+  window._uvP1Done=function(inp){var pid=inp.getAttribute('data-pid');p1Edit[pid]=false;if((plus1Names[pid]||'').trim())_p1Redraw(pid,false);_checkStep1();};
   function _renderAttendance(){
     var container=document.getElementById('attend-members');if(!container)return;
     var html='';
@@ -5625,6 +5628,7 @@ function _wbBuildSite(forDownload){
   };
   window._uvSetP1Name=function(inp){
     plus1Names[inp.dataset.pid]=inp.value;
+    if(inp.value.trim()){inp.classList.remove('p1-missing');var er=inp.parentNode&&inp.parentNode.querySelector('.p1-err');if(er)er.remove();}
     _checkStep1();
   };
 
@@ -5633,7 +5637,7 @@ function _wbBuildSite(forDownload){
     var allAnswered=group.length>0&&group.every(function(m){return m.att!==null;});
     var p1Ok=group.every(function(m){if(!m.isPlus1||m.att!==true)return true;return(plus1Names[m.id]||'').trim().length>0;});
     var anyYes=group.some(function(m){return m.att===true;});
-    nx.disabled=!(allAnswered&&p1Ok);
+    nx.disabled=!allAnswered;   // a missing plus-one name is flagged when Next is tapped
     nx.textContent=(allAnswered&&!anyYes)?'Send my RSVP':'Next \\u2192';
   }
 
@@ -5879,6 +5883,20 @@ function _wbBuildSite(forDownload){
     if(panelId==='step1'){
       var allAns=group.length>0&&group.every(function(m){return m.att!==null;});
       var p1Ok=group.every(function(m){if(!m.isPlus1||m.att!==true)return true;return(plus1Names[m.id]||'').trim().length>0;});
+      if(allAns&&!p1Ok){
+        // Highlight each empty plus-one name box and put the cursor in the first.
+        var firstBox=null;
+        group.forEach(function(m){
+          if(!m.isPlus1||m.att!==true||(plus1Names[m.id]||'').trim())return;
+          p1Edit[m.id]=true;_p1Redraw(m.id,false);
+          var bx=document.querySelector('.p1-box[data-pid="'+m.id+'"]');if(!bx)return;
+          bx.classList.add('p1-missing');
+          if(!bx.parentNode.querySelector('.p1-err')){var er=document.createElement('p');er.className='p1-err';er.textContent='Please enter their name';bx.parentNode.appendChild(er);}
+          if(!firstBox)firstBox=bx;
+        });
+        if(firstBox)firstBox.focus();
+        return;
+      }
       if(!(allAns&&p1Ok)){
         var errBox=document.getElementById('attend-error');
         if(!errBox){
