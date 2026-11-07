@@ -44,3 +44,10 @@ R2 confirm a real send appears in Communications → Sent. P7 real public RSVP e
 
 ## v509.3 (accepted)
 - Subscription page: plan tags/borders rebuilt from the current pick on every tap (`_uvSelectSettingsPlan`). Before, "Selected" stayed on a card you had moved away from and the newly picked card got no tag; hover-out reset borders to the page-load selection.
+
+## v509.4 — Email templates: Editorial + Atelier
+- Four email templates everywhere (invites, save-the-dates, reminders, vendor briefs): **Classic · Modern · Editorial · Atelier**. Botanical code removed; a stored `botanical` falls back to Classic (`templateIdOf`).
+- **One shared module**: `supabase/functions/_shared/email-templates.ts` holds every design (`classicHtml`, `modernHtml`, `editorialHtml`, `atelierHtml`, buttons, paragraph markup, details rows). `send-guest-email` (v23) and `send-vendor-brief-email` (v8) only add their own content (invite block / brief button + expiry note). Change a template once → both senders change. Deploy both functions together when editing it (the deploy must include `../_shared/email-templates.ts`).
+- Editorial/Atelier use `issue` {names, date, time, venue} from the client (`_emailIssue()` in js/send-sheet.js, also passed by comms.js, invitations.js, vendors.js): masthead names, cover date, details panel. Guest emails put the invitation beside the details when it isn't placed in the text; vendor briefs show a details panel.
+- Side effects: vendor Modern now uses the accent-strip version (dark-mode fix guest emails already had); vendor brief text now supports the size/alignment prefixes. Guest Classic/Modern output byte-identical to v509.3.
+- Picker: all four for every item incl. vendor brief, with mini thumbnails and "New" pills on Editorial/Atelier.
