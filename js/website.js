@@ -5197,6 +5197,9 @@ function _wbBuildSite(forDownload){
 .plus-one-added .member-row{border-bottom:none;padding-top:4px}
 .plus-one-name-input{padding:9px 12px;font-size:14px;font-family:inherit;color:${t2.text};background:transparent;border:none;border-bottom:1.5px solid ${t2.heading}28;outline:none;width:100%;margin-bottom:8px;border-radius:0;box-sizing:border-box}
 .plus-one-name-input:focus{border-color:${_uvPal.accent}}
+.p1-name-wrap{padding:2px 0 10px}
+.plus-one-name-input.p1-box{border:1.5px solid ${t2.heading}28;border-radius:10px;padding:11px 12px;margin:0;text-align:left}
+.plus-one-name-input.p1-box:focus{border-color:${_uvPal.accent}}
 .plus-one-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${t2.text};margin:0 0 4px;opacity:.7}
 .guest-section{padding:12px 0;text-align:left}
 .guest-section+.guest-section{border-top:1px solid ${t2.heading}12}
@@ -5550,9 +5553,9 @@ function _wbBuildSite(forDownload){
 
   // Step 1 rows: the name keeps the row; round ✓ / ✗ buttons on the right and the
   // choice spelled out under the name ("Attending" / "Declined").
-  function _attSt(m){
+  function _attSt(m,yesT,noT){
     var c=m.att===true?' yes':m.att===false?' no':'';
-    var t=m.att===true?'&#10003; Attending':m.att===false?'&#10007; Declined':'Tap &#10003; or &#10007;';
+    var t=m.att===true?'&#10003; '+(yesT||'Attending'):m.att===false?'&#10007; '+(noT||'Declined'):'Tap &#10003; or &#10007;';
     return '<span class="member-st'+c+'">'+t+'</span>';
   }
   function _attBtns(i,m,who){
@@ -5573,7 +5576,10 @@ function _wbBuildSite(forDownload){
       group.forEach(function(m,i){
         if(!m.isPlus1)return;
         var pn=_esc(plus1Names[m.id]||'');
-        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><div class="member-name"><input class="plus-one-name-input" type="text" placeholder="Enter their full name\\u2026" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" style="width:100%;margin-bottom:0;padding-left:0;padding-right:0;text-align:left">'+_attSt(m)+'</div>'+_attBtns(i,m,plus1Names[m.id]||'your plus one')+'</div></div>';
+        // Ask first ("Will you be bringing a plus one?"); only a yes opens the name box.
+        html+='<div class="plus-one-added"><div class="member-row"><div class="member-name">Will you be bringing a plus one?'+_attSt(m,'Yes','No')+'</div>'+_attBtns(i,m,'Bringing a plus one')+'</div>'+
+          (m.att===true?'<div class="p1-name-wrap"><p class="plus-one-label">Their full name</p><input class="plus-one-name-input p1-box" type="text" placeholder="e.g. Jordan Smith" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" autocomplete="name"></div>':'')+
+          '</div>';
       });
     }
     container.innerHTML=html;
@@ -5582,6 +5588,8 @@ function _wbBuildSite(forDownload){
   window._rfSetAtt=function(i,val){
     if(!group[i])return;group[i].att=val;
     _renderAttendance();
+    // Said yes to a plus one: put the cursor straight in the name box.
+    if(val&&group[i].isPlus1){var pb=document.querySelector('.p1-box[data-pid="'+group[i].id+'"]');if(pb&&!pb.value)pb.focus();}
     var row=document.querySelector('[data-idx="'+i+'"]');
     if(row){row.style.background='';row.style.borderRadius='';row.style.padding='';}
     var err=document.getElementById('attend-error');
