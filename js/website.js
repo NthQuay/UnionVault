@@ -1,3 +1,5 @@
+// Label of the permanent "Dietary requirements" meal option on the RSVP form.
+const _MEAL_DIET_LABEL='Dietary requirements';
 // WEBSITE BUILDER
 // ══════════════════════════════════════════════
 // The guest-facing site. Content is NOT stored twice: sections read from the planner
@@ -4874,6 +4876,10 @@ function _wbBuildSite(forDownload){
   const _uvLockPw=_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'');
   const _uvDietaryOn=!(_uvRfields.dietary===false);
   const _uvHasStep2=_uvMealOn||_uvDietaryOn;
+  // Permanent "Dietary requirements" meal option (couple can hide it in Meal Settings).
+  // Picking it opens that guest's Dietary requirements; a normal meal leaves it closed.
+  const _uvMealDietOn=_uvMealOn&&_uvDietaryOn&&STATE.settings.mealDietaryOn!==false;
+  const _uvMealDietChip=_uvMealDietOn?`<div class="meal-chip meal-chip-diet" data-meal="${_escHtml(_MEAL_DIET_LABEL)}" data-dietmeal="1" onclick="window._uvChooseMeal(this)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>${_escHtml(_MEAL_DIET_LABEL)}</div>`:'';
   const _uvHasStep3=_fPhone.show||_fEmail.show||_fAddr.show||_fSong.show||_fNotes.show||_uvCustomFields.length>0;
   const _uvNumSteps=1+(_uvHasStep2?1:0)+(_uvHasStep3?1:0);
   const _uvWeddingDate=_escHtml((STATE.settings&&STATE.settings.weddingDate)||_uvRsvp.date||'');
@@ -4951,6 +4957,10 @@ function _wbBuildSite(forDownload){
 .rf-chips{display:contents}
 .meal-chip{padding:5px 12px;border-radius:16px;border:1.5px solid ${t2.heading}28;background:${t2.background||t2.page};font-size:12px;font-weight:500;color:${t2.text};cursor:pointer;transition:all .15s;font-family:inherit}
 .meal-chip.on{border-color:${_uvPal.accent};background:${_uvPal.accent}22}
+.meal-chip-diet{display:inline-flex;align-items:center;gap:5px;border-style:dashed}
+.meal-chip-diet.on{border-style:solid}
+.diet-meal-hint{display:none;font-size:11.5px;opacity:.75;margin:0 0 8px;font-style:italic}
+.diet-accordion.dm .diet-meal-hint{display:block}
 .diet-accordion{margin-top:4px}
 .diet-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:4px 0;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left}
 .diet-toggle-label{font-size:13px;font-weight:500;color:${t2.heading};display:flex;align-items:center;gap:6px}
@@ -5065,8 +5075,8 @@ function _wbBuildSite(forDownload){
       <button class="rf-nav-next" id="rf-next" onclick="window._uvRsvpNext()" disabled>Next &#8594;</button>
     </div>
     <div id="uv-rf-data" style="display:none" data-guests='${_uvGuestJson}' data-search='${_uvGuestSearchJson}' data-couple="${_uvCoupleId}" data-wdate="${_uvWeddingDate}" data-custom='${_uvCustomJson}' data-lock="${_uvLockEnabled?'1':'0'}" data-lockpw="${_uvLockPw}"></div>
-    ${_uvMealHtml?`<template id="uv-rf-meal-tmpl"><div class="rf-chips">${_uvMealHtml}</div></template>`:''}
-    ${_uvChildMealHtml?`<template id="uv-rf-children-meal-tmpl"><div class="rf-chips">${_uvChildMealHtml}</div></template>`:''}
+    ${_uvMealHtml?`<template id="uv-rf-meal-tmpl"><div class="rf-chips">${_uvMealHtml}${_uvMealDietChip}</div></template>`:''}
+    ${_uvChildMealHtml?`<template id="uv-rf-children-meal-tmpl"><div class="rf-chips">${_uvChildMealHtml}${_uvMealDietChip}</div></template>`:''}
     </div>
   </div>
 </div>
@@ -5080,6 +5090,7 @@ function _wbBuildSite(forDownload){
   var _rfStep=1;
   var _mealOn=${_uvMealOn?'true':'false'},_childMealEnabled=${_uvChildMealEnabled?'true':'false'},_highChairOn=${_uvHighChairOn?'true':'false'};
   var _dietaryOn=${_uvDietaryOn?'true':'false'};
+  var _MEAL_DIET_LABEL=${JSON.stringify(_MEAL_DIET_LABEL)};
   var _phoneReq=${_fPhone.show&&_fPhone.required?'true':'false'},_emailReq=${_fEmail.show&&_fEmail.required?'true':'false'},_addrReq=${_fAddr.show&&_fAddr.required?'true':'false'};
   var group=[],plus1Names={},dietSel={},dietNotes={},mealPick={};
   var _groupSelected=false,_lastSearchGroups=[];
@@ -5394,9 +5405,10 @@ function _wbBuildSite(forDownload){
         html+='<label class="rf-hc-label"><input type="checkbox" data-hcid="'+m.id+'" '+(mealPick[m.id+'-hc']?'checked':'')+' onchange="mealPick[this.dataset.hcid+\\'-hc\\']=this.checked"> <span>High chair required</span></label>';
       }
       if(_dietaryOn){
-        html+='<div class="diet-accordion" onclick="window._uvToggleDiet(this)" style="margin-top:12px">';
+        var _dm=mealPick[m.id]===_MEAL_DIET_LABEL;
+        html+='<div class="diet-accordion'+(_dm?' open dm':'')+'" onclick="window._uvToggleDiet(this)" style="margin-top:12px">';
         html+='<button class="diet-toggle" type="button"><span class="diet-toggle-label">Dietary requirements</span>'+CHEVRON+'</button>';
-        html+='<div class="diet-body"><div class="chip-row">';
+        html+='<div class="diet-body"><p class="diet-meal-hint">Let us know what you need and we\\'ll arrange a meal to suit.</p><div class="chip-row">';
         var dSel=dietSel[m.id]||new Set();
         DIET.forEach(function(d){
           var key=d[0],label=d[1];
@@ -5424,6 +5436,8 @@ function _wbBuildSite(forDownload){
     var id=btn.dataset.mid,ml=btn.dataset.meal;mealPick[id]=ml;
     btn.closest('.meal-chips').querySelectorAll('.meal-chip').forEach(function(c){c.classList.remove('on');});
     btn.classList.add('on');
+    var sec0=btn.closest('.guest-section');var acc0=sec0&&sec0.querySelector('.diet-accordion');
+    if(acc0){var _isDm=btn.dataset.dietmeal==='1';acc0.classList.toggle('dm',_isDm);if(_isDm)acc0.classList.add('open');}
     var sec=btn.closest('.guest-section');if(sec){var err=sec.querySelector('.meal-error');if(err)err.remove();var chips=sec.querySelector('.meal-chips');if(chips){chips.style.outline='';chips.style.padding='';}}
     _checkStep2();
   };

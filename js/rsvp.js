@@ -2244,6 +2244,8 @@ function _mealCountCardHtml(){
     let noChoice=0;
     guests.forEach(g=>{const m=String(g.meal||'').trim();if(m&&counts[m]!==undefined)counts[m]++;else if(m){counts[m]=(counts[m]||0)+1;}else noChoice++;});
     const max=Math.max(1,...Object.values(counts),noChoice);
+    // Meals not in the couple's list (e.g. the RSVP form's "Dietary requirements" option) get their own row.
+    opts=opts.concat(Object.keys(counts).filter(k=>!opts.includes(k)));
     const rows=opts.map((o,i)=>{const n=counts[o]||0;const c=_colors[(colorStart+i)%_colors.length];return `<div style="display:flex;align-items:center;padding:7px 0${i>0?';border-top:1px solid var(--border)':''}"><span style="width:10px;height:10px;border-radius:3px;background:${c};margin-right:8px;flex-shrink:0"></span><span style="flex:1;font-size:13px;font-weight:500;min-width:0">${_escHtml(o)}</span><span style="flex:0 0 60px;height:6px;border-radius:3px;background:var(--border);margin-left:10px;overflow:hidden"><span style="display:block;height:100%;border-radius:3px;background:${c};width:${Math.round(n/max*100)}%"></span></span><span style="font-size:14px;font-weight:700;margin-left:12px;font-variant-numeric:tabular-nums">${n}</span></div>`;}).join('');
     const noRow=noChoice?`<div style="display:flex;align-items:center;padding:7px 0;border-top:1px solid var(--border)"><span style="width:10px;height:10px;border-radius:3px;background:var(--muted);margin-right:8px;flex-shrink:0"></span><span style="flex:1;font-size:13px;font-weight:500;color:var(--muted);font-style:italic;min-width:0">No selection yet</span><span style="flex:0 0 60px;height:6px;border-radius:3px;background:var(--border);margin-left:10px;overflow:hidden"><span style="display:block;height:100%;border-radius:3px;background:var(--muted);opacity:.4;width:${Math.round(noChoice/max*100)}%"></span></span><span style="font-size:14px;font-weight:700;margin-left:12px;color:var(--muted);font-variant-numeric:tabular-nums">${noChoice}</span></div>`:'';
     return rows+noRow;
@@ -2287,6 +2289,10 @@ function _mealSetupHtml(){
       </div>
       <button onclick="_mealAddOpt()" style="border:1px dashed var(--border);border-radius:7px;background:none;color:var(--gold);padding:7px 10px;width:100%;text-align:left;cursor:pointer;font-size:13px;font-family:inherit">+ Add an option</button>
       ${!opts.length?`<div style="font-size:11px;color:var(--red);margin-top:8px">Add at least one option — the Meal column stays hidden until you do.</div>`:''}
+      <label style="display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--ink);cursor:pointer;margin-top:12px">
+        <input type="checkbox" ${STATE.settings.mealDietaryOn!==false?'checked':''} onchange="_mealDietSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;margin-top:2px"/>
+        <span>Show a “Dietary requirements” meal option<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:2px">For guests none of your meals suit. Choosing it opens their dietary requirements on the RSVP form.</span></span>
+      </label>
       <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 10px"/>
       <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;margin-bottom:${childrenOn?'10px':'0'}">
         <input type="checkbox" ${childrenOn?'checked':''} onchange="_childMealSetOn(this.checked)" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
@@ -2331,6 +2337,12 @@ function _mealSettingsPopup(){
 function _mealSettingsPopupClose(){
   const ov=document.getElementById('meal-settings-overlay');if(ov)ov.remove();
   const cc=document.getElementById('rsvp-mealcount-card');if(cc)cc.innerHTML=_mealCountCardHtml();
+}
+function _mealDietSetOn(on){
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.mealDietaryOn=!!on;
+  saveToStorage();
+  _rsvpRerenderMealCard();
 }
 function _mealSetOn(on){
   if(on && _sbSession && typeof _uvRequirePaid==='function' && !_uvIsPaid()){ _uvRequirePaid('mealChoices'); return; }

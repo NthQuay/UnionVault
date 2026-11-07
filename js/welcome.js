@@ -282,7 +282,7 @@ function wzUpdateUI(){
   const back = document.getElementById('btn-back');
   const txt  = document.getElementById('step-txt');
   if(back) back.style.visibility = wzCur > 1 ? 'visible' : 'hidden';
-  if(txt)  txt.textContent = `Step ${wzCur} of ${WZ_TOTAL}`;
+  if(txt)  txt.innerHTML = `<span class="wz-st-word">Step </span>${wzCur} of ${WZ_TOTAL}`;
 
   // Dynamic heading
   if(wzCur === 2){

@@ -498,7 +498,19 @@ async function _showVendorPortal(token){
   const sections = Array.isArray(vendor.sections)&&vendor.sections.length ? vendor.sections : [];
   const _sectionLabels={timeline:'Day-of Timeline',checklist:'Checklist',contacts:'Other Contacts',budget:'Budget',notes:'Notes'};
   const _chev='<svg class="vpb-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
-  const sectionAccordions=sections.map(key=>{
+  // Inspiration gets its own image grid (not an accordion) — it's the visual part of the brief.
+  const inspoArr = sections.includes('inspo') && Array.isArray(sectionData.inspo) ? sectionData.inspo : [];
+  const _inspoSrc = ref => { const r=String(ref||''); if(!r) return ''; if(/^https?:\/\//.test(r)) return r; return `${_SB_URL}/storage/v1/object/public/${_SB_BUCKET}/${encodeURIComponent(vendor.couple_id||'')}/${encodeURIComponent(r)}`; };
+  const _safeLink = u => { const t=String(u||'').trim(); if(!t) return ''; return /^https?:\/\//i.test(t)?t:('https://'+t); };
+  const inspoHtml = inspoArr.length ? `<div>
+      <style>.vpb-ig{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}@media(min-width:560px){.vpb-ig{grid-template-columns:repeat(3,minmax(0,1fr))}}.vpb-ig figure{margin:0;background:var(--pub-surface);border:1px solid var(--pub-border);border-radius:10px;overflow:hidden}.vpb-ig img{width:100%;aspect-ratio:1;object-fit:cover;display:block}.vpb-ig figcaption{padding:8px 10px 10px}</style>
+      <div style="font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--pub-accent);padding-bottom:8px;border-bottom:1px solid var(--pub-border);margin-bottom:10px">Inspiration</div>
+      <div class="vpb-ig">${inspoArr.map(it=>{ const src=_inspoSrc(it.image); const link=_safeLink(it.link); return `<figure>
+        ${src?`<img src="${_escHtml(src)}" alt="${_escHtml(it.title||'')}" loading="lazy" onerror="this.style.display='none'">`:''}
+        <figcaption><div style="font-size:12.5px;font-weight:500;color:var(--pub-ink)">${_escHtml(it.title||'')}</div>${it.notes?`<div style="font-size:11.5px;color:var(--pub-text);margin-top:3px;line-height:1.45;white-space:pre-wrap">${_escHtml(it.notes)}</div>`:''}${link?`<a href="${_escHtml(link)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;font-size:11.5px;color:var(--pub-accent);margin-top:4px">View link ↗</a>`:''}</figcaption>
+      </figure>`; }).join('')}</div>
+    </div>` : '';
+  const sectionAccordions=sections.filter(k=>k!=='inspo').map(key=>{
     const label=_sectionLabels[key]||key;
     const data=sectionData[key];
     if(!data) return '';
@@ -555,6 +567,7 @@ async function _showVendorPortal(token){
           <span style="font-size:13px;color:var(--pub-ink);font-weight:500;text-align:right">${k==='Guest count'?`<span style="font-size:17px;font-family:'Cormorant Garamond',serif">${v}</span>`:v}</span>
         </div>`).join('')}
       </div>
+      ${inspoHtml}
       ${sectionAccordions?`<div>
         <style>.vpb-acc{background:var(--pub-surface);border:1px solid var(--pub-border);border-radius:12px;overflow:hidden;margin-bottom:0}.vpb-acc summary{list-style:none;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;color:var(--pub-ink)}.vpb-acc summary::-webkit-details-marker{display:none}.vpb-chev{transition:transform .2s;flex-shrink:0}.vpb-acc[open] .vpb-chev{transform:rotate(180deg)}.vpb-body{padding:0 16px 14px;border-top:1px solid var(--pub-border)}</style>
         <div style="font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--pub-accent);padding-bottom:8px;border-bottom:1px solid var(--pub-border);margin-bottom:10px">Also shared with you</div>

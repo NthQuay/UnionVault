@@ -258,6 +258,8 @@ body.dark .inp::placeholder { color: var(--muted); }
 .wz-foot .btn-back { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: none; border: 1.5px solid var(--border); border-radius: 10px; font-size: 12.5px; font-weight: 500; font-family: 'Inter', sans-serif; color: var(--text); cursor: pointer; transition: border-color .14s, color .14s; flex-shrink: 0; }
 .wz-foot .btn-back:hover { border-color: var(--accent); color: var(--ink); }
 .wz-foot .step-txt { font-size: 11px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; flex: 1; }
+/* Phones: "3 of 7" on one line so it never wraps between Back and Continue */
+@media (max-width:460px) { .wz-foot .step-txt { white-space: nowrap; min-width: 0; } .wz-foot .step-txt .wz-st-word { display: none; } }
 .wz-foot .btn-next { display: flex; align-items: center; gap: 7px; padding: 10px 20px; background: var(--accent); border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; color: #fff; cursor: pointer; transition: opacity .14s, transform .1s; flex-shrink: 0; }
 .wz-foot .btn-next:hover { opacity: .87; }
 .wz-foot .btn-next:active { transform: scale(.97); }

@@ -1020,6 +1020,8 @@ body.dark .vbm-panel{background:var(--surface-raised,#1e1d20)}
 .vbm-chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:.5px solid var(--border);background:var(--cream);color:var(--muted);cursor:pointer;transition:all .15s;user-select:none}
 body.dark .vbm-chip{background:var(--surface)}
 .vbm-chip.sel{background:rgba(196,168,130,.18);border-color:var(--gold);color:var(--gold-deep);font-weight:600}
+/* .sel is also the setup wizard's <select> class (width:100%, arrow image): undo it on brief chips */
+.vbm-chips .vbm-chip.sel{width:auto;padding:5px 12px;font-size:12px;font-family:inherit;border:.5px solid var(--gold);border-radius:20px;background:rgba(196,168,130,.18);color:var(--gold-deep);appearance:auto}
 .vbm-expiry-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
 .vbm-expiry-row label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
 .vbm-expiry-row input[type=date]{border:.5px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;color:var(--ink);background:var(--cream);font-family:'Inter',sans-serif}

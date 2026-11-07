@@ -516,10 +516,13 @@ function _openVendorBriefModal(vendorName){
     {id:'budget', label:'Budget summary'},
     {id:'checklist', label:'Checklist'},
     {id:'contacts', label:'Contact details'},
-    {id:'notes', label:'Notes / brief'}
+    {id:'notes', label:'Notes / brief'},
+    {id:'inspo', label:'Inspiration'}
   ];
   // Default: unselected; restore last session's selections if saved
-  const _lastSecs = (STATE.settings&&STATE.settings.vendorBriefLastSections)||[];
+  const _lastSecs = ((STATE.settings&&STATE.settings.vendorBriefLastSections)||[]).filter(x=>x!=='inspo');
+  const _bv=(STATE.vendors||[]).find(v=>v.business===prefill||v.contact===prefill);
+  if(_bv && _vendorInspoItems(_bv).length) _lastSecs.push('inspo');
   const chipsHtml = sections.map(s =>
     `<button type="button" class="vbm-chip${_lastSecs.includes(s.id)?' sel':''}" data-section="${esc(s.id)}" onclick="this.classList.toggle('sel')">${esc(s.label)}</button>`
   ).join('');
@@ -859,6 +862,7 @@ function _vendorCardHtml(v){
     ${lines.join('')}
     ${v.notes?`<div style="font-size:11.5px;color:var(--muted);font-style:italic;margin-top:7px">"${esc(v.notes)}"</div>`:''}
     ${_vendorRelationsPanel(v)}
+    ${_vendorInspoRow(v)}
     ${(()=>{ const _op=_vendorOwedPillHtml(v.id); return _op?`<div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">${_op}</div>`:''; })()}
     <div style="display:flex;gap:6px;margin-top:11px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px;display:inline-flex;align-items:center;gap:4px" onclick="_vendorOpenHub('${v.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>Hub</button>
@@ -3893,3 +3897,101 @@ function confirmDeleteCheckitem(id){
 }
 
 // ══════════════════════════════════════════════
+
+// ── Inspiration on vendor cards ─────────────────────────────────────────────
+// v.inspoIds = ids from STATE.inspo.items. Shown as thumbnails on the card and,
+// when the brief includes "Inspiration", on the vendor's brief page (vendor_brief RPC).
+function _vendorInspoItems(v){
+  const ids=Array.isArray(v&&v.inspoIds)?v.inspoIds:[];
+  const items=(STATE.inspo&&STATE.inspo.items)||[];
+  return ids.map(id=>items.find(i=>i.id===id)).filter(Boolean);
+}
+// Best inspo category for a vendor, from its category/business name.
+function _vendorInspoCat(v){
+  const s=((v&&v.category)||'')+' '+((v&&v.business)||'');
+  const map=[[/cake|pastr|bak|dessert|sweet|cater/i,'Cakes & Sweets'],[/flor|flower/i,'Florals'],[/hair|make ?up|beauty/i,'Hair & Beauty'],
+    [/bridal|dress|gown|attire|suit|tailor/i,'Dresses & Attire'],[/shoe/i,'Shoes'],[/stationer|invit|print/i,'Invitations'],
+    [/venue|location/i,'Venues'],[/decor|styl|hire/i,'Decor']];
+  const hit=map.find(([re])=>re.test(s));
+  return hit?hit[1]:'';
+}
+function _vendorInspoThumb(it, size){
+  const url=typeof _mediaUrl==='function'?_mediaUrl(it.image):(it.image||'');
+  const esc=_escHtml;
+  return url
+    ? `<img src="${esc(url)}" alt="${esc(it.title||'')}" title="${esc(it.title||'')}" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:7px;border:.5px solid var(--border);display:block;flex-shrink:0">`
+    : `<span title="${esc(it.title||'')}" style="width:${size}px;height:${size}px;border-radius:7px;border:.5px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);text-align:center;padding:3px;box-sizing:border-box;overflow:hidden;flex-shrink:0">${esc((it.title||'').slice(0,18))}</span>`;
+}
+function _vendorInspoRow(v){
+  const items=_vendorInspoItems(v);
+  const label=`<div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Inspiration</div>`;
+  if(!items.length){
+    return `<div style="margin-top:11px;border-top:.5px solid var(--border);padding-top:9px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      ${label}
+      <button type="button" onclick="event.stopPropagation();_vendorInspoPicker('${v.id}')" style="background:none;border:none;padding:0;cursor:pointer;font-size:11.5px;color:var(--gold-deep);font-family:inherit">+ Attach inspo</button>
+    </div>`;
+  }
+  const max=5, shown=items.slice(0,max), more=items.length-shown.length;
+  return `<div style="margin-top:11px;border-top:.5px solid var(--border);padding-top:9px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px">
+      ${label}
+      <button type="button" onclick="event.stopPropagation();_vendorInspoPicker('${v.id}')" style="background:none;border:none;padding:0;cursor:pointer;font-size:11.5px;color:var(--gold-deep);font-family:inherit">Edit</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;cursor:pointer" onclick="event.stopPropagation();_vendorInspoPicker('${v.id}')">
+      ${shown.map(it=>_vendorInspoThumb(it,44)).join('')}
+      ${more>0?`<span style="width:44px;height:44px;border-radius:7px;border:.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">+${more}</span>`:''}
+    </div>
+  </div>`;
+}
+let _viPick=null; // {vid, sel:Set, cat}
+function _vendorInspoPicker(vid){
+  const v=(STATE.vendors||[]).find(x=>x.id===vid); if(!v) return;
+  _viPick={vid, sel:new Set(Array.isArray(v.inspoIds)?v.inspoIds:[]), cat:null};
+  const items=(STATE.inspo&&STATE.inspo.items)||[];
+  const cats=[...new Set(items.map(i=>i.category||'Other'))];
+  const want=_vendorInspoCat(v);
+  _viPick.cat = (want && cats.includes(want)) ? want : '';
+  openModal(`Inspiration for ${v.business||'vendor'}`, `<div id="vi-body"></div>`,
+    `<button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
+     <button class="btn btn-primary" onclick="_vendorInspoSave()">Save</button>`);
+  _vendorInspoRender();
+}
+function _vendorInspoSetCat(c){ if(!_viPick) return; _viPick.cat=c; _vendorInspoRender(); }
+function _vendorInspoToggle(id){ if(!_viPick) return; if(_viPick.sel.has(id)) _viPick.sel.delete(id); else _viPick.sel.add(id); _vendorInspoRender(); }
+function _vendorInspoRender(){
+  const el=document.getElementById('vi-body'); if(!el||!_viPick) return;
+  const esc=_escHtml;
+  const items=(STATE.inspo&&STATE.inspo.items)||[];
+  if(!items.length){
+    el.innerHTML=`<div style="text-align:center;padding:22px 10px;font-size:13px;color:var(--muted);line-height:1.5">No inspiration saved yet.<br>Add ideas on the Inspiration page, then attach them here.</div>`;
+    return;
+  }
+  const cats=[...new Set(items.map(i=>i.category||'Other'))];
+  const chip=(c,lab)=>`<button type="button" onclick="_vendorInspoSetCat(${esc(JSON.stringify(c))})" style="font-size:11.5px;padding:4px 11px;border-radius:14px;cursor:pointer;font-family:inherit;border:1px solid ${_viPick.cat===c?'var(--gold)':'var(--border)'};background:${_viPick.cat===c?'rgba(201,168,76,.14)':'transparent'};color:var(--ink);white-space:nowrap">${esc(lab)}</button>`;
+  const list=_viPick.cat?items.filter(i=>(i.category||'Other')===_viPick.cat):items;
+  el.innerHTML=`
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Choose ideas to share in this vendor's brief. Tick <b>Inspiration</b> when you create the brief link.</div>
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px">${chip('','All')}${cats.map(c=>chip(c,c)).join('')}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;max-height:52vh;overflow-y:auto">
+      ${list.map(it=>{const on=_viPick.sel.has(it.id);const url=typeof _mediaUrl==='function'?_mediaUrl(it.image):'';return `<button type="button" onclick="_vendorInspoToggle('${it.id}')" style="position:relative;padding:0;border:2px solid ${on?'var(--gold)':'transparent'};border-radius:10px;background:none;cursor:pointer;text-align:left;font-family:inherit">
+        ${url?`<img src="${esc(url)}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block">`:`<span style="width:100%;aspect-ratio:1;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);padding:6px;box-sizing:border-box">No photo</span>`}
+        <span style="position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:${on?'var(--gold)':'rgba(255,255,255,.85)'};border:1px solid ${on?'var(--gold)':'rgba(0,0,0,.15)'};display:flex;align-items:center;justify-content:center">${on?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</span>
+        <span style="display:block;font-size:11.5px;color:var(--ink);padding:5px 2px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.title||'Untitled')}</span>
+      </button>`;}).join('')||`<div style="grid-column:1/-1;font-size:12.5px;color:var(--muted);padding:14px 0">Nothing in this category yet.</div>`}
+    </div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:10px">${_viPick.sel.size} selected</div>`;
+}
+function _vendorInspoSave(){
+  if(!_viPick) return;
+  const v=(STATE.vendors||[]).find(x=>x.id===_viPick.vid);
+  if(v){
+    // Keep the couple's Inspiration order.
+    const order=((STATE.inspo&&STATE.inspo.items)||[]).map(i=>i.id);
+    v.inspoIds=order.filter(id=>_viPick.sel.has(id));
+    if(!v.inspoIds.length) delete v.inspoIds;
+    saveToStorage();
+  }
+  _viPick=null;
+  closeModalDirect();
+  navigate(_currentPage||'vendors');
+}
