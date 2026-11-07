@@ -5587,6 +5587,11 @@ function _wbBuildSite(forDownload){
 
   window._rfSetAtt=function(i,val){
     if(!group[i])return;group[i].att=val;
+    // A guest who declines can't bring a plus one: their plus one is declined too.
+    if(val===false&&!group[i].isPlus1){
+      var gid=group[i].id;
+      GG.forEach(function(g){ if(g.id===gid&&g.p1){ group.forEach(function(m2){ if(m2.isPlus1&&m2.id===g.p1) m2.att=false; }); } });
+    }
     _renderAttendance();
     // Said yes to a plus one: put the cursor straight in the name box.
     if(val&&group[i].isPlus1){var pb=document.querySelector('.p1-box[data-pid="'+group[i].id+'"]');if(pb&&!pb.value)pb.focus();}
