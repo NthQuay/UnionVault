@@ -5207,7 +5207,9 @@ function _wbBuildSite(forDownload){
 .plus-one-added .member-row{padding-top:2px}
 .plus-one-name-input.p1-box:focus{border-color:${_uvPal.accent}}
 .p1-nm{font-size:15px;color:${t2.text};overflow-wrap:anywhere}
-.p1-edit{background:none;border:none;padding:0;margin-left:8px;font-family:inherit;font-size:12px;color:${_uvPal.accent};text-decoration:underline;cursor:pointer}
+.p1-edit{background:none;border:none;padding:0;font-family:inherit;font-size:11.5px;color:${_uvPal.accent};text-decoration:underline;cursor:pointer}
+.p1-meta{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.p1-meta .member-st{display:inline}
 .p1-slot .p1-box{width:100%}
 .plus-one-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${t2.text};margin:0 0 4px;opacity:.7}
 .guest-section{padding:12px 0;text-align:left}
@@ -5576,15 +5578,22 @@ function _wbBuildSite(forDownload){
   function _p1Slot(pid){
     var nm=plus1Names[pid]||'';
     if(p1Edit[pid]||!String(nm).trim()) return '<input class="plus-one-name-input p1-box" type="text" placeholder="Their full name (required)" required aria-required="true" value="'+_esc(nm)+'" data-pid="'+pid+'" oninput="window._uvSetP1Name(this)" onblur="window._uvP1Done(this)" onkeydown="if(event.keyCode===13)this.blur()" autocomplete="name">';
-    return '<span class="p1-nm">'+_esc(nm)+'</span><button type="button" class="p1-edit" onclick="window._uvP1Edit(this)">Edit</button>';
+    return '<span class="p1-nm">'+_esc(nm)+'</span>';
+  }
+  // Line under the plus one: "Edit" (once a name is shown) on the left, then the status.
+  function _p1Meta(m){
+    var showEdit=m.att===true&&!p1Edit[m.id]&&String(plus1Names[m.id]||'').trim();
+    return (showEdit?'<button type="button" class="p1-edit" data-pid="'+m.id+'" onclick="window._uvP1Edit(this)">Edit</button>':'')+_attSt(m,'Attending','Not bringing one');
   }
   // Swap just the name slot (not the whole list) so a tap on ✓ / ✗ or Next still lands.
   function _p1Redraw(pid,focus){
     var sl=document.querySelector('.p1-slot[data-pid="'+pid+'"]');if(!sl)return;
     sl.innerHTML=_p1Slot(pid);
+    var mt=document.querySelector('.p1-meta[data-pid="'+pid+'"]');
+    var gm=group.filter(function(x){return x.id===pid;})[0];if(mt&&gm)mt.innerHTML=_p1Meta(gm);
     var inp=sl.querySelector('input');if(focus&&inp){inp.focus();var v=inp.value;inp.value='';inp.value=v;}
   }
-  window._uvP1Edit=function(btn){var sl=btn.closest('.p1-slot');if(!sl)return;var pid=sl.getAttribute('data-pid');p1Edit[pid]=true;_p1Redraw(pid,true);};
+  window._uvP1Edit=function(btn){var pid=btn.getAttribute('data-pid');if(!pid)return;p1Edit[pid]=true;_p1Redraw(pid,true);};
   window._uvP1Done=function(inp){var pid=inp.getAttribute('data-pid');p1Edit[pid]=false;if((plus1Names[pid]||'').trim())_p1Redraw(pid,false);_checkStep1();};
   function _renderAttendance(){
     var container=document.getElementById('attend-members');if(!container)return;
@@ -5604,7 +5613,7 @@ function _wbBuildSite(forDownload){
         // "+ Add their name" button if it's left empty.
         html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><div class="member-name">'+
           (m.att===true?'<div class="p1-slot" data-pid="'+m.id+'">'+_p1Slot(m.id)+'</div>':'Will you be bringing a plus one?')+
-          _attSt(m,'Attending','Not bringing one')+'</div>'+_attBtns(i,m,'Bringing a plus one')+'</div></div>';
+          '<div class="p1-meta" data-pid="'+m.id+'">'+_p1Meta(m)+'</div></div>'+_attBtns(i,m,'Bringing a plus one')+'</div></div>';
       });
     }
     container.innerHTML=html;
