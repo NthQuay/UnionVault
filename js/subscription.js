@@ -288,16 +288,16 @@ async function _uvOpenSubPage(){
       const ts=p.monthly&&p.months>1?_uvFormatMoney(p.monthly*p.months):'';
       const pill=isCur?'Current':isSel&&!isCur?'Selected':isPopular&&!isCur&&!isSel?'Popular':'';
       if(p.months===1){
-        return `<div data-plan-months="${p.months}" style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCur?'default':'pointer'};transition:all .15s;position:relative"
-          ${isCur?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='${isSel?'var(--gold)':'var(--border)'}'" `}>
-          ${pill?`<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">${pill}</div>`:''}
+        return `<div data-plan-months="${p.months}" data-sel="${isSel?1:0}" data-pop="${isPopular&&!isSel?1:0}" data-cur="${isCur?1:0}" style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCur?'default':'pointer'};transition:all .15s;position:relative"
+          ${isCur?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor=(this.dataset.sel==='1'||this.dataset.pop==='1')?'var(--gold)':'var(--border)'" `}>
+          ${pill?`<div class="uv-plan-pill" style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">${pill}</div>`:''}
           <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">${ms||'Price TBC'}</div>
         </div>`;
       }
-      return `<div data-plan-months="${p.months}" style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCur?'default':'pointer'};transition:all .15s;position:relative"
-        ${isCur?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='${isSel?'var(--gold)':'var(--border)'}'" `}>
-        ${pill?`<div style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">${pill}</div>`:''}
+      return `<div data-plan-months="${p.months}" data-sel="${isSel?1:0}" data-pop="${isPopular&&!isSel?1:0}" data-cur="${isCur?1:0}" style="border:1.5px solid ${border};background:${bg};border-radius:10px;padding:12px;cursor:${isCur?'default':'pointer'};transition:all .15s;position:relative"
+        ${isCur?'':`onclick="_uvSelectSettingsPlan(${p.months})" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor=(this.dataset.sel==='1'||this.dataset.pop==='1')?'var(--gold)':'var(--border)'" `}>
+        ${pill?`<div class="uv-plan-pill" style="position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px">${pill}</div>`:''}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
           <div>
             <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
@@ -363,16 +363,28 @@ function _uvSelectSettingsPlan(months){
     return;
   }
   _uvSelectedSettingsMonths=months;
+  // Rebuild each card's state from scratch — the tag, border and tint all follow the CURRENT
+  // pick. (Patching only the tags that happened to exist left "Selected" on a card you had
+  // moved away from, and a newly picked card with no tag at all.)
   document.querySelectorAll('[data-plan-months]').forEach(function(el){
     const m=parseInt(el.dataset.planMonths);
+    if(el.dataset.cur==='1') return;               // the current plan keeps its own look
     const sel=m===months;
-    el.style.borderColor=sel?'var(--gold)':'var(--border)';
-    el.style.background=sel?'rgba(196,168,130,.12)':'transparent';
-    var badge=el.querySelector('div[style*="position:absolute"]');
-    if(badge&&badge.textContent.trim()!=='Current'){
-      badge.textContent=sel?'Selected':(_UV_PLANS.find(function(p){return p.months===m&&!_uvTier.match(/full/)&&p.months===12;})?'Popular':'');
-      badge.style.display=sel||(m===12)?'block':'none';
+    const pop=!sel && m===12;
+    el.dataset.sel=sel?'1':'0';
+    el.dataset.pop=pop?'1':'0';
+    el.style.borderColor=(sel||pop)?'var(--gold)':'var(--border)';
+    el.style.background=sel?'rgba(196,168,130,.12)':(pop?'rgba(196,168,130,.05)':'transparent');
+    var badge=el.querySelector('.uv-plan-pill');
+    var txt=sel?'Selected':(pop?'Popular':'');
+    if(!txt){ if(badge) badge.remove(); return; }
+    if(!badge){
+      badge=document.createElement('div');
+      badge.className='uv-plan-pill';
+      badge.setAttribute('style','position:absolute;top:-8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);background:var(--cream);padding:0 6px');
+      el.insertBefore(badge, el.firstChild);
     }
+    badge.textContent=txt;
   });
   var cta=document.querySelector('.btn-primary[onclick*="_uvGoCheckout"]');
   if(cta){
