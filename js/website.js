@@ -5209,7 +5209,7 @@ function _wbBuildSite(forDownload){
 .p1-nm{font-size:15px;color:${t2.text};overflow-wrap:anywhere}
 .p1-edit{background:none;border:none;padding:0;font-family:inherit;font-size:11.5px;color:${_uvPal.accent};text-decoration:underline;cursor:pointer}
 .p1-meta{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.p1-meta .p1-edit{margin-left:auto}
+.p1-meta .p1-edit{margin-left:2px}
 .p1-meta .member-st{display:inline}
 .p1-slot .p1-box{width:100%}
 .plus-one-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${t2.text};margin:0 0 4px;opacity:.7}
@@ -5581,7 +5581,7 @@ function _wbBuildSite(forDownload){
     if(p1Edit[pid]||!String(nm).trim()) return '<input class="plus-one-name-input p1-box" type="text" placeholder="Their full name (required)" required aria-required="true" value="'+_esc(nm)+'" data-pid="'+pid+'" oninput="window._uvSetP1Name(this)" onblur="window._uvP1Done(this)" onkeydown="if(event.keyCode===13)this.blur()" autocomplete="name">';
     return '<span class="p1-nm">'+_esc(nm)+'</span>';
   }
-  // Line under the plus one: the status on the left, "Edit" (once a name is shown) on the right.
+  // Line under the plus one: the status, then "Edit" right beside it (once a name is shown).
   function _p1Meta(m){
     var showEdit=m.att===true&&!p1Edit[m.id]&&String(plus1Names[m.id]||'').trim();
     return _attSt(m,'Attending','Not bringing one')+(showEdit?'<button type="button" class="p1-edit" data-pid="'+m.id+'" onclick="window._uvP1Edit(this)">Edit</button>':'');
