@@ -3175,3 +3175,35 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
 .det-rsvp-count span{font-size:13px;color:var(--ink)}
 .det-rsvp-count small{color:var(--muted);font-size:11.5px}
 .det-rsvp-count em{font-style:normal;font-size:11.5px;color:var(--muted);margin-left:auto}
+
+/* ── App colour picker (js/colorpicker.js) — replaces the native colour dialog ── */
+.uvcp-back{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;background:rgba(20,16,12,.45);padding:16px}
+.uvcp-back.open{display:flex}
+html.uvcp-lock,html.uvcp-lock body{overflow:hidden}
+.uvcp{width:100%;max-width:340px;max-height:calc(100dvh - 32px);overflow-y:auto;background:var(--cream);color:var(--ink);border:1px solid var(--border);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.28);padding:16px 16px 14px;font-family:'Inter',sans-serif}
+.uvcp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.uvcp-head span{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500}
+.uvcp-x{background:none;border:none;font-size:22px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 4px}
+.uvcp-sv{position:relative;height:170px;border-radius:10px;cursor:crosshair;touch-action:none;overflow:hidden}
+.uvcp-sv-w,.uvcp-sv-b{position:absolute;inset:0;pointer-events:none}
+.uvcp-sv-w{background:linear-gradient(to right,#fff,rgba(255,255,255,0))}
+.uvcp-sv-b{background:linear-gradient(to top,#000,rgba(0,0,0,0))}
+.uvcp-knob{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.3);pointer-events:none}
+.uvcp-hue{position:relative;height:14px;margin:14px 9px 0;border-radius:8px;cursor:pointer;touch-action:none;background:linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%)}
+.uvcp-hue::before{content:'';position:absolute;inset:-10px -9px}
+.uvcp-hue-knob{position:absolute;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.3);pointer-events:none}
+.uvcp-row{display:flex;align-items:center;gap:10px;margin-top:14px}
+.uvcp-prev{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);flex-shrink:0}
+.uvcp-hex{flex:1;display:flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:10px;padding:0 10px;background:var(--surface);height:38px}
+.uvcp-hex span{color:var(--muted);font-family:monospace;font-size:14px}
+.uvcp-hex input{flex:1;min-width:0;border:none;background:none;outline:none;color:var(--ink);font-family:monospace;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.uvcp-lbl{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 7px}
+.uvcp-sw{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.uvcp-sw button{aspect-ratio:1;border-radius:50%;border:1px solid rgba(0,0,0,.12);cursor:pointer;padding:0}
+.uvcp-sw button.on{box-shadow:0 0 0 2px var(--cream),0 0 0 4px var(--gold-deep)}
+.uvcp-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+@media (max-width:520px){
+  .uvcp-back{align-items:flex-end;padding:0}
+  .uvcp{max-width:none;border-radius:18px 18px 0 0;padding:16px 18px calc(16px + env(safe-area-inset-bottom))}
+  .uvcp-sv{height:190px}
+}

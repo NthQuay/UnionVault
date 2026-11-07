@@ -4,7 +4,7 @@ const SHELL = [
   '/css/fonts.css', '/css/app.css', '/css/landing.css', '/css/setup-wizard.css',
   '/js/wallpaper.js', '/js/state.js', '/js/utils.js', '/js/navigation.js',
   '/js/dashboard.js', '/js/details.js', '/js/guests.js', '/js/timeline.js',
-  '/js/send-sheet.js', '/js/rsvp.js', '/js/checklist.js', '/js/vendors.js',
+  '/js/send-sheet.js', '/js/colorpicker.js', '/js/rsvp.js', '/js/checklist.js', '/js/vendors.js',
   '/js/budget.js', '/js/seating.js', '/js/supabase.js', '/js/subscription.js', '/js/autocomplete.js',
   '/js/floorplan.js', '/js/inspiration.js', '/js/visionboard.js',
   '/js/wishingwell.js', '/js/website.js', '/js/comms.js', '/js/sent-log.js', '/js/invitations.js', '/js/events.js',
