@@ -5185,7 +5185,7 @@ function _wbBuildSite(forDownload){
 #uv-rsvp-sheet .rf-pill{padding:10px 12px;border-radius:8px;border:1.5px solid ${t2.heading}22;background:${t2.background||t2.page};text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:${t2.text};transition:all .15s;user-select:none;font-family:inherit}
 #uv-rsvp-sheet .rf-pill.yes{background:#EAF3EC;border-color:#3D9454;color:#1F6B38}
 #uv-rsvp-sheet .rf-pill.no{background:#F7EFED;border-color:#C05840;color:#8B3324}
-#uv-rsvp-sheet .rf-pill.rf-ic{width:44px;height:44px;border-radius:50%;padding:0;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+#uv-rsvp-sheet .rf-pill.rf-yn{padding:9px 13px;white-space:nowrap;min-height:40px}
 .member-st{display:block;font-size:11.5px;margin-top:2px;color:${t2.text};opacity:.6}
 .member-st.yes{color:${_uvScheme==='dark'?'#7BC28A':'#1F6B38'};opacity:1}
 .member-st.no{color:${_uvScheme==='dark'?'#FCA5A5':'#8B3324'};opacity:1}
@@ -5551,17 +5551,18 @@ function _wbBuildSite(forDownload){
     _checkStep1();
   };
 
-  // Step 1 rows: the name keeps the row; round ✓ / ✗ buttons on the right and the
-  // choice spelled out under the name ("Attending" / "Declined").
+  // Step 1 rows: the name keeps the row; short "✓ Yes" / "✗ No" buttons on the right,
+  // and once answered the choice is spelled out under the name ("✓ Attending" / "✗ Declined").
   function _attSt(m,yesT,noT){
     var c=m.att===true?' yes':m.att===false?' no':'';
-    var t=m.att===true?'&#10003; '+(yesT||'Attending'):m.att===false?'&#10007; '+(noT||'Declined'):'Tap &#10003; or &#10007;';
+    if(m.att!==true&&m.att!==false) return '';
+    var t=m.att===true?'&#10003; '+(yesT||'Attending'):'&#10007; '+(noT||'Declined');
     return '<span class="member-st'+c+'">'+t+'</span>';
   }
   function _attBtns(i,m,who){
     var w=_esc(who);
-    return '<div class="rf-pills"><button type="button" class="rf-pill rf-ic'+(m.att===true?' yes':'')+'" aria-label="'+w+' attending" aria-pressed="'+(m.att===true)+'" onclick="window._rfSetAtt('+i+',true)">&#10003;</button>'+
-      '<button type="button" class="rf-pill rf-ic'+(m.att===false?' no':'')+'" aria-label="'+w+' declined" aria-pressed="'+(m.att===false)+'" onclick="window._rfSetAtt('+i+',false)">&#10007;</button></div>';
+    return '<div class="rf-pills"><button type="button" class="rf-pill rf-yn'+(m.att===true?' yes':'')+'" aria-label="'+w+': yes" aria-pressed="'+(m.att===true)+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Yes</button>'+
+      '<button type="button" class="rf-pill rf-yn'+(m.att===false?' no':'')+'" aria-label="'+w+': no" aria-pressed="'+(m.att===false)+'" onclick="window._rfSetAtt('+i+',false)">&#10007; No</button></div>';
   }
   function _renderAttendance(){
     var container=document.getElementById('attend-members');if(!container)return;
@@ -5577,7 +5578,7 @@ function _wbBuildSite(forDownload){
         if(!m.isPlus1)return;
         var pn=_esc(plus1Names[m.id]||'');
         // Ask first ("Will you be bringing a plus one?"); only a yes opens the name box.
-        html+='<div class="plus-one-added"><div class="member-row"><div class="member-name">Will you be bringing a plus one?'+_attSt(m,'Yes','No')+'</div>'+_attBtns(i,m,'Bringing a plus one')+'</div>'+
+        html+='<div class="plus-one-added"><div class="member-row"><div class="member-name">Will you be bringing a plus one?'+_attSt(m,'Bringing a plus one','Not bringing one')+'</div>'+_attBtns(i,m,'Bringing a plus one')+'</div>'+
           (m.att===true?'<div class="p1-name-wrap"><p class="plus-one-label">Their full name</p><input class="plus-one-name-input p1-box" type="text" placeholder="e.g. Jordan Smith" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" autocomplete="name"></div>':'')+
           '</div>';
       });
