@@ -5103,8 +5103,6 @@ function _wbBuildSite(forDownload){
   // Vegetarian / pescatarian / vegan come from the meal step when the guest gets one (and the
   // Alternative meal option is on), so those boxes aren't shown again under Dietary requirements.
   var _ALT_KEYS=['vegetarian','pescatarian','vegan'];
-  // A meal whose name says vegetarian / pescatarian / vegan records that requirement too.
-  function _mealKeyFromName(n){var t=String(n||'').toLowerCase();if(/\\bvegan\\b/.test(t))return 'vegan';if(/\\bpescatarian\\b/.test(t))return 'pescatarian';if(/\\bvegetarian\\b/.test(t))return 'vegetarian';return null;}
   function _altKey(v){for(var i=0;i<_MEAL_ALT_OPTS.length;i++){if(_MEAL_ALT_OPTS[i][0]===v)return _MEAL_ALT_OPTS[i][1];}return null;}
   var _phoneReq=${_fPhone.show&&_fPhone.required?'true':'false'},_emailReq=${_fEmail.show&&_fEmail.required?'true':'false'},_addrReq=${_fAddr.show&&_fAddr.required?'true':'false'};
   var group=[],plus1Names={},dietSel={},dietNotes={},mealPick={};
@@ -5431,7 +5429,7 @@ function _wbBuildSite(forDownload){
       if(_highChairOn&&(isInf||isCh)){
         html+='<label class="rf-hc-label"><input type="checkbox" data-hcid="'+m.id+'" '+(mealPick[m.id+'-hc']?'checked':'')+' onchange="mealPick[this.dataset.hcid+\\'-hc\\']=this.checked"> <span>High chair required</span></label>';
       }
-      if(_dietaryOn){
+      if(_dietaryOn&&!isInf){ // infants don't get a meal, so no dietary requirements
         html+='<div class="diet-accordion" onclick="window._uvToggleDiet(this)" style="margin-top:12px">';
         var dSel=dietSel[m.id]||new Set();
         var _hideAlt=_hadChips&&_mealDietOn;
@@ -5489,8 +5487,6 @@ function _wbBuildSite(forDownload){
       altOpen[id]=false;mealPick[id]=ml;
       if(pills){pills.hidden=true;pills.querySelectorAll('.alt-pill').forEach(function(p){p.classList.remove('on');});}
       _clearAutoDiet(sec0,id);
-      var _mk=_mealKeyFromName(ml);
-      if(_mk&&!(dietSel[id]&&dietSel[id].has(_mk))){_setDiet(sec0,id,_mk,true);autoDiet[id]=_mk;}
     }
     btn.closest('.meal-chips').querySelectorAll('.meal-chip').forEach(function(c){c.classList.remove('on');});
     btn.classList.add('on');
