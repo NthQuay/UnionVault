@@ -41,3 +41,6 @@ R2 confirm a real send appears in Communications → Sent. P7 real public RSVP e
 - **Right alignment**: per-section heading/intro (`l.align='right'` → `.rgt`) and body (`l.body='right'` → `.b-right`), plus site-wide `t.align` / `t.bodyAlign` = right. Paragraphs, details rows, timetable, links, buttons, FAQ mirror Left; Editorial drop cap off when right-aligned. Per-section buttons only show with "Apply alignment globally" off (as before).
 - **New badges** on Editorial and Atelier in the Format Style picker (`WB_FORMATS[].isNew`).
 - Regression: Classic/Modern output only gains rules for the new classes; edge builds in all 4 formats; RSVP matrix passes.
+
+## v509.3 (accepted)
+- Subscription page: plan tags/borders rebuilt from the current pick on every tap (`_uvSelectSettingsPlan`). Before, "Selected" stayed on a card you had moved away from and the newly picked card got no tag; hover-out reset borders to the page-load selection.
