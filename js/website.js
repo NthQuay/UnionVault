@@ -44,6 +44,7 @@ const WB_FONTS = [
   ["'Cormorant Garamond',serif", 'Cormorant Garamond'],
   ["'Cinzel',serif",             'Cinzel'],
   ["'Playfair Display',serif",   'Playfair Display'],
+  ["'Bodoni Moda',serif",        'Bodoni Moda'],
   ["'Lora',serif",               'Lora'],
   ["'Libre Baskerville',serif",  'Libre Baskerville'],
   ["'Inter',sans-serif",         'Inter'],
@@ -216,7 +217,7 @@ function _wbSite(){
   if(typeof t.btnBevel!=='boolean') t.btnBevel=false;
   if(t.shadow==='soft') t.shadow=33; else if(t.shadow==='lifted') t.shadow=66; else if(typeof t.shadow!=='number') t.shadow=0; else t.shadow=Math.max(0,Math.min(100,t.shadow));
   if(t.cardStyle==='bordered') t.cardStyle=33; else if(t.cardStyle==='bevel') t.cardStyle=66; else if(typeof t.cardStyle!=='number') t.cardStyle=0; else t.cardStyle=Math.max(0,Math.min(100,t.cardStyle));
-  if(!['modern','editorial'].includes(t.format)) t.format='modern';
+  if(!['modern','editorial','magazine','atelier'].includes(t.format)) t.format='modern';
   t.rsvpMode='modal';
   if(!['thin','medium','bold'].includes(t.btnBorder)) t.btnBorder='medium';
   if(!['center','left'].includes(t.align)) t.align='center';
@@ -962,26 +963,7 @@ function _wbThemeBody(){
   let body='';
 
   if(_wbThemeTab==='colour'){
-    const fmtStyle = `<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
-      <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:4px">FORMAT STYLE</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div onclick="_wbSet('format','modern')" style="cursor:pointer;border:1.5px solid ${t.format==='modern'?'var(--gold)':'var(--border)'};background:${t.format==='modern'?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
-          <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;padding:2px">
-            <span style="font-size:5.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
-            <span style="font-size:12px;font-weight:700;color:#3A302A;font-family:Inter,sans-serif;letter-spacing:-.01em">Event Details</span>
-          </div>
-          <div style="font-size:11px;font-weight:500;color:${t.format==='modern'?'var(--gold)':'var(--sub)'}">Modern${t.format==='modern'?' ✓':''}</div>
-        </div>
-        <div onclick="_wbSet('format','editorial')" style="cursor:pointer;border:1.5px solid ${t.format==='editorial'?'var(--gold)':'var(--border)'};background:${t.format==='editorial'?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
-          <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;padding:2px">
-            <span style="font-size:4.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
-            <div style="width:16px;height:0.5px;background:#C4A882;margin:1px 0"></div>
-            <span style="font-size:11px;font-weight:400;font-style:italic;color:#3A302A;font-family:'Cormorant Garamond',Georgia,serif">Event Details</span>
-          </div>
-          <div style="font-size:11px;font-weight:500;color:${t.format==='editorial'?'var(--gold)':'var(--sub)'}">Editorial${t.format==='editorial'?' ✓':''}</div>
-        </div>
-      </div>
-    </div>`;
+    const fmtStyle = _wbFormatPickerHtml(t);
     const presets = `<div class="wb-slot-lbl" style="margin-bottom:8px">Presets</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">
         ${Object.keys(WB_PRESETS).map(k=>{ const p=WB_PRESETS[k]; const sel=t.preset===k;
@@ -1307,6 +1289,51 @@ function _wbCorners(c){
   saveToStorage();
   _wbRepaintTheme();
 }
+// ── FORMAT STYLE picker. Stored keys stay as they were so saved sites never change look:
+//   'modern' is shown as "Classic", 'editorial' as "Modern". 'magazine' (Editorial) and
+//   'atelier' (Atelier) are the two photo-led formats: each section's first photo sits
+//   beside its text, alternating sides — also on phones, where the text box overlaps it.
+const WB_FORMATS = [
+  {k:'modern',   label:'Classic'},
+  {k:'editorial',label:'Modern'},
+  {k:'magazine', label:'Editorial'},
+  {k:'atelier',  label:'Atelier'}
+];
+function _wbFormatThumb(k){
+  const box='height:46px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;overflow:hidden;position:relative';
+  if(k==='modern') return `<div style="${box};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="font-size:5.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span><span style="font-size:12px;font-weight:700;color:#3A302A;font-family:Inter,sans-serif;letter-spacing:-.01em">Event Details</span></div>`;
+  if(k==='editorial') return `<div style="${box};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:4.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span><div style="width:16px;height:.5px;background:#C4A882;margin:1px 0"></div><span style="font-size:11px;font-style:italic;color:#3A302A;font-family:'Cormorant Garamond',Georgia,serif">Event Details</span></div>`;
+  if(k==='magazine') return `<div style="${box};display:grid;grid-template-columns:1fr 1fr"><div style="background:linear-gradient(160deg,#D9C7B2,#9C8572)"></div><div style="display:flex;flex-direction:column;justify-content:center;padding:0 5px;gap:2px"><span style="font-size:3.5px;letter-spacing:.2em;color:#8B6B4A;font-family:Inter,sans-serif">Nº 02</span><span style="font-size:10px;line-height:1;color:#1D1916;font-family:'Bodoni Moda',Didot,'Playfair Display',serif">The <i>big</i> day</span><span style="height:1px;background:#1D191622;margin-top:2px"></span><span style="height:1px;background:#1D191622;margin-top:2px"></span></div></div>`;
+  return `<div style="${box}"><div style="position:absolute;left:30%;right:6px;top:8px;bottom:8px;background:#E2D6C5"></div><div style="position:absolute;left:6px;top:5px;width:34%;bottom:5px;background:linear-gradient(160deg,#D9C7B2,#9C8572);box-shadow:0 3px 6px -3px rgba(0,0,0,.4)"></div><span style="position:absolute;left:48%;top:14px;font-size:9px;line-height:1;color:#1D1916;font-family:'Playfair Display',serif">Our <i style="color:#9A7B3C">story</i></span><span style="position:absolute;right:9px;bottom:7px;font-size:14px;line-height:1;color:transparent;-webkit-text-stroke:.5px #9A7B3C;font-family:'Playfair Display',serif">01</span></div>`;
+}
+function _wbFormatPickerHtml(t){
+  return `<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:4px">FORMAT STYLE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${WB_FORMATS.map(f=>{const on=t.format===f.k;return `<div onclick="_wbSetFormat('${f.k}')" style="cursor:pointer;border:1.5px solid ${on?'var(--gold)':'var(--border)'};background:${on?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
+          ${_wbFormatThumb(f.k)}
+          <div style="font-size:11px;font-weight:500;color:${on?'var(--gold)':'var(--sub)'}">${f.label}${on?' ✓':''}</div>
+        </div>`;}).join('')}
+      </div>
+    </div>`;
+}
+// Editorial and Atelier are built around a magazine serif. Picking one switches the heading
+// font to its partner (Bodoni Moda / Playfair Display) — but only if the couple hadn't chosen
+// their own; the previous font is remembered and restored when they switch back.
+const WB_FORMAT_FONT = {magazine:"'Bodoni Moda',serif", atelier:"'Playfair Display',serif"};
+function _wbSetFormat(k){
+  const t=_wbSite().theme;
+  if(t.format===k) return;
+  const autoNow = t.fmtFontAuto && WB_FORMAT_FONT[t.format] && t.headFont===WB_FORMAT_FONT[t.format];
+  if(autoNow){ t.headFont=t.fmtFontPrev||t.headFont; delete t.fmtFontAuto; delete t.fmtFontPrev; }
+  if(WB_FORMAT_FONT[k]){
+    if(!t.fmtFontAuto){ t.fmtFontPrev=t.headFont; }
+    t.headFont=WB_FORMAT_FONT[k]; t.fmtFontAuto=true;
+  }
+  t.format=k;
+  saveToStorage();
+  _wbRepaintTheme();
+}
 function _wbSet(field, val){
   const t=_wbSite().theme;
   if(t[field]===val) return;
@@ -1368,7 +1395,9 @@ function _wbRole(role, hex){
   _wbRepaintTheme();
 }
 function _wbFont(which, val){
-  _wbSite().theme[which]=val;
+  const _t=_wbSite().theme;
+  if(which==='headFont'){ delete _t.fmtFontAuto; delete _t.fmtFontPrev; } // their own choice now
+  _t[which]=val;
   saveToStorage();
   _wbRepaintTheme();
 }
@@ -1381,26 +1410,7 @@ function _wbRepaintTheme(){
     const pal=(STATE.inspo&&Array.isArray(STATE.inspo.colors))?STATE.inspo.colors:[];
     let body='';
     if(_wbThemeTab==='colour'){
-      const fmtStyle=`<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
-      <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;margin-top:4px">FORMAT STYLE</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div onclick="_wbSet('format','modern')" style="cursor:pointer;border:1.5px solid ${t.format==='modern'?'var(--gold)':'var(--border)'};background:${t.format==='modern'?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
-          <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;padding:2px">
-            <span style="font-size:5.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
-            <span style="font-size:12px;font-weight:700;color:#3A302A;font-family:Inter,sans-serif;letter-spacing:-.01em">Event Details</span>
-          </div>
-          <div style="font-size:11px;font-weight:500;color:${t.format==='modern'?'var(--gold)':'var(--sub)'}">Modern${t.format==='modern'?' ✓':''}</div>
-        </div>
-        <div onclick="_wbSet('format','editorial')" style="cursor:pointer;border:1.5px solid ${t.format==='editorial'?'var(--gold)':'var(--border)'};background:${t.format==='editorial'?'rgba(196,168,130,.1)':'var(--cream)'};border-radius:9px;padding:10px 8px;text-align:center;transition:all .15s">
-          <div style="height:42px;background:#EFE8DC;border-radius:5px;margin-bottom:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;padding:2px">
-            <span style="font-size:4.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8B6B4A;font-family:Inter,sans-serif">The Big Day</span>
-            <div style="width:16px;height:0.5px;background:#C4A882;margin:1px 0"></div>
-            <span style="font-size:11px;font-weight:400;font-style:italic;color:#3A302A;font-family:'Cormorant Garamond',Georgia,serif">Event Details</span>
-          </div>
-          <div style="font-size:11px;font-weight:500;color:${t.format==='editorial'?'var(--gold)':'var(--sub)'}">Editorial${t.format==='editorial'?' ✓':''}</div>
-        </div>
-      </div>
-    </div>`;
+      const fmtStyle = _wbFormatPickerHtml(t);
       const presets=`<div class="wb-slot-lbl" style="margin-bottom:8px">Presets</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">
         ${Object.keys(WB_PRESETS).map(k=>{ const p=WB_PRESETS[k]; const sel=t.preset===k;
@@ -4191,6 +4201,13 @@ function _wbBuildSite(forDownload){
   // follows, it renders full-width — a half-width image with no text beside it is just a
   // small image next to a hole, and a layout that silently leaves a hole is worse than
   // one that quietly declines to make one.
+  // Editorial ('magazine') and Atelier: photo-led spreads. Each section's FIRST photo is its
+  // feature — it sits beside the text, alternating sides from one section to the next (an
+  // image block set to Left/Right keeps that side). Sections without a photo are text only.
+  const _fx = (t.format==='magazine'||t.format==='atelier');
+  const _fxNums = sections.filter(x=>x!=='home');
+  let _fxAlt = 0;
+  const _fxLabel={details:'The Big Day',timeline:'The Day',rsvp:'Kindly Reply',gallery:'Moments',accommodation:'Stay',wishingwell:'With Gratitude',wishing:'With Gratitude',countdown:'Save the Date',schedule:'Order of the Day',faq:'Questions',registry:'Registry',story:'Our Story'};
   const wrap=(k, content, extra)=>{
     const l=(w.layout||{})[k]||{};
     // bg is 0–100 (px max-width scale); legacy 'page'/'band' strings also handled.
@@ -4207,6 +4224,16 @@ function _wbBuildSite(forDownload){
     const cls = [extra||'', band?'band':'', left?'lft':'', 'b-'+body].filter(Boolean).join(' ');
 
     const blocks=_wbBlocks(k).filter(b=>!b.off);
+    let feat='', featBlk=null;
+    if(_fx){
+      for(const b of blocks){
+        if(b.type!=='img') continue;
+        const ids=(b.ids||[]).filter(id=>!_mediaMissing(id));
+        if(ids.length){ feat=ids[0]; featBlk=b; break; }
+      }
+    }
+    const fxNo = _fxNums.indexOf(k)+1;
+    const fxNoStr = (fxNo<10?'0':'')+fxNo;
 
     // Render ONE block. Returns '' when the block has nothing in it — an intro with no
     // text, an images block with no images. An empty block is not a gap; it is nothing.
@@ -4214,6 +4241,13 @@ function _wbBuildSite(forDownload){
       if(b.type==='head') {
         const hd=_wbHeading(k);
         if(!hd) return '';
+        if(_fx){
+          const lab=_wbIsCustom(k)?'':(_fxLabel[k]||'');
+          const ey = t.format==='magazine'
+            ? `Nº ${fxNoStr}${lab?' — '+lab:''}`
+            : (lab||'');
+          return (ey?`<p class="fx-eyebrow">${_escHtml(ey.toUpperCase())}</p>`:'')+`<h2>${_escHtml(hd)}</h2>`;
+        }
         if(t.format==='editorial'){
           const _ewMap={details:'The Big Day',timeline:'The Day',rsvp:'Attend',gallery:'Moments',accommodation:'Stay',wishing:'With Gratitude',countdown:'Save the Date',schedule:'Order of the Day',faq:'Questions',registry:'Registry'};
           const ew=_wbIsCustom(k)?'':(_ewMap[k]||'');
@@ -4322,6 +4356,12 @@ function _wbBuildSite(forDownload){
     const parts=[];
     for(let i=0;i<blocks.length;i++){
       const b=blocks[i];
+      if(featBlk && b===featBlk){
+        // The feature photo moves to the spread; any further photos in the same block stay here.
+        const rest=imgHtml(Object.assign({},b,{ids:b.ids.filter(id=>id!==feat),side:'full'}));
+        if(rest) parts.push(rest);
+        continue;
+      }
       if(b.type==='img' && b.side!=='full'){
         const img=one(b);
         if(!img) continue;
@@ -4362,8 +4402,20 @@ function _wbBuildSite(forDownload){
     // Every block hidden, or every block empty, renders an empty band with padding — a
     // blank stripe on the site that looks like a bug. If there is nothing to show, show
     // nothing. (Same rule as the hero, v125.)
+    if(!inner && !feat) return '';
+    if(_fx && feat){
+      const sideSet = featBlk.side==='left'||featBlk.side==='right';
+      const imgRight = sideSet ? featBlk.side==='right' : (_fxAlt%2===1);
+      if(!sideSet) _fxAlt++;
+      const fxCls=['fx','fx-spread',imgRight?'flip':'',cls].filter(Boolean).join(' ');
+      return `<section id="${k}" class="${fxCls}">
+      <figure class="fx-fig"><img src="${_mediaUrl(feat)}" alt="" loading="lazy"/></figure>
+      <div class="fx-copy">${inner}</div>${t.format==='atelier'?`
+      <span class="fx-num" aria-hidden="true">${fxNoStr}</span>`:''}
+    </section>`;
+    }
     if(!inner) return '';
-    return `<section id="${k}"${cls?` class="${cls}"`:''} ${secWideMaxW?`style="max-width:${secWideMaxW}px"`:''}>
+    return `<section id="${k}"${(cls||_fx)?` class="${[_fx?'fx fx-plain':'',cls].filter(Boolean).join(' ')}"`:''} ${secWideMaxW?`style="max-width:${secWideMaxW}px"`:''}>
       ${inner}
     </section>`;
   };
@@ -4446,6 +4498,50 @@ function _wbBuildSite(forDownload){
       // The names sitting on the photo are white OR dark — Mandy's choice, not a guess.
       // At 0% scrim on a pale photo, forcing white made them vanish. See DECISIONS v121.
       const cls = over ? (hero.ink==='dark' ? ' class="hero heroink-dark"' : ' class="hero"') : '';
+
+      // ── Editorial / Atelier headers. Any hero photo is used (over or below); the
+      // names / date toggles still apply when there is a photo to carry them.
+      if(_fx){
+        const a=(e.partner1||'').trim(), b2=(e.partner2||'').trim();
+        const namesHtml = (a&&b2) ? `${_escHtml(a)} <i>&amp;</i> ${_escHtml(b2)}` : _escHtml(_wbCouple());
+        const showN = !heroOk || wantName, showD = !heroOk || wantDate;
+        const d = e.date ? new Date(e.date+'T00:00:00') : null;
+        const okD = d && !isNaN(d);
+        const mos=['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const dd=okD?String(d.getDate()).padStart(2,'0'):'', mm=okD?String(d.getMonth()+1).padStart(2,'0'):'';
+        const place = (e.venue||'').trim();
+        const img = heroOk ? `<img src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${pos}"/>` : '';
+        const extra = [homeSlot('top'), h.sub?`<p class="sub">${_escHtml(h.sub)}</p>`:'', homeSlot('bottom')].filter(Boolean).join('');
+        if(t.format==='magazine'){
+          return `<header id="home" class="fx-cover${heroOk?'':' fx-noimg'}${hero.ink==='dark'?' fx-ink-dark':''}">
+        <div class="fx-topbar"><span>The Wedding Issue</span><span>${okD?`Nº 01 · ${mos[d.getMonth()]} ${d.getFullYear()}`:'Nº 01'}</span></div>
+        <div class="fx-coverimg" style="min-height:${WB_HERO_H[hero.height]||WB_HERO_H.tall}">${img}
+          ${showN?`<div class="fx-mast">${namesHtml}</div>`:''}
+          <div class="fx-lines">
+            <span class="fx-sc">${okD?'Save the date':'Together with their families'}</span>
+            <div class="fx-big">${_escHtml(h.headline||(place?'A celebration at '+place:'A celebration of love'))}</div>
+            ${place?`<div class="fx-ln fx-sc">${_escHtml(place)}</div>`:''}
+            ${sections.includes('rsvp')?`<div class="fx-ln fx-sc">RSVP inside →</div>`:''}
+            ${icsBtn}
+          </div>
+          ${(showD&&okD)?`<div class="fx-issue"><span class="fx-sc">${days[d.getDay()]}</span><b>${dd}.${mm}</b><span class="fx-sc">${d.getFullYear()}</span></div>`:''}
+        </div>
+        ${extra?`<div class="fx-cover-extra">${extra}</div>`:''}
+      </header>`;
+        }
+        return `<header id="home" class="fx-atelier-head${heroOk?'':' fx-noimg'}">
+        <div class="fx-names">
+          <span class="fx-sc fx-acc">The wedding of</span>
+          ${showN?`<h1>${(a&&b2)?`${_escHtml(a)}<i>&amp;</i>${_escHtml(b2)}`:_escHtml(_wbCouple())}</h1>`:''}
+          ${h.headline?`<p class="lead">${_escHtml(h.headline)}</p>`:''}
+          <div class="fx-meta">${(showD&&okD)?`<div><span class="fx-sc">Date</span><b>${_escHtml(d.getDate()+' '+mos[d.getMonth()]+' '+d.getFullYear())}</b></div>`:''}${place?`<div><span class="fx-sc">Place</span><b>${_escHtml(place)}</b></div>`:''}</div>
+          ${icsBtn}
+        </div>
+        ${img?`<figure class="fx-hfig">${img}</figure>`:''}
+        ${extra?`<div class="fx-cover-extra">${extra}</div>`:''}
+      </header>`;
+      }
 
       const inner = [
         wantName ? `<h1>${_escHtml(_wbCouple())}</h1>` : '',
@@ -5708,7 +5804,7 @@ function _wbBuildSite(forDownload){
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${_escHtml(_wbCouple())}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:${(()=>{const c=String(t2.background||t2.page||'#ffffff').trim();const m=c.match(/^#([0-9a-f]{6})$/i);if(!m) return 'light';const n=parseInt(m[1],16);return(((n>>16)&255)*299+((n>>8)&255)*587+(n&255)*114)/1000<128?'dark':'light';})()}}
@@ -5938,7 +6034,7 @@ header .imgs-grid,header .imgs-rows{max-width:560px;margin-left:auto;margin-righ
   .beside{grid-template-columns:1fr;gap:${sp(14)}px}
   .beside .imgs-grid{grid-template-columns:1fr}
 }
-.count p:not(.intro):not(.edit-eyebrow){font-family:${t2.headFont};font-size:clamp(${sch(26)}px,5vw,${sch(38)}px);color:${t2.accent}}
+.count p:not(.intro):not(.edit-eyebrow):not(.fx-eyebrow){font-family:${t2.headFont};font-size:clamp(${sch(26)}px,5vw,${sch(38)}px);color:${t2.accent}}
 .stays{list-style:none;text-align:left}
 section.b-center .stays{text-align:center}
 .stays li{padding:${sp(14)}px 0;border-bottom:1px solid ${t2.heading}12}
@@ -6032,6 +6128,100 @@ h2::after{content:'';display:block;width:44px;height:1px;background:${t2.accent}
 section.lft h2::after{margin-left:0;margin-right:auto}
 .intro{font-weight:300;letter-spacing:.03em}
 dl dt{font-size:${scb(9.5)}px!important;opacity:.5!important;letter-spacing:.18em!important}
+`:''}
+${(t2.format==='magazine'||t2.format==='atelier')?`
+/* ── Editorial + Atelier: shared ── */
+.fx-sc,.fx-eyebrow{font-family:${t2.bodyFont};font-size:${scb(10)}px;letter-spacing:.26em;text-transform:uppercase;font-weight:500}
+.fx-eyebrow{color:${t2.accent};margin:0 0 ${sp(16)}px}
+section.fx h2{font-size:clamp(${sch(34)}px,5vw,${sch(58)}px);line-height:1.02;letter-spacing:-.01em;margin-bottom:${sp(22)}px}
+section.fx-spread{max-width:none;margin:0;padding:0;text-align:left;position:relative;background:${t2.background||t2.page}}
+section.fx-spread+section,section+section.fx-spread{margin-top:0}
+.fx-fig{margin:0;position:relative;overflow:hidden}
+.fx-fig img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.fx-copy{min-width:0}
+.fx-copy .intro,.fx-copy .para{margin-left:0;max-width:44ch}
+.fx-copy dl,.fx-copy .imgs-grid,.fx-copy .imgs-rows{max-width:480px}
+section.fx-plain h2{margin-bottom:${sp(18)}px}
+header.fx-cover,header.fx-atelier-head{padding:0;text-align:left}
+.fx-cover-extra{text-align:center;padding:${sp(28)}px 24px}
+`:''}
+${t2.format==='magazine'?`
+/* ── Editorial (magazine) ── */
+.fx-topbar{display:flex;justify-content:space-between;gap:12px;padding:${sp(12)}px ${sp(40)}px;border-bottom:1px solid ${t2.heading}22;color:${t2.heading};font-family:${t2.bodyFont};font-size:${scb(10)}px;letter-spacing:.26em;text-transform:uppercase}
+.fx-coverimg{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;background:${t2.band}}
+.fx-coverimg>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+header.fx-cover:not(.fx-noimg) .fx-coverimg::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.3) 0%,rgba(0,0,0,0) 34%,rgba(0,0,0,0) 58%,rgba(0,0,0,.5) 100%)}
+.fx-mast,.fx-lines,.fx-issue{position:relative;z-index:2;color:#fff}
+.fx-mast{text-align:center;padding:${sp(26)}px ${sp(20)}px 0;font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(48)}px,10vw,${sch(138)}px);line-height:.88;letter-spacing:-.02em;text-transform:uppercase}
+.fx-mast i{font-style:italic;text-transform:none;font-size:.5em;vertical-align:.3em;letter-spacing:0}
+.fx-lines{max-width:440px;padding:0 0 ${sp(40)}px ${sp(40)}px;margin-top:auto}
+.fx-big{font-family:${t2.headFont};font-size:clamp(${sch(26)}px,3.4vw,${sch(40)}px);line-height:1.08;margin:${sp(6)}px 0 ${sp(12)}px}
+.fx-ln{border-top:1px solid currentColor;opacity:.92;padding-top:8px;margin-top:8px}
+.fx-lines .ics{margin-top:${sp(16)}px}
+.fx-issue{position:absolute;right:${sp(40)}px;bottom:${sp(40)}px;text-align:right}
+.fx-issue b{display:block;font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(40)}px,5vw,${sch(64)}px);line-height:1}
+header.fx-noimg .fx-mast,header.fx-noimg .fx-lines,header.fx-noimg .fx-issue,header.fx-ink-dark .fx-mast,header.fx-ink-dark .fx-lines,header.fx-ink-dark .fx-issue{color:${t2.heading}}
+header.fx-noimg .fx-coverimg{min-height:0!important;padding-top:${sp(30)}px}
+header.fx-noimg .fx-lines{padding-top:${sp(40)}px}
+section.fx-spread{display:grid;grid-template-columns:1fr 1fr;min-height:${sp(600)}px;border-top:1px solid ${t2.heading}1A}
+section.fx-spread.flip .fx-fig{order:2}
+.fx-copy{padding:${sp(80)}px ${sp(68)}px;display:flex;flex-direction:column;justify-content:center}
+section.fx-spread.band .fx-copy{background:${t2.band}}
+.fx-copy .intro::first-letter{float:left;font-family:${t2.headFont};font-size:3.7em;line-height:.8;padding:.08em .12em 0 0;color:${t2.accent}}
+.fx-copy .intro{font-family:${t2.headFont};font-size:${scs(17)}px;color:${t2.heading}}
+.fx-copy dl div{border-bottom-color:${t2.heading}22}
+section.fx h2{font-weight:400}
+@media(max-width:640px){
+  .fx-topbar{padding:${sp(10)}px 16px}
+  .fx-lines{padding:0 18px ${sp(26)}px 18px;max-width:none}
+  .fx-issue{display:none}
+  section.fx-spread{display:flex;flex-direction:column;min-height:0;padding:${sp(30)}px 0 ${sp(36)}px}
+  .fx-fig{width:72%;aspect-ratio:4/5;align-self:flex-start;order:0!important}
+  section.fx-spread.flip .fx-fig{align-self:flex-end}
+  .fx-copy{position:relative;z-index:2;width:86%;align-self:flex-end;margin-top:-110px;padding:${sp(26)}px 20px ${sp(28)}px;background:${t2.background||t2.page};border:1px solid ${t2.heading}22;box-shadow:0 18px 40px -24px rgba(0,0,0,.35)}
+  section.fx-spread.flip .fx-copy{align-self:flex-start}
+  section.fx-spread.band .fx-copy{background:${t2.band}}
+}
+`:''}
+${t2.format==='atelier'?`
+/* ── Atelier ── */
+header.fx-atelier-head{display:grid;grid-template-columns:1.05fr 1fr;align-items:stretch;border-bottom:1px solid ${t2.heading}1A;min-height:${sp(640)}px}
+header.fx-atelier-head.fx-noimg{grid-template-columns:1fr;min-height:0}
+.fx-names{padding:${sp(52)}px 0 ${sp(52)}px ${sp(52)}px;display:flex;flex-direction:column;justify-content:center;gap:${sp(22)}px;position:relative;z-index:2}
+.fx-acc{color:${t2.accent}}
+.fx-names .ics{align-self:flex-start;margin-top:0}
+header.fx-atelier-head h1{font-size:clamp(${sch(64)}px,10vw,${sch(150)}px);line-height:.86;letter-spacing:-.03em;margin:0 -30% 0 0;color:${t2.heading}}
+header.fx-atelier-head.fx-noimg h1{margin-right:0}
+header.fx-atelier-head h1 i{display:block;font-size:.42em;color:${t2.accent};margin:.12em 0 .05em .1em;letter-spacing:0}
+header.fx-atelier-head .lead{margin:0;text-align:left}
+.fx-meta{display:flex;gap:${sp(36)}px;color:${t2.heading};flex-wrap:wrap}
+.fx-meta div{border-top:1px solid ${t2.heading};padding-top:10px;min-width:140px}
+.fx-meta b{display:block;font-family:${t2.headFont};font-weight:400;font-size:${scs(21)}px;margin-top:4px}
+.fx-hfig{margin:${sp(52)}px ${sp(52)}px ${sp(52)}px 0;position:relative;overflow:hidden;min-height:${sp(480)}px}
+.fx-hfig img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+header.fx-atelier-head .fx-cover-extra{grid-column:1/-1}
+section.fx-spread{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));padding:${sp(96)}px ${sp(52)}px;border-top:1px solid ${t2.heading}14}
+.fx-copy{grid-column:5/13;grid-row:1;background:${t2.band};padding:${sp(64)}px ${sp(64)}px ${sp(64)}px 24%;min-height:${sp(420)}px;display:flex;flex-direction:column;justify-content:center}
+.fx-fig{grid-column:1/6;grid-row:1;align-self:center;aspect-ratio:4/5;z-index:2;box-shadow:0 30px 60px -30px rgba(0,0,0,.35)}
+section.fx-spread.flip .fx-copy{grid-column:1/9;padding:${sp(64)}px 24% ${sp(64)}px ${sp(64)}px}
+section.fx-spread.flip .fx-fig{grid-column:8/13}
+.fx-num{position:absolute;bottom:${sp(70)}px;right:${sp(92)}px;z-index:3;font-family:${t2.headFont};font-size:clamp(${sch(110)}px,14vw,${sch(210)}px);line-height:1;color:transparent;-webkit-text-stroke:1px ${t2.accent};opacity:.55;pointer-events:none}
+section.fx-spread.flip .fx-num{right:auto;left:${sp(92)}px}
+section.fx h2 i,header.fx-atelier-head .lead i{color:${t2.accent}}
+@media(max-width:640px){
+  header.fx-atelier-head{grid-template-columns:1fr;min-height:0}
+  .fx-names{padding:${sp(30)}px 20px 0}
+  header.fx-atelier-head h1{margin-right:0;font-size:clamp(${sch(52)}px,17vw,${sch(80)}px)}
+  .fx-meta{gap:16px}.fx-meta div{min-width:0;flex:1}
+  .fx-hfig{margin:${sp(24)}px 20px ${sp(32)}px;min-height:0;aspect-ratio:4/5}
+  section.fx-spread{display:flex;flex-direction:column;padding:${sp(40)}px 0 ${sp(48)}px}
+  .fx-fig{width:74%;align-self:flex-start;box-shadow:none}
+  section.fx-spread.flip .fx-fig{align-self:flex-end}
+  .fx-copy,section.fx-spread.flip .fx-copy{position:relative;z-index:3;width:86%;min-height:0;align-self:flex-end;margin-top:-110px;padding:${sp(28)}px 20px ${sp(32)}px;box-shadow:0 18px 40px -24px rgba(0,0,0,.4)}
+  section.fx-spread.flip .fx-copy{align-self:flex-start}
+  .fx-num{font-size:${sch(72)}px;top:${sp(46)}px;bottom:auto;right:12px;z-index:1}
+  section.fx-spread.flip .fx-num{left:12px;right:auto}
+}
 `:''}
 ${w.passwordEnabled&&w.password?`
 .wb-pw-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:${t2.background||t2.page}}
