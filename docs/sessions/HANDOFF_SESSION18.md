@@ -70,3 +70,8 @@ Audit found most wizard answers were saved but never read (vibe, formality, sett
 - RSVP count = `_rsvpPerHeadCount()` (infants never; children per "Exclude children"), shown with attending total, what isn't counted, how many still to reply, and the old estimate.
 - `_evFillPerHeadEstimate(prev, n)`: per-head budget items that are blank or still equal the previous estimate follow a new estimate; switching back to Estimated (either page) fills blank ones. Counts typed on an item are left alone.
 - Vendor brief: with no replies yet, Guest count shows "~N estimated".
+
+## v509.7 — App colour picker everywhere (accepted)
+- New `js/colorpicker.js` (in index.html + sw.js SHELL): a capture-phase click/keydown listener intercepts EVERY `<input type="color">` (present and future) and opens the app's own picker (`#uvcp`: saturation/value square, hue slider, hex field, "Your palette" from `STATE.inspo.colors`, 32 wedding tones, Cancel / Use colour). On Use colour it writes the hex back to the input and fires `input` + `change`, so existing `onchange="…this.value…"` handlers are unchanged.
+- Covers Email Design accent, Inspiration custom colour, tag colours, website builder role/RSVP colours (4), setup wizard palette (2). Bottom sheet on phones (≤520px), centred card on desktop; light + dark.
+- Don't add a separate native picker or "custom swatch" that bypasses this — the user explicitly hates the Android native colour dialog.
