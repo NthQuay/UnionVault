@@ -5099,6 +5099,12 @@ function _wbBuildSite(forDownload){
   var _dietaryOn=${_uvDietaryOn?'true':'false'};
   var _MEAL_DIET_LABEL=${JSON.stringify(_MEAL_DIET_LABEL)},_MEAL_ALT_OPTS=${JSON.stringify(_MEAL_ALT_OPTS)};
   var altOpen={},autoDiet={};
+  var _mealDietOn=${_uvMealDietOn?'true':'false'};
+  // Vegetarian / pescatarian / vegan come from the meal step when the guest gets one (and the
+  // Alternative meal option is on), so those boxes aren't shown again under Dietary requirements.
+  var _ALT_KEYS=['vegetarian','pescatarian','vegan'];
+  // A meal whose name says vegetarian / pescatarian / vegan records that requirement too.
+  function _mealKeyFromName(n){var t=String(n||'').toLowerCase();if(/\\bvegan\\b/.test(t))return 'vegan';if(/\\bpescatarian\\b/.test(t))return 'pescatarian';if(/\\bvegetarian\\b/.test(t))return 'vegetarian';return null;}
   function _altKey(v){for(var i=0;i<_MEAL_ALT_OPTS.length;i++){if(_MEAL_ALT_OPTS[i][0]===v)return _MEAL_ALT_OPTS[i][1];}return null;}
   var _phoneReq=${_fPhone.show&&_fPhone.required?'true':'false'},_emailReq=${_fEmail.show&&_fEmail.required?'true':'false'},_addrReq=${_fAddr.show&&_fAddr.required?'true':'false'};
   var group=[],plus1Names={},dietSel={},dietNotes={},mealPick={};
@@ -5388,6 +5394,7 @@ function _wbBuildSite(forDownload){
       var isInf=(g.a||'adult')==='infant',isCh=(g.a||'adult')==='child';
       html+='<div class="guest-section">';
       html+='<p class="guest-section-name">'+_esc(dispName)+'</p>';
+      var _hadChips=false;
       if(_mealOn){
         if(isInf){
           html+='<p class="field-label" style="font-style:italic;opacity:.65">No meal provided for infants</p>';
@@ -5407,6 +5414,7 @@ function _wbBuildSite(forDownload){
               else if(btn.dataset.dietmeal==='1'&&(altOpen[m.id]||_alts.indexOf(mealPick[m.id])>=0))btn.classList.add('on');
             });
             html+='<p class="field-label">'+lbl2+'</p><div class="meal-chips">'+wrap2.innerHTML+'</div>';
+            _hadChips=true;
             var _ac=wrap2.querySelector('.meal-chip-diet');
             if(_ac){
               var _al=_ac.dataset.alts.split('|');
@@ -5426,9 +5434,12 @@ function _wbBuildSite(forDownload){
       if(_dietaryOn){
         html+='<div class="diet-accordion" onclick="window._uvToggleDiet(this)" style="margin-top:12px">';
         var dSel=dietSel[m.id]||new Set();
-        html+='<button class="diet-toggle" type="button"><span class="diet-toggle-label">Dietary requirements'+(dSel.size?'<span class="diet-count">'+dSel.size+'</span>':'')+'</span>'+CHEVRON+'</button>';
+        var _hideAlt=_hadChips&&_mealDietOn;
+        var _dList=_hideAlt?DIET.filter(function(d){return _ALT_KEYS.indexOf(d[0])<0;}):DIET;
+        var _dShown=_dList.filter(function(d){return dSel.has(d[0]);}).length;
+        html+='<button class="diet-toggle" type="button"><span class="diet-toggle-label">Dietary requirements'+(_dShown?'<span class="diet-count">'+_dShown+'</span>':'')+'</span>'+CHEVRON+'</button>';
         html+='<div class="diet-body"><div class="chip-row">';
-        DIET.forEach(function(d){
+        _dList.forEach(function(d){
           var key=d[0],label=d[1];
           var dataDiet=(key==='allergy'||key==='other')?' data-diet="'+key+'"':'';
           var onCls=dSel.has(key)?' on':'';
@@ -5478,6 +5489,8 @@ function _wbBuildSite(forDownload){
       altOpen[id]=false;mealPick[id]=ml;
       if(pills){pills.hidden=true;pills.querySelectorAll('.alt-pill').forEach(function(p){p.classList.remove('on');});}
       _clearAutoDiet(sec0,id);
+      var _mk=_mealKeyFromName(ml);
+      if(_mk&&!(dietSel[id]&&dietSel[id].has(_mk))){_setDiet(sec0,id,_mk,true);autoDiet[id]=_mk;}
     }
     btn.closest('.meal-chips').querySelectorAll('.meal-chip').forEach(function(c){c.classList.remove('on');});
     btn.classList.add('on');
@@ -5521,7 +5534,9 @@ function _wbBuildSite(forDownload){
     var nx=document.getElementById('rf-next');if(!nx)return;
     if(!_mealOn){nx.disabled=false;nx.textContent=_rfStep===_rfTotalSteps?'Send my RSVP':'Next \\u2192';return;}
     var attending=group.filter(function(m){return m.att===true;});
-    var allMeal=attending.every(function(m){var g2=byId[m.id]||{};return (g2.a||'adult')==='infant'||!!mealPick[m.id];});
+    // Children with a set children's meal (no options to pick) are already covered.
+    var _noChildPick=_childMealEnabled&&!document.getElementById('uv-rf-children-meal-tmpl');
+    var allMeal=attending.every(function(m){var g2=byId[m.id]||{};var ab=g2.a||'adult';return ab==='infant'||(ab==='child'&&_noChildPick)||!!mealPick[m.id];});
     nx.disabled=!allMeal;
     nx.textContent=_rfStep===_rfTotalSteps?'Send my RSVP':'Next \\u2192';
   }
