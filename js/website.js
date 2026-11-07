@@ -5552,7 +5552,7 @@ function _wbBuildSite(forDownload){
   // choice spelled out under the name ("Attending" / "Declined").
   function _attSt(m){
     var c=m.att===true?' yes':m.att===false?' no':'';
-    var t=m.att===true?'Attending':m.att===false?'Declined':'Tap &#10003; or &#10007;';
+    var t=m.att===true?'&#10003; Attending':m.att===false?'&#10007; Declined':'Tap &#10003; or &#10007;';
     return '<span class="member-st'+c+'">'+t+'</span>';
   }
   function _attBtns(i,m,who){
@@ -5573,7 +5573,7 @@ function _wbBuildSite(forDownload){
       group.forEach(function(m,i){
         if(!m.isPlus1)return;
         var pn=_esc(plus1Names[m.id]||'');
-        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><div class="member-name"><input class="plus-one-name-input" type="text" placeholder="Enter their full name\\u2026" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" style="width:100%;margin-bottom:0">'+_attSt(m)+'</div>'+_attBtns(i,m,plus1Names[m.id]||'your plus one')+'</div></div>';
+        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><div class="member-name"><input class="plus-one-name-input" type="text" placeholder="Enter their full name\\u2026" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" style="width:100%;margin-bottom:0;padding-left:0;padding-right:0;text-align:left">'+_attSt(m)+'</div>'+_attBtns(i,m,plus1Names[m.id]||'your plus one')+'</div></div>';
       });
     }
     container.innerHTML=html;
