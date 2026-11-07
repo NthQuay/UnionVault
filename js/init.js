@@ -468,6 +468,9 @@ async function _showVendorPortal(token){
         else if(attending>0) guestCountDisplay = `${attending} attending`;
         else guestCountDisplay = rawGc.total ? String(rawGc.total) : null;
       } else { guestCountDisplay = rawGc ? String(rawGc) : null; }
+      // No replies yet: the couple's estimated guest count is more useful than nothing.
+      const _estGc = Number((b.event||{}).guestCount)||0;
+      if(_estGc && !(rawGc && typeof rawGc==='object' && rawGc.attending>0)) guestCountDisplay = `~${_estGc} estimated`;
       couple = { event:b.event||{},
                  vendors:[Object.assign({business:vendor.vendor_name}, vc)] };
       theme = b.theme||{};

@@ -2675,6 +2675,8 @@ function _budgetGoToSettings(){
 // Per-head toggle inside the popup: update state and the segment without closing.
 function setBudgetGuestModeInPopup(useRsvp){
   STATE.budget.useRsvpCount=useRsvp;
+  // Same switch as Event Details → Guest count. Back on manual: blank per-head items take the estimate.
+  if(!useRsvp && typeof _evFillPerHeadEstimate==='function') _evFillPerHeadEstimate(0, Number(STATE.event&&STATE.event.guestCount)||0);
   saveToStorage();
   _budgetRerenderOptionsMenu();
   navigate('budget');
@@ -2703,6 +2705,8 @@ function _toggleExcludeChildrenPerHead(){
 }
 function setBudgetGuestMode(useRsvp){
   STATE.budget.useRsvpCount=useRsvp;
+  // Same switch as Event Details → Guest count. Back on manual: blank per-head items take the estimate.
+  if(!useRsvp && typeof _evFillPerHeadEstimate==='function') _evFillPerHeadEstimate(0, Number(STATE.event&&STATE.event.guestCount)||0);
   saveToStorage();
   navigate('budget');
 }

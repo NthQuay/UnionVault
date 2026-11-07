@@ -65,11 +65,7 @@ function renderDetails(c, actions){
           </div>
         </div>
         <div class="form-row det-pair">
-          <div class="form-group">
-            <label class="form-label">Estimated guests</label>
-            <input class="form-input" type="number" min="0" step="1" inputmode="numeric" value="${Number(e.guestCount)>0?Number(e.guestCount):''}" placeholder="e.g. 120" oninput="STATE.event.guestCount=Math.max(0,parseInt(this.value,10)||0);saveToStorage()"/>
-            <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Pre-fills new per-head budget items.</div>
-          </div>
+          <div class="form-group" id="det-guests">${_detGuestsInner()}</div>
           <div class="form-group">
             <label class="form-label">Formality</label>
             <select class="form-input" onchange="STATE.event.formality=this.value;saveToStorage()">
@@ -422,4 +418,64 @@ function _detVenuesInner(){
 function _detRenderVenues(){
   const host=document.getElementById('det-venues'); if(!host) return;
   host.innerHTML=_detVenuesInner();
+}
+
+// ══════════════════════════════════════════════
+// GUEST COUNT — estimated or live RSVP count
+// ══════════════════════════════════════════════
+// One switch for the whole planner: STATE.budget.useRsvpCount (the same one Budget →
+// options → "Per-head guest count" uses). Estimated = STATE.event.guestCount, typed in
+// here or set in setup; RSVP count = guests marked attending (infants never count,
+// children per the Budget "Exclude children" option).
+function _detGuestsInner(){
+  const e=STATE.event||{};
+  const rsvp=!!(STATE.budget&&STATE.budget.useRsvpCount);
+  const seg=`<span class="uv-seg uv-seg-sm" role="group" aria-label="Guest count source">
+      <button type="button" class="${rsvp?'':'on'}" onclick="_detSetGuestSource(false)">Estimated</button>
+      <button type="button" class="${rsvp?'on':''}" onclick="_detSetGuestSource(true)">RSVP count</button>
+    </span>`;
+  let body;
+  if(!rsvp){
+    body=`<input class="form-input" type="number" min="0" step="1" inputmode="numeric" value="${Number(e.guestCount)>0?Number(e.guestCount):''}" placeholder="e.g. 120" oninput="_detSetGuestEstimate(this.value)"/>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Used for per-head budget items. Switch to RSVP count once replies come in.</div>`;
+  } else {
+    const bd=(typeof _rsvpPerHeadBreakdown==='function')?_rsvpPerHeadBreakdown():{attending:0,children:0,infants:0,counted:0};
+    const awaiting=(STATE.guests||[]).filter(g=>!g.rsvp||g.rsvp==='awaiting'||g.rsvp==='pending').length;
+    const exChild=(typeof _perHeadExcludesChildren==='function')&&_perHeadExcludesChildren();
+    const notes=[];
+    if(bd.infants) notes.push(`${bd.infants} infant${bd.infants===1?'':'s'} not counted`);
+    if(exChild && bd.children) notes.push(`${bd.children} child${bd.children===1?'':'ren'} not counted`);
+    if(awaiting) notes.push(`${awaiting} still to reply`);
+    const est=Number(e.guestCount)||0;
+    body=`<div class="det-rsvp-count"><b>${bd.counted}</b><span>attending${bd.attending!==bd.counted?` <small>(of ${bd.attending})</small>`:''}</span>
+        ${est?`<em>Estimate was ${est}</em>`:''}</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px">${notes.length?_escHtml(notes.join(' · '))+'. ':''}Live from your RSVPs — used for per-head budget items.</div>`;
+  }
+  return `<div class="det-guests-head"><label class="form-label" style="margin:0">Guest count</label>${seg}</div>${body}`;
+}
+function _detSetGuestSource(useRsvp){
+  if(!STATE.budget) STATE.budget={};
+  STATE.budget.useRsvpCount=!!useRsvp;
+  // Back on Estimated: per-head items with no count of their own pick up the estimate.
+  if(!useRsvp) _evFillPerHeadEstimate(0, Number(STATE.event&&STATE.event.guestCount)||0);
+  saveToStorage();
+  const host=document.getElementById('det-guests'); if(host) host.innerHTML=_detGuestsInner();
+}
+function _detSetGuestEstimate(val){
+  if(!STATE.event) STATE.event={};
+  const prev=Number(STATE.event.guestCount)||0;
+  const n=Math.max(0, parseInt(val,10)||0);
+  STATE.event.guestCount=n;
+  _evFillPerHeadEstimate(prev, n);
+  saveToStorage();
+}
+// Per-head budget items that were following the estimate (blank, or still equal to the
+// previous estimate) move with it; a count typed on the item itself is left alone.
+function _evFillPerHeadEstimate(prev, n){
+  if(!n || !STATE.budget || STATE.budget.useRsvpCount) return;
+  (STATE.budget.items||[]).forEach(b=>(b.subItems||[]).forEach(s=>{
+    if(!s || !s.perHead) return;
+    const c=Number(s.guestCount)||0;
+    if(c===0 || (prev && c===prev)) s.guestCount=n;
+  }));
 }

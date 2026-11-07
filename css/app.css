@@ -3167,3 +3167,11 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
 .det-pair .form-input{min-width:0;width:100%}
 @media (max-width:520px){.det-pair{grid-template-columns:1fr}}
 .details-two-col>div{min-width:0}
+/* Event Details → Guest count (Estimated / RSVP count) */
+.det-guests-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.uv-seg-sm button{padding:3px 10px;font-size:11px}
+.det-rsvp-count{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;min-height:38px;padding:4px 0}
+.det-rsvp-count b{font-family:'Inter',sans-serif;font-size:24px;font-weight:600;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.det-rsvp-count span{font-size:13px;color:var(--ink)}
+.det-rsvp-count small{color:var(--muted);font-size:11.5px}
+.det-rsvp-count em{font-style:normal;font-size:11.5px;color:var(--muted);margin-left:auto}
