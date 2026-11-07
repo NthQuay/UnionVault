@@ -35,3 +35,9 @@ R2 confirm a real send appears in Communications → Sent. P7 real public RSVP e
   - Atelier: big names + tall photo header, tinted panels, outline numbers. Phones: photo 74% alternating, text box overlapping.
 - `_wbSetFormat`: switches heading font to Bodoni Moda / Playfair Display only if it's still the default (or format-set); restores on switching back; `_wbFont('headFont')` clears the auto flag. Bodoni Moda added to `WB_FONTS` + site font link.
 - Tested: picker clicks, edge cases (no photos/date, hero below, side nav, single name, hidden names) in all 4 formats at 1280/390 (no errors, no h-scroll), full RSVP regression incl. an Editorial-themed RSVP page.
+
+## v509.2 (accepted)
+- **Featured photo crop** (Editorial/Atelier): the image block holding a section's feature shows a "Featured photo" panel — desktop + phone previews (Atelier: one), drag focal point, zoom 100–250% (cover-anchored), Centre. Stored as `b.feat={id,pos,zoom}`; only applies while that photo is still first (`_wbFeatInfo`, `_wbFeatCrop`, `_wbFeatImgCss`). Position hint explains Full/Left/Right in these formats.
+- **Right alignment**: per-section heading/intro (`l.align='right'` → `.rgt`) and body (`l.body='right'` → `.b-right`), plus site-wide `t.align` / `t.bodyAlign` = right. Paragraphs, details rows, timetable, links, buttons, FAQ mirror Left; Editorial drop cap off when right-aligned. Per-section buttons only show with "Apply alignment globally" off (as before).
+- **New badges** on Editorial and Atelier in the Format Style picker (`WB_FORMATS[].isNew`).
+- Regression: Classic/Modern output only gains rules for the new classes; edge builds in all 4 formats; RSVP matrix passes.
