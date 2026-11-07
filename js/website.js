@@ -5185,6 +5185,10 @@ function _wbBuildSite(forDownload){
 #uv-rsvp-sheet .rf-pill{padding:10px 12px;border-radius:8px;border:1.5px solid ${t2.heading}22;background:${t2.background||t2.page};text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:${t2.text};transition:all .15s;user-select:none;font-family:inherit}
 #uv-rsvp-sheet .rf-pill.yes{background:#EAF3EC;border-color:#3D9454;color:#1F6B38}
 #uv-rsvp-sheet .rf-pill.no{background:#F7EFED;border-color:#C05840;color:#8B3324}
+#uv-rsvp-sheet .rf-pill.rf-ic{width:44px;height:44px;border-radius:50%;padding:0;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.member-st{display:block;font-size:11.5px;margin-top:2px;color:${t2.text};opacity:.6}
+.member-st.yes{color:${_uvScheme==='dark'?'#7BC28A':'#1F6B38'};opacity:1}
+.member-st.no{color:${_uvScheme==='dark'?'#FCA5A5':'#8B3324'};opacity:1}
 @media(prefers-color-scheme:dark){#uv-rsvp-sheet .rf-pill.yes{background:#1C3324;border-color:#3D9454;color:#7BC28A}#uv-rsvp-sheet .rf-pill.no{background:#3B1212;color:#FCA5A5;border-color:#7F1D1D}}
 .plus-one-row{padding:8px 0 12px}
 .plus-one-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:1.5px dashed ${t2.heading}28;border-radius:8px;padding:9px 14px;font-size:13px;color:${_uvPal.accent};cursor:pointer;font-family:inherit;transition:all .15s}
@@ -5544,13 +5548,24 @@ function _wbBuildSite(forDownload){
     _checkStep1();
   };
 
+  // Step 1 rows: the name keeps the row; round ✓ / ✗ buttons on the right and the
+  // choice spelled out under the name ("Attending" / "Declined").
+  function _attSt(m){
+    var c=m.att===true?' yes':m.att===false?' no':'';
+    var t=m.att===true?'Attending':m.att===false?'Declined':'Tap &#10003; or &#10007;';
+    return '<span class="member-st'+c+'">'+t+'</span>';
+  }
+  function _attBtns(i,m,who){
+    var w=_esc(who);
+    return '<div class="rf-pills"><button type="button" class="rf-pill rf-ic'+(m.att===true?' yes':'')+'" aria-label="'+w+' attending" aria-pressed="'+(m.att===true)+'" onclick="window._rfSetAtt('+i+',true)">&#10003;</button>'+
+      '<button type="button" class="rf-pill rf-ic'+(m.att===false?' no':'')+'" aria-label="'+w+' declined" aria-pressed="'+(m.att===false)+'" onclick="window._rfSetAtt('+i+',false)">&#10007;</button></div>';
+  }
   function _renderAttendance(){
     var container=document.getElementById('attend-members');if(!container)return;
     var html='';
     group.forEach(function(m,i){
       if(m.isPlus1)return;
-      var yc='rf-pill'+(m.att===true?' yes':''),nc='rf-pill'+(m.att===false?' no':'');
-      html+='<div class="member-row" data-idx="'+i+'"><span class="member-name">'+_esc(m.n)+'</span><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Accept</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">&#10007; Decline</button></div></div>';
+      html+='<div class="member-row" data-idx="'+i+'"><span class="member-name">'+_esc(m.n)+_attSt(m)+'</span>'+_attBtns(i,m,m.n)+'</div>';
     });
     var hasP1Slot=group.some(function(m){return m.isPlus1;});
     var hasUnnamedP1=GG.some(function(g){return g.p1&&!byId[g.p1]&&group.some(function(m2){return m2.id===g.id;});});
@@ -5558,8 +5573,7 @@ function _wbBuildSite(forDownload){
       group.forEach(function(m,i){
         if(!m.isPlus1)return;
         var pn=_esc(plus1Names[m.id]||'');
-        var yc='rf-pill'+(m.att===true?' yes':''),nc='rf-pill'+(m.att===false?' no':'');
-        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><input class="plus-one-name-input" type="text" placeholder="Enter their full name\\u2026" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" style="flex:1;min-width:0;width:auto;margin-bottom:0"><div class="rf-pills"><button class="'+yc+'" onclick="window._rfSetAtt('+i+',true)">&#10003; Accept</button><button class="'+nc+'" onclick="window._rfSetAtt('+i+',false)">&#10007; Decline</button></div></div></div>';
+        html+='<div class="plus-one-added"><p class="plus-one-label">Plus one</p><div class="member-row"><div class="member-name"><input class="plus-one-name-input" type="text" placeholder="Enter their full name\\u2026" value="'+pn+'" data-pid="'+m.id+'" oninput="window._uvSetP1Name(this)" style="width:100%;margin-bottom:0">'+_attSt(m)+'</div>'+_attBtns(i,m,plus1Names[m.id]||'your plus one')+'</div></div>';
       });
     }
     container.innerHTML=html;
