@@ -4964,6 +4964,7 @@ function _wbBuildSite(forDownload){
 .meal-chip-diet.on{border-style:solid}
 .alt-pills{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:-8px 0 14px}
 .alt-pills[hidden]{display:none}
+.diet-chip.diet-alt-hide{display:none}
 .alt-pills-lbl{font-size:11px;opacity:.7;margin-right:2px}
 .alt-pill{padding:3px 10px;border-radius:14px;border:1px solid ${t2.heading}28;background:transparent;font-size:11.5px;color:${t2.text};cursor:pointer;font-family:inherit}
 .alt-pill.on{border-color:${_uvPal.accent};background:${_uvPal.accent}22;font-weight:600}
@@ -5103,6 +5104,10 @@ function _wbBuildSite(forDownload){
   // Vegetarian / pescatarian / vegan come from the meal step when the guest gets one (and the
   // Alternative meal option is on), so those boxes aren't shown again under Dietary requirements.
   var _ALT_KEYS=['vegetarian','pescatarian','vegan'];
+  // A menu meal named e.g. "Vegetarian risotto" opens Dietary requirements with that box ticked;
+  // the guest can untick it (choosing the dish doesn't make them vegetarian).
+  var autoDietSrc={};
+  function _mealKeyFromName(n){var t=String(n||'').toLowerCase();if(/\\bvegan\\b/.test(t))return 'vegan';if(/\\bpescatarian\\b/.test(t))return 'pescatarian';if(/\\bvegetarian\\b/.test(t))return 'vegetarian';return null;}
   function _altKey(v){for(var i=0;i<_MEAL_ALT_OPTS.length;i++){if(_MEAL_ALT_OPTS[i][0]===v)return _MEAL_ALT_OPTS[i][1];}return null;}
   var _phoneReq=${_fPhone.show&&_fPhone.required?'true':'false'},_emailReq=${_fEmail.show&&_fEmail.required?'true':'false'},_addrReq=${_fAddr.show&&_fAddr.required?'true':'false'};
   var group=[],plus1Names={},dietSel={},dietNotes={},mealPick={};
@@ -5352,7 +5357,7 @@ function _wbBuildSite(forDownload){
   };
   window._uvCloseRsvp=function(){
     var o=document.getElementById('uv-rsvp-overlay');if(o){o.classList.remove('open');document.body.style.overflow='';}
-    group=[];plus1Names={};dietSel={};dietNotes={};mealPick={};altOpen={};autoDiet={};_rfStep=1;_groupSelected=false;_lastSearchGroups=[];
+    group=[];plus1Names={};dietSel={};dietNotes={};mealPick={};altOpen={};autoDiet={};autoDietSrc={};_rfStep=1;_groupSelected=false;_lastSearchGroups=[];
     _rfWizPanels.forEach(function(pid){var p=document.getElementById('rf-'+pid);if(p)p.classList.remove('active');});
     var s1=document.getElementById('rf-step1');if(s1)s1.classList.add('active');
     var sd=document.getElementById('rf-step-done');if(sd){sd.classList.remove('active');sd.innerHTML='';}
@@ -5433,14 +5438,14 @@ function _wbBuildSite(forDownload){
         html+='<div class="diet-accordion" onclick="window._uvToggleDiet(this)" style="margin-top:12px">';
         var dSel=dietSel[m.id]||new Set();
         var _hideAlt=_hadChips&&_mealDietOn;
-        var _dList=_hideAlt?DIET.filter(function(d){return _ALT_KEYS.indexOf(d[0])<0;}):DIET;
-        var _dShown=_dList.filter(function(d){return dSel.has(d[0]);}).length;
+        var _isHid=function(k){return _hideAlt&&_ALT_KEYS.indexOf(k)>=0&&!(autoDietSrc[m.id]==='meal'&&autoDiet[m.id]===k);};
+        var _dShown=DIET.filter(function(d){return dSel.has(d[0])&&!_isHid(d[0]);}).length;
         html+='<button class="diet-toggle" type="button"><span class="diet-toggle-label">Dietary requirements'+(_dShown?'<span class="diet-count">'+_dShown+'</span>':'')+'</span>'+CHEVRON+'</button>';
         html+='<div class="diet-body"><div class="chip-row">';
-        _dList.forEach(function(d){
+        DIET.forEach(function(d){
           var key=d[0],label=d[1];
           var dataDiet=(key==='allergy'||key==='other')?' data-diet="'+key+'"':'';
-          var onCls=dSel.has(key)?' on':'';
+          var onCls=(dSel.has(key)?' on':'')+(_isHid(key)?' diet-alt-hide':'');
           html+='<div class="diet-chip'+onCls+'"'+dataDiet+' data-mid="'+m.id+'" data-key="'+key+'" onclick="event.stopPropagation();window._uvToggleChip(this)"><span class="chip-check">'+CHK+'</span>'+_esc(label)+'</div>';
         });
         var aVis=(dSel.has('allergy'))?' visible':'';
@@ -5466,13 +5471,18 @@ function _wbBuildSite(forDownload){
     if(!sec)return;
     var chip=sec.querySelector('.diet-chip[data-key="'+key+'"]');if(chip)chip.classList.toggle('on',on);
     var acc=sec.querySelector('.diet-accordion');if(!acc)return;
-    var count=acc.querySelectorAll('.diet-chip.on').length;
+    var count=acc.querySelectorAll('.diet-chip.on:not(.diet-alt-hide)').length;
     var badge=acc.querySelector('.diet-count');
     if(badge){badge.textContent=count;badge.style.display=count?'':'none';}
     else if(count){var lb=acc.querySelector('.diet-toggle-label');var b=document.createElement('span');b.className='diet-count';b.textContent=count;lb.appendChild(b);}
   }
   function _clearAutoDiet(sec,id){
-    if(autoDiet[id]){_setDiet(sec,id,autoDiet[id],false);delete autoDiet[id];}
+    if(autoDiet[id]){
+      var k=autoDiet[id],wasMeal=autoDietSrc[id]==='meal';
+      delete autoDiet[id];delete autoDietSrc[id];
+      if(wasMeal&&sec&&_mealDietOn&&_ALT_KEYS.indexOf(k)>=0&&sec.querySelector('.meal-chips')){var c=sec.querySelector('.diet-chip[data-key="'+k+'"]');if(c)c.classList.add('diet-alt-hide');}
+      _setDiet(sec,id,k,false);
+    }
   }
   window._uvChooseMeal=function(btn){
     var id=btn.dataset.mid,ml=btn.dataset.meal;
@@ -5481,12 +5491,20 @@ function _wbBuildSite(forDownload){
     if(btn.dataset.dietmeal==='1'){
       // Not a meal yet: the guest still has to pick Vegetarian / Pescatarian / Vegan.
       altOpen[id]=true;
+      if(autoDietSrc[id]==='meal')_clearAutoDiet(sec0,id);
       if(_altKey(mealPick[id])===null||!pills||!pills.querySelector('.alt-pill.on'))mealPick[id]=null;
       if(pills)pills.hidden=false;
     }else{
       altOpen[id]=false;mealPick[id]=ml;
       if(pills){pills.hidden=true;pills.querySelectorAll('.alt-pill').forEach(function(p){p.classList.remove('on');});}
       _clearAutoDiet(sec0,id);
+      var _mk=_mealKeyFromName(ml);
+      if(_mk&&!(dietSel[id]&&dietSel[id].has(_mk))){
+        autoDiet[id]=_mk;autoDietSrc[id]='meal';
+        var _c=sec0&&sec0.querySelector('.diet-chip[data-key="'+_mk+'"]');if(_c)_c.classList.remove('diet-alt-hide');
+        _setDiet(sec0,id,_mk,true);
+        var _acc=sec0&&sec0.querySelector('.diet-accordion');if(_acc)_acc.classList.add('open');
+      }
     }
     btn.closest('.meal-chips').querySelectorAll('.meal-chip').forEach(function(c){c.classList.remove('on');});
     btn.classList.add('on');
@@ -5500,7 +5518,7 @@ function _wbBuildSite(forDownload){
     pill.classList.add('on');
     mealPick[id]=val;
     _clearAutoDiet(sec,id);
-    if(key&&!(dietSel[id]&&dietSel[id].has(key))){_setDiet(sec,id,key,true);autoDiet[id]=key;}
+    if(key&&!(dietSel[id]&&dietSel[id].has(key))){_setDiet(sec,id,key,true);autoDiet[id]=key;autoDietSrc[id]='alt';}
     if(sec){var err=sec.querySelector('.meal-error');if(err)err.remove();var chips=sec.querySelector('.meal-chips');if(chips){chips.style.outline='';chips.style.padding='';}}
     _checkStep2();
   };
@@ -5519,7 +5537,7 @@ function _wbBuildSite(forDownload){
     }
     var acc=el.closest('.diet-accordion');
     if(acc){
-      var count=acc.querySelectorAll('.diet-chip.on').length;
+      var count=acc.querySelectorAll('.diet-chip.on:not(.diet-alt-hide)').length;
       var badge=acc.querySelector('.diet-count');
       if(badge){badge.textContent=count;badge.style.display=count?'':'none';}
       else if(count){var lbl3=acc.querySelector('.diet-toggle-label');var b=document.createElement('span');b.className='diet-count';b.textContent=count;lbl3.appendChild(b);}
