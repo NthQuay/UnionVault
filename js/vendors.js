@@ -676,7 +676,7 @@ async function _sendVendorBriefEmailNow(btn){
   const payload={ to:ctx.to, vendor_name:ctx.vendorName, brief_url:ctx.briefUrl, expiry_display:ctx.expiryDisplay||null,
     fromName:names||'', replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
     intro_override:vbText.intro||null, button_label_override:vbText.buttonLabel||null, closing_override:vbText.closing||null,
-    templateId:_emailTplId(ed.templateId,true),
+    templateId:_emailTplId(ed.templateId), issue:_emailIssue(),
     designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
       headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) } };
   let ok=false;

@@ -2655,14 +2655,10 @@ function _emailHeaderUrl(hid, uid){
   if(hid==='none') return 'none';
   return hid&&uid ? _SB_URL+'/storage/v1/object/public/'+_SB_BUCKET+'/'+uid+'/'+hid : '';
 }
-// Email templates on offer: Classic, Modern, Editorial and Atelier. Botanical was retired —
-// anyone who had it picked (app-wide or per email) now gets Classic. Editorial and Atelier
-// exist only in send-guest-email; the vendor brief email (forVendor) offers Classic/Modern,
-// so those two fall back to Classic there.
-function _emailTplId(id, forVendor){
-  if(id==='modern') return 'modern';
-  if(!forVendor && (id==='editorial'||id==='atelier')) return id;
-  return 'classic';
+// Email templates on offer: Classic, Modern, Editorial and Atelier (guest emails and vendor
+// briefs). Botanical was retired — anyone who had it picked now gets Classic.
+function _emailTplId(id){
+  return (id==='modern'||id==='editorial'||id==='atelier') ? id : 'classic';
 }
 // Names / date / time / venue for the Editorial and Atelier email layouts (masthead,
 // cover lines, details panel). The server validates and escapes every field.
@@ -2697,7 +2693,7 @@ function _openEmailDesignModal(itemKey){
   const universal=(STATE.settings&&STATE.settings.emailDesign)||{};
   const override=itemKey&&STATE.settings&&STATE.settings.commsDesign&&STATE.settings.commsDesign[itemKey];
   const src=override||universal;
-  const tplId=_emailTplId(src.templateId, itemKey==='vbrief');
+  const tplId=_emailTplId(src.templateId);
   const accent=src.accentColor||'#8a6a2c';
   const ff=src.fontFamily||'serif';
   const logoLocked=_emailLogoLocked();
@@ -2750,10 +2746,9 @@ function _openEmailDesignModal(itemKey){
       <div id="email-tpl-picker" style="display:flex;gap:10px;flex-wrap:wrap">
         ${tplThumb('classic','Classic','Cream card, warm tones','#F4EEE4','#FBF8F3',false)}
         ${tplThumb('modern','Modern','Clean white, accent border','#F5F5F5','#FFFFFF',true)}
-        ${itemKey==='vbrief'?'':tplThumb('editorial','Editorial','Magazine cover, side-by-side spread','#FBF8F3','#FBF8F3',false,true)}
-        ${itemKey==='vbrief'?'':tplThumb('atelier','Atelier','Big names, tinted panels','#F6F1EA','#F6F1EA',false,true)}
+        ${tplThumb('editorial','Editorial','Magazine cover, side-by-side spread','#FBF8F3','#FBF8F3',false,true)}
+        ${tplThumb('atelier','Atelier','Big names, tinted panels','#F6F1EA','#F6F1EA',false,true)}
       </div>
-      ${(!itemKey && (tplId==='editorial'||tplId==='atelier'))?`<div style="font-size:11px;color:var(--muted);margin-top:7px;line-height:1.45">Vendor brief emails use Classic with this template.</div>`:''}
     </div>`:''}
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:8px">Accent colour</div>
