@@ -281,7 +281,7 @@ function renderSettings(c, actions){
           </button>
         </div>
       </div>
-      ${_badgePickerHtml()}
+      ${/* Balance / deposit badge pickers hidden (v509.8): the defaults are fine and nobody changes them. _badgePickerHtml() still works if wanted back. */''}
       ${_vendorBadgeStylePickerHtml()}
     </div>
     <div class="settings-sect" data-sect="alerts notifications task alerts banner payment alerts banner checklist alert icon menu budget alert icon menu seating alert icon menu banners menu icons overdue due soon warning">

@@ -2819,13 +2819,22 @@ function _emailDesignSet(key, val, itemKey, skipRerender){
     STATE.settings.emailDesign[key]=val;
   }
   saveToStorage();
-  if(!skipRerender) _openEmailDesignModal(itemKey);
+  if(!skipRerender) _emailDesignRerender(itemKey);
   if(typeof _currentPage!=='undefined' && _currentPage==='comms' && typeof _commsLoadPreview==='function') _commsLoadPreview();
+}
+// Re-draw the open Email Design modal in place, keeping its scroll position — openModal()
+// scrolls to the top, which made picking a font (far down the modal) jump back up.
+function _emailDesignRerender(itemKey){
+  const box=document.getElementById('modal-box'), body=document.getElementById('modal-body');
+  const t1=box?box.scrollTop:0, t2=body?body.scrollTop:0;
+  _openEmailDesignModal(itemKey);
+  if(box) box.scrollTop=t1;
+  if(body) body.scrollTop=t2;
 }
 function _emailDesignResetItem(itemKey){
   if(STATE.settings && STATE.settings.commsDesign) delete STATE.settings.commsDesign[itemKey];
   saveToStorage();
-  _openEmailDesignModal(itemKey);
+  _emailDesignRerender(itemKey);
   if(typeof _currentPage!=='undefined' && _currentPage==='comms' && typeof _commsLoadPreview==='function') _commsLoadPreview();
 }
 function _emailDesignHexInput(inp, itemKey){
