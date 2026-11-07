@@ -5159,6 +5159,7 @@ function _wbBuildSite(forDownload){
 .rf-nav-back:hover{border-color:${t2.heading}55}
 .rf-nav-next{flex:1;background:${_uvPal.accent};color:${_uvPal.ink};border:none;border-radius:10px;padding:13px;font-size:15px;letter-spacing:.05em;cursor:pointer;font-family:inherit;transition:opacity .15s}
 .rf-nav-next:disabled{opacity:.35;cursor:not-allowed}
+.rf-nav-next.rf-dim{opacity:.35}
 .rf-msg-box{text-align:center;padding:40px 16px}
 .search-row{display:flex;gap:8px;margin-bottom:6px}
 .search-row input{flex:1;min-width:0;padding:12px 14px;font-size:15px;font-family:inherit;color:${t2.text};background:${t2.background||t2.page};border:1.5px solid ${t2.heading}28;border-radius:10px;outline:none;box-sizing:border-box}
@@ -5637,7 +5638,9 @@ function _wbBuildSite(forDownload){
     var allAnswered=group.length>0&&group.every(function(m){return m.att!==null;});
     var p1Ok=group.every(function(m){if(!m.isPlus1||m.att!==true)return true;return(plus1Names[m.id]||'').trim().length>0;});
     var anyYes=group.some(function(m){return m.att===true;});
-    nx.disabled=!allAnswered;   // a missing plus-one name is flagged when Next is tapped
+    nx.disabled=!allAnswered;
+    // Missing plus-one name: Next looks dimmed but stays tappable — a tap highlights the empty box.
+    nx.classList.toggle('rf-dim', allAnswered&&!p1Ok);
     nx.textContent=(allAnswered&&!anyYes)?'Send my RSVP':'Next \\u2192';
   }
 
