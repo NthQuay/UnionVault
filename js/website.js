@@ -6175,12 +6175,18 @@ section.fx h2{font-weight:400}
   .fx-topbar{padding:${sp(10)}px 16px}
   .fx-lines{padding:0 18px ${sp(26)}px 18px;max-width:none}
   .fx-issue{display:none}
-  /* Phones keep the spread SIDE BY SIDE, just smaller: photo ~40%, text beside it. */
-  section.fx-spread{grid-template-columns:40% minmax(0,1fr);min-height:0}
-  section.fx-spread.flip{grid-template-columns:minmax(0,1fr) 40%}
-  .fx-fig{min-height:${sp(260)}px}
-  .fx-copy{padding:${sp(26)}px 14px ${sp(26)}px 16px;justify-content:center}
-  section.fx-spread.flip .fx-copy{padding:${sp(26)}px 16px ${sp(26)}px 14px}
+  /* Phones keep the spread SIDE BY SIDE, smaller — and the text panel edges INTO the photo
+     as frosted glass (blurred, semi-transparent page colour), so it stays readable. */
+  section.fx-spread{grid-template-columns:50% minmax(0,1fr);min-height:0;padding:0}
+  section.fx-spread.flip{grid-template-columns:minmax(0,1fr) 50%}
+  .fx-fig{min-height:${sp(280)}px;grid-row:1;grid-column:1}
+  section.fx-spread.flip .fx-fig{grid-column:2}
+  .fx-copy{grid-row:1;grid-column:2;position:relative;z-index:2;margin:${sp(22)}px 10px ${sp(22)}px -18vw;padding:${sp(20)}px 14px ${sp(20)}px 16px;justify-content:center;
+    background:${/^#[0-9a-f]{6}$/i.test(t2.background||t2.page)?(t2.background||t2.page)+'B3':'rgba(255,255,255,.7)'};
+    -webkit-backdrop-filter:blur(14px) saturate(1.15);backdrop-filter:blur(14px) saturate(1.15);
+    border:1px solid ${t2.heading}1F;box-shadow:0 14px 34px -22px rgba(0,0,0,.45)}
+  section.fx-spread.flip .fx-copy{grid-column:1;margin:${sp(22)}px -18vw ${sp(22)}px 10px}
+  section.fx-spread.band .fx-copy{background:${/^#[0-9a-f]{6}$/i.test(t2.band)?t2.band+'B3':'rgba(255,255,255,.7)'}}
   .fx-copy .fx-eyebrow{font-size:${scb(8)}px;letter-spacing:.2em;margin-bottom:${sp(8)}px}
   section.fx-spread h2{font-size:${sch(25)}px;margin-bottom:${sp(10)}px}
   .fx-copy .intro{font-size:${scs(13)}px;line-height:1.5;margin-bottom:${sp(12)}px}
