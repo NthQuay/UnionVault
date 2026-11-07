@@ -75,3 +75,12 @@ Audit found most wizard answers were saved but never read (vibe, formality, sett
 - New `js/colorpicker.js` (in index.html + sw.js SHELL): a capture-phase click/keydown listener intercepts EVERY `<input type="color">` (present and future) and opens the app's own picker (`#uvcp`: saturation/value square, hue slider, hex field, "Your palette" from `STATE.inspo.colors`, 32 wedding tones, Cancel / Use colour). On Use colour it writes the hex back to the input and fires `input` + `change`, so existing `onchange="…this.value…"` handlers are unchanged.
 - Covers Email Design accent, Inspiration custom colour, tag colours, website builder role/RSVP colours (4), setup wizard palette (2). Bottom sheet on phones (≤520px), centred card on desktop; light + dark.
 - Don't add a separate native picker or "custom swatch" that bypasses this — the user explicitly hates the Android native colour dialog.
+
+## v509.8 (accepted)
+- Email Design modal keeps its scroll position on every change (`_emailDesignRerender` in js/send-sheet.js) — picking a font no longer jumps to the top.
+- Settings: Balance payment / Deposit badge pickers hidden (defaults $ / receipt still used; `_badgePickerHtml()` kept).
+- RSVP step 1 (js/website.js, guest RSVP sheet):
+  - Each guest: name + round ✓ / ✗ buttons (`_attBtns`, `.rf-ic`); under the name "✓ Attending" / "✗ Declined" / "Tap ✓ or ✗" (`_attSt`; colours follow the sheet's own `_uvScheme`).
+  - Plus one: "PLUS ONE" + "Will you be bringing a plus one?" → ✓ shows a required name box (`.p1-box`, focused); once typed (Enter / tap away) the name shows as text with "✓ Attending Edit" under it (`_p1Slot`, `_p1Meta`, `_p1Redraw`, `p1Edit`). ✗ → "✗ Not bringing one".
+  - Next is dimmed (`.rf-dim`) but tappable while an accepted plus one has no name; tapping it marks the box red with "Please enter their name" and focuses it.
+  - A guest declining auto-declines their own plus one (`_rfSetAtt`).
