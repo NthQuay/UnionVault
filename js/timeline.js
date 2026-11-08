@@ -225,7 +225,8 @@ function _tlRenderListView(c, actions){
       <div style="width:4px;height:40px;border-radius:3px;background:${col.hex};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:14px">${_escHtml(tl.name)}${(()=>{if(!tl.linkedEventId)return '';const ev=(STATE.events||[]).find(e=>e.id===tl.linkedEventId);if(!ev)return '';return ' <span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:500;color:var(--gold-deep);background:var(--gold-bg);padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'+_escHtml(ev.name)+'</span>';})()}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${n} moment${n!==1?'s':''} · ${span}${tl.showOnWebsite!==false?' · <span title="Visible on website" style="opacity:.6">&#127760;</span>':''}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${n} moment${n!==1?'s':''}</div>
+        <div style="font-size:12px;color:var(--muted)">${span}${tl.showOnWebsite!==false?' <span title="Visible on website" style="opacity:.6">&#127760;</span>':''}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()">
         <button onclick="_tlToggleMaster('${tl.id}',event)" title="${tl.inMaster?'Remove from master':'Add to master'}" style="width:36px;height:20px;border-radius:11px;border:none;background:${tl.inMaster?'var(--gold)':'var(--border)'};cursor:pointer;position:relative;transition:background .2s;flex-shrink:0"><span style="position:absolute;top:2px;left:${tl.inMaster?'18px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.15)"></span></button>
@@ -338,7 +339,7 @@ function _tlOpenMasterView(){
 
   c.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${pills}</div>
     <div style="display:flex;flex-direction:column;gap:0;max-width:620px">${rows||'<div style="text-align:center;padding:30px;color:var(--muted)">No moments in selected timelines.</div>'}</div>
-    ${span?`<div style="max-width:620px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center">${span} · ${all.length} moment${all.length!==1?'s':''} across ${active.length} timeline${active.length!==1?'s':''}</div>`:''}`;
+    ${span?`<div style="max-width:620px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center">${span}<br>${all.length} moment${all.length!==1?'s':''} across ${active.length} timeline${active.length!==1?'s':''}</div>`:''}`;
 }
 
 function _tlPrintMaster(){
@@ -657,7 +658,7 @@ function renderTimeline(c, actions){
     }
 
     body = `<div style="display:flex;flex-direction:column;gap:0;max-width:620px">${rows}</div>
-      ${span?`<div style="max-width:620px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center">${span} · ${items.length} moment${items.length!==1?'s':''}</div>`:''}`;
+      ${span?`<div style="max-width:620px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center">${span}<br>${items.length} moment${items.length!==1?'s':''}</div>`:''}`;
   }
 
   c.innerHTML = header + legend + body;
