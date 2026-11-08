@@ -2482,7 +2482,7 @@ function _ssBuildPayload(s, msg){
     fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:_ssTitle,
     replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
     templateId:_emailTplId(ed.templateId), issue:_emailIssue(),
-    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false,
+    designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, bgColor:ed.bgColor||'', boxColor:ed.boxColor||'',
       headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) },
     ctaLinks:_ctaLinks() };
   // Buttons placed in the text stay as markers in htmlText for the email to draw.
@@ -2702,6 +2702,7 @@ function _openEmailDesignModal(itemKey){
   const logoLocked=_emailLogoLocked();
   const logo=logoLocked||src.showLogo!==false;
   const hdrImg=src.headerImage||'';
+  const _tplDef={classic:{bg:'#EFEAE1',box:'#FBF8F3'},modern:{bg:'#F5F5F5',box:'#FFFFFF'},editorial:{bg:'#EDE7DE',box:'#FBF8F3'},atelier:{bg:'#EAE3D9',box:'#F6F1EA'}}[tplId]||{bg:'#EFEAE1',box:'#FBF8F3'};
   // Only the couple's own upload is shown here — with none, emails quietly use the default.
   const hdrPreview=hdrImg&&hdrImg!=='none'?_mediaUrl(hdrImg):'';
   const item=itemKey&&typeof _commsItem==='function'?_commsItem(itemKey):null;
@@ -2779,6 +2780,18 @@ function _openEmailDesignModal(itemKey){
         <button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignSet('accentColor','#8a6a2c'${arg})" style="font-size:10px;margin-left:auto">Reset</button>
       </div>
     </div>
+    ${showTemplatePicker?`<div>
+      <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Background &amp; box colours</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;line-height:1.45">Colour behind the email and the card the message sits on. Left on Default, they follow the template (and adapt to dark mode). Set your own and the email looks the same everywhere.</div>
+      ${[['bgColor','Background',_tplDef.bg],['boxColor','Box',_tplDef.box]].map(([k,lbl,def])=>{ const cur=src[k]||''; const shown=cur||def; return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="width:84px;font-size:12.5px;color:var(--ink)">${lbl}</span>
+        <label style="position:relative;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);cursor:pointer;overflow:hidden;background:${shown};flex-shrink:0" title="Choose ${lbl.toLowerCase()} colour">
+          <input type="color" value="${shown}" onchange="_emailDesignSet('${k}',this.value${arg})" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;margin:0"/>
+        </label>
+        <span style="font-family:monospace;font-size:12px;color:var(--muted)">${cur?cur:'Default'}</span>
+        ${cur?`<button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignSet('${k}',''${arg})" style="font-size:10px;margin-left:auto">Default</button>`:''}
+      </div>`; }).join('')}
+    </div>`:''}
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Header font</div>
       ${_emailFontPickerHtml('fontFamily', ff, itemKey||'', false)}
@@ -2827,7 +2840,7 @@ function _emailDesignSet(key, val, itemKey, skipRerender){
     if(!STATE.settings.commsDesign) STATE.settings.commsDesign={};
     if(!STATE.settings.commsDesign[itemKey]){
       const u=STATE.settings.emailDesign||{};
-      STATE.settings.commsDesign[itemKey]={ templateId:u.templateId||'classic', accentColor:u.accentColor||'#8a6a2c', fontFamily:u.fontFamily||'serif', bodyFont:u.bodyFont||'sans-serif', showLogo:u.showLogo!==false, headerImage:u.headerImage||'' };
+      STATE.settings.commsDesign[itemKey]={ templateId:u.templateId||'classic', accentColor:u.accentColor||'#8a6a2c', fontFamily:u.fontFamily||'serif', bodyFont:u.bodyFont||'sans-serif', showLogo:u.showLogo!==false, headerImage:u.headerImage||'', bgColor:u.bgColor||'', boxColor:u.boxColor||'' };
     }
     STATE.settings.commsDesign[itemKey][key]=val;
   } else {
@@ -2860,7 +2873,7 @@ function _emailDesignUseGlobal(itemKey, on){
     if(!STATE.settings.commsDesign) STATE.settings.commsDesign={};
     const saved=STATE.settings.commsDesignSaved&&STATE.settings.commsDesignSaved[itemKey];
     const u=STATE.settings.emailDesign||{};
-    STATE.settings.commsDesign[itemKey]=saved||{ templateId:u.templateId||'classic', accentColor:u.accentColor||'#8a6a2c', fontFamily:u.fontFamily||'serif', bodyFont:u.bodyFont||'sans-serif', showLogo:u.showLogo!==false, headerImage:u.headerImage||'' };
+    STATE.settings.commsDesign[itemKey]=saved||{ templateId:u.templateId||'classic', accentColor:u.accentColor||'#8a6a2c', fontFamily:u.fontFamily||'serif', bodyFont:u.bodyFont||'sans-serif', showLogo:u.showLogo!==false, headerImage:u.headerImage||'', bgColor:u.bgColor||'', boxColor:u.boxColor||'' };
   }
   saveToStorage();
   _emailDesignRerender(itemKey);

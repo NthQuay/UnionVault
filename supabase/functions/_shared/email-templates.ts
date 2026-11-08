@@ -11,6 +11,7 @@ export interface EmailShell {
   kicker?: string; title?: string; showBranding?: boolean
   accentColor: string; fontFamily: string; showLogo: boolean; headerImage: string
   bodyFont?: string; issue?: Issue
+  bgColor?: string; boxColor?: string   // optional custom page background / card colours (#rrggbb)
 }
 // Editorial / Atelier content slots:
 //   article — the main text (paragraphs, plus anything that belongs with them, e.g. a button)
@@ -110,7 +111,7 @@ export function inviteBlockHtml(block: InviteBlock, color: string, placed = fals
 
 // ── Classic template ─────────────────────────────────────────────────────────
 // Cream card on beige background, logo header band, serif title, gold accents.
-export function classicHtml(opts: EmailShell, content: string[]): string {
+function classicBase(opts: EmailShell, content: string[]): string {
   const ac = escH(opts.accentColor)
   const bf = escH(opts.bodyFont || 'Helvetica,Arial,sans-serif')
 
@@ -147,7 +148,7 @@ ${brandingFooter}
 
 // ── Modern template ──────────────────────────────────────────────────────────
 // Clean white card, left accent border, sans-serif, minimal.
-export function modernHtml(opts: EmailShell, content: string[]): string {
+function modernBase(opts: EmailShell, content: string[]): string {
   const ac = escH(opts.accentColor)
   const bf = escH(opts.bodyFont || 'Helvetica,Arial,sans-serif')
 
@@ -249,7 +250,7 @@ export function inviteImg(block: InviteBlock): string {
 // ── Editorial template ───────────────────────────────────────────────────────
 // Magazine cover: issue line, masthead names, cover photo, cover lines, Nº eyebrow,
 // Didone heading, drop cap; spread / details; square ink buttons.
-export function editorialHtml(opts: EmailShell, slots: MagSlots): string {
+function editorialBase(opts: EmailShell, slots: MagSlots): string {
   const ac = escH(opts.accentColor)
   const bf = escH(opts.bodyFont || MAG_SANS)
   const iss = opts.issue
@@ -276,7 +277,7 @@ ${(d || iss?.venue) ? `<tr><td class="uv-pad" style="padding:20px 40px 4px"><tab
 ${d ? `<td valign="bottom" align="right" style="white-space:nowrap;padding-left:16px"><div class="uv-muted" style="font-family:${MAG_SANS};font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:#7A6F64">${d.weekday}</div><div class="uv-ink" style="font-family:${BODONI};font-size:38px;line-height:1;color:#1D1916">${d.short}</div></td>` : ''}
 </tr></table></td></tr>` : ''}
 <tr><td class="uv-pad" style="padding:22px 40px 6px;font-family:${bf}">
-<div style="font-family:${MAG_SANS};font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:${ac};margin-bottom:10px">Nº 02${opts.title ? ` — ${escH(opts.title)}` : ''}</div>
+<div style="font-family:${MAG_SANS};font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:${ac};margin-bottom:10px">${opts.title ? escH(opts.title) : 'The Wedding Issue'}</div>
 ${opts.title ? `<div class="uv-ink uv-h" style="font-family:${BODONI};font-size:40px;line-height:1.04;color:#1D1916;margin-bottom:16px">${escH(opts.title)}</div>` : ''}
 ${dropCap(slots.article, ac)}
 </td></tr>
@@ -290,7 +291,7 @@ ${magFooter(opts, ac, [names ? escH(names) : '', d ? d.dotted : ''].filter(Boole
 // ── Atelier template ─────────────────────────────────────────────────────────
 // Big stacked names beside the cover photo, tinted panels with soft section numbers,
 // outlined accent buttons.
-export function atelierHtml(opts: EmailShell, slots: MagSlots): string {
+function atelierBase(opts: EmailShell, slots: MagSlots): string {
   const ac = escH(opts.accentColor)
   const bf = escH(opts.bodyFont || MAG_SANS)
   const iss = opts.issue
@@ -318,7 +319,7 @@ ${metaRow ? `<table role="presentation" width="100%" cellpadding="0" cellspacing
 <tr><td class="uv-pad" style="padding:0 36px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-panel" style="background:#E8DFD2"><tr><td style="padding:26px 26px 14px;font-family:${bf}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td valign="top">
 ${opts.title ? `<div class="uv-ink uv-h" style="font-family:${PLAYFAIR};font-size:34px;line-height:1.08;color:#1D1916;margin-bottom:14px">${escH(opts.title)}</div>` : ''}
-</td><td valign="top" align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:58px;line-height:.9;color:${ac}55;padding-left:10px">01</td></tr></table>
+</td><td valign="top" align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:58px;line-height:.9;color:${ac}55;padding-left:10px">${d ? d.short : ''}</td></tr></table>
 ${slots.article}
 </td></tr></table></td></tr>
 ${slots.spread || ''}
@@ -340,7 +341,7 @@ export function inviteSpreadRow(fmt: 'editorial' | 'atelier', ib: InviteBlock, i
   return `<tr><td class="uv-pad" style="padding:20px 36px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
 <td width="44%" valign="top" style="width:44%">${inviteImg(ib)}</td>
 <td width="56%" valign="middle" class="uv-panel uv-sp-copy" style="width:56%;background:#E8DFD2;padding:20px 22px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MAG_SANS};font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:${ac}">The details</td><td align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:40px;line-height:.9;color:${ac}55">02</td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MAG_SANS};font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:${ac}">The details</td><td align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:40px;line-height:.9;color:${ac}55">${issueDate(iss?.date || '')?.short || ''}</td></tr></table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${detailsRows(iss, PLAYFAIR, '#D6CBBB')}</table>
 </td></tr></table></td></tr>`
 }
@@ -355,7 +356,7 @@ export function detailsPanelRow(fmt: 'editorial' | 'atelier', iss: Issue | undef
   }
   const rows = detailsRows(iss, PLAYFAIR, '#D6CBBB')
   return rows ? `<tr><td class="uv-pad" style="padding:20px 36px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-panel" style="background:#E8DFD2"><tr><td style="padding:20px 24px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MAG_SANS};font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:${ac}">The details</td><td align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:40px;line-height:.9;color:${ac}55">02</td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MAG_SANS};font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:${ac}">The details</td><td align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:40px;line-height:.9;color:${ac}55">${issueDate(iss?.date || '')?.short || ''}</td></tr></table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr></table></td></tr>` : ''
 }
 
@@ -374,3 +375,49 @@ export const VALID_TEMPLATES = ['classic', 'modern', 'editorial', 'atelier'] as 
 export function templateIdOf(v: unknown): string {
   return (VALID_TEMPLATES as readonly string[]).includes(String(v || '')) ? String(v) : 'classic'
 }
+
+
+// ── Custom background / box colours ──────────────────────────────────────────
+// The couple can pick the page background and the card ("box") colour. Applied after the
+// template is built, so all four designs share one code path. A custom box turns off the
+// automatic dark-mode swap (the email looks as designed everywhere); a dark box instead gets
+// the template's light-text rules applied permanently, a white logo and a matching tint for
+// inner panels.
+const HEX6 = /^#[0-9a-fA-F]{6}$/
+const lum = (h: string) => { const n = parseInt(h.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 }
+function mixHex(a: string, b: string, t: number) {
+  const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16)
+  const c = (sh: number) => Math.round(((x >> sh) & 255) * (1 - t) + ((y >> sh) & 255) * t)
+  return '#' + [16, 8, 0].map((sh) => c(sh).toString(16).padStart(2, '0')).join('')
+}
+export function applyCustomColors(html: string, opts: EmailShell): string {
+  const bg = HEX6.test(opts.bgColor || '') ? opts.bgColor! : ''
+  const box = HEX6.test(opts.boxColor || '') ? opts.boxColor! : ''
+  if (!bg && !box) return html
+  let out = html
+  if (bg) out = out.replace(/(<body class="uv-bg" style="[^"]*?background:)#[0-9A-Fa-f]{3,6}/, `$1${bg}`)
+  const boxDark = !!box && lum(box) < 0.5
+  if (box) {
+    out = out.replace(/(class="uv-card" style="[^"]*?background:)#[0-9A-Fa-f]{3,6}/, `$1${box}`)
+    const tint = mixHex(box, boxDark ? '#ffffff' : '#000000', 0.07)
+    out = out.replace(/background:#E8DFD2/g, `background:${tint}`).replace(/background:#F2ECE3/g, `background:${tint}`)
+    out = out.replace(/<source srcset="[^"]*" media="\(prefers-color-scheme: dark\)">/g, '')
+    if (boxDark) out = out.replace(/email-logo-black\.png/g, 'email-logo-white.png')
+  }
+  // Dark-mode rules: drop the page-background rule when the background is custom; drop them
+  // all when the box is custom (keeping text-colour rules permanently if the box is dark).
+  out = out.replace(/@media \(prefers-color-scheme: dark\)\{((?:[^{}]|\{[^{}]*\})*)\}/, (_m, rules: string) => {
+    let r = rules
+    if (bg) r = r.replace(/\.uv-bg\{[^}]*\}/, '')
+    if (!box) return `@media (prefers-color-scheme: dark){${r}}`
+    if (!boxDark) return ''
+    r = r.replace(/\.uv-card\{[^}]*?(color:[^;}]*)(;[^}]*)?\}/, '.uv-card{$1}')
+         .replace(/\.uv-(?:band|panel)\{[^}]*\}/g, '').replace(/\.uv-bg\{[^}]*\}/, '')
+    return r
+  })
+  return out
+}
+export const classicHtml = (o: EmailShell, c: string[]) => applyCustomColors(classicBase(o, c), o)
+export const modernHtml = (o: EmailShell, c: string[]) => applyCustomColors(modernBase(o, c), o)
+export const editorialHtml = (o: EmailShell, s: MagSlots) => applyCustomColors(editorialBase(o, s), o)
+export const atelierHtml = (o: EmailShell, s: MagSlots) => applyCustomColors(atelierBase(o, s), o)

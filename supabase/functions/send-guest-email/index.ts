@@ -43,7 +43,7 @@ serve(async (req) => {
 
   let b: { to?: string[]; subject?: string; body?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string;
            attachment?: { filename?: string; path?: string }; ics?: string;
-           templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; bodyFont?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean;
+           templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; bodyFont?: string; showLogo?: boolean; headerImage?: string; bgColor?: string; boxColor?: string }; preview?: boolean;
            htmlText?: string; guestId?: string; ctaLinks?: { rsvp?: string; website?: string };
            logKind?: string; toNames?: string[];
            issue?: { names?: string; date?: string; time?: string; venue?: string };
@@ -67,6 +67,8 @@ serve(async (req) => {
   const fontFamily = FONT_STACKS[String(b.designOpts?.fontFamily || '')] || FONT_STACKS['serif']
   const bodyFont = FONT_STACKS[String((b.designOpts as { bodyFont?: string } | undefined)?.bodyFont || '')] || FONT_STACKS['sans-serif']
   const showLogo = b.designOpts?.showLogo !== false
+  const bgColor = HEX_RE.test(String(b.designOpts?.bgColor || '')) ? String(b.designOpts!.bgColor) : ''
+  const boxColor = HEX_RE.test(String(b.designOpts?.boxColor || '')) ? String(b.designOpts!.boxColor) : ''
   const headerImageRaw = String(b.designOpts?.headerImage || '')
   const headerImageCustom = headerImageRaw.startsWith(`${SB_URL}/storage/v1/object/public/photos/`) && !headerImageRaw.includes('..') ? headerImageRaw : ''
   // No custom header → the UnionVault default banner; 'none' → the couple turned it off.
@@ -137,7 +139,7 @@ serve(async (req) => {
     kicker: String(b.kicker ?? '').slice(0, 120),
     title: String(b.title ?? '').slice(0, 200),
     text: String(b.htmlText || text) || 'Preview of your email template.',
-    showBranding, accentColor, fontFamily, bodyFont, showLogo: showLogo || showBranding, headerImage, templateId: tplId,
+    showBranding, accentColor, fontFamily, bodyFont, showLogo: showLogo || showBranding, headerImage, bgColor, boxColor, templateId: tplId,
     inviteBlock, ctaLinks, issue,
   })
 
