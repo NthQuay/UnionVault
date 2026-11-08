@@ -90,3 +90,10 @@ Audit found most wizard answers were saved but never read (vibe, formality, sett
 
 ## v510.0 (accepted)
 - Checklist items with appointments attached read as appointments: `taskDueLabel(t)` (js/utils.js) → "Coming up — date" (gold) within 7 days and "Passed — date" (muted) once gone, instead of red "Due soon" / "OVERDUE". Plain tasks unchanged. Used on Dashboard Next up / pinned and all Checklist rows (`dueDateLabel` gained an optional `words` arg).
+
+## v510.1 (accepted)
+- Sidebar: Events moved directly under Timelines.
+- Event ↔ timeline linking from either side via one helper `_setEventTimelineLink(evId, tlId)` (js/events.js; clears any existing link on either side, null to unlink):
+  - Event page: "+ Link a timeline" / "Change" → picker (`_evLinkTimelinePicker`): create a new timeline for the event, link an existing unlinked one, or Unlink. Wedding Day (first, unlinked) timeline is never offered (`_evLinkableTimelines`).
+  - Timeline New / Edit forms: "Linked event" dropdown (`_tlEventSelectHtml`).
+  - Events list cards show the linked timeline next to the date. Event form save also uses the helper.
