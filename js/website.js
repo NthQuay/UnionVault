@@ -7988,8 +7988,8 @@ function buildDashWishingWellHtml(){
 }
 
 function renderVisionboard(c,actions){
-  const items=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
-  const colors=STATE.inspo.colors;
+  const items=STATE.visionboard.map(id=>(STATE.inspo?.items||[]).find(i=>i.id===id)).filter(Boolean);
+  const colors=STATE.inspo?.colors;
   const allCols=[...WEDDING_COLORS,...(STATE.inspo.customColors||[])];
   const showOnDash=STATE.settings.showVisionOnDash||false;
   const vbGrouped=!!STATE.settings.vbGrouped;
@@ -8322,8 +8322,8 @@ function vbDrop(e,targetId){
   document.querySelectorAll('[data-vbid]').forEach(el=>el.style.outline='');
   if(!vbDragId||vbDragId===targetId)return;
   if(STATE.settings&&STATE.settings.vbGrouped){
-    const di=STATE.inspo.items.find(i=>i.id===vbDragId);
-    const ti2=STATE.inspo.items.find(i=>i.id===targetId);
+    const di=(STATE.inspo?.items||[]).find(i=>i.id===vbDragId);
+    const ti2=(STATE.inspo?.items||[]).find(i=>i.id===targetId);
     if(!di||!ti2||(di.category||'Other')!==(ti2.category||'Other')){vbDragId=null;return;}
   }
   const fi=STATE.visionboard.indexOf(vbDragId);

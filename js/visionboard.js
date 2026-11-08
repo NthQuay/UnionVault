@@ -15,7 +15,7 @@ function setVbDashCount(n){ if(!STATE.settings) STATE.settings={}; STATE.setting
 function setVbDashPinned(ids){ if(!STATE.settings) STATE.settings={}; STATE.settings.vbDashPinned=(Array.isArray(ids)&&ids.length)?[...ids]:null; saveToStorage(); navigate(_currentPage||'dashboard'); }
 
 function openVbDashPicker(){
-  const allItems=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
+  const allItems=STATE.visionboard.map(id=>(STATE.inspo?.items||[]).find(i=>i.id===id)).filter(Boolean);
   let _dc=STATE.settings.vbDashCount; if(_dc===undefined||_dc===null) _dc=12;
   const maxSel=allItems.length; // no limit: the dashboard shows exactly the ideas you pick
   const isDark=document.body.classList.contains('dark');
@@ -67,7 +67,7 @@ function _vbdpToggle(card){
   const goldDeep=getComputedStyle(document.documentElement).getPropertyValue('--gold-deep').trim()||'#B89A6A';
   const borderC=isDark?'rgba(255,255,255,.1)':'rgba(60,40,20,.12)';
   let _dc=STATE.settings.vbDashCount; if(_dc===undefined||_dc===null) _dc=12;
-  const allItems=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
+  const allItems=STATE.visionboard.map(id=>(STATE.inspo?.items||[]).find(i=>i.id===id)).filter(Boolean);
   const maxSel=_dc==='all'?allItems.length:_dc;
   const selected=ov.querySelectorAll('.vbdp-card.vbdp-on');
   if(card.classList.contains('vbdp-on')){
@@ -93,7 +93,7 @@ function _vbdpUpdateCount(){
   if(!ov) return;
   const n=ov.querySelectorAll('.vbdp-card.vbdp-on').length;
   let _dc=STATE.settings.vbDashCount; if(_dc===undefined||_dc===null) _dc=12;
-  const allItems=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
+  const allItems=STATE.visionboard.map(id=>(STATE.inspo?.items||[]).find(i=>i.id===id)).filter(Boolean);
   const maxSel=_dc==='all'?allItems.length:_dc;
   const lbl=ov.querySelector('#vbdp-count-lbl');
   if(lbl) lbl.textContent=`${n} selected`;

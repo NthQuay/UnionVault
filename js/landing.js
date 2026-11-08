@@ -111,8 +111,8 @@ async function _lpSignIn() {
       // Cloud data exists — load it into STATE
       if(cloudChk.saved.event)    Object.assign(STATE.event, cloudChk.saved.event);
       if(cloudChk.saved.settings) Object.assign(STATE.settings, cloudChk.saved.settings);
-      ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','families','invites'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
-      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
+      ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','timelines','timelineCats','families','invites'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
+      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets','activeTimelineId'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
       saveToStorage();
       if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
       if(typeof navigate !== 'undefined') navigate('dashboard');
