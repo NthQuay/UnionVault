@@ -319,7 +319,7 @@ ${metaRow ? `<table role="presentation" width="100%" cellpadding="0" cellspacing
 <tr><td class="uv-pad" style="padding:0 36px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-panel" style="background:#E8DFD2"><tr><td style="padding:26px 26px 14px;font-family:${bf}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td valign="top">
 ${opts.title ? `<div class="uv-ink uv-h" style="font-family:${PLAYFAIR};font-size:34px;line-height:1.08;color:#1D1916;margin-bottom:14px">${escH(opts.title)}</div>` : ''}
-</td><td valign="top" align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:58px;line-height:.9;color:${ac}55;padding-left:10px">${d ? `${d.day}<br><span style="font-family:${MAG_SANS};font-size:15px;letter-spacing:.24em">${d.mon}</span>` : ''}</td></tr></table>
+</td><td valign="top" align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:58px;line-height:.9;color:${ac}55;padding-left:10px">${d ? `${d.day}<span style="display:block;font-family:${MAG_SANS};font-size:15px;line-height:1.3;letter-spacing:.24em">${d.mon}</span>` : ''}</td></tr></table>
 ${slots.article}
 </td></tr></table></td></tr>
 ${slots.spread || ''}
@@ -363,7 +363,7 @@ export function detailsPanelRow(fmt: 'editorial' | 'atelier', iss: Issue | undef
 // ── Issue fields from a request body — plain strings, capped; escaped where drawn. ──
 function cornerNum(iso: string): string {
   const d = issueDate(iso)
-  return d ? `${d.day}<br><span style="font-family:${MAG_SANS};font-size:12px;letter-spacing:.24em">${d.mon}</span>` : ''
+  return d ? `${d.day}<span style="display:block;font-family:${MAG_SANS};font-size:12px;line-height:1.3;letter-spacing:.24em">${d.mon}</span>` : ''
 }
 export function parseIssue(raw: unknown): Issue {
   const iss = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
@@ -423,7 +423,7 @@ export function applyCustomColors(html: string, opts: EmailShell): string {
     if (!box) return `@media (prefers-color-scheme: dark){${r}}`
     if (!boxDark) return ''
     r = r.replace(/\.uv-card\{[^}]*?(color:[^;}]*)(;[^}]*)?\}/, '.uv-card{$1}')
-         .replace(/\.uv-(?:band|panel)\{[^}]*\}/g, '').replace(/\.uv-bg\{[^}]*\}/, '')
+         .replace(/\.uv-(?:band|panel|num)\{[^}]*\}/g, '').replace(/\.uv-bg\{[^}]*\}/, '')
     return r
   })
   return out
