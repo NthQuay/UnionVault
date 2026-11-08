@@ -3881,12 +3881,9 @@ function _wbBlockBody(key,b){
       return `<div class="wb-tile wb-tile-gone">Image not saved
         <button type="button" class="wb-tile-x" title="Remove" onclick="_wbImgRemove('${key}','${b.id}',${ix})">✕</button></div>`;
     }
-    return `<div class="wb-tile" draggable="true"
-        ondragstart="_wbTileDragStart(event,'${key}','${b.id}',${ix})"
-        ondragover="_wbTileDragOver(event)"
-        ondrop="_wbTileDrop(event,'${key}','${b.id}',${ix})"
-        ondragend="_wbTileDragEnd(event)">
-      <img src="${_mediaUrl(id)}" alt=""/>
+    return `<div class="wb-tile" data-key="${key}" data-bid="${b.id}" data-ix="${ix}"
+        onpointerdown="_wbTilePD(event,'${key}','${b.id}',${ix})" onmousedown="if(!event.target.closest('.wb-tile-x'))event.preventDefault()">
+      <img src="${_mediaUrl(id)}" alt="" draggable="false"/>
       <button type="button" class="wb-tile-x" title="Remove" onclick="_wbImgRemove('${key}','${b.id}',${ix})">✕</button>
     </div>`;
   }).join('');
@@ -3974,10 +3971,10 @@ function _wbFeatPanelHtml(key,b){
   if(!fi || fi.b!==b) return '';
   const c=_wbFeatCrop(b,fi.id);
   const src=_mediaUrl(fi.id);
-  const frames=_wbFeatFrames().map(([k,lbl,ar,w])=>`<div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+  const frames=_wbFeatFrames().map(([k,lbl,ar,w])=>`<div style="display:flex;flex-direction:column;gap:4px;align-items:center;min-width:0;flex:0 1 auto">
       <div class="wb-fx-frame" data-key="${key}" data-bid="${b.id}"
            onmousedown="_wbFeatPickStart(event,'${key}','${b.id}')" ontouchstart="_wbFeatPickStart(event,'${key}','${b.id}')"
-           style="position:relative;width:${w};aspect-ratio:${ar};overflow:hidden;border-radius:6px;border:1px solid var(--border);cursor:crosshair;background:var(--surface);touch-action:none">
+           style="position:relative;width:${w};max-width:100%;aspect-ratio:${ar};overflow:hidden;border-radius:6px;border:1px solid var(--border);cursor:crosshair;background:var(--surface);touch-action:none">
         <img class="wb-fx-img" src="${src}" alt="" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;${_wbFeatImgCss(c)}"/>
         <span class="wb-hero-pin wb-fx-pin" style="left:${_wbHeroPct(c.pos,0)}%;top:${_wbHeroPct(c.pos,1)}%"></span>
       </div>
@@ -3988,8 +3985,8 @@ function _wbFeatPanelHtml(key,b){
     <div class="wb-blk-hint" style="margin:0 0 8px">The first photo sits beside the text. Drag either preview to choose which part stays in view.</div>
     <div style="display:flex;gap:12px;align-items:flex-start;justify-content:center;margin-bottom:8px">${frames}</div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="wb-slot-lbl" id="wb-fx-zl-${b.id}" style="white-space:nowrap;min-width:78px">Zoom · ${c.zoom}%</span>
-      <input type="range" min="100" max="250" step="1" value="${c.zoom}" oninput="_wbFeatZoom('${key}','${b.id}',this.value)" style="flex:1;accent-color:var(--gold)"/>
+      <span class="wb-slot-lbl" id="wb-fx-zl-${b.id}" style="white-space:nowrap;min-width:0;flex-shrink:0">Zoom · ${c.zoom}%</span>
+      <input type="range" min="100" max="250" step="1" value="${c.zoom}" oninput="_wbFeatZoom('${key}','${b.id}',this.value)" style="flex:1;min-width:0;accent-color:var(--gold)"/>
       <button type="button" class="wb-blk-addbtn" style="flex-shrink:0" onclick="_wbFeatCentre('${key}','${b.id}')">Centre</button>
     </div>
   </div>`;
@@ -4127,6 +4124,74 @@ function _wbTileDragEnd(){
   _wbTileDrag=null;
   document.querySelectorAll('.wb-tile-drag').forEach(t=>t.classList.remove('wb-tile-drag'));
   document.querySelectorAll('.wb-tile-over').forEach(t=>t.classList.remove('wb-tile-over'));
+}
+
+
+// ── Tile reorder with pointer events (mouse AND touch). The old HTML5 drag-and-drop did not
+// start on phones, so photos could no longer be reordered there. Touch: press and hold ~0.25s,
+// then drag; mouse: drag past a few pixels. Drop on another tile to move the photo there —
+// drop on the FIRST tile to make it the featured photo.
+let _wbTP=null;
+function _wbTilePD(e,key,bid,ix){
+  if(e.target.closest('.wb-tile-x')||(e.pointerType==='mouse'&&e.button!==0)) return;
+  _wbTilePDEnd(true);
+  const tile=e.currentTarget;
+  _wbTP={key,bid,ix,tile,x:e.clientX,y:e.clientY,id:e.pointerId,touch:e.pointerType!=='mouse',on:false,ghost:null,over:null,timer:null};
+  const t=_wbTP;
+  if(t.touch) t.timer=setTimeout(()=>_wbTPStart(),260);
+  document.addEventListener('pointermove',_wbTPMove);
+  document.addEventListener('pointerup',_wbTPUp);
+  document.addEventListener('pointercancel',_wbTPCancel);
+}
+function _wbTPStart(){
+  const t=_wbTP; if(!t||t.on) return;
+  t.on=true;
+  t.tile.classList.add('wb-tile-drag');
+  const g=t.tile.cloneNode(true); g.classList.remove('wb-tile-drag');
+  g.style.cssText='position:fixed;z-index:100000;width:'+t.tile.offsetWidth+'px;height:'+t.tile.offsetHeight+'px;pointer-events:none;opacity:.88;box-shadow:0 6px 18px rgba(0,0,0,.35);border-radius:6px;transform:scale(1.08)';
+  document.body.appendChild(g); t.ghost=g;
+  _wbTPPlace(t.x,t.y);
+  try{ navigator.vibrate&&navigator.vibrate(12); }catch(_){}
+}
+function _wbTPPlace(x,y){
+  const t=_wbTP; if(!t||!t.ghost) return;
+  t.ghost.style.left=(x-t.ghost.offsetWidth/2)+'px'; t.ghost.style.top=(y-t.ghost.offsetHeight/2)+'px';
+  const el=document.elementFromPoint(x,y);
+  const tl=el&&el.closest?el.closest('.wb-tile[data-ix]'):null;
+  document.querySelectorAll('.wb-tile-over').forEach(n=>n.classList.remove('wb-tile-over'));
+  t.over=(tl&&tl.dataset.bid===t.bid&&Number(tl.dataset.ix)!==t.ix)?tl:null;
+  if(t.over) t.over.classList.add('wb-tile-over');
+}
+function _wbTPMove(e){
+  const t=_wbTP; if(!t||e.pointerId!==t.id) return;
+  if(!t.on){
+    const d=Math.hypot(e.clientX-t.x,e.clientY-t.y);
+    if(t.touch){ if(d>14){ _wbTilePDEnd(true); } return; }   // finger moved first: it is a scroll, not a drag
+    if(d>5){ t.x=e.clientX; t.y=e.clientY; _wbTPStart(); }
+    return;
+  }
+  e.preventDefault();
+  _wbTPPlace(e.clientX,e.clientY);
+}
+function _wbTPUp(e){
+  const t=_wbTP; if(!t||e.pointerId!==t.id) return;
+  const to=t.on&&t.over?Number(t.over.dataset.ix):-1;
+  const {key,bid,ix}=t;
+  _wbTilePDEnd(true);
+  if(to>=0&&to!==ix){
+    const b=_wbBlock(key,bid); if(!b) return;
+    const [moved]=b.ids.splice(ix,1); b.ids.splice(to,0,moved);
+    saveToStorage(); _wbBlocksRepaint(key);
+  }
+}
+function _wbTPCancel(){ _wbTilePDEnd(true); }
+function _wbTilePDEnd(){
+  const t=_wbTP; _wbTP=null;
+  document.removeEventListener('pointermove',_wbTPMove);
+  document.removeEventListener('pointerup',_wbTPUp);
+  document.removeEventListener('pointercancel',_wbTPCancel);
+  if(t){ if(t.timer) clearTimeout(t.timer); if(t.ghost) t.ghost.remove(); t.tile&&t.tile.classList.remove('wb-tile-drag'); }
+  document.querySelectorAll('.wb-tile-over').forEach(n=>n.classList.remove('wb-tile-over'));
 }
 
 // The + tile. Two sources, one destination: an id in this block.
