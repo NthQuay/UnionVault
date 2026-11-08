@@ -347,6 +347,92 @@ function _isDarkHex(hex){
   const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
   return (r*0.299+g*0.587+b*0.114)<128;
 }
+// ── Stand-alone RSVP page header ──────────────────────────────────────────────
+// "Liam & Mandy's Wedding", the day + start time and where — drawn in the wedding
+// website's own format (Classic / Modern / Editorial / Atelier) and colours, so the RSVP
+// link feels like part of the couple's site even when they don't publish one.
+function _rsvpPageHeadHtml(ev, t){
+  const esc=_escHtml;
+  const p1=String(ev.partner1||'').trim(), p2=String(ev.partner2||'').trim();
+  const names=[p1,p2].filter(Boolean).join(' & ');
+  const title=names?`${names}\u2019s Wedding`:'Our Wedding';
+  let dateFull='', weekday='', dShort='', monthYear='';
+  if(ev.date){ const d=new Date(ev.date+'T00:00:00'); if(!isNaN(d)){
+    dateFull=d.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+    weekday=d.toLocaleDateString('en-AU',{weekday:'long'});
+    dShort=String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0');
+    monthYear=d.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+  } }
+  const tm=String(ev.time||'').trim();
+  const time=/^\d{1,2}:\d{2}$/.test(tm)&&typeof tlTo12h==='function'?tlTo12h(tm):tm;
+  const when=[weekday&&dateFull?`${weekday}, ${dateFull}`:dateFull, time?`${time}`:''].filter(Boolean).join(' \u00b7 ');
+  if(typeof _evNormalize==='function') _evNormalize(ev);
+  const diff=typeof _evDiff==='function'&&_evDiff(ev);
+  const place=part=>typeof _evPlace==='function'?_evPlace(part,ev):'';
+  const venues=diff
+    ? [['Ceremony',place('ceremony'),ev.ceremonyVenueAddress],['Reception',place('reception'),ev.venueAddress]].filter(v=>v[1])
+    : (ev.venue?[['',[typeof _evSpace==='function'&&_evSpace('ceremony',ev),ev.venue].filter(Boolean).join(', '),ev.venueAddress]]:[]);
+  const venueHtml=venues.map(([lbl,nm,addr])=>`<div class="rh-venue">${lbl?`<span class="rh-k">${esc(lbl)}</span>`:''}<span class="rh-v">${esc(nm)}</span>${addr?`<span class="rh-a">${esc(addr)}</span>`:''}</div>`).join('');
+  const fmt=t.format||'modern';
+  if(fmt==='magazine'){
+    const mast=names?esc(names).replace(' &amp; ',' <i>&amp;</i> '):esc(title);
+    return `<div class="rh rh-mag">
+      <div class="rh-bar"><span>The Wedding Issue</span><span>N\u00ba 01${monthYear?' \u00b7 '+esc(monthYear):''}</span></div>
+      <div class="rh-mast">${mast}</div>
+      <div class="rh-cover">The Wedding</div>
+      <div class="rh-row"><div class="rh-left">${venueHtml}</div>${dShort?`<div class="rh-date"><span>${esc(weekday)}</span><b>${dShort}</b>${time?`<span>${esc(time)}</span>`:''}</div>`:''}</div>
+    </div>`;
+  }
+  if(fmt==='atelier'){
+    const stacked=(p1&&p2)?`${esc(p1)}<br><i>&amp;</i><br>${esc(p2)}`:esc(names||title);
+    return `<div class="rh rh-ate">
+      <div class="rh-eyebrow">The wedding of</div>
+      <div class="rh-names">${stacked}</div>
+      <div class="rh-meta">${when?`<div><span class="rh-k">When</span><span class="rh-v">${esc(when)}</span></div>`:''}${venueHtml?`<div><span class="rh-k">Where</span>${venueHtml}</div>`:''}</div>
+    </div>`;
+  }
+  // Classic ('modern') and Modern ('editorial'): centred.
+  return `<div class="rh rh-${fmt==='editorial'?'mod':'cls'}">
+    <div class="rh-eyebrow">You\u2019re invited to</div>
+    <h1 class="rh-title">${esc(title)}</h1>
+    <div class="rh-orn"></div>
+    ${when?`<div class="rh-when">${esc(when)}</div>`:''}
+    ${venueHtml?`<div class="rh-venues">${venueHtml}</div>`:''}
+  </div>`;
+}
+function _rsvpPageHeadCss(){
+  const t=(STATE.website&&STATE.website.theme)||{};
+  const head=t.headFont||"'Cormorant Garamond',serif", body=t.bodyFont||"'Inter',sans-serif";
+  const ink=t.heading||'#4A3F35', txt=t.text||'#5A5148', ac=t.accent||'#C9A227';
+  return `#uv-rsvp-head{width:100%;max-width:520px;margin:0 auto;padding:40px 4px 26px;box-sizing:border-box;color:${txt};font-family:${body}}`
+   +`#uv-rsvp-head .rh-k{display:block;font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.7;margin-bottom:3px}`
+   +`#uv-rsvp-head .rh-v{display:block;font-family:${head};font-size:18px;color:${ink};line-height:1.25}`
+   +`#uv-rsvp-head .rh-a{display:block;font-size:12.5px;opacity:.75;margin-top:2px}`
+   +`#uv-rsvp-head .rh-venue+.rh-venue{margin-top:10px}`
+   // Classic / Modern
+   +`#uv-rsvp-head .rh-cls,#uv-rsvp-head .rh-mod{text-align:center}`
+   +`#uv-rsvp-head .rh-eyebrow{font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:${ac};margin-bottom:10px}`
+   +`#uv-rsvp-head .rh-title{font-family:${head};font-weight:400;font-size:clamp(30px,8vw,44px);line-height:1.08;color:${ink};margin:0}`
+   +`#uv-rsvp-head .rh-mod .rh-title{text-transform:uppercase;letter-spacing:.08em;font-size:clamp(24px,6.4vw,34px)}`
+   +`#uv-rsvp-head .rh-orn{width:46px;height:1px;background:${ac};margin:16px auto}`
+   +`#uv-rsvp-head .rh-when{font-size:14px;letter-spacing:.04em;color:${ink}}`
+   +`#uv-rsvp-head .rh-venues{margin-top:14px}`
+   // Editorial (magazine)
+   +`#uv-rsvp-head .rh-mag .rh-bar{display:flex;justify-content:space-between;gap:10px;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:${ink};padding-bottom:10px;border-bottom:1px solid ${ink}33}`
+   +`#uv-rsvp-head .rh-mag .rh-mast{font-family:${head};font-size:clamp(40px,12vw,64px);line-height:.95;letter-spacing:-.02em;text-transform:uppercase;text-align:center;color:${ink};margin:20px 0 6px}`
+   +`#uv-rsvp-head .rh-mag .rh-mast i{font-size:.5em;text-transform:none;letter-spacing:0}`
+   +`#uv-rsvp-head .rh-mag .rh-cover{text-align:center;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:${ac};margin-bottom:20px}`
+   +`#uv-rsvp-head .rh-mag .rh-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-top:1px solid ${ink}33;padding-top:14px}`
+   +`#uv-rsvp-head .rh-mag .rh-date{text-align:right;white-space:nowrap}#uv-rsvp-head .rh-mag .rh-date span{display:block;font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;opacity:.75}`
+   +`#uv-rsvp-head .rh-mag .rh-date b{display:block;font-family:${head};font-weight:400;font-size:38px;line-height:1;color:${ink};margin:2px 0}`
+   // Atelier
+   +`#uv-rsvp-head .rh-ate,#uv-rsvp-head .rh-ate *{text-align:left}#uv-rsvp-head .rh-mag .rh-left,#uv-rsvp-head .rh-mag .rh-left *{text-align:left}#uv-rsvp-head .rh-mag .rh-bar span{text-align:left}`
+   +`#uv-rsvp-head .rh-ate .rh-names{font-family:${head};font-size:clamp(44px,13vw,64px);line-height:.92;letter-spacing:-.02em;color:${ink}}`
+   +`#uv-rsvp-head .rh-ate .rh-names i{font-size:.45em;color:${ac};letter-spacing:0}`
+   +`#uv-rsvp-head .rh-ate .rh-meta{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}`
+   +`#uv-rsvp-head .rh-ate .rh-meta>div{border-top:1px solid ${ink};padding-top:8px;min-width:0}`
+   +`@media(max-width:420px){#uv-rsvp-head .rh-ate .rh-meta{grid-template-columns:1fr}#uv-rsvp-head{padding-top:28px}}`;
+}
 async function _showRsvpForm(coupleId){
   // Stand-alone RSVP page: builds the same RSVP form the website uses (_wbBuildSite) and shows only that.
   // The data comes from one function, rsvp_page(uid), which needs NO published website — a couple can take
@@ -390,24 +476,21 @@ async function _showRsvpForm(coupleId){
   // none of the wedding website behind it. (The site's scripts finish after document.close() returns, so the
   // old one-shot call to open the form found nothing to open and guests landed on the website instead.)
   try{
-    const ev=STATE.event||{};
-    const names=[ev.partner1,ev.partner2].filter(Boolean).join(' & ');
-    let dateStr='';
-    if(ev.date){ const d=new Date(ev.date+'T00:00:00'); dateStr=isNaN(d)?ev.date:d.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}); }
     const st=document.createElement('style');
     st.id='uv-rsvp-only';
-    st.textContent='body > *:not(#uv-rsvp-overlay):not(#uv-rsvp-head):not(script):not(style){display:none!important}'
-      +'#uv-rsvp-overlay{background:transparent!important}.rfm-close{display:none!important}#uv-rsvp-sheet{border:1px solid rgba(0,0,0,.09)}'
-      +'#uv-rsvp-head{position:fixed;top:0;left:0;right:0;text-align:center;padding:26px 16px 0;z-index:9998;pointer-events:none}'
-      +'#uv-rsvp-head .n{font-size:13px;letter-spacing:.22em;text-transform:uppercase;opacity:.85}'
-      +'#uv-rsvp-head .d{font-size:12px;opacity:.6;margin-top:6px;letter-spacing:.04em}';
+    // The page scrolls: the wedding header (in the site's own format) sits above the form.
+    st.textContent='body > *:not(#uv-rsvp-overlay):not(script):not(style){display:none!important}'
+      +'html,body{overflow:auto!important;height:auto!important}'
+      +'#uv-rsvp-overlay{position:relative!important;inset:auto!important;min-height:100vh;background:transparent!important;flex-direction:column;justify-content:flex-start!important;align-items:center;padding:0 16px 48px!important;box-sizing:border-box}'
+      +'#uv-rsvp-overlay #uv-rsvp-sheet{max-height:none!important}'
+      +'.rfm-close{display:none!important}#uv-rsvp-sheet{border:1px solid rgba(0,0,0,.09)}'
+      + _rsvpPageHeadCss();
     (document.head||document.documentElement).appendChild(st);
-    if(names||dateStr){
-      const head=document.createElement('div');
-      head.id='uv-rsvp-head';
-      head.innerHTML=(names?`<div class="n">${_escHtml(names)}</div>`:'')+(dateStr?`<div class="d">${_escHtml(dateStr)}</div>`:'');
-      document.body.appendChild(head);
-    }
+    const head=document.createElement('header');
+    head.id='uv-rsvp-head';
+    head.innerHTML=_rsvpPageHeadHtml(STATE.event||{}, (STATE.website&&STATE.website.theme)||{});
+    const ov=document.getElementById('uv-rsvp-overlay');
+    if(ov) ov.insertBefore(head, ov.firstChild); else document.body.appendChild(head);
   }catch(e){ console.warn('RSVP-only styling failed',e); }
   let _tries=0;
   const _openWhenReady=()=>{
