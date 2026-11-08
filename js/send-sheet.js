@@ -2702,7 +2702,6 @@ function _openEmailDesignModal(itemKey){
   const logoLocked=_emailLogoLocked();
   const logo=logoLocked||src.showLogo!==false;
   const hdrImg=src.headerImage||'';
-  const _tplDef={classic:{bg:'#EFEAE1',box:'#FBF8F3'},modern:{bg:'#F5F5F5',box:'#FFFFFF'},editorial:{bg:'#EDE7DE',box:'#FBF8F3',panel:'#F2ECE3'},atelier:{bg:'#EAE3D9',box:'#F6F1EA',panel:'#E8DFD2'}}[tplId]||{bg:'#EFEAE1',box:'#FBF8F3'};
   // Only the couple's own upload is shown here — with none, emails quietly use the default.
   const hdrPreview=hdrImg&&hdrImg!=='none'?_mediaUrl(hdrImg):'';
   const item=itemKey&&typeof _commsItem==='function'?_commsItem(itemKey):null;
@@ -2753,10 +2752,6 @@ function _openEmailDesignModal(itemKey){
       ${sel?'<div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>':''}
     </button>`;
   };
-  const presetHtml=_COMMS_COLOR_PRESETS.map(c=>{
-    const sel=c.toLowerCase()===accent.toLowerCase();
-    return `<button type="button" onclick="_emailDesignSet('accentColor','${c}'${arg})" title="${c}" aria-label="${c}" style="flex:0 1 26px;width:26px;min-width:0;height:auto;aspect-ratio:1;border-radius:50%;background:${c};border:none;box-shadow:0 0 0 2px ${sel?'var(--ink)':'transparent'},0 0 0 1px var(--border);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0">${sel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</button>`;
-  }).join('');
   const body=`<div style="display:flex;flex-direction:column;gap:18px">
     ${banner}
     <div style="display:${useGlobal?'none':'flex'};flex-direction:column;gap:18px">
@@ -2770,28 +2765,18 @@ function _openEmailDesignModal(itemKey){
       </div>
     </div>`:''}
     <div>
-      <div style="font-size:13.5px;font-weight:500;margin-bottom:8px">Accent colour</div>
-      <div style="display:flex;gap:8px;flex-wrap:nowrap;margin-bottom:12px">${presetHtml}</div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <label style="position:relative;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);cursor:pointer;overflow:hidden;background:${accent};flex-shrink:0" title="Custom colour">
-          <input type="color" id="email-accent-native" value="${accent}" onchange="_emailDesignSet('accentColor',this.value${arg})" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;margin:0"/>
-        </label>
-        <input id="email-accent-hex" class="form-input" value="${accent}" maxlength="7" placeholder="#8a6a2c" style="font-family:monospace;font-size:12.5px;width:110px" oninput="_emailDesignHexInput(this${arg})" onchange="_emailDesignHexCommit(this${arg})"/>
-        <button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignSet('accentColor','#8a6a2c'${arg})" style="font-size:10px;margin-left:auto">Reset</button>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <span style="font-size:13.5px;font-weight:500">Colours</span>
+        <button type="button" onclick="var e=document.getElementById('email-col-info');e.style.display=e.style.display==='none'?'block':'none'" aria-label="About these colours" style="width:17px;height:17px;border-radius:50%;border:1px solid var(--muted);background:none;color:var(--muted);font:italic 600 11px Georgia,serif;line-height:1;cursor:pointer;padding:0">i</button>
+      </div>
+      <div id="email-col-info" style="display:none;font-size:11.5px;color:var(--muted);margin-bottom:10px;line-height:1.45;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px">Accent is used for buttons, labels and highlights. Background is behind the email, Box is the card the message sits on${['editorial','atelier'].includes(tplId)?', and Panels are the smaller boxes inside it (pick a shade as light or dark as the Box)':''}. Left on Default, they follow the template and adapt to dark mode. Set your own and the email looks the same everywhere.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${_emailColourDefs(tplId,src,showTemplatePicker).map(c=>`<button type="button" onclick="_emailColourPop('${c.k}'${arg})" style="display:flex;align-items:center;gap:9px;min-width:0;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-family:inherit;text-align:left">
+          <span style="width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:${c.shown};flex-shrink:0"></span>
+          <span style="min-width:0"><span style="display:block;font-size:12.5px;color:var(--ink);line-height:1.2">${c.label}</span><span style="display:block;font-size:10.5px;color:var(--muted);font-family:monospace;line-height:1.3">${c.cur||'Default'}</span></span>
+        </button>`).join('')}
       </div>
     </div>
-    ${showTemplatePicker?`<div>
-      <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Background &amp; box colours</div>
-      <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;line-height:1.45">Colour behind the email, the card the message sits on, and (Editorial &amp; Atelier) the smaller boxes inside it. For Panels pick a shade as light or dark as the Box. Left on Default, they follow the template (and adapt to dark mode). Set your own and the email looks the same everywhere.</div>
-      ${[['bgColor','Background',_tplDef.bg],['boxColor','Box',_tplDef.box]].concat(['editorial','atelier'].includes(tplId)?[['panelColor','Panels',_tplDef.panel]]:[]).map(([k,lbl,def])=>{ const cur=src[k]||''; const shown=cur||def; return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="width:84px;font-size:12.5px;color:var(--ink)">${lbl}</span>
-        <label style="position:relative;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);cursor:pointer;overflow:hidden;background:${shown};flex-shrink:0" title="Choose ${lbl.toLowerCase()} colour">
-          <input type="color" value="${shown}" onchange="_emailDesignSet('${k}',this.value${arg})" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;margin:0"/>
-        </label>
-        <span style="font-family:monospace;font-size:12px;color:var(--muted)">${cur?cur:'Default'}</span>
-        ${cur?`<button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignSet('${k}',''${arg})" style="font-size:10px;margin-left:auto">Default</button>`:''}
-      </div>`; }).join('')}
-    </div>`:''}
     <div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:6px">Header font</div>
       ${_emailFontPickerHtml('fontFamily', ff, itemKey||'', false)}
@@ -2827,6 +2812,46 @@ function _openEmailDesignModal(itemKey){
   </div>`;
   openModal(itemKey&&item?'Email Design · '+item.title:'Email Design',body,`<button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`);
 }
+// Colour choices (Accent, Background, Box, Panels) — one uniform list, each opens the same popup.
+function _emailColourDefs(tplId, src, withSurfaces){
+  const D={classic:{bg:'#EFEAE1',box:'#FBF8F3'},modern:{bg:'#F5F5F5',box:'#FFFFFF'},editorial:{bg:'#EDE7DE',box:'#FBF8F3',panel:'#F2ECE3'},atelier:{bg:'#EAE3D9',box:'#F6F1EA',panel:'#E8DFD2'}}[tplId]||{bg:'#EFEAE1',box:'#FBF8F3'};
+  const L=[{k:'accentColor',label:'Accent',def:'#8a6a2c'}];
+  if(withSurfaces){ L.push({k:'bgColor',label:'Background',def:D.bg},{k:'boxColor',label:'Box',def:D.box}); if(D.panel) L.push({k:'panelColor',label:'Panels',def:D.panel}); }
+  return L.map(c=>{ const cur=c.k==='accentColor'?'':(src[c.k]||''); const v=c.k==='accentColor'?(src.accentColor||c.def):cur; return {...c,cur:c.k==='accentColor'?(src.accentColor&&src.accentColor.toLowerCase()!==c.def?src.accentColor:''):cur,shown:v||c.def}; });
+}
+const _EMAIL_SURFACE_PRESETS=['#FFFFFF','#FBF8F3','#F4EEE4','#EFEAE1','#F5F5F5','#E8DFD2','#D5E3D3','#DCE6EE','#EBD9DA','#E6DDEF','#1F2A24','#1A1A1F'];
+function _emailColourPop(k, itemKey){
+  const uni=(STATE.settings&&STATE.settings.emailDesign)||{};
+  const ov=itemKey&&STATE.settings&&STATE.settings.commsDesign&&STATE.settings.commsDesign[itemKey];
+  const src=ov||uni;
+  const tplId=_emailTplId(src.templateId);
+  const surf=!itemKey||['sd-email','inv-email','rem-email','vbrief'].includes(itemKey);
+  const def=_emailColourDefs(tplId,src,surf).find(c=>c.k===k); if(!def) return;
+  const val=def.shown, isAcc=k==='accentColor';
+  const arg=itemKey?`,'${itemKey}'`:'';
+  let el=document.getElementById('uv-ecpop');
+  if(!el){ el=document.createElement('div'); el.id='uv-ecpop'; el.style.cssText='position:fixed;inset:0;z-index:99000;display:flex;align-items:center;justify-content:center;background:rgba(20,16,12,.45);padding:16px'; el.onclick=e=>{ if(e.target===el) el.remove(); }; document.body.appendChild(el); }
+  const presets=(isAcc?_COMMS_COLOR_PRESETS:_EMAIL_SURFACE_PRESETS).map(c=>{ const sel=c.toLowerCase()===String(val).toLowerCase(); return `<button type="button" onclick="_emailColourPick('${k}','${c}'${arg})" title="${c}" aria-label="${c}" style="width:30px;height:30px;border-radius:50%;background:${c};border:none;box-shadow:0 0 0 2px ${sel?'var(--ink)':'transparent'},0 0 0 1px rgba(128,128,128,.5);cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center">${sel?`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${/^#(?:[0-4])/.test(c)||isAcc?'#fff':'#000'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`:''}</button>`; }).join('');
+  el.innerHTML=`<div style="background:var(--cream,#fff);color:var(--ink);border:1px solid var(--border);border-radius:14px;width:100%;max-width:340px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.25)">
+    <div style="font-size:14px;font-weight:600;margin-bottom:12px">${def.label} colour</div>
+    <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:14px">${presets}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <label style="position:relative;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);cursor:pointer;overflow:hidden;background:${val};flex-shrink:0" title="Custom colour"><input type="color" value="${val}" onchange="_emailColourPick('${k}',this.value${arg})" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0;margin:0"/></label>
+      <input class="form-input" value="${val}" maxlength="7" style="font-family:monospace;font-size:12.5px;width:110px" onchange="_emailColourHex('${k}',this${arg})"/>
+      <button type="button" class="btn btn-outline btn-sm" onclick="_emailColourPick('${k}','${isAcc?'#8a6a2c':''}'${arg})" style="font-size:10px;margin-left:auto">Default</button>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('uv-ecpop').remove()" style="width:100%">Done</button>
+  </div>`;
+}
+function _emailColourPick(k,v,itemKey){
+  _emailDesignSet(k,v,itemKey||undefined);
+  if(document.getElementById('uv-ecpop')) _emailColourPop(k,itemKey||'');
+}
+function _emailColourHex(k,inp,itemKey){
+  let v=(inp.value||'').trim(); if(v&&v[0]!=='#') v='#'+v;
+  if(/^#[0-9a-fA-F]{6}$/.test(v)) _emailColourPick(k,v,itemKey); else _emailColourPop(k,itemKey||'');
+}
+
 // Writes to the per-email override (STATE.settings.commsDesign[itemKey]) when itemKey is
 // given, else the universal STATE.settings.emailDesign. Always re-renders the modal (every
 // control used to miss this for fontFamily/showLogo, which is why Sans-serif/the logo
