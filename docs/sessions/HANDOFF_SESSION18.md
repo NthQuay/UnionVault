@@ -87,3 +87,6 @@ Audit found most wizard answers were saved but never read (vibe, formality, sett
 
 ## v509.9 (accepted)
 - Seating floorplan → cog → Conflict range: new **Same table** option (`STATE.settings.floorConflictTables = 0`): keep-apart pairs flag only when seated at the same table. 1 table (default) / 2 tables unchanged. `_floorConflictRange()` returns 0/1/2; buttons size to their labels.
+
+## v510.0 (accepted)
+- Checklist items with appointments attached read as appointments: `taskDueLabel(t)` (js/utils.js) → "Coming up — date" (gold) within 7 days and "Passed — date" (muted) once gone, instead of red "Due soon" / "OVERDUE". Plain tasks unchanged. Used on Dashboard Next up / pinned and all Checklist rows (`dueDateLabel` gained an optional `words` arg).
