@@ -813,6 +813,12 @@ function timelineFormBody(it){
       </span>
       <span class="toggle-switch"><input type="checkbox" id="tl-pub" ${it.pub?'checked':''}/><span class="toggle-track"></span></span>
     </label>
+    ${it.id && STATE.timelines && STATE.timelines.length>1 ? `<div class="form-group" style="margin-top:10px"><label class="form-label">Move to another timeline</label>
+      <select class="form-input" id="tl-move-to" style="appearance:none;-webkit-appearance:none;padding-right:32px">
+        <option value="">— Stay here —</option>
+        ${STATE.timelines.filter(t=>t.id!==STATE.activeTimelineId).map(t=>`<option value="${t.id}">${_escHtml(t.name)}</option>`).join('')}
+      </select>
+    </div>` : ''}
   </div>`;
 }
 
@@ -890,9 +896,16 @@ function saveTimelineItem(editId){
   // The safe default is the one whose mistake you can see.
   const pub=!!(document.getElementById('tl-pub')||{}).checked;
   if(!title && !time){ return; }
+  const moveTo=((document.getElementById('tl-move-to')||{}).value)||'';
   if(editId){
     const it=STATE.timeline.find(x=>x.id===editId);
     if(it){ Object.assign(it,{time,title,cat,location,who,notes,vendorId,songs,pub}); }
+    if(moveTo && it){
+      const idx=STATE.timeline.findIndex(x=>x.id===editId);
+      if(idx!==-1) STATE.timeline.splice(idx,1);
+      const dest=STATE.timelines.find(t=>t.id===moveTo);
+      if(dest) dest.items.push(it);
+    }
   } else {
     STATE.timeline.push({ id:uid(), time, title, cat, location, who, notes, vendorId, songs, pub });
   }
