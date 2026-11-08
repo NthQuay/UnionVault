@@ -1,7 +1,43 @@
 # HANDOFF — Session 18
-*Generated: 2026-11-07*
+*Generated: 2026-11-07 · closed 2026-11-08*
 
-Repo `NthQuay/UnionVault`, branch `main`. Live build **v509**. Supabase `hzafdlfprtzfxtyaebmc`.
+Repo `NthQuay/UnionVault`, branch `main`. **Live build v510.2** (`main` = `072e76a`). Supabase `hzafdlfprtzfxtyaebmc`. Session branch `claude/awesome-gauss-sdndfr` is fully merged — nothing pending on it.
+
+## Session 18 at a glance (newest last — details for each in the sections below)
+| Build | What shipped |
+|---|---|
+| v509 | P11 cross-account fix, budget subs expanded, wizard events + "3 of 7", +1 pill, Inspo on vendor cards/brief, RSVP "Alternative meal" + dietary rework |
+| v509.1–.3 | Website formats Classic/Modern/Editorial/Atelier; featured-photo crop, Right alignment, New badges; subscription plan picker fix |
+| v509.4 | Email templates Editorial + Atelier, one shared module `supabase/functions/_shared/email-templates.ts` |
+| v509.5 | **Setup wizard feeds the planner**: venues + rooms & spaces, ceremony time/setting, style (Inspiration "Our style"), party names → Guests, tailored checklist, Timeline locations + time shift, website/vendor-brief venue lines |
+| v509.6 | Event Details Guest count: Estimated / RSVP count (same switch as Budget per-head) |
+| v509.7 | App colour picker replaces the native one everywhere (`js/colorpicker.js`) |
+| v509.8 | Email Design keeps scroll; payment badge pickers hidden; **RSVP step 1 redesign** (round ✓/✗, plus-one question + required name) |
+| v509.9 | Seating Conflict range: "Same table" |
+| v510.0 | Appointments read "Coming up" / "Passed" |
+| v510.1 | Sidebar Events under Timelines; link events ↔ timelines from either side |
+| v510.2 | RSVP link page header (couple-chosen style); Editorial drops "Nº 01" (website, RSVP page, emails — edge functions redeployed) |
+
+## Edge functions (deployed this session)
+`send-guest-email` **v24** and `send-vendor-brief-email` **v9** both import `../_shared/email-templates.ts`. When the shared file changes, redeploy BOTH and include `../_shared/email-templates.ts` in the files list (verify with `get_edge_function`).
+
+## SQL run this session
+`20261109_inspo_brief_and_meal_diet.sql` — user ran it ("Success. No rows returned"). Nothing else outstanding.
+
+## Open items / worth testing on a real device
+- Send a real Editorial/Atelier invite + vendor brief to an inbox (Gmail + Apple Mail) — check fonts fall back cleanly, dark mode, no "Nº 01".
+- Real phone: RSVP link/QR page (header + new step 1), colour picker on Android (should never show the native dialog).
+- New account end to end through the rewired setup wizard (venues/spaces, party names, tailored checklist, timeline shift).
+- Still open from before: R2 (a real send appears in Communications → Sent), P7 (real public RSVP end to end). Vendor list view has no Inspiration row (cards only).
+- Possible follow-ups mentioned to the user, not requested: RSVP page could show the website hero photo (needs `rsvp_page` RPC to return it = SQL); RSVP ✓/✗ selected colours follow the phone's dark mode rather than the site's colours (pre-existing).
+
+## Lessons from this session
+- **The auto-mode safety check blocks pushing `main` (and deploying edge functions) without an explicit "Accept" for that exact change.** Ship only after the user's Accept; commit to the session branch meanwhile.
+- **Inline `onclick` handlers inside the RSVP sheet live in a template-literal script** in `js/website.js` — avoid backticks, `${`, and single-quote escaping there (use `event.keyCode===13`, `data-*` attributes).
+- `#uv-rsvp-sheet` colours must follow `_uvScheme` (the site's own palette), not `prefers-color-scheme`.
+- Global consts (`STATE`) are not on `window` — use `typeof STATE!=='undefined'`.
+- Playwright: later `page.route` handlers win — register the catch-all abort FIRST, then specific fulfils.
+- Grid columns holding `white-space:nowrap` text need `min-width:0` on the column (phone overflow on Event Details).
 
 ## Shipped (v509, all accepted)
 - **P11 cross-account fix** (`js/init.js`): the boot `uv_uid` mismatch wipe now sets `_uvWipeInProgress` before reloading. Before, the `beforeunload` save wrote the previous account's STATE back under the new uid and the next boot trusted it (reproduced in Playwright, fixed). P5 and P3 were already done (no `console.log` in `_lpSignIn`; wallpapers are `/assets/*.png`).
