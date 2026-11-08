@@ -31,7 +31,7 @@ function renderDetails(c, actions){
     </div>`).join('') : '<div style="font-size:13px;color:var(--muted);padding:16px 0;text-align:center">No additional events yet</div>';
 
   c.innerHTML=`
-  <div style="margin-bottom:20px">
+  <div class="det-back-row" style="margin-bottom:20px">
     <button class="btn btn-ghost btn-sm" onclick="navigate('dashboard')" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);padding-left:0">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       Back to Dashboard
@@ -39,10 +39,10 @@ function renderDetails(c, actions){
   </div>
   <div class="details-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;align-items:start">
     <div>
-      <div class="section-eyebrow" style="margin-bottom:8px">Your Event</div>
-      <div class="section-title" style="margin-bottom:24px">Wedding Details</div>
-      <div class="card" style="">
-        <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="section-eyebrow det-head-hide" style="margin-bottom:8px">Your Event</div>
+      <div class="section-title det-head-hide" style="margin-bottom:24px">Wedding Details</div>
+      <div class="card det-main-card" style="">
+        <div class="det-main-stack" style="display:flex;flex-direction:column;gap:18px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div class="form-group">
             <label class="form-label">${s.partner1Title||'Partner 1'}</label>
@@ -72,33 +72,10 @@ function renderDetails(c, actions){
               <option value="" ${!e.formality?'selected':''}>—</option>
               ${EV_FORMALITY.map(f=>`<option value="${f}" ${e.formality===f?'selected':''}>${f}</option>`).join('')}
             </select>
-            <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Also on Inspiration → Our style.</div>
+            <div class="det-hint-desktop" style="font-size:11.5px;color:var(--muted);margin-top:4px">Also on Inspiration → Our style.</div>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Partner Titles</label>
-          <button type="button" class="partner-titles-btn" onclick="openPartnerTitles()" style="display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;border:.5px solid var(--border);background:var(--surface);color:var(--ink);font-size:13px;cursor:pointer;width:fit-content;transition:all .15s">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Partner Titles
-          </button>
-        </div>
-        <div class="form-group" id="details-email-group">
-          ${(()=>{
-            const loginEmail=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.user&&_sbSession.user.email||'').trim();
-            if(loginEmail&&!STATE.settings.userEmail){STATE.settings.userEmail=loginEmail;saveToStorage();}
-            const stored=(STATE.settings.userEmail||'').trim();
-            const synced=loginEmail&&stored&&stored.toLowerCase()===loginEmail.toLowerCase();
-            const differs=loginEmail&&stored&&!synced;
-            return `<label class="form-label">Your email</label>
-          <input class="form-input" type="email" inputmode="email" id="details-user-email" placeholder="you@email.com" value="${_escHtml(stored)}" oninput="_detailsUserEmailChange(this)"/>
-          <div id="details-email-note" style="font-size:11.5px;margin-top:4px">${synced?`<span style="color:var(--green)">✓ Synced from your login account.</span>`:differs?`<span style="color:var(--gold-deep)">⚠ Different from your login email (${_escHtml(loginEmail)}). RSVP replies and appointment emails go to this address.</span>`:`<span style="color:var(--muted)">Used when emailing appointments to yourself.</span>`}</div>`;
-          })()}
-        </div>
-        <div class="form-group">
-          <label class="form-label">Partner's email</label>
-          <input class="form-input" type="email" inputmode="email" id="details-partner-email" placeholder="partner@email.com" value="${_escHtml(STATE.settings.partnerEmail||'')}" oninput="_detailsPartnerEmailChange(this)"/>
-          <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Quick-add your partner when emailing appointments, RSVPs, and reminders.</div>
-        </div>
+        <div id="det-guest-seg" class="det-seg-row">${_detGuestSegHtml()}</div>
         <div style="display:flex;align-items:center;gap:12px;padding-top:4px">
           <button class="btn btn-primary" onclick="saveDetailsAndConfirm(this)">Save Details</button>
           <span id="details-saved-msg" style="font-size:12.5px;color:var(--green);opacity:0;transition:opacity .3s"></span>
@@ -138,7 +115,7 @@ function renderDetails(c, actions){
 
 function _detOptsMenuHtml(){
   const checked=!STATE.settings.hideCeremonyDetails;
-  return `<div id="det-opts-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:220px;box-shadow:0 4px 18px rgba(0,0,0,.13)"><div class="dark-toggle-row" style="gap:14px;margin:0"><div style="font-size:13px;font-weight:500">Ceremony Details</div><label class="toggle-switch"><input type="checkbox" ${checked?'checked':''} onchange="STATE.settings.hideCeremonyDetails=!this.checked;saveToStorage();navigate('details')"/><div class="toggle-track"></div></label></div></div>`;
+  return `<div id="det-opts-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:220px;box-shadow:0 4px 18px rgba(0,0,0,.13)"><button type="button" onclick="_closeDetOptsMenu();openPartnerTitles()" style="display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;background:none;border:none;border-bottom:1px solid var(--border);padding:2px 0 10px;margin-bottom:10px;font:inherit;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;text-align:left">Partner titles…<span style="color:var(--muted)">›</span></button><div class="dark-toggle-row" style="gap:14px;margin:0"><div style="font-size:13px;font-weight:500">Ceremony Details</div><label class="toggle-switch"><input type="checkbox" ${checked?'checked':''} onchange="STATE.settings.hideCeremonyDetails=!this.checked;saveToStorage();navigate('details')"/><div class="toggle-track"></div></label></div></div>`;
 }
 let _detOptOpen=false;
 function _openDetOptsMenu(e){
@@ -223,9 +200,7 @@ function _detailsUserEmailChange(el){
   const loginEmail=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.user&&_sbSession.user.email||'').trim();
   const stored=STATE.settings.userEmail;
   const note=document.getElementById('details-email-note'); if(!note) return;
-  if(!loginEmail){ note.innerHTML=`<span style="color:var(--muted)">Used when emailing appointments to yourself.</span>`; return; }
-  if(!stored||stored.toLowerCase()===loginEmail.toLowerCase()) note.innerHTML=`<span style="color:var(--green)">✓ Synced from your login account.</span>`;
-  else note.innerHTML=`<span style="color:var(--gold-deep)">⚠ Different from your login email (${_escHtml(loginEmail)}). RSVP replies and appointment emails go to this address.</span>`;
+  note.innerHTML=_replyToNoteHtml();
 }
 function _detailsPartnerEmailChange(el){ STATE.settings.partnerEmail=el.value.trim(); saveToStorage(); }
 
@@ -427,17 +402,21 @@ function _detRenderVenues(){
 // options → "Per-head guest count" uses). Estimated = STATE.event.guestCount, typed in
 // here or set in setup; RSVP count = guests marked attending (infants never count,
 // children per the Budget "Exclude children" option).
-function _detGuestsInner(){
-  const e=STATE.event||{};
+function _detGuestSegHtml(){
   const rsvp=!!(STATE.budget&&STATE.budget.useRsvpCount);
-  const seg=`<span class="uv-seg uv-seg-sm" role="group" aria-label="Guest count source">
+  return `<span class="uv-seg uv-seg-sm" role="group" aria-label="Guest count source">
       <button type="button" class="${rsvp?'':'on'}" onclick="_detSetGuestSource(false)">Estimated</button>
       <button type="button" class="${rsvp?'on':''}" onclick="_detSetGuestSource(true)">RSVP count</button>
     </span>`;
-  let body;
+}
+function _detInfoToggle(id){ const t=document.getElementById(id); if(t) t.style.display=(t.style.display==='block'?'none':'block'); }
+function _detGuestsInner(){
+  const e=STATE.event||{};
+  const rsvp=!!(STATE.budget&&STATE.budget.useRsvpCount);
+  let body, tip;
   if(!rsvp){
-    body=`<input class="form-input" type="number" min="0" step="1" inputmode="numeric" value="${Number(e.guestCount)>0?Number(e.guestCount):''}" placeholder="e.g. 120" oninput="_detSetGuestEstimate(this.value)"/>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Used for per-head budget items. Switch to RSVP count once replies come in.</div>`;
+    body=`<input class="form-input" type="number" min="0" step="1" inputmode="numeric" value="${Number(e.guestCount)>0?Number(e.guestCount):''}" placeholder="e.g. 120" oninput="_detSetGuestEstimate(this.value)"/>`;
+    tip='Used for per-head budget items. Switch to RSVP count once replies come in.';
   } else {
     const bd=(typeof _rsvpPerHeadBreakdown==='function')?_rsvpPerHeadBreakdown():{attending:0,children:0,infants:0,counted:0};
     const awaiting=(STATE.guests||[]).filter(g=>!g.rsvp||g.rsvp==='awaiting'||g.rsvp==='pending').length;
@@ -448,10 +427,10 @@ function _detGuestsInner(){
     if(awaiting) notes.push(`${awaiting} still to reply`);
     const est=Number(e.guestCount)||0;
     body=`<div class="det-rsvp-count"><b>${bd.counted}</b><span>attending${bd.attending!==bd.counted?` <small>(of ${bd.attending})</small>`:''}</span>
-        ${est?`<em>Estimate was ${est}</em>`:''}</div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:4px">${notes.length?_escHtml(notes.join(' · '))+'. ':''}Live from your RSVPs — used for per-head budget items.</div>`;
+        ${est?`<em>Estimate was ${est}</em>`:''}</div>`;
+    tip=(notes.length?notes.join(' · ')+'. ':'')+'Live from your RSVPs — used for per-head budget items.';
   }
-  return `<div class="det-guests-head"><label class="form-label" style="margin:0">Guest count</label>${seg}</div>${body}`;
+  return `<div class="det-guests-head"><label class="form-label" style="margin:0">Guest count <button type="button" class="det-info" aria-label="About guest count" title="${_escHtml(tip)}" onclick="_detInfoToggle('det-guest-tip')">i</button></label></div>${body}<div id="det-guest-tip" class="det-tip">${_escHtml(tip)}</div>`;
 }
 function _detSetGuestSource(useRsvp){
   if(!STATE.budget) STATE.budget={};
@@ -460,6 +439,7 @@ function _detSetGuestSource(useRsvp){
   if(!useRsvp) _evFillPerHeadEstimate(0, Number(STATE.event&&STATE.event.guestCount)||0);
   saveToStorage();
   const host=document.getElementById('det-guests'); if(host) host.innerHTML=_detGuestsInner();
+  const sg=document.getElementById('det-guest-seg'); if(sg) sg.innerHTML=_detGuestSegHtml();
 }
 function _detSetGuestEstimate(val){
   if(!STATE.event) STATE.event={};
@@ -478,4 +458,45 @@ function _evFillPerHeadEstimate(prev, n){
     const c=Number(s.guestCount)||0;
     if(c===0 || (prev && c===prev)) s.guestCount=n;
   }));
+}
+
+
+// ══════════════════════════════════════════════
+// REPLY-TO / EMAIL ADDRESSES — "Replies go to…" row (Communications + Settings) and its popup.
+// STATE.settings.userEmail = where guest/vendor replies go; partnerEmail = quick-add recipient.
+// ══════════════════════════════════════════════
+function _replyToEmail(){
+  const login=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.user&&_sbSession.user.email||'').trim();
+  if(login&&STATE.settings&&!STATE.settings.userEmail){ STATE.settings.userEmail=login; saveToStorage(); }
+  return ((STATE.settings&&STATE.settings.userEmail)||login||'').trim();
+}
+function _replyToRowHtml(margin){
+  const em=_replyToEmail();
+  return `<div class="reply-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin:${margin||'0'}">
+    <span style="color:var(--gold-deep);display:inline-flex;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></span>
+    <div style="min-width:0;flex:1"><div style="font-size:12px;color:var(--muted);line-height:1.3">Replies go to</div><div class="reply-row-email" style="font-size:13px;color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${em?_escHtml(em):'<span style="color:var(--muted);font-weight:400">Not set</span>'}</div></div>
+    <button type="button" class="btn btn-outline btn-sm" style="flex-shrink:0" onclick="openReplyToSettings()">Edit</button>
+  </div>`;
+}
+function _replyToNoteHtml(){
+  const login=(typeof _sbSession!=='undefined'&&_sbSession&&_sbSession.user&&_sbSession.user.email||'').trim();
+  const stored=((STATE.settings&&STATE.settings.userEmail)||'').trim();
+  if(!login) return `<span style="color:var(--muted)">Replies from guests and vendors come to this address.</span>`;
+  if(!stored||stored.toLowerCase()===login.toLowerCase()) return `<span style="color:var(--green)">✓ Synced from your login account.</span>`;
+  return `<span style="color:var(--gold-deep)">⚠ Different from your login email (${_escHtml(login)}). RSVP replies and appointment emails go to this address.</span>`;
+}
+function openReplyToSettings(){
+  const st=STATE.settings||(STATE.settings={});
+  const body=`<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="form-group"><label class="form-label">Your email</label>
+      <input class="form-input" type="email" inputmode="email" id="details-user-email" placeholder="you@email.com" value="${_escHtml(_replyToEmail())}" oninput="_detailsUserEmailChange(this)"/>
+      <div id="details-email-note" style="font-size:11.5px;margin-top:4px">${_replyToNoteHtml()}</div></div>
+    <div class="form-group"><label class="form-label">Partner's email</label>
+      <input class="form-input" type="email" inputmode="email" id="details-partner-email" placeholder="partner@email.com" value="${_escHtml(st.partnerEmail||'')}" oninput="_detailsPartnerEmailChange(this)"/>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Quick-add your partner when emailing appointments, RSVPs, and reminders.</div></div></div>`;
+  openModal('Email settings', body, '<button class="btn btn-primary" onclick="closeModalDirect();_replyToRefreshRows()">Done</button>');
+}
+function _replyToRefreshRows(){
+  const em=_replyToEmail();
+  document.querySelectorAll('.reply-row-email').forEach(n=>{ n.innerHTML=em?_escHtml(em):'<span style="color:var(--muted);font-weight:400">Not set</span>'; });
 }

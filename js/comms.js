@@ -101,7 +101,7 @@ function renderComms(c, actions){
       ${sec.name==='Email'?`<div style="margin-top:6px" onclick="_commsMnavClose()">${designBtnHtml}</div>`:''}
     </div>`).join('');
   const ordinalOn=_commsOrdinalOn();
-  c.innerHTML=_commsTabsHtml()+`<div style="margin-bottom:10px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:760px">Every message UnionVault can send to a guest or vendor, in one place. RSVP alerts and gift notifications aren't here — those come to you, not your guests.</div>
+  c.innerHTML=_commsTabsHtml()+`<div style="margin-bottom:10px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:760px">Every message UnionVault can send to a guest or vendor, in one place. RSVP alerts and gift notifications aren't here — those come to you, not your guests.</div>${typeof _replyToRowHtml==='function'?_replyToRowHtml('0 0 12px;max-width:760px'):''}
   <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;font-size:12px;color:var(--ink)">
     <input type="checkbox" ${ordinalOn?'checked':''} onchange="_commsSetOrdinal(this.checked)" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
     Use ordinal dates (4th, 21st, 22nd…) instead of plain numbers (4, 21, 22…)

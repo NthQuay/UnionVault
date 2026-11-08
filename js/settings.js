@@ -73,6 +73,7 @@ function renderSettings(c, actions){
     <div class="settings-sect" data-sect="account cloud save load sync sign in sign out email password">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Account &amp; Cloud</div>
       <div id="cloud-account-panel">${_cloudAccountHtml()}</div>
+      ${typeof _replyToRowHtml==='function'?_replyToRowHtml('14px 0 0'):''}
     </div>
     ${_sbSession?`<div class="settings-sect" data-sect="subscription billing plan tier upgrade downgrade cancel payment stripe">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)">Subscription</div>
