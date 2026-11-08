@@ -78,7 +78,9 @@ function renderEvents(c, actions){
     });
     const cards=sorted.map(ev=>{
       const ct=_eventRsvpCounts(ev);
-      const meta=_eventMetaLine(ev)||'<span style="color:var(--muted)">No date set</span>';
+      const meta0=_eventMetaLine(ev)||'<span style="color:var(--muted)">No date set</span>';
+      const ltl=ev.timelineId?(STATE.timelines||[]).find(t=>t.id===ev.timelineId):null;
+      const meta=meta0+(ltl?` · <span style="color:var(--gold-deep);white-space:nowrap"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>${_esc(ltl.name)}</span>`:'');
       return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="openEventDetail('${ev.id}')">
         <div style="display:flex;align-items:center;gap:13px;padding:14px 16px">
           <div style="flex-shrink:0;width:42px;height:42px;border-radius:10px;background:var(--surface);border:.5px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--gold-deep)">
@@ -722,10 +724,71 @@ function _evUnlinkFromForm(evId, tlId){
   saveToStorage();
   if(typeof openEventForm==='function') openEventForm(evId);
 }
+// ── One place that links an event and a timeline (both sides kept in step) ────
+// Clears any link either one already had, then links them. evId or tlId may be null
+// to just unlink the other.
+function _setEventTimelineLink(evId, tlId){
+  const evs=STATE.events||[], tls=STATE.timelines||[];
+  tls.forEach(t=>{ if(t.linkedEventId && ((evId && t.linkedEventId===evId) || (tlId && t.id===tlId))) delete t.linkedEventId; });
+  evs.forEach(e=>{ if(e.timelineId && ((evId && e.id===evId) || (tlId && e.timelineId===tlId))) delete e.timelineId; });
+  if(evId && tlId){
+    const ev=evs.find(e=>e.id===evId), tl=tls.find(t=>t.id===tlId);
+    if(ev && tl){ ev.timelineId=tlId; tl.linkedEventId=evId; }
+  }
+  saveToStorage();
+}
+// Timelines an event may link to: any not already linked to another event, except the
+// main Wedding Day timeline (the first one, while it isn't linked to an event).
+function _evLinkableTimelines(ev){
+  if(typeof _tlEnsureTimelines==='function') _tlEnsureTimelines();
+  const tls=STATE.timelines||[];
+  const first=tls[0];
+  return tls.filter(t=>{
+    if(t===first && !t.linkedEventId) return false;
+    return !t.linkedEventId || (ev && t.linkedEventId===ev.id);
+  });
+}
+// Event page → "+ Link a timeline" / "Change": pick an existing timeline or make one.
+function _evLinkTimelinePicker(evId){
+  const ev=(STATE.events||[]).find(e=>e.id===evId); if(!ev) return;
+  const opts=_evLinkableTimelines(ev);
+  const row=tl=>{
+    const col=(typeof TL_COLORS!=='undefined'&&TL_COLORS[tl.colorIdx])?TL_COLORS[tl.colorIdx]:{hex:'var(--gold)'};
+    const n=tl.items?tl.items.length:0, on=ev.timelineId===tl.id;
+    return `<button type="button" onclick="_evLinkTimelinePick('${evId}','${tl.id}')" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;border:1px solid ${on?'var(--gold)':'var(--border)'};border-radius:10px;background:${on?'var(--gold-bg)':'var(--cream)'};cursor:pointer;font-family:inherit;color:var(--ink)">
+      <span style="width:10px;height:10px;border-radius:50%;background:${col.hex};flex-shrink:0"></span>
+      <span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:500">${_esc(tl.name)}</span><span style="display:block;font-size:11px;color:var(--muted)">${n} moment${n!==1?'s':''}${on?' · linked':''}</span></span>
+    </button>`;
+  };
+  openModal('Link a timeline', `<div style="display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:4px">Attach a schedule to <b style="color:var(--ink)">${_esc(ev.name||'this event')}</b>.</div>
+      <button type="button" onclick="_evLinkTimelinePick('${evId}','__new__')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px dashed var(--border);border-radius:10px;background:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--gold-deep);font-weight:500">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Create a new timeline for this event</button>
+      ${opts.length?`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:4px 0"><span style="flex:1;height:1px;background:var(--border)"></span>or link an existing timeline<span style="flex:1;height:1px;background:var(--border)"></span></div>${opts.map(row).join('')}`:''}
+      ${ev.timelineId?`<button type="button" class="btn btn-outline btn-sm" onclick="_evLinkTimelinePick('${evId}','')" style="margin-top:6px;align-self:flex-start">Unlink timeline</button>`:''}
+    </div>`, `<button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>`);
+}
+function _evLinkTimelinePick(evId, tlId){
+  const ev=(STATE.events||[]).find(e=>e.id===evId); if(!ev) return;
+  if(tlId==='__new__'){
+    if(typeof _tlEnsureTimelines==='function') _tlEnsureTimelines();
+    const colorIdx=(STATE.timelines||[]).length%(typeof TL_COLORS!=='undefined'?TL_COLORS.length:6);
+    const tl={id:uid(), name:ev.name||'Event timeline', colorIdx, inMaster:true, showOnWebsite:false, items:[]};
+    STATE.timelines.push(tl); tlId=tl.id;
+  }
+  _setEventTimelineLink(evId, tlId||null);
+  closeModalDirect();
+  if(_evDetailId===evId && typeof _renderEventDetail==='function') _renderEventDetail();
+}
+
 function _evLinkedTimelineBadge(ev){
-  if(!ev||!ev.timelineId) return '';
-  const tl=(STATE.timelines||[]).find(t=>t.id===ev.timelineId);
-  if(!tl) return '';
+  if(!ev) return '';
+  const tl=ev.timelineId?(STATE.timelines||[]).find(t=>t.id===ev.timelineId):null;
+  if(!tl) return `<div style="margin-bottom:16px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:500;margin-bottom:6px">Linked Timeline</div>
+    <button type="button" onclick="_evLinkTimelinePicker('${ev.id}')" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:1px dashed var(--border);background:none;font-family:inherit;font-size:13px;font-weight:500;color:var(--gold-deep);cursor:pointer">+ Link a timeline</button>
+  </div>`;
   const col=(typeof TL_COLORS!=='undefined'&&TL_COLORS[tl.colorIdx])?TL_COLORS[tl.colorIdx]:{hex:'var(--gold)'};
   const n=tl.items?tl.items.length:0;
   const sorted=tl.items?tl.items.slice().sort((a,b)=>String(a.time||'').localeCompare(String(b.time||''))):[];
@@ -738,7 +801,7 @@ function _evLinkedTimelineBadge(ev){
       ${_esc(tl.name)}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
     </div>
-    <div style="font-size:11.5px;color:var(--muted);margin-top:4px">${n} moment${n!==1?'s':''}${span?' · '+span:''}</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:4px">${n} moment${n!==1?'s':''}${span?' · '+span:''} · <button type="button" onclick="_evLinkTimelinePicker('${ev.id}')" style="background:none;border:none;padding:0;font-family:inherit;font-size:11.5px;color:var(--gold-deep);text-decoration:underline;cursor:pointer">Change</button></div>
   </div>`;
 }
 
@@ -808,15 +871,11 @@ function saveEvent(id){
   if(linkAction==='create'){
     if(typeof _tlEnsureTimelines==='function') _tlEnsureTimelines();
     const colorIdx=(STATE.timelines||[]).length%(typeof TL_COLORS!=='undefined'?TL_COLORS.length:6);
-    const newTl={id:uid(), name:fields.name, colorIdx, inMaster:true, showOnWebsite:false, linkedEventId:savedId, items:[]};
+    const newTl={id:uid(), name:fields.name, colorIdx, inMaster:true, showOnWebsite:false, items:[]};
     STATE.timelines.push(newTl);
-    const ev2=(STATE.events||[]).find(e=>e.id===savedId);
-    if(ev2) ev2.timelineId=newTl.id;
+    _setEventTimelineLink(savedId, newTl.id);
   } else if(linkAction&&linkAction!=='unlink'){
-    const tl=(STATE.timelines||[]).find(t=>t.id===linkAction);
-    if(tl){ tl.linkedEventId=savedId; }
-    const ev2=(STATE.events||[]).find(e=>e.id===savedId);
-    if(ev2) ev2.timelineId=linkAction;
+    _setEventTimelineLink(savedId, linkAction);
   }
   saveToStorage();
   closeModalDirect();

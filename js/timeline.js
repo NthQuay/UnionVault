@@ -61,6 +61,20 @@ function _tlBackToList(){
   navigate('timeline');
 }
 
+// Linked event dropdown for the New / Edit Timeline forms. Lists events not linked to
+// another timeline (plus this timeline's own event).
+function _tlEventSelectHtml(tl){
+  const evs=(STATE.events||[]).filter(e=>!e.timelineId || (tl && e.timelineId===tl.id));
+  const cur=tl&&tl.linkedEventId||'';
+  const allEvents=(STATE.events||[]).length;
+  return `<div class="form-group"><label class="form-label">Linked event</label>
+    <select class="form-input" id="tl-link-event" ${!evs.length?'disabled':''}>
+      <option value="">${evs.length?'— None —':(allEvents?'All events already have a timeline':'No events yet')}</option>
+      ${evs.map(e=>`<option value="${e.id}" ${e.id===cur?'selected':''}>${_escHtml(e.name||'Untitled event')}</option>`).join('')}
+    </select>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:4px">${allEvents?'The event page shows this schedule.':'Add events (rehearsal dinner, brunch…) on the Events page to link them here.'}</div>
+  </div>`;
+}
 function _tlAddTimeline(){
   if(typeof _uvRequirePaid==='function' && !_uvRequirePaid('timeline')) return;
   _tlEnsureTimelines();
@@ -70,6 +84,7 @@ function _tlAddTimeline(){
       <div class="form-group"><label class="form-label">Timeline Name</label>
         <input class="form-input" id="tl-new-name" placeholder="e.g. Rehearsal Dinner, Morning Prep…"/>
       </div>
+      ${_tlEventSelectHtml(null)}
       <div class="form-group"><label class="form-label">Colour</label>
         <div id="tl-color-picker" style="display:flex;gap:10px;margin-top:4px">
           ${TL_COLORS.map((c,i)=>`<div onclick="_tlPickColor(${i})" style="width:28px;height:28px;border-radius:50%;background:${c.hex};cursor:pointer;border:2px solid ${i===colorIdx?'var(--ink)':'transparent'};transition:all .15s" data-tl-color="${i}"></div>`).join('')}
@@ -104,6 +119,8 @@ function _tlSaveNewTimeline(){
   const colorIdx = window._tlNewColorIdx || 0;
   const tl = { id: uid(), name, colorIdx, inMaster, showOnWebsite, items: [] };
   STATE.timelines.push(tl);
+  const linkEv=(document.getElementById('tl-link-event')||{}).value||'';
+  if(linkEv && typeof _setEventTimelineLink==='function') _setEventTimelineLink(linkEv, tl.id);
   closeModalDirect();
   _tlOpenTimeline(tl.id);
 }
@@ -116,6 +133,7 @@ function _tlEditTimeline(id){
       <div class="form-group"><label class="form-label">Timeline Name</label>
         <input class="form-input" id="tl-edit-name" value="${(tl.name||'').replace(/"/g,'&quot;')}"/>
       </div>
+      ${_tlEventSelectHtml(tl)}
       <div class="form-group"><label class="form-label">Colour</label>
         <div id="tl-color-picker" style="display:flex;gap:10px;margin-top:4px">
           ${TL_COLORS.map((c,i)=>`<div onclick="_tlPickColor(${i})" style="width:28px;height:28px;border-radius:50%;background:${c.hex};cursor:pointer;border:2px solid ${i===tl.colorIdx?'var(--ink)':'transparent'};transition:all .15s" data-tl-color="${i}"></div>`).join('')}
@@ -129,7 +147,6 @@ function _tlEditTimeline(id){
         <span><span class="tl-pub-title">Show on Website</span><span class="tl-pub-sub">Include in the website builder schedule section</span></span>
         <span class="toggle-switch"><input type="checkbox" id="tl-edit-website" ${tl.showOnWebsite!==false?'checked':''}/><span class="toggle-track"></span></span>
       </label>
-      ${(()=>{if(!tl.linkedEventId)return '';const ev=(STATE.events||[]).find(e=>e.id===tl.linkedEventId);if(!ev)return '';return '<div style="border-top:1px solid var(--border);padding-top:14px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Linked Event</div><div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--gold);border-radius:10px;background:var(--gold-bg)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span style="flex:1;font-size:13px;font-weight:500;color:var(--gold-deep)">'+_escHtml(ev.name)+'</span><button type="button" class="btn btn-outline btn-sm" onclick="_tlUnlinkEvent(\''+tl.id+'\',\''+ev.id+'\')" style="font-size:11px">Unlink</button></div></div>';})()}
     </div>`,
     `<button class="btn btn-danger" onclick="_tlConfirmDeleteTimeline('${id}')" style="margin-right:auto">Delete</button>
      <button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
@@ -144,6 +161,10 @@ function _tlSaveEditTimeline(id){
   tl.colorIdx = window._tlNewColorIdx ?? tl.colorIdx;
   tl.inMaster = !!(document.getElementById('tl-edit-master')||{}).checked;
   tl.showOnWebsite = !!(document.getElementById('tl-edit-website')||{}).checked;
+  const le=document.getElementById('tl-link-event');
+  if(le && !le.disabled && (le.value||'')!==(tl.linkedEventId||'') && typeof _setEventTimelineLink==='function'){
+    if(le.value) _setEventTimelineLink(le.value, tl.id); else _setEventTimelineLink(null, tl.id);
+  }
   saveToStorage(); closeModalDirect(); navigate('timeline');
 }
 
