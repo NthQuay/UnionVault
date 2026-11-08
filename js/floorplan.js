@@ -356,8 +356,8 @@ function _autoLayoutTables(){
 // Proximity-based conflicts: same table, table centres within a SIZE-RELATIVE gap,
 // or adjacent in the table order. The proximity gap scales with the two tables'
 // actual sizes (so resizing tables scales the trigger), out to N table-widths where
-// N is the "conflict range" setting (1 or 2, default 1).
-function _floorConflictRange(){ const n=Number(STATE.settings&&STATE.settings.floorConflictTables); return (n===2)?2:1; }
+// N is the "conflict range" setting (0 = same table only, 1 or 2; default 1).
+function _floorConflictRange(){ const s=STATE.settings&&STATE.settings.floorConflictTables; const n=Number(s); return (s===0||s==='0')?0:(n===2)?2:1; }
 function _floorConflicts(){
   const out={conflicts:[], ignoredConflicts:[], tableHas:new Set(), chipFlag:new Set()};
   const ign=(STATE.settings&&STATE.settings.conflictIgnored)||{};
@@ -463,10 +463,10 @@ function _toggleFamilySep(){
   navigate('seating');
   _seatReopenCog();
 }
-// Set the floorplan conflict proximity range (1 or 2 tables apart, size-relative).
+// Set the floorplan conflict proximity range: 0 = same table only, 1 or 2 tables apart (size-relative).
 function _setFloorConflictTables(n){
   if(!STATE.settings) STATE.settings={};
-  STATE.settings.floorConflictTables=(Number(n)===2)?2:1;
+  n=Number(n); STATE.settings.floorConflictTables=(n===0||n===2)?n:1;
   saveToStorage();
   navigate('seating');
   _seatReopenCog();
@@ -568,8 +568,9 @@ function _seatCogMenuHtml(style, layout){
   const confRange=_floorConflictRange();
   const confRangeSeg=isList?'':`<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);margin:9px 0 7px" title="How close two keep-apart guests' tables must be to flag a conflict. Scales with table size.">Conflict range</div>
     <div class="seat-seg" style="display:flex;width:100%;margin-bottom:11px">
-      <button class="${confRange===1?'on':''}" style="flex:1;justify-content:center;font-size:11px" onclick="_setFloorConflictTables(1)" title="Flag when tables are within ~1 table apart">1 table</button>
-      <button class="${confRange===2?'on':''}" style="flex:1;justify-content:center;font-size:11px" onclick="_setFloorConflictTables(2)" title="Flag when tables are within ~2 tables apart">2 tables</button>
+      <button class="${confRange===0?'on':''}" style="flex:1 1 auto;justify-content:center;font-size:11px;white-space:nowrap;padding-left:6px;padding-right:6px" onclick="_setFloorConflictTables(0)" title="Only flag when they're seated at the same table">Same table</button>
+      <button class="${confRange===1?'on':''}" style="flex:1 1 auto;justify-content:center;font-size:11px;white-space:nowrap;padding-left:6px;padding-right:6px" onclick="_setFloorConflictTables(1)" title="Flag when tables are within ~1 table apart">1 table</button>
+      <button class="${confRange===2?'on':''}" style="flex:1 1 auto;justify-content:center;font-size:11px;white-space:nowrap;padding-left:6px;padding-right:6px" onclick="_setFloorConflictTables(2)" title="Flag when tables are within ~2 tables apart">2 tables</button>
     </div>`;
   // Display section — Show attending-only toggle (filters the pool/seating to attending guests).
   const attendingToggle=`<label style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink);margin-bottom:11px;cursor:pointer;user-select:none" title="Only show guests marked as attending in the unassigned pool and warnings">Show attending only
