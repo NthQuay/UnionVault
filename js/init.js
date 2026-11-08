@@ -380,7 +380,7 @@ function _rsvpPageHeadHtml(ev, t){
   if(fmt==='magazine'){
     const mast=names?esc(names).replace(' &amp; ',' <i>&amp;</i> '):esc(title);
     return `<div class="rh rh-mag">
-      <div class="rh-bar"><span>The Wedding Issue</span><span>N\u00ba 01${monthYear?' \u00b7 '+esc(monthYear):''}</span></div>
+      <div class="rh-bar"><span>The Wedding Issue</span><span>${monthYear?esc(monthYear):'Special Edition'}</span></div>
       <div class="rh-mast">${mast}</div>
       <div class="rh-cover">The Wedding</div>
       <div class="rh-row"><div class="rh-left">${venueHtml}</div>${dShort?`<div class="rh-date"><span>${esc(weekday)}</span><b>${dShort}</b>${time?`<span>${esc(time)}</span>`:''}</div>`:''}</div>

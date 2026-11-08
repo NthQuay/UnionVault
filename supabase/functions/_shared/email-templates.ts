@@ -266,7 +266,7 @@ export function editorialHtml(opts: EmailShell, slots: MagSlots): string {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-card" style="max-width:600px;background:#FBF8F3">
 <tr><td class="uv-pad" style="padding:16px 40px 12px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
 <td class="uv-ink" style="font-family:${MAG_SANS};font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#1D1916">The Wedding Issue</td>
-<td class="uv-ink" align="right" style="font-family:${MAG_SANS};font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#1D1916">${d ? `Nº 01 · ${escH(d.monthYear)}` : 'Nº 01'}</td>
+<td class="uv-ink" align="right" style="font-family:${MAG_SANS};font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#1D1916">${d ? escH(d.monthYear) : 'Special Edition'}</td>
 </tr></table></td></tr>
 ${rule}
 ${mast ? `<tr><td class="uv-pad uv-ink uv-mast" align="center" style="padding:22px 24px 18px;font-family:${BODONI};font-size:60px;line-height:.92;letter-spacing:-.02em;text-transform:uppercase;color:#1D1916">${mast}</td></tr>` : ''}

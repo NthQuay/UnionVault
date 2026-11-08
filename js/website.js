@@ -4663,7 +4663,7 @@ function _wbBuildSite(forDownload){
         const extra = [homeSlot('top'), h.sub?`<p class="sub">${_escHtml(h.sub)}</p>`:'', homeSlot('bottom')].filter(Boolean).join('');
         if(t.format==='magazine'){
           return `<header id="home" class="fx-cover${heroOk?'':' fx-noimg'}${hero.ink==='dark'?' fx-ink-dark':''}">
-        <div class="fx-topbar"><span>The Wedding Issue</span><span>${okD?`Nº 01 · ${mos[d.getMonth()]} ${d.getFullYear()}`:'Nº 01'}</span></div>
+        <div class="fx-topbar"><span>The Wedding Issue</span><span>${okD?`${mos[d.getMonth()]} ${d.getFullYear()}`:'Special Edition'}</span></div>
         <div class="fx-coverimg" style="min-height:${WB_HERO_H[hero.height]||WB_HERO_H.tall}">${img}
           ${showN?`<div class="fx-mast">${namesHtml}</div>`:''}
           <div class="fx-lines">
