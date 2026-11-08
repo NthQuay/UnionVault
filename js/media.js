@@ -941,6 +941,11 @@ function setCurrencyDecimals(on){
   saveToStorage();
   navigate('settings');
 }
+function setTimeFormat(fmt){
+  STATE.settings.timeFormat=fmt==='24h'?'24h':'12h';
+  saveToStorage();
+  navigate('settings');
+}
 function setCurrency(code){
   if(!STATE.settings) STATE.settings={};
   STATE.settings.currencyCode = CURRENCIES[code] ? code : 'AUD';

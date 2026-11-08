@@ -435,6 +435,7 @@ function tlTo12h(t){
   if(!t) return '';
   const [hRaw,m]=t.split(':');
   let h=parseInt(hRaw,10);
+  if(STATE.settings && STATE.settings.timeFormat==='24h') return `${String(h).padStart(2,'0')}:${m}`;
   const ap=h>=12?'PM':'AM';
   h=h%12; if(h===0)h=12;
   return `${h}:${m} ${ap}`;
