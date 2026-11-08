@@ -435,7 +435,7 @@ function renderDashboard(c, actions){
         <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Next up</div>
         <div id="db-nextup-list">${upcoming.map((i,idx)=>`<div class="db-nextup-row" style="display:flex;align-items:flex-start;gap:10px;${idx<upcoming.length-1?"padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--border)":""}">
           <div style="width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:6px;opacity:.7"></div>
-          <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${i.text}</div>${i.dueDate?`<div style="font-size:11px;margin-top:2px">${dueDateLabel(i.dueDate,i.done,'COMPLETE')}</div>`:""}</div>
+          <div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${i.text}</div>${i.dueDate?`<div style="font-size:11px;margin-top:2px">${taskDueLabel(i)}</div>`:""}</div>
         </div>`).join("")}</div>
       </div>`:"<div style=\"text-align:center;padding:12px 0;font-size:13px;color:var(--muted)\">All caught up</div>"}
     </div>`,
@@ -538,7 +538,7 @@ function renderDashboard(c, actions){
       ${pinned.length?`
         <div style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Pinned</div>
         <div style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:500;color:var(--ink);margin-bottom:12px">Tasks</div>
-        ${pinned.slice(0,4).map(i=>`<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)"><div style="width:2px;min-height:20px;background:var(--gold);border-radius:1px;flex-shrink:0;margin-top:3px;opacity:.6"></div><div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${i.text}</div>${i.dueDate?`<div style="font-size:11.5px;margin-top:3px">${dueDateLabel(i.dueDate,i.done,'COMPLETE')}</div>`:''}${i.notes?`<div style="font-size:11.5px;color:var(--muted);margin-top:2px">${i.notes}</div>`:""}</div></div>`).join("")}`
+        ${pinned.slice(0,4).map(i=>`<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)"><div style="width:2px;min-height:20px;background:var(--gold);border-radius:1px;flex-shrink:0;margin-top:3px;opacity:.6"></div><div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">${i.text}</div>${i.dueDate?`<div style="font-size:11.5px;margin-top:3px">${taskDueLabel(i)}</div>`:''}${i.notes?`<div style="font-size:11.5px;color:var(--muted);margin-top:2px">${i.notes}</div>`:""}</div></div>`).join("")}`
       :(STATE.event.venue||STATE.event.date)?`
         <div style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">The Event</div>
         <div style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:500;color:var(--ink);margin-bottom:14px">Details</div>

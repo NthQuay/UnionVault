@@ -1530,7 +1530,7 @@ function checkItemHtml(i, mode){
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:3px;align-items:center">
           ${cat?`<span class="check-meta">${_escHtml(cat)}</span>`:''}
-          ${i.dueDate?`<span class="check-meta">${dueDateLabel(i.dueDate,i.done,'COMPLETE')}</span>`:''}
+          ${i.dueDate?`<span class="check-meta">${taskDueLabel(i)}</span>`:''}
           ${budgetDueBadge}
         </div>
         ${_taskHasAppts(i)?`<div class="cl-detail-wide" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:5px">${_apptRowChip(i)}</div>`:''}
@@ -1550,7 +1550,7 @@ function checkItemHtml(i, mode){
       </div>
     </div>`;
   }
-  const detailsBlock = `${i.dueDate?`<span class="check-meta">${dueDateLabel(i.dueDate,i.done,'COMPLETE')}</span>`:''}
+  const detailsBlock = `${i.dueDate?`<span class="check-meta">${taskDueLabel(i)}</span>`:''}
         ${budgetDueBadge}`;
   if(crossCollapsed){
     const hasDetails = !!(i.dueDate || budgetDueBadge || i.notes || i.url || budgetBadge || _taskHasAppts(i));
@@ -1563,7 +1563,7 @@ function checkItemHtml(i, mode){
       </div>
       <div id="cdet-${i.id}" style="display:${_collapsed?'none':'block'}">
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:3px;align-items:center">
-          ${i.dueDate?`<span class="check-meta">${dueDateLabel(i.dueDate,i.done,'COMPLETE')}</span>`:''}
+          ${i.dueDate?`<span class="check-meta">${taskDueLabel(i)}</span>`:''}
           ${budgetDueBadge}
         </div>
         ${_taskHasAppts(i)?`<div class="cl-detail-wide" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:5px">${_apptRowChip(i)}</div>`:''}
@@ -1596,7 +1596,7 @@ function checkItemHtml(i, mode){
         <div class="check-label ${i.done?'done':''}">${_highlight(i.text,_checklistSearch)}</div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:3px;align-items:center">
-        ${i.dueDate?`<span class="check-meta">${dueDateLabel(i.dueDate,i.done,'COMPLETE')}</span>`:''}
+        ${i.dueDate?`<span class="check-meta">${taskDueLabel(i)}</span>`:''}
         ${budgetDueBadge}
       </div>
       ${_taskHasAppts(i)?`<div class="cl-detail-wide" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:5px">${_apptRowChip(i)}</div>`:''}
@@ -3094,7 +3094,7 @@ function _taskChecklistPreview(t){
   }
   const linkIcon = _taskIsLinked(t) ? _chainSpan('task',12,t.id) : '';
   const dueLine = (t.dueDate || budgetDueBadge)
-    ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:3px;align-items:center">${t.dueDate?`<span class="check-meta">${dueDateLabel(t.dueDate,t.done,'COMPLETE')}</span>`:''}${budgetDueBadge}</div>`
+    ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:3px;align-items:center">${t.dueDate?`<span class="check-meta">${taskDueLabel(t)}</span>`:''}${budgetDueBadge}</div>`
     : '';
   const notesLine = t.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;font-style:italic">${t.notes}</div>` : '';
   const badgeLine = budgetBadge ? `<div style="margin-top:4px">${budgetBadge}</div>` : '';

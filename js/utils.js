@@ -261,15 +261,21 @@ function dueDateClass(d,paid){
   if(diff<=7)return'date-red';
   return'';
 }
-function dueDateLabel(d,paid,completedLabel='PAID',fmtFn){
+// Checklist items with an appointment attached read as appointments: "Coming up" rather
+// than "Due soon", and "Passed" rather than "OVERDUE".
+function taskDueLabel(t){
+  const isAppt=!!(t && Array.isArray(t.appointments) && t.appointments.length);
+  return dueDateLabel(t.dueDate, t.done, 'COMPLETE', null, isAppt?{soon:'Coming up', over:'Passed', soonStyle:'color:var(--gold-deep)', overStyle:'color:var(--muted)'}:null);
+}
+function dueDateLabel(d,paid,completedLabel='PAID',fmtFn,words){
   if(!d)return'';
   const today=new Date();today.setHours(0,0,0,0);
   const due=new Date(d+'T00:00:00');
   const diff=(due-today)/(86400000);
   const label=(fmtFn||fmtDate)(d);
   if(paid)return`<span style="color:var(--muted)">${label} &mdash; <strong>${completedLabel}</strong></span>`;
-  if(diff<0)return`<span class="date-overdue">OVERDUE &mdash; ${label}</span>`;
-  if(diff<=7)return`<span class="date-red">Due soon &mdash; ${label}</span>`;
+  if(diff<0)return words&&words.overStyle?`<span style="${words.overStyle}">${words.over} &mdash; ${label}</span>`:`<span class="date-overdue">${(words&&words.over)||'OVERDUE'} &mdash; ${label}</span>`;
+  if(diff<=7)return words&&words.soonStyle?`<span style="${words.soonStyle}">${words.soon} &mdash; ${label}</span>`:`<span class="date-red">${(words&&words.soon)||'Due soon'} &mdash; ${label}</span>`;
   return`<span style="color:var(--muted)">${label}</span>`;
 }
 function initials(name){
