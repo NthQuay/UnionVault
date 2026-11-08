@@ -373,7 +373,10 @@ function _rsvpPageHeadHtml(ev, t){
     ? [['Ceremony',place('ceremony'),ev.ceremonyVenueAddress],['Reception',place('reception'),ev.venueAddress]].filter(v=>v[1])
     : (ev.venue?[['',[typeof _evSpace==='function'&&_evSpace('ceremony',ev),ev.venue].filter(Boolean).join(', '),ev.venueAddress]]:[]);
   const venueHtml=venues.map(([lbl,nm,addr])=>`<div class="rh-venue">${lbl?`<span class="rh-k">${esc(lbl)}</span>`:''}<span class="rh-v">${esc(nm)}</span>${addr?`<span class="rh-a">${esc(addr)}</span>`:''}</div>`).join('');
-  const fmt=t.format||'modern';
+  // The couple picks the RSVP page style in RSVP settings (website.rsvp.pageStyle);
+  // it maps onto the same four layouts as the website formats.
+  const ps=((STATE.website&&STATE.website.rsvp)||{}).pageStyle||'classic';
+  const fmt={classic:'modern', modern:'editorial', editorial:'magazine', atelier:'atelier'}[ps]||'modern';
   if(fmt==='magazine'){
     const mast=names?esc(names).replace(' &amp; ',' <i>&amp;</i> '):esc(title);
     return `<div class="rh rh-mag">
@@ -402,7 +405,10 @@ function _rsvpPageHeadHtml(ev, t){
 }
 function _rsvpPageHeadCss(){
   const t=(STATE.website&&STATE.website.theme)||{};
-  const head=t.headFont||"'Cormorant Garamond',serif", body=t.bodyFont||"'Inter',sans-serif";
+  // Each RSVP page style brings its own heading font (the website's font isn't used).
+  const ps=((STATE.website&&STATE.website.rsvp)||{}).pageStyle||'classic';
+  const head={editorial:"'Bodoni Moda','Bodoni 72',Didot,Georgia,serif", atelier:"'Playfair Display',Georgia,serif"}[ps]||"'Cormorant Garamond',Georgia,serif";
+  const body="'Inter',system-ui,sans-serif";
   const ink=t.heading||'#4A3F35', txt=t.text||'#5A5148', ac=t.accent||'#C9A227';
   return `#uv-rsvp-head{width:100%;max-width:520px;margin:0 auto;padding:40px 4px 26px;box-sizing:border-box;color:${txt};font-family:${body}}`
    +`#uv-rsvp-head .rh-k{display:block;font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.7;margin-bottom:3px}`
@@ -486,6 +492,9 @@ async function _showRsvpForm(coupleId){
       +'.rfm-close{display:none!important}#uv-rsvp-sheet{border:1px solid rgba(0,0,0,.09)}'
       + _rsvpPageHeadCss();
     (document.head||document.documentElement).appendChild(st);
+    const fl=document.createElement('link'); fl.rel='stylesheet';
+    fl.href='https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;1,6..96,400&family=Playfair+Display:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500&display=swap';
+    (document.head||document.documentElement).appendChild(fl);
     const head=document.createElement('header');
     head.id='uv-rsvp-head';
     head.innerHTML=_rsvpPageHeadHtml(STATE.event||{}, (STATE.website&&STATE.website.theme)||{});

@@ -2019,6 +2019,16 @@ function openWbRsvp(){
     </div>
 
     <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">RSVP link page</div>
+      <div style="font-size:11.5px;color:var(--muted);margin:-2px 0 8px;line-height:1.45">How the page looks when guests open your RSVP link or QR code — your names, the date, start time and venue above the form.</div>
+      <div id="rsvp-page-grid" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+        ${[['classic','Classic'],['modern','Modern'],['editorial','Editorial'],['atelier','Atelier']].map(([id,label])=>{const on=(r.pageStyle||'classic')===id;return `<button type="button" data-ps="${id}" onclick="_wbRsvpSetPageStyle('${id}')" style="min-width:0;padding:8px 4px;border-radius:9px;border:2px solid ${on?'var(--gold)':'var(--border)'};background:${on?'color-mix(in srgb,var(--gold) 10%,var(--cream) 90%)':'var(--cream)'};cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;font-family:inherit">
+          <div style="width:100%;max-width:60px;height:36px;border-radius:5px;overflow:hidden;border:1px solid var(--border)">${_rsvpPageStyleThumb(id)}</div>
+          <div style="font-size:10.5px;font-weight:${on?'600':'400'};color:${on?'var(--gold)':'var(--fg)'}">${label}</div></button>`;}).join('')}
+      </div>
+    </div>
+
+    <div>
       <div class="wb-slot-lbl" style="margin-bottom:6px">Colour scheme</div>
       <div id="rsvp-pal-grid" style="display:flex;gap:5px">
         ${palBtn('sage','Sage',['#E8EDEA','#5C7D6B'])}
@@ -2084,6 +2094,25 @@ function _wbRsvpSetStyle(s){
     if(lbl){lbl.style.fontWeight=on?'600':'400';lbl.style.color=on?'var(--gold)':'var(--fg)';}
   });
   _wbRsvpRefreshPreview();
+}
+// RSVP link page style (the stand-alone page guests reach from the RSVP link / QR code).
+// Chosen by the couple here, independent of the website's own format.
+function _rsvpPageStyleThumb(id){
+  const bg='#F6F1EA', ink='#2F2A26', ac='#B8963E';
+  const svg=b=>`<svg width="100%" height="100%" viewBox="0 0 60 36" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="36" fill="${bg}"/>${b}</svg>`;
+  if(id==='modern') return svg(`<rect x="16" y="8" width="28" height="2.5" fill="${ink}"/><rect x="20" y="13" width="20" height="1.5" fill="${ac}"/><rect x="12" y="20" width="36" height="12" rx="2" fill="#fff" stroke="#ddd"/>`);
+  if(id==='editorial') return svg(`<rect x="5" y="4" width="50" height=".8" fill="${ink}"/><rect x="8" y="7" width="44" height="5" fill="${ink}"/><rect x="5" y="15" width="22" height="1.5" fill="${ink}" opacity=".6"/><rect x="44" y="13" width="11" height="4" fill="${ink}"/><rect x="12" y="20" width="36" height="12" rx="2" fill="#fff" stroke="#ddd"/>`);
+  if(id==='atelier') return svg(`<rect x="6" y="4" width="16" height="4" fill="${ink}"/><rect x="6" y="9" width="4" height="2" fill="${ac}"/><rect x="6" y="12" width="20" height="4" fill="${ink}"/><rect x="34" y="6" width="20" height=".8" fill="${ink}"/><rect x="34" y="9" width="16" height="1.5" fill="${ink}" opacity=".6"/><rect x="12" y="20" width="36" height="12" rx="2" fill="#fff" stroke="#ddd"/>`);
+  return svg(`<rect x="22" y="5" width="16" height="1.2" fill="${ac}"/><rect x="14" y="8" width="32" height="3" fill="${ink}" opacity=".85"/><rect x="26" y="13" width="8" height=".6" fill="${ac}"/><rect x="12" y="20" width="36" height="12" rx="2" fill="#fff" stroke="#ddd"/>`);
+}
+function _wbRsvpSetPageStyle(id){
+  _wbSite().rsvp.pageStyle=id; saveToStorage();
+  document.querySelectorAll('#rsvp-page-grid button').forEach(b=>{
+    const on=b.dataset.ps===id;
+    b.style.borderColor=on?'var(--gold)':'var(--border)';
+    b.style.background=on?'color-mix(in srgb,var(--gold) 10%,var(--cream) 90%)':'var(--cream)';
+    const lbl=b.querySelector('div:last-child'); if(lbl){lbl.style.fontWeight=on?'600':'400';lbl.style.color=on?'var(--gold)':'var(--fg)';}
+  });
 }
 function _wbRsvpSetPalette(id){
   const _r=_wbSite().rsvp;
