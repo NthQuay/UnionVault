@@ -97,3 +97,8 @@ Audit found most wizard answers were saved but never read (vibe, formality, sett
   - Event page: "+ Link a timeline" / "Change" → picker (`_evLinkTimelinePicker`): create a new timeline for the event, link an existing unlinked one, or Unlink. Wedding Day (first, unlinked) timeline is never offered (`_evLinkableTimelines`).
   - Timeline New / Edit forms: "Linked event" dropdown (`_tlEventSelectHtml`).
   - Events list cards show the linked timeline next to the date. Event form save also uses the helper.
+
+## v510.2 (accepted)
+- Stand-alone RSVP page (RSVP link / QR code): a wedding header above the form — "Liam & Mandy's Wedding", weekday + date + ceremony start time, venue(s) with rooms and address (`_rsvpPageHeadHtml` / `_rsvpPageHeadCss` in js/init.js). The page scrolls; header sits above the sheet.
+- The couple picks the RSVP link page style in Website builder → RSVP → Appearance → "RSVP link page": Classic / Modern / Editorial / Atelier (`website.rsvp.pageStyle`, default classic; returned by the existing rsvp_page RPC — no SQL). Each style brings its own heading font; page colours still come from the website theme.
+- Editorial: "Nº 01 · October 2027" → "October 2027" (or "Special Edition" with no date) in the website format, RSVP page and Editorial email — so it can't be read as the 1st. Edge functions redeployed with the shared template: send-guest-email v24, send-vendor-brief-email v9.
