@@ -122,7 +122,7 @@ function renderSettings(c, actions){
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
         <button type="button" onclick="navigate('comms')" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
           <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
-          <span style="min-width:0;flex:1"><span style="display:block;font-size:13px;color:var(--ink);line-height:1.3;font-weight:500">Edit communications</span><span style="display:block;font-size:11px;color:var(--muted);margin-top:1px;line-height:1.35">Every message UnionVault sends, in one place</span></span>
+          <span style="min-width:0;flex:1"><span style="display:block;font-size:13px;color:var(--ink);line-height:1.3;font-weight:500">Edit communications</span><span style="display:block;font-size:11px;color:var(--muted);margin-top:1px;line-height:1.35">Every message UnionVault sends, in one place. Edit email designs here too</span></span>
           <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
         </button>
       </div>
