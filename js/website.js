@@ -6269,6 +6269,8 @@ dd{flex:1;font-size:${scs(15)}px}
    leaves the label and the value side by side and drifts both — the column is gone and
    nothing is actually centred. The row has to become a column first. */
 section.b-center dl div{flex-direction:column;gap:2px;text-align:center}
+section.b-center dl div:has(.maplink){border-bottom:none;padding-bottom:0}
+section.b-center dl div:has(.maplink)::after{content:'';display:block;width:56%;margin:${sp(12)}px auto 0;border-bottom:1px solid ${t2.heading}12}
 section.b-center dt{width:auto;padding-top:0}
 .ed-details{text-align:center;padding:${sp(8)}px 0}
 .ed-date{font-family:${t2.headFont};font-size:${sch(22)}px;font-weight:600;color:${t2.item};margin:0 0 ${sp(4)}px}
@@ -8053,8 +8055,8 @@ function buildDashWishingWellHtml(){
 }
 
 function renderVisionboard(c,actions){
-  const items=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
-  const colors=STATE.inspo.colors;
+  const items=STATE.visionboard.map(id=>(STATE.inspo?.items||[]).find(i=>i.id===id)).filter(Boolean);
+  const colors=STATE.inspo?.colors;
   const allCols=[...WEDDING_COLORS,...(STATE.inspo.customColors||[])];
   const showOnDash=STATE.settings.showVisionOnDash||false;
   const vbGrouped=!!STATE.settings.vbGrouped;
@@ -8387,8 +8389,8 @@ function vbDrop(e,targetId){
   document.querySelectorAll('[data-vbid]').forEach(el=>el.style.outline='');
   if(!vbDragId||vbDragId===targetId)return;
   if(STATE.settings&&STATE.settings.vbGrouped){
-    const di=STATE.inspo.items.find(i=>i.id===vbDragId);
-    const ti2=STATE.inspo.items.find(i=>i.id===targetId);
+    const di=(STATE.inspo?.items||[]).find(i=>i.id===vbDragId);
+    const ti2=(STATE.inspo?.items||[]).find(i=>i.id===targetId);
     if(!di||!ti2||(di.category||'Other')!==(ti2.category||'Other')){vbDragId=null;return;}
   }
   const fi=STATE.visionboard.indexOf(vbDragId);

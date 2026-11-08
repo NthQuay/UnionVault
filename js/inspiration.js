@@ -543,7 +543,7 @@ function jumpToBudget(budgetId){
 // Clickable inspiration chip shown on a Payment (reciprocal of inspoBudgetChip)
 function budgetInspoChip(b){
   if(!b.inspoId) return '';
-  const item=STATE.inspo.items.find(i=>i.id===b.inspoId);
+  const item=(STATE.inspo?.items||[]).find(i=>i.id===b.inspoId);
   if(!item) return '';
   return `<div style="margin-top:4px">
     <span onclick="event.stopPropagation();openInspoPreview('${item.id}',event.currentTarget,{unlinkBudgetId:'${b.id}'})" title="View inspiration idea"

@@ -23,6 +23,9 @@
 | TikTok | TODO | — | |
 | Pinterest | TODO | — | |
 
+**Video creation:** HeyGen Creator Platform (AI avatar videos). Predis.ai evaluated and dropped.
+**Auto-posting:** Self-managed (no third-party scheduler).
+
 ## Paid Ads
 
 | Platform | Status | Budget | Notes |

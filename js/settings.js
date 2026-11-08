@@ -281,6 +281,24 @@ function renderSettings(c, actions){
           </button>
         </div>
       </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Time Format</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">How times display on timelines and events.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button type="button" onclick="setTimeFormat('12h')"
+            class="curr-fmt-opt${(STATE.settings.timeFormat||'12h')==='12h'?' sel':''}"
+            style="flex:1;min-width:130px;padding:12px 16px;border-radius:10px;border:2px solid ${(STATE.settings.timeFormat||'12h')==='12h'?'var(--gold)':'var(--border)'};background:${(STATE.settings.timeFormat||'12h')==='12h'?'var(--parchment)':'transparent'};cursor:pointer;text-align:left;transition:all .15s">
+            <div class="curr-fmt-name" style="font-size:13px;font-weight:500;margin-bottom:4px">12-hour</div>
+            <div style="font-size:11.5px;color:var(--muted)">e.g. 3:00 PM</div>
+          </button>
+          <button type="button" onclick="setTimeFormat('24h')"
+            class="curr-fmt-opt${STATE.settings.timeFormat==='24h'?' sel':''}"
+            style="flex:1;min-width:130px;padding:12px 16px;border-radius:10px;border:2px solid ${STATE.settings.timeFormat==='24h'?'var(--gold)':'var(--border)'};background:${STATE.settings.timeFormat==='24h'?'var(--parchment)':'transparent'};cursor:pointer;text-align:left;transition:all .15s">
+            <div class="curr-fmt-name" style="font-size:13px;font-weight:500;margin-bottom:4px">24-hour</div>
+            <div style="font-size:11.5px;color:var(--muted)">e.g. 15:00</div>
+          </button>
+        </div>
+      </div>
       ${/* Balance / deposit badge pickers hidden (v509.8): the defaults are fine and nobody changes them. _badgePickerHtml() still works if wanted back. */''}
       ${_vendorBadgeStylePickerHtml()}
     </div>

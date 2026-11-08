@@ -237,7 +237,8 @@ function _tlRenderListView(c, actions){
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:14px">${_escHtml(tl.name)}</div>
         ${(()=>{if(!tl.linkedEventId)return '';const ev=(STATE.events||[]).find(e=>e.id===tl.linkedEventId);if(!ev)return '';return '<div style="margin-top:4px"><span style="display:inline-flex;align-items:center;gap:4px;max-width:100%;font-size:10.5px;font-weight:500;color:var(--gold-deep);background:var(--gold-bg);padding:2px 8px;border-radius:10px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escHtml(ev.name)+'</span></span></div>';})()}
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${_tlCardDate(tl,tls)}${n} moment${n!==1?'s':''} · ${span}${tl.showOnWebsite!==false?' · <span title="Visible on website" style="opacity:.6">&#127760;</span>':''}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${_tlCardDate(tl,tls)}${n} moment${n!==1?'s':''}</div>
+        <div style="font-size:12px;color:var(--muted)">${span}${tl.showOnWebsite!==false?' <span title="Visible on website" style="opacity:.6">&#127760;</span>':''}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()">
         <button onclick="_tlToggleMaster('${tl.id}',event)" title="${tl.inMaster?'Remove from master':'Add to master'}" style="width:36px;height:20px;border-radius:11px;border:none;background:${tl.inMaster?'var(--gold)':'var(--border)'};cursor:pointer;position:relative;transition:background .2s;flex-shrink:0"><span style="position:absolute;top:2px;left:${tl.inMaster?'18px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.15)"></span></button>
@@ -350,7 +351,7 @@ function _tlOpenMasterView(){
 
   c.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${pills}</div>
     <div style="display:flex;flex-direction:column;gap:0;max-width:620px">${rows||'<div style="text-align:center;padding:30px;color:var(--muted)">No moments in selected timelines.</div>'}</div>
-    ${span?`<div style="max-width:620px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center">${span} · ${all.length} moment${all.length!==1?'s':''} across ${active.length} timeline${active.length!==1?'s':''}</div>`:''}`;
+    ${span?`<div style="max-width:620px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center">${span}<br>${all.length} moment${all.length!==1?'s':''} across ${active.length} timeline${active.length!==1?'s':''}</div>`:''}`;
 }
 
 function _tlPrintMaster(){
@@ -454,6 +455,7 @@ function tlTo12h(t){
   if(!t) return '';
   const n=_tlNormTime(t); if(!n) return String(t);
   let h=n[0]; const m=n[1];
+  if(STATE.settings && STATE.settings.timeFormat==='24h') return `${String(h).padStart(2,'0')}:${m}`;
   const ap=h>=12?'PM':'AM';
   h=h%12; if(h===0)h=12;
   return `${h}:${m} ${ap}`;
@@ -677,7 +679,7 @@ function renderTimeline(c, actions){
     }
 
     body = `<div style="display:flex;flex-direction:column;gap:0;max-width:620px">${rows}</div>
-      ${span?`<div style="max-width:620px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center">${span} · ${items.length} moment${items.length!==1?'s':''}</div>`:''}`;
+      ${span?`<div style="max-width:620px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);text-align:center">${span}<br>${items.length} moment${items.length!==1?'s':''}</div>`:''}`;
   }
 
   c.innerHTML = header + legend + body;
@@ -832,6 +834,12 @@ function timelineFormBody(it){
       </span>
       <span class="toggle-switch"><input type="checkbox" id="tl-pub" ${it.pub?'checked':''}/><span class="toggle-track"></span></span>
     </label>
+    ${it.id && STATE.timelines && STATE.timelines.length>1 ? `<div class="form-group" style="margin-top:10px"><label class="form-label">Move to another timeline</label>
+      <select class="form-input" id="tl-move-to" style="appearance:none;-webkit-appearance:none;padding-right:32px">
+        <option value="">— Stay here —</option>
+        ${STATE.timelines.filter(t=>t.id!==STATE.activeTimelineId).map(t=>`<option value="${t.id}">${_escHtml(t.name)}</option>`).join('')}
+      </select>
+    </div>` : ''}
   </div>`;
 }
 
@@ -909,9 +917,16 @@ function saveTimelineItem(editId){
   // The safe default is the one whose mistake you can see.
   const pub=!!(document.getElementById('tl-pub')||{}).checked;
   if(!title && !time){ return; }
+  const moveTo=((document.getElementById('tl-move-to')||{}).value)||'';
   if(editId){
     const it=STATE.timeline.find(x=>x.id===editId);
     if(it){ Object.assign(it,{time,title,cat,location,who,notes,vendorId,songs,pub}); }
+    if(moveTo && it){
+      const idx=STATE.timeline.findIndex(x=>x.id===editId);
+      if(idx!==-1) STATE.timeline.splice(idx,1);
+      const dest=STATE.timelines.find(t=>t.id===moveTo);
+      if(dest) dest.items.push(it);
+    }
   } else {
     STATE.timeline.push({ id:uid(), time, title, cat, location, who, notes, vendorId, songs, pub });
   }
