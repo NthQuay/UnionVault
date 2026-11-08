@@ -84,3 +84,6 @@ Audit found most wizard answers were saved but never read (vibe, formality, sett
   - Plus one: "PLUS ONE" + "Will you be bringing a plus one?" → ✓ shows a required name box (`.p1-box`, focused); once typed (Enter / tap away) the name shows as text with "✓ Attending Edit" under it (`_p1Slot`, `_p1Meta`, `_p1Redraw`, `p1Edit`). ✗ → "✗ Not bringing one".
   - Next is dimmed (`.rf-dim`) but tappable while an accepted plus one has no name; tapping it marks the box red with "Please enter their name" and focuses it.
   - A guest declining auto-declines their own plus one (`_rfSetAtt`).
+
+## v509.9 (accepted)
+- Seating floorplan → cog → Conflict range: new **Same table** option (`STATE.settings.floorConflictTables = 0`): keep-apart pairs flag only when seated at the same table. 1 table (default) / 2 tables unchanged. `_floorConflictRange()` returns 0/1/2; buttons size to their labels.
