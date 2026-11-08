@@ -220,8 +220,8 @@ function _wbSite(){
   if(!['modern','editorial','magazine','atelier'].includes(t.format)) t.format='modern';
   t.rsvpMode='modal';
   if(!['thin','medium','bold'].includes(t.btnBorder)) t.btnBorder='medium';
-  if(!['center','left'].includes(t.align)) t.align='center';
-  if(!['left','center','justify'].includes(t.bodyAlign)) t.bodyAlign='left';
+  if(!['center','left','right'].includes(t.align)) t.align='center';
+  if(!['left','center','right','justify'].includes(t.bodyAlign)) t.bodyAlign='left';
   if(typeof t.css!=='string') t.css='';
   // v185: website slug for hash-routing. Auto-generated from partner names + unique user suffix.
   if(!w.slug || typeof w.slug!=='string'){
@@ -389,7 +389,7 @@ function _wbLayout(key){
   return l;
 }
 
-const WB_BODY_ALIGNS = ['left','center','justify'];
+const WB_BODY_ALIGNS = ['left','center','right','justify'];
 
 // Wishing well is STRUCTURED, not prose — it renders a <dl> of PayID / bank / reference
 // rows. Justifying a BSB is meaningless. Its message is a .lead — a display line, not a
@@ -3774,6 +3774,7 @@ function _wbBlockBody(key,b){
   // they are deliberately different TYPES.
   if(b.type==='links' || b.type==='btns'){
     const isBtn = b.type==='btns';
+    const _bAl = b.align || (_wbLayout(key).body==='right'?'right':_wbLayout(key).body==='center'?'center':'left');
     const rows=b.items.map((x,ix)=>{
       if(!isBtn){
         return `<div class="wb-lk-row">
@@ -3816,9 +3817,9 @@ function _wbBlockBody(key,b){
       <div class="wb-blk-ctl">
         <span class="wb-slot-lbl">Alignment</span>
         <span class="inv-seg">
-          <button type="button" class="${(b.align||'center')==='left'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','align','left')">Left</button>
-          <button type="button" class="${(b.align||'center')==='center'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','align','center')">Centre</button>
-          <button type="button" class="${(b.align||'center')==='right'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','align','right')">Right</button>
+          <button type="button" class="${_bAl==='left'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','align','left')">Left</button>
+          <button type="button" class="${_bAl==='center'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','align','center')">Centre</button>
+          <button type="button" class="${_bAl==='right'?'active':''}" onclick="_wbBlockSet('${key}','${b.id}','align','right')">Right</button>
         </span>
       </div>`}
       ${b.items.some(x=>String(x.label||'').trim() && (x.urlMode||'custom')==='custom' && !String(x.url||'').trim())
@@ -4447,8 +4448,8 @@ function _wbBuildSite(forDownload){
           return String(x.url||'').trim();
         });
         if(!rows.length) return '';
-        const btnsJustify=b.align==='left'?'flex-start':b.align==='right'?'flex-end':'center';
-        return `<div class="btns" style="justify-content:${btnsJustify}">${rows.map(x=>{
+        const btnsJustify=b.align==='left'?'flex-start':b.align==='right'?'flex-end':b.align==='center'?'center':'';
+        return `<div class="btns"${btnsJustify?` style="justify-content:${btnsJustify}"`:''}>${rows.map(x=>{
           const um=x.urlMode||'custom';
           if(um==='rsvp') return `<button type="button" class="ics" onclick="_uvOpenRsvp()">${_escHtml(x.label)}</button>`;
           const href=um==='ics'?(_wbIcs()||''):_normalizeUrl(x.url);

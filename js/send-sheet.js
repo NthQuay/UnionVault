@@ -2710,10 +2710,24 @@ function _openEmailDesignModal(itemKey){
   // render the one classic-style layout server-side — offering a template choice there
   // would do nothing, so it's hidden rather than silently ignored.
   const showTemplatePicker=!itemKey||['sd-email','inv-email','rem-email','vbrief'].includes(itemKey);
+  // Per-email Design popups open with a switch: ON = follow the app-wide Email design (no
+  // override stored); OFF = this email has its own design. Switching ON stashes the custom
+  // design (commsDesignSaved) so switching OFF again brings it back.
+  const useGlobal=!!itemKey&&!override;
+  const itemTitle=_escHtml(item?item.title:'this email');
   const banner=itemKey
-    ? (override
-        ? `<div style="display:flex;align-items:center;gap:10px;background:var(--parchment);border:1px solid var(--gold-med,var(--border));border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ink)"><span style="flex:1">Custom design for <strong>${_escHtml(item?item.title:'this email')}</strong> — the app-wide design below no longer applies to it.</span><button type="button" class="btn btn-outline btn-sm" onclick="_emailDesignResetItem('${itemKey}')" style="flex-shrink:0;font-size:10.5px">Reset to app-wide</button></div>`
-        : `<div style="font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;line-height:1.5">Currently using the app-wide <strong style="color:var(--ink)">Email design</strong>. Changing anything below gives <strong style="color:var(--ink)">${_escHtml(item?item.title:'this email')}</strong> its own design instead.</div>`)
+    ? `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div class="dark-toggle-row">
+          <div>
+            <div style="font-size:13.5px;font-weight:500">Use app-wide Email design</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;line-height:1.45">${useGlobal?`<strong style="color:var(--ink)">${itemTitle}</strong> follows the design set in <strong style="color:var(--ink)">Email design</strong>. Switch off to give it its own.`:`<strong style="color:var(--ink)">${itemTitle}</strong> has its own design below. Switch on to follow the app-wide <strong style="color:var(--ink)">Email design</strong> instead.`}</div>
+          </div>
+          <label class="toggle-switch" style="flex-shrink:0;margin-left:12px">
+            <input type="checkbox" ${useGlobal?'checked':''} onchange="_emailDesignUseGlobal('${itemKey}',this.checked)"/>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>`
     : '';
   // Editorial / Atelier thumbnails: a tiny masthead or stacked names, so the four cards read
   // as four different designs at a glance.
@@ -2744,6 +2758,7 @@ function _openEmailDesignModal(itemKey){
   }).join('');
   const body=`<div style="display:flex;flex-direction:column;gap:18px">
     ${banner}
+    <div style="display:${useGlobal?'none':'flex'};flex-direction:column;gap:18px">
     ${showTemplatePicker?`<div>
       <div style="font-size:13.5px;font-weight:500;margin-bottom:8px">Template</div>
       <div id="email-tpl-picker" style="display:flex;gap:10px;flex-wrap:wrap">
@@ -2789,6 +2804,7 @@ function _openEmailDesignModal(itemKey){
       </label>
       ${logoLocked?`<div style="font-size:11.5px;color:var(--muted);margin:5px 0 0 24px">Always shown on the free plan. <a href="#" onclick="event.preventDefault();_uvRequirePaid('brandOff')" style="color:var(--gold)">Upgrade</a> to remove it.</div>`:''}
     </div>
+    </div>
     ${!itemKey?`<div style="border-top:1px solid var(--border);padding-top:14px">
       <button type="button" class="btn btn-outline btn-sm" onclick="_ssPreviewEmail()" style="display:inline-flex;align-items:center;gap:6px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -2831,12 +2847,26 @@ function _emailDesignRerender(itemKey){
   if(box) box.scrollTop=t1;
   if(body) body.scrollTop=t2;
 }
-function _emailDesignResetItem(itemKey){
-  if(STATE.settings && STATE.settings.commsDesign) delete STATE.settings.commsDesign[itemKey];
+function _emailDesignUseGlobal(itemKey, on){
+  if(!STATE.settings) STATE.settings={};
+  if(on){
+    const cur=STATE.settings.commsDesign&&STATE.settings.commsDesign[itemKey];
+    if(cur){
+      if(!STATE.settings.commsDesignSaved) STATE.settings.commsDesignSaved={};
+      STATE.settings.commsDesignSaved[itemKey]=cur;
+      delete STATE.settings.commsDesign[itemKey];
+    }
+  } else {
+    if(!STATE.settings.commsDesign) STATE.settings.commsDesign={};
+    const saved=STATE.settings.commsDesignSaved&&STATE.settings.commsDesignSaved[itemKey];
+    const u=STATE.settings.emailDesign||{};
+    STATE.settings.commsDesign[itemKey]=saved||{ templateId:u.templateId||'classic', accentColor:u.accentColor||'#8a6a2c', fontFamily:u.fontFamily||'serif', bodyFont:u.bodyFont||'sans-serif', showLogo:u.showLogo!==false, headerImage:u.headerImage||'' };
+  }
   saveToStorage();
   _emailDesignRerender(itemKey);
   if(typeof _currentPage!=='undefined' && _currentPage==='comms' && typeof _commsLoadPreview==='function') _commsLoadPreview();
 }
+function _emailDesignResetItem(itemKey){ _emailDesignUseGlobal(itemKey,true); }
 function _emailDesignHexInput(inp, itemKey){
   let v=(inp.value||'').trim();
   if(v && v[0]!=='#') v='#'+v;
