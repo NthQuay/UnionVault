@@ -249,7 +249,7 @@ function _commsEmailPreviewPayload(item, tplOverride){
   const ed=_commsDesignFor(item.key);
   const names=_ssCoupleNames();
   const raw=tplOverride!=null?tplOverride:_inviteTpl(item.tplKind,'email');
-  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, bgColor:ed.bgColor||'', boxColor:ed.boxColor||'',
+  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, bgColor:ed.bgColor||'', boxColor:ed.boxColor||'', panelColor:ed.panelColor||'',
     headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) };
   const titleMap={savedate:'Save the date', invite:'You\'re invited', reminder:'RSVP reminder'};
   const title=titleMap[item.tplKind];
@@ -301,7 +301,7 @@ function _commsEmailPreviewPayload(item, tplOverride){
 function _commsFixedPreviewPayload(key){
   const ed=_commsDesignFor(key);
   const ownerUid=_sbSession&&_sbSession.user&&_sbSession.user.id;
-  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, bgColor:ed.bgColor||'', boxColor:ed.boxColor||'',
+  const designOpts={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, bgColor:ed.bgColor||'', boxColor:ed.boxColor||'', panelColor:ed.panelColor||'',
     headerImage:_emailHeaderUrl(ed.headerImage,ownerUid) };
   const names=_ssCoupleNames();
   const ct=(STATE.settings&&STATE.settings.commsText)||{};
@@ -339,7 +339,7 @@ function _commsFixedPreviewPayload(key){
   }
   // vbrief
   const t=ct.vendorBrief||{};
-  const edFull={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, bgColor:ed.bgColor||'', boxColor:ed.boxColor||'', headerImage:designOpts.headerImage };
+  const edFull={ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, bgColor:ed.bgColor||'', boxColor:ed.boxColor||'', panelColor:ed.panelColor||'', headerImage:designOpts.headerImage };
   return {endpoint:'send-vendor-brief-email', payload:{ preview:true, fromName:names||'',
     intro_override:t.intro||null, button_label_override:t.buttonLabel||null, closing_override:t.closing||null,
     templateId:_emailTplId(ed.templateId), issue:_emailIssue(), designOpts:edFull }};

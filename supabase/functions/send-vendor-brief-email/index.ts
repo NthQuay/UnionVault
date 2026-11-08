@@ -44,7 +44,7 @@ serve(async (req) => {
     to?: string; vendor_name?: string; brief_url?: string; expiry_display?: string
     fromName?: string; replyTo?: string
     intro_override?: string; button_label_override?: string; closing_override?: string
-    templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; bodyFont?: string; showLogo?: boolean; headerImage?: string; bgColor?: string; boxColor?: string }; preview?: boolean
+    templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; bodyFont?: string; showLogo?: boolean; headerImage?: string; bgColor?: string; boxColor?: string; panelColor?: string }; preview?: boolean
     issue?: { names?: string; date?: string; time?: string; venue?: string }
   }
   try { b = await req.json() } catch { return json(400, { ok: false, error: 'Invalid JSON' }) }
@@ -66,6 +66,7 @@ serve(async (req) => {
   const bodyFont = FONT_STACKS[String(b.designOpts?.bodyFont || '')] || FONT_STACKS['sans-serif']
   const showLogo = b.designOpts?.showLogo !== false
   const bgColor = HEX_RE.test(String(b.designOpts?.bgColor || '')) ? String(b.designOpts!.bgColor) : ''
+  const panelColor = HEX_RE.test(String(b.designOpts?.panelColor || '')) ? String(b.designOpts!.panelColor) : ''
   const boxColor = HEX_RE.test(String(b.designOpts?.boxColor || '')) ? String(b.designOpts!.boxColor) : ''
   const headerImageRaw = String(b.designOpts?.headerImage || '')
   const headerImageCustom = headerImageRaw.startsWith(`${SB_URL}/storage/v1/object/public/photos/`) && !headerImageRaw.includes('..') ? headerImageRaw : ''
@@ -111,7 +112,7 @@ serve(async (req) => {
     kicker: names ? `${names}'s wedding` : '', title: 'Your vendor brief', text: intro,
     cta: { url: briefUrl, label: buttonLabel }, ctaNote: expiryDisplay ? `Expires ${expiryDisplay}` : '',
     afterText: closing,
-    showBranding, accentColor, fontFamily, bodyFont, showLogo: showLogo || showBranding, headerImage, bgColor, boxColor, templateId: tplId,
+    showBranding, accentColor, fontFamily, bodyFont, showLogo: showLogo || showBranding, headerImage, bgColor, boxColor, panelColor, templateId: tplId,
   })
 
   if (isPreview) return json(200, { ok: true, html })

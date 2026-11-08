@@ -217,7 +217,7 @@ async function _invBatchSend(){
       fromName:names||'UnionVault', kicker:names?names+'\'s wedding':'', title:'You\'re invited',
       replyTo:(STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'',
       templateId:_emailTplId(ed.templateId), issue:_emailIssue(), guestId:g.id, logKind:'invite', toNames:[g.name||''],
-      designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, bgColor:ed.bgColor||'', boxColor:ed.boxColor||'',
+      designOpts:{ accentColor:ed.accentColor||'#8a6a2c', fontFamily:ed.fontFamily||'serif', bodyFont:ed.bodyFont||'sans-serif', showLogo:ed.showLogo!==false, bgColor:ed.bgColor||'', boxColor:ed.boxColor||'', panelColor:ed.panelColor||'',
         headerImage:_emailHeaderUrl(ed.headerImage,(_sbSession&&_sbSession.user&&_sbSession.user.id)) },
       ctaLinks:_ctaLinks() };
     if(_tplHasBtn(msg,'rsvp')||_tplHasBtn(msg,'website')){ payload.htmlText=msg; payload.body=_ctaPlain(msg); }

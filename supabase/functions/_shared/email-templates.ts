@@ -11,7 +11,7 @@ export interface EmailShell {
   kicker?: string; title?: string; showBranding?: boolean
   accentColor: string; fontFamily: string; showLogo: boolean; headerImage: string
   bodyFont?: string; issue?: Issue
-  bgColor?: string; boxColor?: string   // optional custom page background / card colours (#rrggbb)
+  bgColor?: string; boxColor?: string; panelColor?: string   // optional custom page background / card colours (#rrggbb)
 }
 // Editorial / Atelier content slots:
 //   article — the main text (paragraphs, plus anything that belongs with them, e.g. a button)
@@ -201,7 +201,7 @@ export function issueDate(iso: string) {
   const dt = new Date(Date.UTC(y, m - 1, d))
   if (isNaN(dt.getTime()) || m < 1 || m > 12) return null
   const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0')
-  return { short: `${dd}.${mm}`, full: `${d} ${MONTHS[m - 1]} ${y}`, monthYear: `${MONTHS[m - 1]} ${y}`, weekday: WEEKDAYS[dt.getUTCDay()], dotted: `${dd}.${mm}.${y}` }
+  return { day: String(d), mon: MONTHS[m - 1].slice(0, 3).toUpperCase(), short: `${dd}.${mm}`, full: `${d} ${MONTHS[m - 1]} ${y}`, monthYear: `${MONTHS[m - 1]} ${y}`, weekday: WEEKDAYS[dt.getUTCDay()], dotted: `${dd}.${mm}.${y}` }
 }
 // Big first letter on the first REAL paragraph (Editorial) — skipping a short greeting
 // ("Dear Sarah & James,"), which a three-line drop cap would hang out of. Only when the
@@ -319,7 +319,7 @@ ${metaRow ? `<table role="presentation" width="100%" cellpadding="0" cellspacing
 <tr><td class="uv-pad" style="padding:0 36px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-panel" style="background:#E8DFD2"><tr><td style="padding:26px 26px 14px;font-family:${bf}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td valign="top">
 ${opts.title ? `<div class="uv-ink uv-h" style="font-family:${PLAYFAIR};font-size:34px;line-height:1.08;color:#1D1916;margin-bottom:14px">${escH(opts.title)}</div>` : ''}
-</td><td valign="top" align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:58px;line-height:.9;color:${ac}55;padding-left:10px">${d ? d.short : ''}</td></tr></table>
+</td><td valign="top" align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:58px;line-height:.9;color:${ac}55;padding-left:10px">${d ? `${d.day}<br><span style="font-family:${MAG_SANS};font-size:15px;letter-spacing:.24em">${d.mon}</span>` : ''}</td></tr></table>
 ${slots.article}
 </td></tr></table></td></tr>
 ${slots.spread || ''}
@@ -341,7 +341,7 @@ export function inviteSpreadRow(fmt: 'editorial' | 'atelier', ib: InviteBlock, i
   return `<tr><td class="uv-pad" style="padding:20px 36px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
 <td width="44%" valign="top" style="width:44%">${inviteImg(ib)}</td>
 <td width="56%" valign="middle" class="uv-panel uv-sp-copy" style="width:56%;background:#E8DFD2;padding:20px 22px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MAG_SANS};font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:${ac}">The details</td><td align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:40px;line-height:.9;color:${ac}55">${issueDate(iss?.date || '')?.short || ''}</td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MAG_SANS};font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:${ac}">The details</td><td align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:40px;line-height:.9;color:${ac}55">${cornerNum(iss?.date || '')}</td></tr></table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${detailsRows(iss, PLAYFAIR, '#D6CBBB')}</table>
 </td></tr></table></td></tr>`
 }
@@ -356,11 +356,15 @@ export function detailsPanelRow(fmt: 'editorial' | 'atelier', iss: Issue | undef
   }
   const rows = detailsRows(iss, PLAYFAIR, '#D6CBBB')
   return rows ? `<tr><td class="uv-pad" style="padding:20px 36px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="uv-panel" style="background:#E8DFD2"><tr><td style="padding:20px 24px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MAG_SANS};font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:${ac}">The details</td><td align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:40px;line-height:.9;color:${ac}55">${issueDate(iss?.date || '')?.short || ''}</td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MAG_SANS};font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:${ac}">The details</td><td align="right" class="uv-num" style="font-family:${PLAYFAIR};font-size:40px;line-height:.9;color:${ac}55">${cornerNum(iss?.date || '')}</td></tr></table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr></table></td></tr>` : ''
 }
 
 // ── Issue fields from a request body — plain strings, capped; escaped where drawn. ──
+function cornerNum(iso: string): string {
+  const d = issueDate(iso)
+  return d ? `${d.day}<br><span style="font-family:${MAG_SANS};font-size:12px;letter-spacing:.24em">${d.mon}</span>` : ''
+}
 export function parseIssue(raw: unknown): Issue {
   const iss = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   return {
@@ -393,22 +397,29 @@ function mixHex(a: string, b: string, t: number) {
 export function applyCustomColors(html: string, opts: EmailShell): string {
   const bg = HEX6.test(opts.bgColor || '') ? opts.bgColor! : ''
   const box = HEX6.test(opts.boxColor || '') ? opts.boxColor! : ''
-  if (!bg && !box) return html
+  let panel = HEX6.test(opts.panelColor || '') ? opts.panelColor! : ''
+  if (!bg && !box && !panel) return html
   let out = html
   if (bg) out = out.replace(/(<body class="uv-bg" style="[^"]*?background:)#[0-9A-Fa-f]{3,6}/, `$1${bg}`)
   const boxDark = !!box && lum(box) < 0.5
+  // Text inside panels follows the box's light/dark, so a panel on the other side of the line would be unreadable.
+  if (panel && (lum(panel) < 0.5) !== boxDark) panel = ''
+  if (!bg && !box && !panel) return html
   if (box) {
     out = out.replace(/(class="uv-card" style="[^"]*?background:)#[0-9A-Fa-f]{3,6}/, `$1${box}`)
-    const tint = mixHex(box, boxDark ? '#ffffff' : '#000000', 0.07)
-    out = out.replace(/background:#E8DFD2/g, `background:${tint}`).replace(/background:#F2ECE3/g, `background:${tint}`)
     out = out.replace(/<source srcset="[^"]*" media="\(prefers-color-scheme: dark\)">/g, '')
     if (boxDark) out = out.replace(/email-logo-black\.png/g, 'email-logo-white.png')
   }
+  // Secondary boxes (Editorial bands, Atelier panels): the chosen colour, else a tint of a
+  // custom box, else the template's own.
+  const panelBg = panel || (box ? mixHex(box, boxDark ? '#ffffff' : '#000000', 0.07) : '')
+  if (panelBg) out = out.replace(/background:#E8DFD2/g, `background:${panelBg}`).replace(/background:#F2ECE3/g, `background:${panelBg}`)
   // Dark-mode rules: drop the page-background rule when the background is custom; drop them
   // all when the box is custom (keeping text-colour rules permanently if the box is dark).
   out = out.replace(/@media \(prefers-color-scheme: dark\)\{((?:[^{}]|\{[^{}]*\})*)\}/, (_m, rules: string) => {
     let r = rules
     if (bg) r = r.replace(/\.uv-bg\{[^}]*\}/, '')
+    if (panel && !box) r = r.replace(/\.uv-(?:band|panel)\{[^}]*\}/g, '')
     if (!box) return `@media (prefers-color-scheme: dark){${r}}`
     if (!boxDark) return ''
     r = r.replace(/\.uv-card\{[^}]*?(color:[^;}]*)(;[^}]*)?\}/, '.uv-card{$1}')
