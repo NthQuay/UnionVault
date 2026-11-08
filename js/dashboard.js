@@ -1,7 +1,8 @@
 // DASHBOARD
 // ══════════════════════════════════════════════
 function buildDashVisionHtml(){
-  const allItems=STATE.visionboard.map(id=>STATE.inspo.items.find(i=>i.id===id)).filter(Boolean);
+  const _inspoItems=(STATE.inspo&&Array.isArray(STATE.inspo.items))?STATE.inspo.items:[];
+  const allItems=(Array.isArray(STATE.visionboard)?STATE.visionboard:[]).map(id=>_inspoItems.find(i=>i.id===id)).filter(Boolean);
   // How many pinned cards the dashboard widget shows (Edit Layout > Show). Default 12.
   let _dashCount=STATE.settings.vbDashCount;
   if(_dashCount===undefined||_dashCount===null) _dashCount=12;
@@ -699,6 +700,12 @@ function renderDashboard(c, actions){
     </div>`;
   }
 
+  // One misbehaving widget must never blank the whole dashboard (the old page's content stayed
+  // on screen when any widget threw). Wrap each: on error log it and show a small notice card.
+  Object.keys(W).forEach(k=>{ const fn=W[k]; if(typeof fn!=='function') return; W[k]=function(){
+    try{ return fn.apply(this,arguments); }
+    catch(e){ console.error('Dashboard widget "'+k+'" failed:',e); return `<div class="db-widget" style="padding:14px 16px;border:1px dashed var(--border);border-radius:12px;font-size:12px;color:var(--muted)">This section could not be shown (${String(k)}: ${String(e&&e.message||e).replace(/[<>&]/g,'')}).</div>`; }
+  }; });
   const soloWidgets = ['kpis','visionboard','wishingwell'];
   let widgetsHtml = '';
 

@@ -65,6 +65,7 @@ function navigate(page){
   actions.innerHTML='';
   actions.style.flexWrap='';
   actions.style.alignItems='';
+  try{
   if(page==='dashboard') renderDashboard(c,actions);
   else if(page==='details') renderDetails(c,actions);
   else if(page==='timeline') renderTimeline(c,actions);
@@ -83,6 +84,10 @@ function navigate(page){
   else if(page==='invitation') renderInvitation(c,actions);
   else if(page==='settings') renderSettings(c,actions);
   else if(page==='comms') renderComms(c,actions);
+  }catch(e){
+    console.error('Page "'+page+'" failed to render:',e);
+    if(c) c.innerHTML=`<div style="max-width:560px;margin:60px auto;padding:20px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink);margin-bottom:8px">This page couldn't be shown</div>Something in your data tripped this page up. Reloading usually helps. If it keeps happening, please send us this message:<div style="margin-top:10px;font-family:monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:left;word-break:break-word">${String(e&&e.message||e).replace(/[<>&]/g,'')}</div></div>`;
+  }
   _updateBudgetNavBadge();
   _updateChecklistNavBadge();
   _updateSeatingNavBadge();
