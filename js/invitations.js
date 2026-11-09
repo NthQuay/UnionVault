@@ -486,7 +486,7 @@ function _vluAppCat(luCat){ return VLU_CAT_TO_APP[luCat] || luCat; }
 const _VLU_CLICK_URL = 'https://hzafdlfprtzfxtyaebmc.supabase.co/functions/v1/vendor-click';
 /* Flip to true ONLY after the vendor_links/vendor_clicks tables exist and the vendor-click function is deployed;
    until then links go straight to the vendor so nobody is sent to the wrong place. */
-const _VLU_TRACKING_LIVE = false;
+const _VLU_TRACKING_LIVE = true;
 function _vluTrackUrl(vendorId, link){ return _VLU_CLICK_URL + '?v=' + encodeURIComponent(vendorId) + '&l=' + encodeURIComponent(link); }
 /* Phone and email taps cannot be redirected, so they send a tiny "ping" and then carry on as normal. */
 function _vluPing(vendorId, link){
