@@ -430,10 +430,10 @@ function _vluMsgResolve(){
   if(!_vluMsgVendorId) return null;
   if(_vluMsgSrc === 'saved'){
     const v = (STATE.vendors||[]).find(x=>x.id===_vluMsgVendorId);
-    return v ? {name:v.business, cat:v.category, email:v.email, phone:v.phone} : null;
+    return v ? {name:v.business, cat:v.category, email:v.email, phone:v.phone, pingId:v.lookupId||''} : null;
   }
   const v = VLU_VENDORS.find(x=>x.id===_vluMsgVendorId);
-  return v ? {name:v.name, cat:v.cat, email:v.email, phone:v.phone} : null;
+  return v ? {name:v.name, cat:v.cat, email:v.email, phone:v.phone, pingId:v.id} : null;
 }
 function _vluMsgBack(){
   if(_vluMsgSrc === 'saved'){ _vendorLookupOn=false; _vluView='browse'; _vluMsgVendorId=null; _vluMsgSrc=null; _vluMsgPick=null; }
@@ -494,6 +494,34 @@ function _vluPing(vendorId, link){
   try{ const u=_vluTrackUrl(vendorId, link); if(navigator.sendBeacon) navigator.sendBeacon(u); else fetch(u,{method:'POST',keepalive:true,mode:'no-cors'}); }catch(_){}
 }
 
+/* A vendor saved to the couple's own list keeps its lookupId, so contact taps made from the vendor card
+   (call, email, website) are counted exactly like taps on the Recommended vendors page. */
+function _vluPreferredFor(v){ return (v && v.lookupId) ? VLU_VENDORS.find(x=>x.id===v.lookupId) : null; }
+function _vluSavedPingAttr(v, link){ return _vluPreferredFor(v) ? ` onclick="_vluPing('${v.lookupId}','${link}')"` : ''; }
+function _vluSavedWebHref(v, direct){
+  const p=_vluPreferredFor(v);
+  if(!p || !_VLU_TRACKING_LIVE) return direct;
+  try{                                   /* only when the saved address is still the vendor's own site */
+    const host=u=>new URL(u).host.replace(/^www\./,'');
+    if(host(direct)!==host(p.siteUrl)) return direct;
+  }catch(_){ return direct; }
+  return _vluTrackUrl(p.id, (p.links&&p.links.website)?'website':'instagram');
+}
+/* Vendors saved by an earlier build were saved without rating, hours, email or the services note.
+   Fill those in (blank fields only — anything the couple typed is left alone). */
+function _vluEnrichSaved(){
+  let changed=false;
+  (STATE.vendors||[]).forEach(sv=>{
+    const p=_vluPreferredFor(sv); if(!p) return;
+    const set=(k,val)=>{ if(val && !String(sv[k]||'').trim()){ sv[k]=val; changed=true; } };
+    set('email', p.email||''); set('hours', p.hours||'');
+    if(p.rating){ set('rating', Number(p.rating.score).toFixed(1)); set('reviewCount', String(p.rating.count)); }
+    if(!sv.notes || /^Recommended vendor/.test(sv.notes)){ const n=_vluSavedNotes(p); if(sv.notes!==n){ sv.notes=n; changed=true; } }
+  });
+  if(changed) saveToStorage();
+}
+function _vluSavedNotes(p){ return 'Preferred vendor.'+(p.area?' Services: '+p.area:''); }
+
 /* ── helpers ─────────────────────────────────────────────── */
 function _vluInitials(name){
   const p = String(name||'').trim().split(/\s+/).filter(Boolean);
@@ -543,9 +571,11 @@ function _vluSaveConfirm(id){
     business:v.name,
     category:_vluAppCat(v.cat),
     status:'possible',
-    contact:'', phone:v.phone||'', email:'',
+    contact:'', phone:v.phone||'', email:v.email||'',
     address:'', website:v.siteUrl||'',
-    notes:'Recommended vendor \u2014 used at the founders\u2019 own wedding.',
+    hours:v.hours||'',
+    rating:v.rating?Number(v.rating.score).toFixed(1):'', reviewCount:v.rating?String(v.rating.count):'',
+    notes:_vluSavedNotes(v),
     fee:0,
     lookupId:v.id
   });
@@ -777,8 +807,8 @@ function _vluMsgPanelHtml(v){
 
   /* picked, but not reachable through the planner — offer the real routes */
   const acts=[];
-  if(v.email) acts.push(`<a class="btn btn-sm btn-primary" style="height:34px;display:inline-flex;align-items:center;gap:5px;text-decoration:none" href="mailto:${_escHtml(v.email)}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>Email</a>`);
-  if(v.phone) acts.push(`<a class="btn btn-sm btn-outline" style="height:34px;display:inline-flex;align-items:center;text-decoration:none" href="tel:${_escHtml(String(v.phone).replace(/[^+\d]/g,''))}">Call</a>`);
+  if(v.email) acts.push(`<a class="btn btn-sm btn-primary" style="height:34px;display:inline-flex;align-items:center;gap:5px;text-decoration:none" href="mailto:${_escHtml(v.email)}"${v.pingId?` onclick="_vluPing('${v.pingId}','email')"`:''}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>Email</a>`);
+  if(v.phone) acts.push(`<a class="btn btn-sm btn-outline" style="height:34px;display:inline-flex;align-items:center;text-decoration:none" href="tel:${_escHtml(String(v.phone).replace(/[^+\d]/g,''))}"${v.pingId?` onclick="_vluPing('${v.pingId}','call')"`:''}>Call</a>`);
 
   return `${bubble}
     <div class="vlu-msgvname">${_escHtml(v.name||'This vendor')}</div>
