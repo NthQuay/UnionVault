@@ -454,7 +454,7 @@ const VLU_VENDORS = [
     byline:'\u2014 Liam & Mandy',
     siteUrl:'https://storylineceremonies.com.au/',
     links:{ website:true, contact:false /* set true once the 'contact' row exists in vendor_links */ },
-    email:'' /* Ben's email — adds an Email button */ },
+    email:'ben@storylineceremonies.com.au' },
   { id:'jordanleef', mono:'JL', name:'Jordan Leef Photography', cat:'Photographers', catLabel:'Photographer', tag:'Our photographer',
     area:'Brisbane, Gold Coast & Sunshine Coast',
     rating:null, phone:'', hours:'',
