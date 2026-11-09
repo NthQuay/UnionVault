@@ -565,6 +565,7 @@ function _vluCardHtml(v){
     <div class="vlu-hero${_vluAlt(v.id)?' alt':''}" style="height:96px">
       <span class="vlu-mono">${_escHtml(v.mono||_vluInitials(v.name))}</span>
       <span style="position:absolute;top:8px;left:8px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.9);color:var(--gold-deep);border-radius:9px;padding:2px 8px;font-weight:600">${_escHtml(v.tag)}</span>
+      <button type="button" class="vlu-save${saved?' saved':''}" title="${saved?'In your vendor list':'Save to your vendor list'}" aria-label="${saved?'In your vendor list':'Save to your vendor list'}" onclick="_vluSaveAsk('${v.id}')">${saved?'\u2665 Saved':'\u2661 Save'}</button>
     </div>
     <div class="vlu-cbody">
       <p class="vlu-name">${_escHtml(v.name)}</p>
@@ -576,7 +577,6 @@ function _vluCardHtml(v){
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
         ${btn('Website','website',first==='website')}${btn('Instagram','instagram',first==='instagram')}${btn('Contact form','contact',false)}${btn('Book online','book',false)}
         ${v.phone?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s+/g,''))}" onclick="_vluPing('${v.id}','call')">Call</a>`:''}${v.email?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="mailto:${_escHtml(v.email)}" onclick="_vluPing('${v.id}','email')">Email</a>`:''}
-        <button class="btn btn-outline btn-sm" style="font-size:11.5px" onclick="_vluSaveAsk('${v.id}')">${saved?'\u2713 In my vendors':'+ My vendors'}</button>
       </div>
     </div>
   </div>`;
