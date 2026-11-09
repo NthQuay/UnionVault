@@ -564,7 +564,7 @@ function _vluCardHtml(v){
   return `<div class="vlu-card" style="cursor:default">
     <div class="vlu-hero${_vluAlt(v.id)?' alt':''}" style="height:96px">
       <span class="vlu-mono">${_escHtml(v.mono||_vluInitials(v.name))}</span>
-      <span style="position:absolute;top:8px;left:8px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.9);color:var(--gold-deep);border-radius:9px;padding:2px 8px;font-weight:600">${_escHtml(v.tag)}</span>
+      <span class="vlu-tag" style="position:absolute;top:8px;left:8px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.9);color:var(--gold-deep);border-radius:9px;padding:2px 8px;font-weight:600">${_escHtml(v.tag)}</span>
       <button type="button" class="vlu-save${saved?' saved':''}" title="${saved?'In your vendor list':'Save to your vendor list'}" aria-label="${saved?'In your vendor list':'Save to your vendor list'}" onclick="_vluSaveAsk('${v.id}')">${saved?'\u2665 Saved':'\u2661 Save'}</button>
     </div>
     <div class="vlu-cbody">

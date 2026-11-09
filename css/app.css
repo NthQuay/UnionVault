@@ -2555,6 +2555,7 @@ body.dark .vlu-rcat{color:var(--gold)}
 .vlu-save{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:14px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.92);color:var(--gold-deep);font:600 12px 'Inter',sans-serif;cursor:pointer;transition:transform .12s}
 .vlu-save:hover{transform:scale(1.05)}
 .vlu-save.saved{background:var(--gold);border-color:var(--gold);color:#fff}
+body.dark .vlu-tag{background:rgba(20,20,24,.8)!important}
 body.dark .vlu-save{background:rgba(20,20,24,.8);border-color:rgba(255,255,255,.12)}
 body.dark .vlu-save.saved{background:var(--gold);color:#fff}
 .vlu-heart-sm{font-size:15px;color:var(--red);cursor:pointer;background:none;border:none;padding:0;line-height:1}
