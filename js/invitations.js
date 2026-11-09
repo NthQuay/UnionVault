@@ -452,13 +452,15 @@ const VLU_VENDORS = [
     rating:{ score:5.0, count:9, asOf:'2026-11' }, phone:'0475 296 057', hours:'Open daily 9:30am\u20134:30pm',
     note:'Warm from our very first conversation. Ben was our celebrant and MC \u2014 joyful, perfectly on time and incredibly organised. We can\u2019t recommend him highly enough.',
     byline:'\u2014 Liam & Mandy',
-    links:{ website:'https://storylineceremonies.com.au/', book:'' } },
+    siteUrl:'https://storylineceremonies.com.au/',
+    links:{ website:true, book:false /* set true once the 'book' row exists in vendor_links */ } },
   { id:'jordanleef', mono:'JL', name:'Jordan Leef Photography', cat:'Photographers', catLabel:'Photographer', tag:'Our photographer',
     area:'Brisbane, Gold Coast & Sunshine Coast',
     rating:null, phone:'', hours:'',
     note:'Jordan put us completely at ease \u2014 it felt like being photographed by a close friend. Seamless guidance on the day and photos that are a true work of art. Stop hesitating, you won\u2019t regret it.',
     byline:'\u2014 Liam & Mandy',
-    links:{ instagram:'https://www.instagram.com/jordan_leef_photography/' } }
+    siteUrl:'https://www.instagram.com/jordan_leef_photography/',
+    links:{ instagram:true } }
 ];
 const VLU_CAT_TO_APP = {
   'Photographers':'Photographer',
@@ -477,6 +479,11 @@ const VLU_CAT_TO_APP = {
   'Other':''
 };
 function _vluAppCat(luCat){ return VLU_CAT_TO_APP[luCat] || luCat; }
+
+/* Outbound links go through Union Vault's click endpoint (logs the click, then forwards to the vendor),
+   so referrals can be counted. The real destinations live in the vendor_links table, not here. */
+const _VLU_CLICK_URL = 'https://hzafdlfprtzfxtyaebmc.supabase.co/functions/v1/vendor-click';
+function _vluTrackUrl(vendorId, link){ return _VLU_CLICK_URL + '?v=' + encodeURIComponent(vendorId) + '&l=' + encodeURIComponent(link); }
 
 /* ── helpers ─────────────────────────────────────────────── */
 function _vluInitials(name){
@@ -528,7 +535,7 @@ function _vluSaveConfirm(id){
     category:_vluAppCat(v.cat),
     status:'possible',
     contact:'', phone:v.phone||'', email:'',
-    address:'', website:(v.links&&(v.links.website||v.links.instagram))||'',
+    address:'', website:v.siteUrl||'',
     notes:'Recommended vendor \u2014 used at the founders\u2019 own wedding.',
     fee:0,
     lookupId:v.id
@@ -546,7 +553,7 @@ function _vluBackToBrowse(){ _vluView='browse'; navigate('vendors'); }
 /* ── browse ──────────────────────────────────────────────── */
 function _vluCardHtml(v){
   const L=v.links||{}, rel='target="_blank" rel="sponsored noopener noreferrer"';
-  const btn=(label,href,primary)=>href?`<a class="btn ${primary?'btn-primary':'btn-outline'} btn-sm" style="font-size:11.5px;text-decoration:none" href="${_escHtml(href)}" ${rel}>${label}</a>`:'';
+  const btn=(label,key,primary)=>L[key]?`<a class="btn ${primary?'btn-primary':'btn-outline'} btn-sm" style="font-size:11.5px;text-decoration:none" href="${_escHtml(_vluTrackUrl(v.id,key))}" ${rel}>${label}</a>`:'';
   const first=L.website?'website':(L.instagram?'instagram':'');
   const saved=_vluInPlanner(v);
   return `<div class="vlu-card" style="cursor:default">
@@ -562,7 +569,7 @@ function _vluCardHtml(v){
       ${(v.hours||v.phone)?`<div style="font-size:11.5px;color:var(--muted);line-height:1.5">${[v.hours,v.phone].filter(Boolean).map(_escHtml).join(' \u00b7 ')}</div>`:''}
       <p style="font-size:12.5px;color:var(--ink);line-height:1.5;margin:10px 0 0">\u201c${_escHtml(v.note)}\u201d<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:4px">${_escHtml(v.byline)}</span></p>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
-        ${btn('Website',L.website,first==='website')}${btn('Instagram',L.instagram,first==='instagram')}${btn('Book online',L.book)}
+        ${btn('Website','website',first==='website')}${btn('Instagram','instagram',first==='instagram')}${btn('Book online','book',false)}
         ${v.phone?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s+/g,''))}">Call</a>`:''}
         <button class="btn btn-outline btn-sm" style="font-size:11.5px" onclick="_vluSaveAsk('${v.id}')">${saved?'\u2713 In my vendors':'+ My vendors'}</button>
       </div>
@@ -575,7 +582,7 @@ function _vluBrowseHtml(){
   const list=_vluFiltered();
   return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px">${chip('All','All',VLU_VENDORS.length)}${cats.map(c=>chip(c,c,null)).join('')}</div>
     <div style="display:flex;flex-direction:column;gap:12px;max-width:560px">${list.map(_vluCardHtml).join('')}</div>
-    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:16px;padding-top:10px;border-top:1px solid var(--border);max-width:560px"><b style="color:var(--ink)">Disclosure:</b> these are suppliers we used and recommend. If you book through our links, UnionVault may earn a commission at no extra cost to you. Google ratings are copied by hand and may be out of date.</div>`;
+    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:16px;padding-top:10px;border-top:1px solid var(--border);max-width:560px"><b style="color:var(--ink)">Disclosure:</b> these are suppliers we used and recommend. If you book through our links, UnionVault may earn a commission at no extra cost to you. Links open through Union Vault so we can count referrals. Google ratings are copied by hand and may be out of date.</div>`;
 }
 
 const VLU_KEY_CATS = [
