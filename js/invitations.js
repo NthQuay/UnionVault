@@ -453,7 +453,7 @@ const VLU_VENDORS = [
     note:'Warm from our very first conversation. Ben was our celebrant and MC \u2014 joyful, perfectly on time and incredibly organised. We can\u2019t recommend him highly enough.',
     byline:'\u2014 Liam & Mandy',
     siteUrl:'https://storylineceremonies.com.au/',
-    links:{ website:true, contact:false /* set true once the 'contact' row exists in vendor_links */ },
+    links:{ website:true, contact:true },
     email:'ben@storylineceremonies.com.au' },
   { id:'jordanleef', mono:'JL', name:'Jordan Leef Photography', cat:'Photographers', catLabel:'Photographer', tag:'Preferred vendor',
     area:'Brisbane, Gold Coast & Sunshine Coast',
