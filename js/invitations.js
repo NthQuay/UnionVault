@@ -414,7 +414,7 @@ let _vluLayout = 'grid';
 let _vluProfileId = null;
 
 // Vendor Look Up is not live yet: every entry point (Vendors card, dashboard widget) lands here.
-const _VLU_COMING_SOON = true;
+const _VLU_COMING_SOON = false;
 function _vluSoonToast(){ if(typeof _showInfoToast==='function') _showInfoToast('Vendor Look Up is coming soon.',null,null); }
 function _vendorLookupOpen(){  if(_VLU_COMING_SOON){ _vluSoonToast(); return; }  _vendorLookupOn = true;  _vluView='browse'; _vluMsgVendorId=null; _vluMsgSrc=null; _vluMsgPick=null; navigate('vendors'); }
 function _vendorLookupClose(){ _vendorLookupOn = false; _vluView='browse'; _vluMsgVendorId=null; _vluMsgSrc=null; _vluMsgPick=null; navigate('vendors'); }
@@ -442,102 +442,22 @@ function _vluMsgBack(){
   navigate('vendors');
 }
 
-/* ── directory data (mock until a real backend exists — §7 of the brief) ── */
-const VLU_CATS = ['Photographers','Videographers','Celebrants','Hair & Makeup','Florists','Caterers','Venues','Musicians/DJs','Stylists/Decor','Cake','Stationery','Transport','Planners','Other'];
-
+/* ── Recommended vendors ─────────────────────────────────────────────────────────
+   Suppliers the founders used at their own wedding. Real businesses only — no invented
+   ratings, prices or reviews. The Google rating is typed in by hand with the month it was
+   taken ("as of"), so it never claims to be live. Links open as "sponsored" (affiliate). */
 const VLU_VENDORS = [
-  { id:'v1', name:'Amber Rose Photography', cat:'Photographers', region:'Brisbane', dist:50, rating:4.9, reviews:82, from:3200, verified:true,
-    tags:['Documentary','Fine-art','Natural light','Two shooters'],
-    about:"Documentary-led wedding photography with a soft, timeless edit. Amber and her second shooter cover full-day weddings across South-East Queensland, capturing the quiet in-between moments as much as the big ones.",
-    services:'Full-day & half-day coverage, engagement shoots, albums', covers:'SE Queensland · travels 150km', team:'2 (Amber + second shooter)',
-    email:'hello@amberrose.com.au', phone:'0400 000 000',
-    packages:[{n:'Half day',p:3200,d:'5 hours · single shooter · 400+ edited images · online gallery'},{n:'Full day',p:4800,d:'10 hours · two shooters · 700+ images · engagement shoot included'}],
-    booked:[12,15,18,22], gallery:9, breakdown:[88,10,2,0,0],
-    reviews_list:[{n:'Priya & Tom',d:'Mar 2025',r:5,t:'Amber made us feel so at ease. The photos are everything we hoped for — natural, warm, and us.'},{n:'Hayley M.',d:'Feb 2025',r:5,t:'Worth every cent. The second shooter caught moments we never would have seen.'},{n:'Dan & Will',d:'Jan 2025',r:4,t:'Beautiful work and lovely to deal with. Gallery took a little longer than expected.'}],
-    refs:[{e:'Spicers Peak Lodge wedding, 2024',c:'Available on request'},{e:'Brookfield garden ceremony, 2024',c:'Available on request'}],
-    policies:{Deposit:'25% to secure the date',Cancellation:'Deposit non-refundable within 90 days',Travel:'Free within 50km, then $1.10/km'} },
-
-  { id:'v2', name:'James Lourdes', cat:'Celebrants', region:'Gold Coast', dist:80, rating:5.0, reviews:41, from:890, verified:true,
-    tags:['Warm','Modern','Bilingual (EN/PT)','LGBTQ+ friendly'],
-    about:"Heartfelt, modern ceremonies with no clichés. James works closely with each couple to write a ceremony that actually sounds like them — funny where it should be, moving where it counts.",
-    services:'Legal ceremony, vow writing help, rehearsal', covers:'Gold Coast & Brisbane', team:'Solo',
-    email:'james@lourdesceremonies.com.au', phone:'0400 000 000',
-    packages:[{n:'Ceremony',p:890,d:'Full legal ceremony · custom script · PA system · rehearsal'},{n:'Elopement',p:650,d:'Intimate elopement package · up to 10 guests'}],
-    booked:[11,16,19,25], gallery:6, breakdown:[95,5,0,0,0],
-    reviews_list:[{n:'Mei & Jordan',d:'Apr 2025',r:5,t:'James had everyone laughing and crying. Our guests are still talking about the ceremony.'},{n:'Sofia R.',d:'Mar 2025',r:5,t:'He captured us perfectly. Could not recommend more highly.'}],
-    refs:[{e:'Burleigh Heads beach ceremony, 2025',c:'Available on request'}],
-    policies:{Deposit:'$200 to secure',Cancellation:'Refundable up to 60 days prior',Travel:'Included within 60km'} },
-
-  { id:'v3', name:'Evelyn Veil Florals', cat:'Florists', region:'Brisbane', dist:35, rating:4.8, reviews:57, from:1500, verified:true,
-    tags:['Garden-style','Seasonal','Locally grown','Sustainable'],
-    about:"Lush, garden-gathered arrangements using seasonal Queensland blooms. Evelyn favours soft, untamed shapes over tight structure — think 'just picked from the garden' rather than florist-perfect.",
-    services:'Bouquets, ceremony & reception florals, installations', covers:'Greater Brisbane', team:'3',
-    email:'hello@evelynveil.com.au', phone:'0400 000 000',
-    packages:[{n:'Essentials',p:1500,d:'Bridal bouquet · 4 buttonholes · 2 arrangements'},{n:'Full styling',p:4200,d:'Full ceremony arch, aisle, 10 centrepieces, bridal party florals'}],
-    booked:[13,14,20], gallery:9, breakdown:[80,16,4,0,0],
-    reviews_list:[{n:'Aanya & Kel',d:'Feb 2025',r:5,t:'The arch took my breath away. Exactly the wild garden look I dreamed of.'},{n:'Bec T.',d:'Jan 2025',r:4,t:'Gorgeous flowers, slightly over our quote but worth it.'}],
-    refs:[{e:'Sirromet Wines reception, 2024',c:'Available on request'}],
-    policies:{Deposit:'30% on booking',Cancellation:'50% refundable up to 30 days',Travel:'Delivery from $80'} },
-
-  { id:'v4', name:'Sienna & Co', cat:'Hair & Makeup', region:'Brisbane', dist:40, rating:4.9, reviews:113, from:480, verified:true,
-    tags:['Soft glam','Airbrush','On-location','Bridal party'],
-    about:"A close-knit team of artists specialising in soft, long-wear bridal looks. They come to you, keep the morning calm, and make sure everyone glows in photos without looking 'done'.",
-    services:'Bridal hair & makeup, bridal party, trials', covers:'Brisbane & bayside', team:'5 artists',
-    email:'bookings@siennaandco.com.au', phone:'0400 000 000',
-    packages:[{n:'Bride only',p:480,d:'Hair & makeup · trial included · on-location'},{n:'Bride + 4',p:1280,d:'Full bridal party · two artists · touch-up kit'}],
-    booked:[10,17,21], gallery:9, breakdown:[91,8,1,0,0],
-    reviews_list:[{n:'Tara L.',d:'May 2025',r:5,t:'Lasted all day and night through happy tears and dancing. Flawless.'},{n:'Nina & Ash',d:'Apr 2025',r:5,t:'They kept our whole bridal suite calm and laughing. Magic.'}],
-    refs:[{e:'Howard Smith Wharves wedding, 2025',c:'Available on request'}],
-    policies:{Deposit:'$150 retainer',Cancellation:'Refundable up to 45 days',Travel:'Free within 40km'} },
-
-  { id:'v5', name:'The Long Table', cat:'Caterers', region:'Sunshine Coast', dist:95, rating:4.7, reviews:64, from:95, verified:false,
-    tags:['Shared feasting','Seasonal','Vegan-friendly','Local produce'],
-    about:"Generous shared-table feasting built around Sunshine Coast hinterland produce. Menus change with the season and there's always a genuinely good vegan option, not an afterthought.",
-    services:'Feasting menus, canapés, grazing, staffing', covers:'Sunshine Coast & Noosa', team:'Catering team of 8+',
-    email:'eat@thelongtable.com.au', phone:'0400 000 000',
-    packages:[{n:'Feast (per head)',p:95,d:'Shared entrée + main + sides · min 40 guests'},{n:'Premium (per head)',p:145,d:'Canapés + 3-course feast + dessert table'}],
-    booked:[14,18,24], gallery:6, breakdown:[72,22,5,1,0],
-    reviews_list:[{n:'Imogen & Ray',d:'Mar 2025',r:5,t:'Our guests said it was the best food they have had at a wedding. The grazing table was a showstopper.'},{n:'Pat H.',d:'Feb 2025',r:4,t:'Delicious and generous. Service was a touch slow at peak.'}],
-    refs:[{e:'Maleny hinterland wedding, 2024',c:'Available on request'}],
-    policies:{Deposit:'20% on booking',Cancellation:'Sliding scale from 90 days',Travel:'Quoted per location'} },
-
-  { id:'v6', name:'Marlowe Strings', cat:'Musicians/DJs', region:'Brisbane', dist:30, rating:4.9, reviews:38, from:750, verified:true,
-    tags:['String quartet','Ceremony','Acoustic','Pop arrangements'],
-    about:"A classically trained string quartet with a modern pop repertoire. They'll play your ceremony processional and then surprise the room with arrangements of songs guests actually know.",
-    services:'Ceremony, canapé-hour & reception sets', covers:'Brisbane & surrounds', team:'2–4 musicians',
-    email:'play@marlowestrings.com.au', phone:'0400 000 000',
-    packages:[{n:'Duo',p:750,d:'Ceremony + canapé hour · violin & cello'},{n:'Quartet',p:1450,d:'Ceremony + 2 reception sets · full quartet'}],
-    booked:[12,19,23], gallery:6, breakdown:[89,9,2,0,0],
-    reviews_list:[{n:'Olivia & Sam',d:'Apr 2025',r:5,t:'Walking down the aisle to their arrangement of our song — I cried instantly. Perfect.'},{n:'Grace W.',d:'Mar 2025',r:5,t:'Elegant and so professional. The pop covers were a hit.'}],
-    refs:[{e:'Customs House ceremony, 2025',c:'Available on request'}],
-    policies:{Deposit:'25% to hold',Cancellation:'Deposit non-refundable',Travel:'Free within 40km'} },
-
-  { id:'v7', name:'Hinterland House', cat:'Venues', region:'Gold Coast', dist:70, rating:4.8, reviews:96, from:8500, verified:true,
-    tags:['Garden estate','Indoor/outdoor','Accommodation','Exclusive use'],
-    about:"A private garden estate in the Gold Coast hinterland with sweeping valley views, a covered pavilion for any weather, and on-site accommodation so the celebration can run late.",
-    services:'Exclusive-use venue hire, ceremony & reception sites', covers:'On-site', team:'Venue & events team',
-    email:'events@hinterlandhouse.com.au', phone:'0400 000 000',
-    packages:[{n:'Venue hire',p:8500,d:'Exclusive use · ceremony lawn + pavilion · 12hr access'},{n:'All-inclusive',p:24000,d:'Venue + catering + styling + coordination · up to 100 guests'}],
-    booked:[11,13,20,22], gallery:9, breakdown:[83,13,3,1,0],
-    reviews_list:[{n:'Charlotte & Ben',d:'May 2025',r:5,t:'The views did half the styling for us. Having everyone stay over made it feel like a weekend, not a day.'},{n:'Remy D.',d:'Apr 2025',r:4,t:'Stunning grounds. The pavilion saved us when it rained.'}],
-    refs:[{e:'200+ weddings hosted since 2018',c:'Portfolio on request'}],
-    policies:{Deposit:'$2,000 to secure date',Cancellation:'Tiered from 6 months prior',Travel:'N/A — on-site'} },
-
-  { id:'v8', name:'Paper & Press', cat:'Stationery', region:'Brisbane', dist:25, rating:4.9, reviews:52, from:6, verified:false,
-    tags:['Letterpress','Custom','Calligraphy','Day-of signage'],
-    about:"Custom letterpress and fine stationery, from save-the-dates to day-of signage. Everything is designed from scratch to match your palette — no templates, real ink, real impression.",
-    services:'Invitations, menus, place cards, signage', covers:'Australia-wide (ships)', team:'2',
-    email:'studio@paperandpress.com.au', phone:'0400 000 000',
-    packages:[{n:'Invitation suite (per set)',p:6,d:'Letterpress invite + RSVP + detail card · min 50'},{n:'Full day-of (from)',p:850,d:'Menus, place cards, table numbers, welcome sign'}],
-    booked:[16,24], gallery:6, breakdown:[90,8,2,0,0],
-    reviews_list:[{n:'Hana & Lee',d:'Mar 2025',r:5,t:'The impression on the paper made guests gasp. Set the tone before they even arrived.'},{n:'Mara K.',d:'Feb 2025',r:5,t:'Patient through three rounds of changes. Beautiful work.'}],
-    refs:[{e:'Featured in local wedding press, 2024',c:'Links on request'}],
-    policies:{Deposit:'50% to begin design',Cancellation:'Design fee non-refundable',Travel:'Ships nationally'} }
+  { id:'storyline', mono:'SC', name:'Storyline Ceremonies', cat:'Celebrants', catLabel:'Marriage Celebrant & MC', tag:'Our celebrant',
+    rating:{ score:5.0, count:9, asOf:'2026-11' }, phone:'0475 296 057', hours:'Open daily 9:30am\u20134:30pm',
+    note:'Warm from our very first conversation. Ben was our celebrant and MC \u2014 joyful, perfectly on time and incredibly organised. We can\u2019t recommend him highly enough.',
+    byline:'\u2014 Liam & Mandy',
+    links:{ website:'https://storylineceremonies.com.au/', book:'' } },
+  { id:'jordanleef', mono:'JL', name:'Jordan Leef Photography', cat:'Photographers', catLabel:'Photographer', tag:'Our photographer',
+    rating:null, phone:'', hours:'',
+    note:'Jordan put us completely at ease \u2014 it felt like being photographed by a close friend. Seamless guidance on the day and photos that are a true work of art. Stop hesitating, you won\u2019t regret it.',
+    byline:'\u2014 Liam & Mandy',
+    links:{ instagram:'https://www.instagram.com/jordan_leef_photography/' } }
 ];
-
-/* Map each directory category to the app's own VENDOR_CATEGORIES value, so a
-   vendor saved from Look Up lands in the vendor list under a category the rest
-   of the app recognises (grouping, the dashboard coverage widget, etc). */
 const VLU_CAT_TO_APP = {
   'Photographers':'Photographer',
   'Videographers':'Videographer',
@@ -563,49 +483,19 @@ function _vluInitials(name){
   if(p.length===1) return p[0].slice(0,2).toUpperCase();
   return (p[0][0]+p[p.length-1][0]).toUpperCase();
 }
-/* Is this vendor free on the couple's wedding day? Reads STATE.event.date. */
-function _vluEventDay(){
-  const d = (STATE.event && STATE.event.date) || '';
-  if(!d) return null;
-  const n = parseInt(d.slice(8,10),10);
-  return isNaN(n) ? null : n;
-}
-function _vluEventLabel(){
-  const d = (STATE.event && STATE.event.date) || '';
-  return d ? fmtDate(d) : '';
-}
-function _vluRegion(){
-  return (STATE.event && STATE.event.venue) ? STATE.event.venue : 'your area';
-}
-function _vluIsAvail(v){
-  const day = _vluEventDay();
-  if(day===null) return false;              /* no wedding date set → no badge */
-  return v.booked.indexOf(day) === -1;
-}
 /* Already in the couple's real vendor list? Matched on the lookupId we stamp. */
 function _vluInPlanner(v){
   return (STATE.vendors||[]).some(x => x.lookupId === v.id);
 }
 function _vluAlt(id){ return id.charCodeAt(1) % 2 === 1; }
-
 function _vluFiltered(){
-  let list = VLU_VENDORS.slice();
-  if(_vluCat !== 'All') list = list.filter(v => v.cat === _vluCat);
-  if(_vluQ){
-    const q = _vluQ.toLowerCase();
-    list = list.filter(v =>
-      v.name.toLowerCase().includes(q) ||
-      v.cat.toLowerCase().includes(q) ||
-      v.tags.join(' ').toLowerCase().includes(q));
-  }
-  list.sort((a,b)=>{
-    if(_vluSort==='rating')    return b.rating-a.rating || b.reviews-a.reviews;
-    if(_vluSort==='priceLow')  return a.from-b.from;
-    if(_vluSort==='priceHigh') return b.from-a.from;
-    if(_vluSort==='dist')      return a.dist-b.dist;
-    return 0;
-  });
-  return list;
+  return _vluCat === 'All' ? VLU_VENDORS.slice() : VLU_VENDORS.filter(v => v.cat === _vluCat);
+}
+function _vluRatingHtml(v){
+  if(!v.rating) return '';
+  const [y,m]=String(v.rating.asOf||'').split('-').map(Number);
+  const when=(y&&m)?new Date(y,m-1,1).toLocaleDateString('en-AU',{month:'short',year:'numeric'}):'';
+  return `<div style="font-size:12px;color:var(--ink);margin:6px 0 2px"><span style="color:#E7A400">\u2605</span> <b>${Number(v.rating.score).toFixed(1)}</b> \u00b7 ${v.rating.count} Google reviews${when?` <span style="color:var(--muted)">(${_escHtml(when)})</span>`:''}</div>`;
 }
 
 /* ── saving to the planner — always asks first ───────────── */
@@ -635,10 +525,10 @@ function _vluSaveConfirm(id){
     business:v.name,
     category:_vluAppCat(v.cat),
     status:'possible',
-    contact:'', phone:v.phone||'', email:v.email||'',
-    address:v.region||'', website:'',
-    notes:`From Vendor Look Up · ★${v.rating} (${v.reviews} reviews) · from ${fmt(v.from)}`,
-    fee:Number(v.from)||0,
+    contact:'', phone:v.phone||'', email:'',
+    address:'', website:(v.links&&(v.links.website||v.links.instagram))||'',
+    notes:'Recommended vendor \u2014 used at the founders\u2019 own wedding.',
+    fee:0,
     lookupId:v.id
   });
   saveToStorage();
@@ -649,180 +539,42 @@ function _vluSaveConfirm(id){
 
 /* ── controls ────────────────────────────────────────────── */
 function _vluSetCat(c){ _vluCat=c; navigate('vendors'); }
-function _vluSetSort(s){ _vluSort=s; navigate('vendors'); }
-function _vluSetLayout(l){ _vluLayout=l; navigate('vendors'); }
-function _vluSearch(q){
-  _vluQ=q;
-  const wrap=document.getElementById('vlu-results');
-  if(wrap) wrap.innerHTML=_vluResultsHtml();
-  const cnt=document.getElementById('vlu-count');
-  if(cnt) cnt.innerHTML=_vluCountHtml();
-}
-function _vluOpenProfile(id){ _vluProfileId=id; _vluView='profile'; navigate('vendors'); }
 function _vluBackToBrowse(){ _vluView='browse'; navigate('vendors'); }
-function _vluJump(secId, el){
-  const s=document.getElementById(secId);
-  if(!s) return;
-  document.querySelectorAll('.vlu-jtab').forEach(t=>t.classList.remove('on'));
-  if(el) el.classList.add('on');
-  s.scrollIntoView({behavior:'smooth', block:'start'});
-}
 
 /* ── browse ──────────────────────────────────────────────── */
-function _vluCountHtml(){
-  const n=_vluFiltered().length;
-  return `<strong>${n}</strong> vendor${n===1?'':'s'} near ${_escHtml(_vluRegion())}`;
-}
 function _vluCardHtml(v){
-  const avail = _vluIsAvail(v) ? `<span class="vlu-avail">Available ${_escHtml(_vluEventLabel())}</span>` : '';
-  const inpl  = _vluInPlanner(v) ? `<span class="vlu-inplanner">In your planner</span>` : '';
-  return `<div class="vlu-card" onclick="_vluOpenProfile('${v.id}')">
-    <div class="vlu-hero${_vluAlt(v.id)?' alt':''}">
-      <span class="vlu-mono">${_escHtml(_vluInitials(v.name))}</span>
-      <button class="vlu-heart${_vluInPlanner(v)?' saved':''}" title="Add to your vendors" aria-label="Add to your vendors" onclick="event.stopPropagation();_vluSaveAsk('${v.id}')">${_vluInPlanner(v)?'♥':'♡'}</button>
-      ${avail}${avail?'':inpl}
+  const L=v.links||{}, rel='target="_blank" rel="sponsored noopener noreferrer"';
+  const btn=(label,href,primary)=>href?`<a class="btn ${primary?'btn-primary':'btn-outline'} btn-sm" style="font-size:11.5px;text-decoration:none" href="${_escHtml(href)}" ${rel}>${label}</a>`:'';
+  const first=L.website?'website':(L.instagram?'instagram':'');
+  const saved=_vluInPlanner(v);
+  return `<div class="vlu-card" style="cursor:default">
+    <div class="vlu-hero${_vluAlt(v.id)?' alt':''}" style="height:96px">
+      <span class="vlu-mono">${_escHtml(v.mono||_vluInitials(v.name))}</span>
+      <span style="position:absolute;top:8px;left:8px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.9);color:var(--gold-deep);border-radius:9px;padding:2px 8px;font-weight:600">${_escHtml(v.tag)}</span>
     </div>
     <div class="vlu-cbody">
       <p class="vlu-name">${_escHtml(v.name)}</p>
-      <p class="vlu-cat">${_escHtml(v.cat)}</p>
-      <div class="vlu-meta">
-        <span class="vlu-stars">★ ${v.rating.toFixed(1)} <span class="vlu-rc">(${v.reviews})</span></span>
-        <span class="vlu-price">${fmt(v.from)}<small>/from</small></span>
-      </div>
-      <div class="vlu-loc">${_escHtml(v.region)} · ${v.dist}km</div>
-    </div>
-  </div>`;
-}
-function _vluRowHtml(v){
-  return `<div class="vlu-row" onclick="_vluOpenProfile('${v.id}')">
-    <div class="vlu-thumb${_vluAlt(v.id)?' alt':''}"><span class="vlu-mono">${_escHtml(_vluInitials(v.name))}</span></div>
-    <div class="vlu-rmain">
-      <div class="vlu-rtop"><p class="vlu-name" style="font-size:16px">${_escHtml(v.name)}</p><span class="vlu-rcat">${_escHtml(v.cat)}</span></div>
-      <div class="vlu-rsub">
-        <span class="vlu-stars">★ ${v.rating.toFixed(1)} (${v.reviews})</span>
-        <span>${_escHtml(v.region)} · ${v.dist}km</span>
-        <span>from ${fmt(v.from)}</span>
+      <p class="vlu-cat">${_escHtml(v.catLabel)}</p>
+      ${_vluRatingHtml(v)}
+      ${(v.hours||v.phone)?`<div style="font-size:11.5px;color:var(--muted);line-height:1.5">${[v.hours,v.phone].filter(Boolean).map(_escHtml).join(' \u00b7 ')}</div>`:''}
+      <p style="font-size:12.5px;color:var(--ink);line-height:1.5;margin:10px 0 0">\u201c${_escHtml(v.note)}\u201d<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:4px">${_escHtml(v.byline)}</span></p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        ${btn('Website',L.website,first==='website')}${btn('Instagram',L.instagram,first==='instagram')}${btn('Book online',L.book)}
+        ${v.phone?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s+/g,''))}">Call</a>`:''}
+        <button class="btn btn-outline btn-sm" style="font-size:11.5px" onclick="_vluSaveAsk('${v.id}')">${saved?'\u2713 In my vendors':'+ My vendors'}</button>
       </div>
     </div>
-    <div class="vlu-rright">
-      ${_vluIsAvail(v)?`<span class="vlu-ravail">${_escHtml(_vluEventLabel())} ✓</span>`:''}
-      <button class="vlu-heart-sm${_vluInPlanner(v)?' saved':''}" title="Add to your vendors" aria-label="Add to your vendors" onclick="event.stopPropagation();_vluSaveAsk('${v.id}')">${_vluInPlanner(v)?'♥':'♡'}</button>
-    </div>
   </div>`;
-}
-function _vluResultsHtml(){
-  const list=_vluFiltered();
-  if(!list.length){
-    return `<div class="vlu-empty"><div style="font-size:28px;opacity:.45">❀</div><p>No vendors match your search yet.<br>Try a different category, or clear the search.</p></div>`;
-  }
-  if(_vluLayout==='grid') return `<div class="vlu-grid">${list.map(_vluCardHtml).join('')}</div>`;
-  return `<div class="vlu-rows">${list.map(_vluRowHtml).join('')}</div>`;
 }
 function _vluBrowseHtml(){
-  return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;text-align:center;gap:16px">
-    <div style="width:52px;height:52px;border-radius:14px;background:var(--panel);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:4px">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-    </div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--ink);letter-spacing:.01em">Vendor Lookup coming soon</div>
-    <div style="font-size:13px;color:var(--muted);line-height:1.6;max-width:320px">We're building a curated directory of wedding suppliers. In the meantime, use <strong style="color:var(--ink)">My Vendors</strong> to add and manage the suppliers you're already working with.</div>
-    <button class="btn btn-outline" onclick="_vluGoMyVendors()" style="margin-top:4px">Go to My Vendors →</button>
-  </div>`;
+  const cats=[...new Set(VLU_VENDORS.map(v=>v.cat))];
+  const chip=(k,l,n)=>`<button type="button" onclick="_vluSetCat('${k}')" style="padding:5px 12px;border-radius:16px;border:1px solid ${_vluCat===k?'var(--gold)':'var(--border)'};background:${_vluCat===k?'var(--gold)':'var(--surface)'};color:${_vluCat===k?'#fff':'var(--ink)'};font:inherit;font-size:12.5px;font-weight:${_vluCat===k?'600':'400'};cursor:pointer">${l}${n!=null?' '+n:''}</button>`;
+  const list=_vluFiltered();
+  return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px">${chip('All','All',VLU_VENDORS.length)}${cats.map(c=>chip(c,c,null)).join('')}</div>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:560px">${list.map(_vluCardHtml).join('')}</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:16px;padding-top:10px;border-top:1px solid var(--border);max-width:560px"><b style="color:var(--ink)">Disclosure:</b> these are suppliers we used and recommend. If you book through our links, UnionVault may earn a commission at no extra cost to you. Google ratings are copied by hand and may be out of date.</div>`;
 }
 
-/* ── profile ─────────────────────────────────────────────── */
-function _vluProfileHtml(){
-  const v = VLU_VENDORS.find(x=>x.id===_vluProfileId);
-  if(!v){ _vluView='browse'; return _vluBrowseHtml(); }
-
-  let gal='';
-  for(let i=0;i<Math.min(v.gallery,5);i++) gal += `<div class="vlu-gcell${i%2?' alt':''}">❀</div>`;
-  if(v.gallery>5) gal += `<div class="vlu-gcell gmore">+${v.gallery-5}</div>`;
-
-  const pkgs = v.packages.map(p=>
-    `<div class="vlu-pkg"><div class="vlu-pkgh"><span class="vlu-pkgn">${_escHtml(p.n)}</span><span class="vlu-pkgp">${fmt(p.p)}</span></div><p class="vlu-pkgd">${_escHtml(p.d)}</p></div>`).join('');
-
-  const day = _vluEventDay();
-  let cal = ['M','T','W','T','F','S','S'].map(d=>`<div class="vlu-cd hdr">${d}</div>`).join('');
-  for(let d=10; d<=23; d++){
-    let cls = v.booked.includes(d) ? 'book' : 'open';
-    if(day!==null && d===day) cls='your';
-    cal += `<div class="vlu-cd ${cls}">${d}</div>`;
-  }
-
-  const total = v.breakdown.reduce((a,b)=>a+b,0)||1;
-  const bars = v.breakdown.map((c,i)=>
-    `<div class="vlu-rbar">${5-i}<div class="vlu-rtrack"><div class="vlu-rfill" style="width:${Math.round(c/total*100)}%"></div></div></div>`).join('');
-
-  const revs = v.reviews_list.map(r=>
-    `<div class="vlu-rvw"><div class="vlu-rvwh"><span class="vlu-rvwn">${_escHtml(r.n)}</span><span class="vlu-rvwd">${_escHtml(r.d)}</span></div>
-     <div class="vlu-rvws">${'★'.repeat(r.r)}${'☆'.repeat(5-r.r)}</div>
-     <p class="vlu-rvwt">${_escHtml(r.t)}</p></div>`).join('');
-
-  const refs = v.refs.map(r=>`<div class="vlu-refitem"><strong>${_escHtml(r.e)}</strong> — <span>${_escHtml(r.c)}</span></div>`).join('');
-  const pol  = Object.keys(v.policies).map(k=>
-    `<div><dt>${_escHtml(k)}</dt><dd>${_escHtml(v.policies[k])}</dd></div>`).join('');
-
-  return `
-    <button class="vlu-back" onclick="_vluBackToBrowse()">‹ Back to results</button>
-    <div class="vlu-phead">
-      <div class="vlu-pmono">${_escHtml(_vluInitials(v.name))}</div>
-      <div class="vlu-phinfo">
-        <p class="vlu-pname">${_escHtml(v.name)}${v.verified?`<span class="vlu-verif">✓ Verified</span>`:''}</p>
-        <p class="vlu-pcat">${_escHtml(v.cat)}</p>
-        <p class="vlu-pmeta"><span class="vlu-stars">★ ${v.rating.toFixed(1)}</span> · ${v.reviews} reviews · ${_escHtml(v.region)} · ${_escHtml(v.covers)}</p>
-      </div>
-    </div>
-    <div class="vlu-pacts">
-      <button class="btn btn-sm btn-primary" style="flex:1;min-width:140px;height:38px" onclick="_vluSaveAsk('${v.id}')">${_vluInPlanner(v)?'✓ In your vendors':'＋ Add to my vendors'}</button>
-      ${v.email?`<a class="btn btn-sm btn-outline" style="flex:1;min-width:140px;height:38px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none" href="mailto:${_escHtml(v.email)}">✉ Email</a>`:''}
-      ${v.phone?`<a class="btn btn-sm btn-outline" style="flex:1;min-width:120px;height:38px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s/g,''))}">Call</a>`:''}
-      <button class="btn btn-sm btn-outline" style="flex:1;min-width:130px;height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px" onclick="_vluOpenMessages('${v.id}','dir')" title="Message this vendor"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>Message</button>
-    </div>
-    <div class="vlu-jtabs">
-      <button class="vlu-jtab on" onclick="_vluJump('vlu-s-port',this)">Portfolio</button>
-      <button class="vlu-jtab" onclick="_vluJump('vlu-s-about',this)">About</button>
-      <button class="vlu-jtab" onclick="_vluJump('vlu-s-pkg',this)">Packages</button>
-      <button class="vlu-jtab" onclick="_vluJump('vlu-s-avail',this)">Availability</button>
-      <button class="vlu-jtab" onclick="_vluJump('vlu-s-rev',this)">Reviews</button>
-      <button class="vlu-jtab" onclick="_vluJump('vlu-s-ref',this)">References</button>
-      <button class="vlu-jtab" onclick="_vluJump('vlu-s-pol',this)">Policies</button>
-    </div>
-    <div class="vlu-psect" id="vlu-s-port"><h3>Portfolio</h3><div class="vlu-gal">${gal}</div></div>
-    <div class="vlu-psect" id="vlu-s-about"><h3>About</h3>
-      <p class="vlu-about">${_escHtml(v.about)}</p>
-      <div class="vlu-tagrow">${v.tags.map(t=>`<span class="vlu-tg">${_escHtml(t)}</span>`).join('')}</div>
-      <dl class="vlu-deflist">
-        <div><dt>Services</dt><dd>${_escHtml(v.services)}</dd></div>
-        <div><dt>Areas covered</dt><dd>${_escHtml(v.covers)}</dd></div>
-        <div><dt>Team size</dt><dd>${_escHtml(v.team)}</dd></div>
-      </dl>
-    </div>
-    <div class="vlu-psect" id="vlu-s-pkg"><h3>Price list &amp; packages</h3>${pkgs}</div>
-    <div class="vlu-psect" id="vlu-s-avail"><h3>Availability</h3>
-      <div class="vlu-cal">${cal}</div>
-      <div class="vlu-callleg">
-        <span><span class="vlu-lgdot" style="background:rgba(74,124,89,.4)"></span>Open</span>
-        <span><span class="vlu-lgdot" style="background:var(--border)"></span>Booked</span>
-        ${day!==null?`<span><span class="vlu-lgdot" style="background:var(--gold-deep)"></span>Your date (${_escHtml(_vluEventLabel())})</span>`:''}
-      </div>
-    </div>
-    <div class="vlu-psect" id="vlu-s-rev"><h3>Reviews</h3>
-      <div class="vlu-rsum"><div class="vlu-rbig">${v.rating.toFixed(1)}<small>${v.reviews} reviews</small></div><div class="vlu-rbars">${bars}</div></div>
-      ${revs}
-    </div>
-    <div class="vlu-psect" id="vlu-s-ref"><h3>References &amp; past work</h3>${refs}</div>
-    <div class="vlu-psect" id="vlu-s-pol"><h3>FAQ &amp; policies</h3><dl class="vlu-deflist">${pol}</dl></div>`;
-}
-
-/* ── dashboard widget: category coverage ─────────────────
-   Reads the couple's real vendor list and shows which key categories are
-   filled and which are still open. Each open row routes into Look Up
-   pre-filtered to that category. Shrinks as the wedding comes together.
-   ──────────────────────────────────────────────────────── */
-
-/* The key categories a wedding needs, in the order they usually get booked.
-   Keys are the app's own VENDOR_CATEGORIES values so they match STATE.vendors;
-   `lu` maps each to the directory's category label for the filter. */
 const VLU_KEY_CATS = [
   { cat:'Ceremony venue',        lu:'Venues',        icon:'M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6' },
   { cat:'Photographer',          lu:'Photographers', icon:'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z|circle:12,13,4' },
@@ -920,6 +672,13 @@ function buildDashVendorLookupHtml(){
         <button class="vlu-dw-tag short" onclick="event.stopPropagation();navigate('vendors')" title="On your vendor list as possible — not booked yet">${b.short} shortlisted · Compare →</button>
       </div>`;
     }
+    if(VLU_VENDORS.some(x=>x.cat===k.lu)){
+      return `<div class="vlu-dw-row">
+      <span class="vlu-dw-ic open">${_vluIconSvg(k.icon)}</span>
+      <span class="vlu-dw-name open">${esc(cat)}</span>
+      <button class="vlu-dw-tag need" onclick="event.stopPropagation();_vluOpenCat('${jq(k.lu)}')" title="The supplier we used at our own wedding">Our pick \u2192</button>
+    </div>`;
+    }
     return `<div class="vlu-dw-row">
       <span class="vlu-dw-ic open">${_vluIconSvg(k.icon)}</span>
       <span class="vlu-dw-name open">${esc(cat)}</span>
@@ -946,7 +705,7 @@ function buildDashVendorLookupHtml(){
     <div class="db-widget-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px">
       <span style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:500;color:var(--ink)">Vendors</span>
       <span style="display:inline-flex;align-items:center;gap:10px">
-        ${_dwVendEdit?'':`<button class="vlu-dw-link vlu-dw-soon" disabled aria-disabled="true" title="Vendor Look Up — coming soon" onclick="event.stopPropagation()">Look Up · Coming soon
+        ${_dwVendEdit?'':`<button class="vlu-dw-link" title="Recommended vendors" onclick="event.stopPropagation();_vendorLookupOpen()">Our picks
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>`}
         <button class="vlu-dw-edit${_dwVendEdit?' on':''}" onclick="event.stopPropagation();_dwVendToggleEdit()" aria-pressed="${_dwVendEdit}">${_dwVendEdit?'Done':'Edit list'}</button>
@@ -1049,10 +808,10 @@ function _vendorLookupHtml(){
   const isMsg = _vluView==='messages';
   return `<div class="vlu-wrap">
     <div class="vlu-top">
-      <div class="vlu-title">${isMsg?'Messages':'Vendor Look Up'}</div>
-      <div class="vlu-sub">${isMsg?'Talk to your vendors in one place.':'Find, compare and shortlist vendors for your day.'}</div>
+      <div class="vlu-title">${isMsg?'Messages':'Recommended vendors'}</div>
+      <div class="vlu-sub">${isMsg?'Talk to your vendors in one place.':'Suppliers we used for our own wedding.'}</div>
     </div>
-    ${isMsg ? _vluMessagesHtml() : (_vluView==='profile' ? _vluProfileHtml() : _vluBrowseHtml())}
+    ${isMsg ? _vluMessagesHtml() : _vluBrowseHtml()}
   </div>`;
 }
 
