@@ -484,9 +484,13 @@ function _vluAppCat(luCat){ return VLU_CAT_TO_APP[luCat] || luCat; }
 /* Outbound links go through Union Vault's click endpoint (logs the click, then forwards to the vendor),
    so referrals can be counted. The real destinations live in the vendor_links table, not here. */
 const _VLU_CLICK_URL = 'https://hzafdlfprtzfxtyaebmc.supabase.co/functions/v1/vendor-click';
+/* Flip to true ONLY after the vendor_links/vendor_clicks tables exist and the vendor-click function is deployed;
+   until then links go straight to the vendor so nobody is sent to the wrong place. */
+const _VLU_TRACKING_LIVE = false;
 function _vluTrackUrl(vendorId, link){ return _VLU_CLICK_URL + '?v=' + encodeURIComponent(vendorId) + '&l=' + encodeURIComponent(link); }
 /* Phone and email taps cannot be redirected, so they send a tiny "ping" and then carry on as normal. */
 function _vluPing(vendorId, link){
+  if(!_VLU_TRACKING_LIVE) return;
   try{ const u=_vluTrackUrl(vendorId, link); if(navigator.sendBeacon) navigator.sendBeacon(u); else fetch(u,{method:'POST',keepalive:true,mode:'no-cors'}); }catch(_){}
 }
 
@@ -558,7 +562,7 @@ function _vluBackToBrowse(){ _vluView='browse'; navigate('vendors'); }
 /* ── browse ──────────────────────────────────────────────── */
 function _vluCardHtml(v){
   const L=v.links||{}, rel='target="_blank" rel="sponsored noopener noreferrer"';
-  const btn=(label,key,primary)=>L[key]?`<a class="btn ${primary?'btn-primary':'btn-outline'} btn-sm" style="font-size:11.5px;text-decoration:none" href="${_escHtml(_vluTrackUrl(v.id,key))}" ${rel}>${label}</a>`:'';
+  const btn=(label,key,primary)=>L[key]?`<a class="btn ${primary?'btn-primary':'btn-outline'} btn-sm" style="font-size:11.5px;text-decoration:none" href="${_escHtml(_VLU_TRACKING_LIVE?_vluTrackUrl(v.id,key):(v.siteUrl||''))}" ${rel}>${label}</a>`:'';
   const first=L.website?'website':(L.instagram?'instagram':'');
   const saved=_vluInPlanner(v);
   return `<div class="vlu-card" style="cursor:default">
@@ -587,7 +591,7 @@ function _vluBrowseHtml(){
   const list=_vluFiltered();
   return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px">${chip('All','All',VLU_VENDORS.length)}${cats.map(c=>chip(c,c,null)).join('')}</div>
     <div style="display:flex;flex-direction:column;gap:12px;max-width:560px">${list.map(_vluCardHtml).join('')}</div>
-    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:16px;padding-top:10px;border-top:1px solid var(--border);max-width:560px"><b style="color:var(--ink)">Disclosure:</b> these are suppliers we used and recommend. If you book through our links, UnionVault may earn a commission at no extra cost to you. Links open through Union Vault so we can count referrals. Google ratings are copied by hand and may be out of date.</div>`;
+    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:16px;padding-top:10px;border-top:1px solid var(--border);max-width:560px"><b style="color:var(--ink)">Disclosure:</b> these are suppliers we used and recommend. If you book through our links, UnionVault may earn a commission at no extra cost to you. ${_VLU_TRACKING_LIVE?'Links open through Union Vault so we can count referrals. ':''}Google ratings are copied by hand and may be out of date.</div>`;
 }
 
 const VLU_KEY_CATS = [
