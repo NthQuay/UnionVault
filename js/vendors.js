@@ -353,7 +353,7 @@ function renderVendors(c, actions){
       <span style="width:34px;height:34px;border-radius:9px;background:rgba(196,168,130,.2);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:500;color:var(--ink)">Recommended vendors</div>
-        <div style="font-size:11.5px;color:var(--muted)">Suppliers we used for our own wedding — our celebrant and photographer.</div>
+        <div style="font-size:11.5px;color:var(--muted)">Preferred vendors we've used ourselves and recommend.</div>
       </div>
       <button class="vendor-lookup-btn" onclick="_vendorLookupOpen()" title="Recommended vendors" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;background:#FBF8F3;border:.5px solid #E3D7C4;color:#8B7355;transition:all .15s">View<svg class="vendor-lookup-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9B89C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
     </div>

@@ -447,7 +447,7 @@ function _vluMsgBack(){
    ratings, prices or reviews. The Google rating is typed in by hand with the month it was
    taken ("as of"), so it never claims to be live. Links open as "sponsored" (affiliate). */
 const VLU_VENDORS = [
-  { id:'storyline', mono:'SC', name:'Storyline Ceremonies', cat:'Celebrants', catLabel:'Marriage Celebrant & MC', tag:'Our celebrant',
+  { id:'storyline', mono:'SC', name:'Storyline Ceremonies', cat:'Celebrants', catLabel:'Marriage Celebrant & MC', tag:'Preferred vendor',
     area:'Ceremony at a location of your choice. $2 per km outside a 40km radius of Brisbane\u2019s CBD.',
     rating:{ score:5.0, count:9, asOf:'2026-11' }, phone:'0475 296 057', hours:'Open daily 9:30am\u20134:30pm',
     note:'Warm from our very first conversation. Ben was our celebrant and MC \u2014 joyful, perfectly on time and incredibly organised. We can\u2019t recommend him highly enough.',
@@ -455,7 +455,7 @@ const VLU_VENDORS = [
     siteUrl:'https://storylineceremonies.com.au/',
     links:{ website:true, contact:false /* set true once the 'contact' row exists in vendor_links */ },
     email:'ben@storylineceremonies.com.au' },
-  { id:'jordanleef', mono:'JL', name:'Jordan Leef Photography', cat:'Photographers', catLabel:'Photographer', tag:'Our photographer',
+  { id:'jordanleef', mono:'JL', name:'Jordan Leef Photography', cat:'Photographers', catLabel:'Photographer', tag:'Preferred vendor',
     area:'Brisbane, Gold Coast & Sunshine Coast',
     rating:null, phone:'', hours:'',
     note:'Jordan put us completely at ease \u2014 it felt like being photographed by a close friend. Seamless guidance on the day and photos that are a true work of art. Stop hesitating, you won\u2019t regret it.',
@@ -691,7 +691,7 @@ function buildDashVendorLookupHtml(){
       return `<div class="vlu-dw-row">
       <span class="vlu-dw-ic open">${_vluIconSvg(k.icon)}</span>
       <span class="vlu-dw-name open">${esc(cat)}</span>
-      <button class="vlu-dw-tag need" onclick="event.stopPropagation();_vluOpenCat('${jq(k.lu)}')" title="The supplier we used at our own wedding">Our pick \u2192</button>
+      <button class="vlu-dw-tag need" onclick="event.stopPropagation();_vluOpenCat('${jq(k.lu)}')" title="A preferred vendor we recommend">Preferred vendor \u2192</button>
     </div>`;
     }
     return `<div class="vlu-dw-row">
@@ -720,7 +720,7 @@ function buildDashVendorLookupHtml(){
     <div class="db-widget-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px">
       <span style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:500;color:var(--ink)">Vendors</span>
       <span style="display:inline-flex;align-items:center;gap:10px">
-        ${_dwVendEdit?'':`<button class="vlu-dw-link" title="Recommended vendors" onclick="event.stopPropagation();_vendorLookupOpen()">Our picks
+        ${_dwVendEdit?'':`<button class="vlu-dw-link" title="Recommended vendors" onclick="event.stopPropagation();_vendorLookupOpen()">Preferred vendors
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>`}
         <button class="vlu-dw-edit${_dwVendEdit?' on':''}" onclick="event.stopPropagation();_dwVendToggleEdit()" aria-pressed="${_dwVendEdit}">${_dwVendEdit?'Done':'Edit list'}</button>
@@ -824,7 +824,7 @@ function _vendorLookupHtml(){
   return `<div class="vlu-wrap">
     <div class="vlu-top">
       <div class="vlu-title">${isMsg?'Messages':'Recommended vendors'}</div>
-      <div class="vlu-sub">${isMsg?'Talk to your vendors in one place.':'Suppliers we used for our own wedding.'}</div>
+      <div class="vlu-sub">${isMsg?'Talk to your vendors in one place.':'Preferred vendors we’ve used ourselves and recommend.'}</div>
     </div>
     ${isMsg ? _vluMessagesHtml() : _vluBrowseHtml()}
   </div>`;
