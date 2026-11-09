@@ -453,7 +453,7 @@ const VLU_VENDORS = [
     note:'Warm from our very first conversation. Ben was our celebrant and MC \u2014 joyful, perfectly on time and incredibly organised. We can\u2019t recommend him highly enough.',
     byline:'\u2014 Liam & Mandy',
     siteUrl:'https://storylineceremonies.com.au/',
-    links:{ website:true, contact:false /* set true once the 'contact' row exists in vendor_links */ },
+    links:{ website:true, contact:true },
     email:'ben@storylineceremonies.com.au' },
   { id:'jordanleef', mono:'JL', name:'Jordan Leef Photography', cat:'Photographers', catLabel:'Photographer', tag:'Preferred vendor',
     area:'Brisbane, Gold Coast & Sunshine Coast',
@@ -486,7 +486,7 @@ function _vluAppCat(luCat){ return VLU_CAT_TO_APP[luCat] || luCat; }
 const _VLU_CLICK_URL = 'https://hzafdlfprtzfxtyaebmc.supabase.co/functions/v1/vendor-click';
 /* Flip to true ONLY after the vendor_links/vendor_clicks tables exist and the vendor-click function is deployed;
    until then links go straight to the vendor so nobody is sent to the wrong place. */
-const _VLU_TRACKING_LIVE = false;
+const _VLU_TRACKING_LIVE = true;
 function _vluTrackUrl(vendorId, link){ return _VLU_CLICK_URL + '?v=' + encodeURIComponent(vendorId) + '&l=' + encodeURIComponent(link); }
 /* Phone and email taps cannot be redirected, so they send a tiny "ping" and then carry on as normal. */
 function _vluPing(vendorId, link){
