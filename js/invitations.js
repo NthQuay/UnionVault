@@ -453,7 +453,8 @@ const VLU_VENDORS = [
     note:'Warm from our very first conversation. Ben was our celebrant and MC \u2014 joyful, perfectly on time and incredibly organised. We can\u2019t recommend him highly enough.',
     byline:'\u2014 Liam & Mandy',
     siteUrl:'https://storylineceremonies.com.au/',
-    links:{ website:true, book:false /* set true once the 'book' row exists in vendor_links */ } },
+    links:{ website:true, contact:false /* set true once the 'contact' row exists in vendor_links */ },
+    email:'' /* Ben's email — adds an Email button */ },
   { id:'jordanleef', mono:'JL', name:'Jordan Leef Photography', cat:'Photographers', catLabel:'Photographer', tag:'Our photographer',
     area:'Brisbane, Gold Coast & Sunshine Coast',
     rating:null, phone:'', hours:'',
@@ -484,6 +485,10 @@ function _vluAppCat(luCat){ return VLU_CAT_TO_APP[luCat] || luCat; }
    so referrals can be counted. The real destinations live in the vendor_links table, not here. */
 const _VLU_CLICK_URL = 'https://hzafdlfprtzfxtyaebmc.supabase.co/functions/v1/vendor-click';
 function _vluTrackUrl(vendorId, link){ return _VLU_CLICK_URL + '?v=' + encodeURIComponent(vendorId) + '&l=' + encodeURIComponent(link); }
+/* Phone and email taps cannot be redirected, so they send a tiny "ping" and then carry on as normal. */
+function _vluPing(vendorId, link){
+  try{ const u=_vluTrackUrl(vendorId, link); if(navigator.sendBeacon) navigator.sendBeacon(u); else fetch(u,{method:'POST',keepalive:true,mode:'no-cors'}); }catch(_){}
+}
 
 /* ── helpers ─────────────────────────────────────────────── */
 function _vluInitials(name){
@@ -569,8 +574,8 @@ function _vluCardHtml(v){
       ${(v.hours||v.phone)?`<div style="font-size:11.5px;color:var(--muted);line-height:1.5">${[v.hours,v.phone].filter(Boolean).map(_escHtml).join(' \u00b7 ')}</div>`:''}
       <p style="font-size:12.5px;color:var(--ink);line-height:1.5;margin:10px 0 0">\u201c${_escHtml(v.note)}\u201d<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:4px">${_escHtml(v.byline)}</span></p>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
-        ${btn('Website','website',first==='website')}${btn('Instagram','instagram',first==='instagram')}${btn('Book online','book',false)}
-        ${v.phone?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s+/g,''))}">Call</a>`:''}
+        ${btn('Website','website',first==='website')}${btn('Instagram','instagram',first==='instagram')}${btn('Contact form','contact',false)}${btn('Book online','book',false)}
+        ${v.phone?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s+/g,''))}" onclick="_vluPing('${v.id}','call')">Call</a>`:''}${v.email?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="mailto:${_escHtml(v.email)}" onclick="_vluPing('${v.id}','email')">Email</a>`:''}
         <button class="btn btn-outline btn-sm" style="font-size:11.5px" onclick="_vluSaveAsk('${v.id}')">${saved?'\u2713 In my vendors':'+ My vendors'}</button>
       </div>
     </div>

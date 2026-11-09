@@ -1,5 +1,7 @@
 // Pure helpers for vendor-click (kept separate so they can be unit-tested without Deno/Supabase).
 export const SLUG = /^[a-z0-9_-]{1,40}$/
+export const REDIRECT_LINKS = ['website', 'book', 'instagram', 'contact']   // forwarded to a stored destination
+export const PING_LINKS = ['call', 'email']                                    // phone / mailto taps: logged only
 
 /** Destination with Union Vault's tracking parameters added (existing parameters are kept). */
 export function buildDestination(url: string, clickId: string, append: boolean): string {

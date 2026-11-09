@@ -1,5 +1,5 @@
 // Run:  node --experimental-strip-types supabase/tests/vendor_click_test.mts
-import { buildDestination, isBot, refererHost, SLUG } from '../functions/vendor-click/dest.ts'
+import { buildDestination, isBot, refererHost, SLUG, REDIRECT_LINKS, PING_LINKS } from '../functions/vendor-click/dest.ts'
 import assert from 'node:assert/strict'
 const id = '123e4567-e89b-12d3-a456-426614174000'
 assert.equal(buildDestination('https://example.com/book', id, true),
@@ -12,4 +12,5 @@ assert.ok(isBot('Mozilla/5.0 (compatible; Googlebot/2.1)') && !isBot('Mozilla/5.
 assert.equal(refererHost('https://unionvault.app/some/page?q=1'), 'unionvault.app')
 assert.equal(refererHost('not a url'), null)
 assert.ok(SLUG.test('storyline') && !SLUG.test('Bad Value') && !SLUG.test('../x'))
+assert.ok(REDIRECT_LINKS.includes('contact') && !REDIRECT_LINKS.includes('call') && PING_LINKS.includes('call') && PING_LINKS.includes('email'))
 console.log('vendor-click helpers: all tests passed')

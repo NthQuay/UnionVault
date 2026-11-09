@@ -4,7 +4,7 @@
 
 create table if not exists public.vendor_links (
   vendor_id      text not null check (vendor_id ~ '^[a-z0-9_-]{1,40}$'),
-  link           text not null check (link in ('website','book','instagram')),
+  link           text not null check (link in ('website','book','instagram','contact')),   -- redirect links (call/email are logged by ping, no destination row)
   url            text not null check (url ~ '^https://'),
   append_params  boolean not null default true,   -- add utm_source/utm_medium/utm_campaign + uvc click id
   active         boolean not null default true,
@@ -15,7 +15,7 @@ create table if not exists public.vendor_links (
 create table if not exists public.vendor_clicks (
   id            uuid primary key default gen_random_uuid(),
   vendor_id     text not null,
-  link          text not null,
+  link          text not null check (link in ('website','book','instagram','contact','call','email')),
   clicked_at    timestamptz not null default now(),
   referrer_host text,                 -- host of the page the click came from (never the full URL, never an IP)
   is_bot        boolean not null default false
@@ -34,14 +34,14 @@ do $$ begin
   end if;
 exception when duplicate_object then null; end $$;
 
--- Seed. The two Book online URL is NOT known yet — add it with the insert shown at the bottom.
+-- Seed. Storyline has no direct booking URL (bookings are by phone, email or contact form), so there is no 'book' row.
 insert into public.vendor_links (vendor_id, link, url) values
   ('storyline',  'website',   'https://storylineceremonies.com.au/'),
   ('jordanleef', 'instagram', 'https://www.instagram.com/jordan_leef_photography/')
 on conflict (vendor_id, link) do nothing;
 
--- Once you have Storyline's booking link:
---   insert into public.vendor_links (vendor_id, link, url) values ('storyline','book','https://…')
+-- Add Storyline's contact-form page when you have its address:
+--   insert into public.vendor_links (vendor_id, link, url) values ('storyline','contact','https://…')
 --   on conflict (vendor_id, link) do update set url = excluded.url, updated_at = now();
 --
 -- Clicks per vendor and link, last 30 days:
