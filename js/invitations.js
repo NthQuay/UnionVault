@@ -448,11 +448,13 @@ function _vluMsgBack(){
    taken ("as of"), so it never claims to be live. Links open as "sponsored" (affiliate). */
 const VLU_VENDORS = [
   { id:'storyline', mono:'SC', name:'Storyline Ceremonies', cat:'Celebrants', catLabel:'Marriage Celebrant & MC', tag:'Our celebrant',
+    area:'' /* e.g. 'Brisbane, Gold Coast & Ipswich' — shown as "Services: …" once filled in */,
     rating:{ score:5.0, count:9, asOf:'2026-11' }, phone:'0475 296 057', hours:'Open daily 9:30am\u20134:30pm',
     note:'Warm from our very first conversation. Ben was our celebrant and MC \u2014 joyful, perfectly on time and incredibly organised. We can\u2019t recommend him highly enough.',
     byline:'\u2014 Liam & Mandy',
     links:{ website:'https://storylineceremonies.com.au/', book:'' } },
   { id:'jordanleef', mono:'JL', name:'Jordan Leef Photography', cat:'Photographers', catLabel:'Photographer', tag:'Our photographer',
+    area:'' /* service area — shown as "Services: …" once filled in */,
     rating:null, phone:'', hours:'',
     note:'Jordan put us completely at ease \u2014 it felt like being photographed by a close friend. Seamless guidance on the day and photos that are a true work of art. Stop hesitating, you won\u2019t regret it.',
     byline:'\u2014 Liam & Mandy',
@@ -555,6 +557,7 @@ function _vluCardHtml(v){
     <div class="vlu-cbody">
       <p class="vlu-name">${_escHtml(v.name)}</p>
       <p class="vlu-cat">${_escHtml(v.catLabel)}</p>
+      ${v.area?`<div style="font-size:12px;color:var(--ink);margin:6px 0 2px;display:flex;align-items:flex-start;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span><span style="color:var(--muted)">Services:</span> ${_escHtml(v.area)}</span></div>`:''}
       ${_vluRatingHtml(v)}
       ${(v.hours||v.phone)?`<div style="font-size:11.5px;color:var(--muted);line-height:1.5">${[v.hours,v.phone].filter(Boolean).map(_escHtml).join(' \u00b7 ')}</div>`:''}
       <p style="font-size:12.5px;color:var(--ink);line-height:1.5;margin:10px 0 0">\u201c${_escHtml(v.note)}\u201d<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:4px">${_escHtml(v.byline)}</span></p>
