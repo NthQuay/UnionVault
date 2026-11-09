@@ -1146,6 +1146,16 @@ function _orsvpBuildGroups(rows){
     if(r.guest_id){ (rowsById[r.guest_id]=rowsById[r.guest_id]||[]).push(r); return; }
     if(!r.guest_name)return;const k=r.guest_name.trim().toLowerCase();if(!rowsByName[k])rowsByName[k]=[];rowsByName[k].push(r);
   });
+  // Guests the couple marked attending/declined themselves (no online submission). They get a
+  // stand-in row flagged _manual so this pop-up counts everyone who has responded — the same
+  // people the Guest List counts — and can tell who answered online and who was set by hand.
+  (STATE.guests||[]).forEach(g=>{
+    if(!g||!g.id||(g.listType||'A')==='B') return;
+    const st=g.rsvp==='attending'?'yes':g.rsvp==='declined'?'no':'';
+    if(!st) return;
+    if(rowsById[g.id]||(g.name&&rowsByName[g.name.trim().toLowerCase()])) return;
+    rowsById[g.id]=[{guest_id:g.id,guest_name:g.name,attending:st,created_at:null,_manual:true}];
+  });
   const allG=STATE.guests||[];
   const matched=allG.filter(g=>g&&((g.id&&rowsById[g.id])||(g.name&&rowsByName[g.name.trim().toLowerCase()])));
   const inList=new Set(matched.map(g=>g.id));
@@ -1170,8 +1180,11 @@ function _orsvpBuildGroups(rows){
   groups.forEach(grp=>{
     grp.members=grp.members.map(m=>{
       if(m._rows)return m;
-      const rws=(m.id&&rowsById[m.id])||(rowsByName[(m.name||'').trim().toLowerCase()])||[];
-      return Object.assign({},m,{_rows:rws});
+      let rws=(m.id&&rowsById[m.id])||(rowsByName[(m.name||'').trim().toLowerCase()])||[];
+      const cur=m.rsvp==='attending'?'yes':m.rsvp==='declined'?'no':'';
+      let changed=false;
+      if(rws.length&&!rws[0]._manual&&cur&&rws[0].attending!==cur){ rws=[Object.assign({},rws[0],{attending:cur}),...rws.slice(1)]; changed=true; }
+      return Object.assign({},m,{_rows:rws,_changedByYou:changed});
     });
     const all=grp.members.flatMap(m=>m._rows).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
     grp.contact={email:null,phone:null,address:null};
@@ -1187,6 +1200,23 @@ function _orsvpBuildGroups(rows){
   });
   return groups;
 }
+// Per-person tally for the pop-up tiles and source chips. Everyone with an answer counts once.
+function _orsvpTally(){
+  const t={yes:0,no:0,online:0,manual:0};
+  (_orsvpGroups||[]).forEach(g=>g.members.forEach(m=>{
+    const r=m._rows&&m._rows[0]; if(!r) return;
+    if(r.attending==='yes') t.yes++; else if(r.attending==='no') t.no++; else return;
+    if(r._manual) t.manual++; else t.online++;
+  }));
+  return t;
+}
+function _orsvpUpdateStats(){
+  const t=_orsvpTally();
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('orsvp-stat-yes',t.yes); set('orsvp-stat-no',t.no); set('orsvp-stat-total',t.yes+t.no);
+  const st=document.getElementById('orsvp-stats'); if(st) st.style.display='flex';
+}
+function _orsvpSetSrc(v){ window._orsvpSrc=v; _orsvpRender(); }
 function _orsvpRender(){
   const filter=window._orsvpFilter||'all';
   const view=window._orsvpView||'card';
@@ -1199,7 +1229,10 @@ function _orsvpRender(){
     const vBtn=(v,svg)=>`<button onclick="_orsvpSetView('${v}')" title="${v==='card'?'Card view':'List view'}" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid ${view===v?'var(--gold-deep)':'var(--border)'};background:${view===v?'var(--gold-deep)':'transparent'};color:${view===v?'#fff':'var(--muted)'};cursor:pointer;flex-shrink:0">${svg}</button>`;
     const views=vBtn('card','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>')
       +vBtn('list','<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>');
-    toolbar.innerHTML=`<div class="orsvp-views orsvp-views-body" style="display:flex;justify-content:flex-end;gap:4px">${views}</div>`;
+    const _t=_orsvpTally(), _src=window._orsvpSrc||'all';
+    const chip=(k,l,n)=>`<button type="button" onclick="_orsvpSetSrc('${k}')" style="padding:5px 12px;border-radius:16px;border:1px solid ${_src===k?'var(--gold)':'var(--border)'};background:${_src===k?'var(--gold)':'var(--surface)'};color:${_src===k?'#fff':'var(--ink)'};font:inherit;font-size:12.5px;font-weight:${_src===k?'600':'400'};cursor:pointer">${l} ${n}</button>`;
+    const chips=_t.manual?`<div style="display:flex;gap:6px;flex-wrap:wrap;flex:1">${chip('all','All',_t.yes+_t.no)}${chip('online','Online',_t.online)}${chip('manual','Set by you',_t.manual)}</div>`:'';
+    toolbar.innerHTML=`<div style="display:flex;align-items:center;gap:8px">${chips}<div class="orsvp-views orsvp-views-body" style="display:flex;justify-content:flex-end;gap:4px;margin-left:auto">${views}</div></div>`;
     // Phones: the same switcher sits in the pop-up header, left of the × button.
     const hdr=document.querySelector('#modal-box .modal-header');
     if(hdr){
@@ -1228,17 +1261,21 @@ function _orsvpRender(){
   const _fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
   const _badge=st=>st==='yes'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(74,124,89,.1);color:var(--green);font-size:11px;font-weight:600;white-space:nowrap">✓ Attending</span>`:st==='no'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(192,57,43,.07);color:var(--red);font-size:11px;font-weight:600;white-space:nowrap">✗ Declined</span>`:'';
 
+  const _srcTag=m=>m._rows[0]&&m._rows[0]._manual?'<span style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);border:1px solid var(--gold);border-radius:9px;padding:1px 6px;white-space:nowrap">Set by you</span>':(m._changedByYou?'<span style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);border:1px solid var(--gold);border-radius:9px;padding:1px 6px;white-space:nowrap" title="You changed this after their online reply">Changed by you</span>':'');
   const seenBefore=window._orsvpSeenBefore;
   const _isNew=grp=>seenBefore!==undefined && grp.members.some(m=>m._rows.some(r=>r&&r.created_at&&(!seenBefore||r.created_at>seenBefore)));
   const _newBadge='<span class="orsvp-new">NEW</span>';
   let html='';let shown=0;
   groups.forEach(grp=>{
     let vis=grp.members;
+    const _srcF=window._orsvpSrc||'all';
+    if(_srcF==='online') vis=vis.filter(m=>m._rows[0]&&!m._rows[0]._manual);
+    else if(_srcF==='manual') vis=vis.filter(m=>m._rows[0]&&m._rows[0]._manual);
     if(filter==='yes') vis=vis.filter(m=>m._rows[0]&&m._rows[0].attending==='yes');
     else if(filter==='no') vis=vis.filter(m=>m._rows[0]&&m._rows[0].attending==='no');
     if(!vis.length)return;
     shown++;
-    const summaryLine=`${grp.attendingAll} of ${grp.totalAll} attending`;
+    const summaryLine=`${grp.attendingAll} of ${grp.totalAll} attending${grp.members.every(m=>m._rows[0]&&m._rows[0]._manual)?' · set by you':''}`;
     const histBtn=grp.hasHistory?`<button onclick="_orsvpToggleHistory(this)" data-grp-id="${grp.initials+grp.members[0].id.replace(/[^a-z0-9]/gi,'')}" title="View RSVP history" style="display:inline-flex;align-items:center;gap:3px;background:none;border:none;padding:2px 4px;font:inherit;font-size:11px;color:var(--muted);cursor:pointer;border-radius:4px;vertical-align:middle"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> History</button>`:'';
     // History rows for this group
     const histId='orhist-'+grp.initials+(grp.members[0].id||'').replace(/[^a-z0-9]/gi,'');
@@ -1264,7 +1301,7 @@ function _orsvpRender(){
             <span class="lvm-n" style="font-size:13px;font-weight:500;color:var(--ink)">${m.name}${_ageBandBadge(m)}${_plusOneBadge(m)}</span>
             ${extras?`<span class="lvm-d">${extras}</span>`:''}
             ${mealHtml?`<span class="lvm-m">${mealHtml}</span>`:''}
-            <span class="lvm-b">${_badge(row.attending)}</span>
+            <span class="lvm-b">${_srcTag(m)} ${_badge(row.attending)}</span>
           </div>
         </div>`;
       }).join('');
@@ -1297,7 +1334,7 @@ function _orsvpRender(){
             <span class="lvm-n" style="font-size:12.5px;font-weight:500;color:var(--ink)">${m.name}${_ageBandBadge(m)}${_plusOneBadge(m)}</span>
             ${chips?`<span class="lvm-d">${chips}</span>`:''}
             ${meal?`<span class="lvm-m">${meal}</span>`:''}
-            <span class="lvm-b">${_badge(row.attending)}</span>
+            <span class="lvm-b">${_srcTag(m)} ${_badge(row.attending)}</span>
           </div>
         </div>`;
       }).join('');
@@ -1361,7 +1398,8 @@ function _orsvpToggleHistory(btn){
 // ── Online RSVPs: repopulate from cache (after navigate re-render) ──
 function _orsvpRepopulateFromCache(){
   const rows=window._orsvpCachedRows;
-  if(!rows||!rows.length) return;
+  if(!rows) return;
+  if(!rows.length && !(STATE.guests||[]).some(g=>g&&(g.rsvp==='attending'||g.rsvp==='declined'))) return;
   const body=document.getElementById('online-rsvps-body');
   if(!body) return;
   const yes=rows.filter(r=>r.attending==='yes').length;
@@ -1376,16 +1414,7 @@ function _orsvpRepopulateFromCache(){
   window._orsvpFilter = window._orsvpFilter || 'all';
   try { window._orsvpView = localStorage.getItem('uv_orsvp_view') || 'card'; } catch(e) { window._orsvpView = 'card'; }
   _orsvpGroups = _orsvpBuildGroups(rows);
-  const statsEl=document.getElementById('orsvp-stats');
-  if(statsEl){
-    const yEl=document.getElementById('orsvp-stat-yes');
-    const nEl=document.getElementById('orsvp-stat-no');
-    const tEl=document.getElementById('orsvp-stat-total');
-    if(yEl) yEl.textContent=yes;
-    if(nEl) nEl.textContent=no;
-    if(tEl) tEl.textContent=total;
-    statsEl.style.display='flex';
-  }
+  _orsvpUpdateStats();
   const msgEl=document.getElementById('orsvp-msg');
   if(msgEl) msgEl.style.display='none';
   _orsvpRender();
@@ -1402,7 +1431,7 @@ function _orsvpBodyHtml(){
     <div id="orsvp-stats" style="display:none;flex-direction:row;gap:12px;flex-wrap:wrap;margin-bottom:14px">
       ${tile('orsvp-stat-yes','yes','Attending','rgba(74,124,89,.08)','rgba(74,124,89,.25)','var(--green)')}
       ${tile('orsvp-stat-no','no','Declining','rgba(192,57,43,.06)','rgba(192,57,43,.2)','var(--red)')}
-      ${tile('orsvp-stat-total','all','Total','var(--surface)','var(--border)','var(--gold-deep)')}
+      ${tile('orsvp-stat-total','all','Responded','var(--surface)','var(--border)','var(--gold-deep)')}
     </div>
     <div id="orsvp-toolbar" style="margin-bottom:10px"></div>
     <div id="orsvp-list" class="orsvp-list" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -1412,7 +1441,7 @@ function _orsvpBodyHtml(){
 function _openOnlineRsvps(){
   // What counts as NEW for this visit: anything after the newest response seen before it.
   window._orsvpSeenBefore=(STATE.settings&&STATE.settings.orsvpSeenAt)||'';
-  openModal('Online RSVPs', _orsvpBodyHtml(),
+  openModal('RSVP responses', _orsvpBodyHtml(),
     `<button class="btn btn-outline" id="load-rsvps-btn" onclick="_loadOnlineRsvps()" style="display:inline-flex;align-items:center;gap:6px;margin-right:auto"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.96"/></svg>Refresh</button>
      <button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`);
   const mb=document.getElementById('modal-box'); if(mb) mb.classList.add('modal-wide');
@@ -1475,7 +1504,7 @@ async function _loadOnlineRsvps(){
     const rows = await res.json();
     window._orsvpCachedRows = rows;
 
-    if(!rows.length){
+    if(!rows.length && !(STATE.guests||[]).some(g=>g&&(g.rsvp==='attending'||g.rsvp==='declined'))){
       body.innerHTML='<span style="color:var(--muted);font-style:italic">No responses yet — share your RSVP link to get started.</span>';
       if(btn){ btn.disabled=false; btn.innerHTML=btn.innerHTML.replace('Refreshing…','Refresh'); }
       return;
@@ -1503,16 +1532,7 @@ async function _loadOnlineRsvps(){
     _orsvpGroups = _orsvpBuildGroups(rows);
     // Update stat tiles and diet line in-place — avoids wiping the body div
     // (a full innerHTML replacement collapses the max-height container and causes layout shift)
-    const statsEl=document.getElementById('orsvp-stats');
-    if(statsEl){
-      const yEl=document.getElementById('orsvp-stat-yes');
-      const nEl=document.getElementById('orsvp-stat-no');
-      const tEl=document.getElementById('orsvp-stat-total');
-      if(yEl) yEl.textContent=yes;
-      if(nEl) nEl.textContent=no;
-      if(tEl) tEl.textContent=total;
-      statsEl.style.display='flex';
-    }
+    _orsvpUpdateStats();
     const msgEl=document.getElementById('orsvp-msg');
     if(msgEl) msgEl.style.display='none';
     _orsvpRender();
