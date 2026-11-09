@@ -2552,11 +2552,11 @@ body.dark .vlu-rcat{color:var(--gold)}
 .vlu-rsub{font-size:11px;color:var(--muted);margin:4px 0 0;display:flex;gap:12px;flex-wrap:wrap}
 .vlu-rright{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .vlu-ravail{font-size:9.5px;font-weight:600;padding:3px 9px;border-radius:11px;background:rgba(74,124,89,.14);color:var(--green);white-space:nowrap}
-.vlu-save{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:14px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.92);color:var(--red);font:600 12px 'Inter',sans-serif;cursor:pointer;transition:transform .12s}
+.vlu-save{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:14px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.92);color:var(--gold-deep);font:600 12px 'Inter',sans-serif;cursor:pointer;transition:transform .12s}
 .vlu-save:hover{transform:scale(1.05)}
-.vlu-save.saved{background:var(--red);border-color:var(--red);color:#fff}
+.vlu-save.saved{background:var(--gold);border-color:var(--gold);color:#fff}
 body.dark .vlu-save{background:rgba(20,20,24,.8);border-color:rgba(255,255,255,.12)}
-body.dark .vlu-save.saved{background:var(--red);color:#fff}
+body.dark .vlu-save.saved{background:var(--gold);color:#fff}
 .vlu-heart-sm{font-size:15px;color:var(--red);cursor:pointer;background:none;border:none;padding:0;line-height:1}
 
 .vlu-empty{text-align:center;padding:46px 20px;color:var(--muted);border:.5px solid var(--border);border-radius:12px}
