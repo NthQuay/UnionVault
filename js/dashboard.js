@@ -198,10 +198,34 @@ function _invitedGuestIdSet(){
 const _TERMS_VERSION = '2026-11';
 /* Accounts created after this moment agreed to the new Terms at sign-up, so they are not shown the notice. */
 const _TERMS_NOTICE_BEFORE = '2026-11-10T10:00:00Z';
+/* The saved session does not carry the account's creation date, so it is fetched once (and remembered on this device).
+   Until it is known the notice stays hidden, then the dashboard redraws. */
+let _termsCreated = null, _termsCreatedFor = null, _termsCreatedBusy = false;
+function _termsAccountCreated(){
+  const s = (typeof _sbSession!=='undefined') ? _sbSession : null;
+  if(!s || !s.user) return null;
+  if(_termsCreatedFor !== s.user.id){ _termsCreated = null; _termsCreatedFor = s.user.id; }
+  if(_termsCreated) return _termsCreated;
+  if(s.user.created_at){ _termsCreated = Date.parse(s.user.created_at); return _termsCreated; }
+  try{ const c = JSON.parse(localStorage.getItem('uv_acct_created')||'null'); if(c && c.id===s.user.id && c.t){ _termsCreated = c.t; return _termsCreated; } }catch(_){}
+  if(!_termsCreatedBusy && s.access_token){
+    _termsCreatedBusy = true;
+    fetch(_SB_URL+'/auth/v1/user',{headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+s.access_token}})
+      .then(r=>r.ok?r.json():null)
+      .then(u=>{
+        if(u && u.created_at){
+          _termsCreated = Date.parse(u.created_at);
+          try{ localStorage.setItem('uv_acct_created', JSON.stringify({id:s.user.id,t:_termsCreated})); }catch(_){}
+          if(typeof _currentPage!=='undefined' && _currentPage==='dashboard' && typeof navigate==='function') navigate('dashboard');
+        }
+      }).catch(()=>{}).then(()=>{ _termsCreatedBusy = false; });
+  }
+  return null;
+}
 function _termsBannerHtml(){
   if(typeof _sbSession==='undefined' || !_sbSession) return '';
-  const made = _sbSession.user && _sbSession.user.created_at ? Date.parse(_sbSession.user.created_at) : NaN;
-  if(!isNaN(made) && made >= Date.parse(_TERMS_NOTICE_BEFORE)) return '';
+  const made = _termsAccountCreated();
+  if(made == null || made >= Date.parse(_TERMS_NOTICE_BEFORE)) return '';     // unknown yet, or a new account that agreed at sign-up
   const a = STATE.settings && STATE.settings.termsAck;
   if(a && a.v===_TERMS_VERSION) return '';
   return `<div class="uv-terms-banner" id="uv-terms-banner" role="region" aria-label="Updated Terms and Privacy Policy">
