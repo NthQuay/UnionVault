@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { COMMISSION_EVENTS, paymentArgs, refundArgs, creditNoteArgs, disputeArgs } from './commission.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -35,6 +36,8 @@ serve(async (req) => {
       await handleSubDeleted(event.data.object, SB_URL, SB_SERVICE)
     } else if (type === 'invoice.payment_failed') {
       await handlePaymentFailed(event.data.object, SB_URL, SB_SERVICE)
+    } else if (COMMISSION_EVENTS.includes(type)) {
+      await handleCommissionEvent(event, SB_URL, SB_SERVICE, STRIPE_KEY)
     }
   } catch (e) {
     console.error('Webhook handler error:', type, e)
@@ -196,4 +199,63 @@ async function stripeGet(endpoint: string, key: string) {
 function tsToIso(ts: unknown): string | null {
   if (!ts) return null
   return new Date(Number(ts) * 1000).toISOString()
+}
+
+
+// ── Referral commission ─────────────────────────────────────────────────────────────────────────────────────
+// Every Stripe event is recorded once in stripe_events; the money rules themselves live in SQL
+// (affiliate_record_payment / affiliate_record_reversal), which are idempotent, so a retried webhook is harmless.
+async function rpc(sbUrl: string, key: string, fn: string, args: Record<string, unknown>) {
+  const r = await fetch(`${sbUrl}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args) })
+  if (!r.ok) throw new Error(`${fn} failed: ${r.status} ${await r.text()}`)
+  const out = await r.json()
+  console.log(`commission ${fn}`, args.p_event_id, JSON.stringify(out))
+  return out
+}
+
+/** The invoice a charge paid for. Works on older API versions (charge.invoice) and newer ones (invoice_payments). */
+async function invoiceIdForCharge(charge: Record<string, any>, stripeKey: string): Promise<string | null> {
+  if (typeof charge?.invoice === 'string') return charge.invoice
+  const pi = typeof charge?.payment_intent === 'string' ? charge.payment_intent : charge?.payment_intent?.id
+  if (!pi) return null
+  try {
+    const r = await stripeGet(`invoice_payments?payment[type]=payment_intent&payment[payment_intent]=${encodeURIComponent(pi)}&limit=1`, stripeKey)
+    const inv = r?.data?.[0]?.invoice
+    return typeof inv === 'string' ? inv : inv?.id ?? null
+  } catch (_) { return null }
+}
+
+async function handleCommissionEvent(event: Record<string, any>, sbUrl: string, sbKey: string, stripeKey: string) {
+  // whole-event idempotency: skip events already fully processed; re-run ones that failed part-way
+  const ins = await fetch(`${sbUrl}/rest/v1/stripe_events`, {
+    method: 'POST', headers: { ...sbHeaders(sbKey), 'Content-Type': 'application/json', Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    body: JSON.stringify({ event_id: event.id, type: event.type }),
+  })
+  if (!ins.ok) throw new Error(`stripe_events insert failed: ${ins.status}`)
+  const seen = await fetch(`${sbUrl}/rest/v1/stripe_events?event_id=eq.${encodeURIComponent(event.id)}&select=processed_at`, { headers: sbHeaders(sbKey) })
+  const row = (await seen.json())?.[0]
+  if (row?.processed_at) return
+
+  if (event.type === 'invoice.paid') {
+    const a = paymentArgs(event); if (a) await rpc(sbUrl, sbKey, 'affiliate_record_payment', a)
+  } else if (event.type === 'charge.refunded') {
+    const charge = event.data.object
+    const invoiceId = await invoiceIdForCharge(charge, stripeKey)
+    const refunds = await stripeGet(`refunds?charge=${encodeURIComponent(charge.id)}&limit=100`, stripeKey)
+    for (const rf of refunds?.data ?? []) {
+      const a = refundArgs(event, rf, invoiceId); if (a) await rpc(sbUrl, sbKey, 'affiliate_record_reversal', a)
+    }
+  } else if (event.type === 'credit_note.created') {
+    const a = creditNoteArgs(event); if (a) await rpc(sbUrl, sbKey, 'affiliate_record_reversal', a)
+  } else if (event.type === 'charge.dispute.closed') {
+    const d = event.data.object
+    const charge = d?.charge ? await stripeGet(`charges/${encodeURIComponent(typeof d.charge === 'string' ? d.charge : d.charge.id)}`, stripeKey) : null
+    const a = disputeArgs(event, charge ? await invoiceIdForCharge(charge, stripeKey) : null)
+    if (a) await rpc(sbUrl, sbKey, 'affiliate_record_reversal', a)
+  }
+
+  await fetch(`${sbUrl}/rest/v1/stripe_events?event_id=eq.${encodeURIComponent(event.id)}`, {
+    method: 'PATCH', headers: { ...sbHeaders(sbKey), 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ processed_at: new Date().toISOString() }),
+  })
 }
