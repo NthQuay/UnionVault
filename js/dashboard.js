@@ -192,7 +192,7 @@ function _invitedGuestIdSet(){
 }
 
 /* ── Updated Terms & Privacy notice ─────────────────────────────────────────────
-   Shown on the dashboard to signed-in users until they press Agree or close it (x). The choice is stored with the
+   Shown on the dashboard to signed-in users (accounts that pre-date the update) until they press Agree. The agreement is stored with the
    account settings (so it does not reappear on another device) together with the version and time. Bump
    _TERMS_VERSION whenever the Terms change in a way users must be told about. */
 const _TERMS_VERSION = '2026-11';
@@ -207,7 +207,7 @@ function _termsBannerHtml(){
   return `<div class="uv-terms-banner" id="uv-terms-banner" role="region" aria-label="Updated Terms and Privacy Policy">
     <div class="utb-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
     <div class="utb-txt"><strong>We\u2019ve updated our Terms &amp; Privacy Policy</strong><span>New sections cover Recommended vendors, vendor referral commissions, and what we record when you use a vendor link. <a href="#" onclick="event.preventDefault();_openTermsModal()">Read what\u2019s changed</a></span></div>
-    <div class="utb-btns"><button class="utb-agree" onclick="_termsAck('agree')">Agree</button><button class="utb-x" onclick="_termsAck('dismiss')" aria-label="Dismiss" title="Dismiss">\u00d7</button></div>
+    <div class="utb-btns"><button class="utb-agree" onclick="_termsAck('agree')">Agree</button></div>
   </div>`;
 }
 function _termsAck(how){
