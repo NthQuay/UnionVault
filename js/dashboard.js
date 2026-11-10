@@ -196,8 +196,12 @@ function _invitedGuestIdSet(){
    account settings (so it does not reappear on another device) together with the version and time. Bump
    _TERMS_VERSION whenever the Terms change in a way users must be told about. */
 const _TERMS_VERSION = '2026-11';
+/* Accounts created after this moment agreed to the new Terms at sign-up, so they are not shown the notice. */
+const _TERMS_NOTICE_BEFORE = '2026-11-10T10:00:00Z';
 function _termsBannerHtml(){
   if(typeof _sbSession==='undefined' || !_sbSession) return '';
+  const made = _sbSession.user && _sbSession.user.created_at ? Date.parse(_sbSession.user.created_at) : NaN;
+  if(!isNaN(made) && made >= Date.parse(_TERMS_NOTICE_BEFORE)) return '';
   const a = STATE.settings && STATE.settings.termsAck;
   if(a && a.v===_TERMS_VERSION) return '';
   return `<div class="uv-terms-banner" id="uv-terms-banner" role="region" aria-label="Updated Terms and Privacy Policy">
