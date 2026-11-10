@@ -1,7 +1,7 @@
 // Commission engine tests — run the REAL migrations in a local in-memory Postgres (PGlite); nothing touches Supabase.
 //   npm install --no-save @electric-sql/pglite && node supabase/tests/commission_engine.test.mjs
 // Checks the proposal's exact figures (20% of $12.99/$31.18/$54.56/$77.94), idempotency, who earns nothing, term limits,
-// refunds / disputes, payouts, privileges and de-identification on account deletion.
+// refunds / disputes, payouts, privileges, plans / renewals / cancellations shown to vendors, and de-identification on account deletion.
 import { PGlite } from '@electric-sql/pglite';
 import fs from 'node:fs'; import assert from 'node:assert/strict';
 const M=new URL('../migrations/', import.meta.url).pathname;
@@ -117,6 +117,43 @@ ok(['nothing_due','quarter_not_finished','created'].includes(nothing.status),'la
 const ov=await q(`select * from public.admin_payout_overview() order by name`); ok(ov.length===3 && ov.find(o=>o.name==='Storyline').paid_cents===po2.total_cents,'overview shows what was paid');
 ok((await q(`select * from public.admin_payouts()`)).length===1,'payout list');
 await su(); await as(U(1)); ok((await q(`select * from public.admin_payout_overview()`)).length===0,'a partner cannot see the admin overview');
+// ===== 11. plans, renewals and cancellations (what the vendor sees per anonymous client) =====
+await su();
+const life=(ev,kind,cus,when,months,amt)=>one(`select public.affiliate_record_lifecycle($1,$2,$3,${when},$4::int,$5::bigint) r`,[ev,kind,cus,months,amt]).then(x=>x.r);
+const anon=async(i)=>(await one(`select substr(md5($1::text),1,8) a`,[(await one(`select user_id from public.referrals where user_id=$1`,[U(i)])).user_id])).a;
+// a 3-month renewal for client 13 (partner A): the ledger row remembers the plan, the lifecycle log remembers the payment
+const rp=(await one(`select public.affiliate_record_payment('pl1','in_pl1','ch_pl1','cus_13',3118::bigint,0::bigint,now() - interval '1 hour','aud',null,3) r`)).r;
+ok(rp.status==='recorded' && rp.commission_cents===624,'3-month renewal: '+JSON.stringify(rp));
+ok((await one(`select plan_months m from public.commission_entries where stripe_invoice_id='in_pl1'`)).m===3,'plan stored on the ledger row');
+ok((await life('lc_pay1','payment','cus_13',`now() - interval '1 hour'`,3,3118)).status==='recorded','payment logged');
+ok((await life('lc_pay1','payment','cus_13',`now() - interval '1 hour'`,3,3118)).status==='duplicate','logged once');
+ok((await life('lc_x','cancelled','cus_17',`now()`,null,null)).status==='not_referred','never referred: nothing logged');
+ok((await life('lc_y','cancelled','cus_16',`now()`,null,null)).status==='not_referred','excluded (self) referral: nothing logged');
+ok((await life('lc_z','nonsense','cus_13',`now()`,null,null)).status==='bad_input','unknown kind refused');
+// client 11 asks to cancel, then changes their mind; client 13 cancels and the subscription ends
+await life('lc_c1','cancel_requested','cus_11',`now() - interval '50 minutes'`,null,null);
+await life('lc_c2','resumed','cus_11',`now() - interval '40 minutes'`,null,null);
+await life('lc_c3','cancel_requested','cus_13',`now() - interval '30 minutes'`,null,null);
+await life('lc_c4','cancelled','cus_13',`now() - interval '10 minutes'`,null,null);
+const a13=await anon(13), a11=await anon(11);
+await as(U(1));
+const refs=await q(`select * from public.partner_referrals()`);
+const r13=refs.find(r=>r.anon_id===a13), r11=refs.find(r=>r.anon_id===a11);
+ok(r13 && r13.plan_months===3 && Number(r13.plan_amount_cents)===3118 && r13.cancel_state==='ended','client 13: 3-month plan, subscription ended: '+JSON.stringify(r13));
+ok(r11 && r11.cancel_state===null,'client 11 resumed, so not cancelling');
+await su(); await as(U(1));
+const cq=(await one(`select public.affiliate_quarter_start(now()) d`)).d;
+const ln=await q(`select * from public.partner_statement_lines($1::date)`,[cq]);
+const kinds=ln.map(l=>l.kind);
+ok(kinds.includes('renewal') && kinds.includes('cancelled') && kinds.includes('cancel_requested') && kinds.includes('resumed'),'this quarter shows renewal + cancellation events: '+kinds.join(','));
+const ren=ln.find(l=>l.kind==='renewal'&&l.anon_id===a13&&l.plan_months===3); ok(ren && Number(ren.paid_cents)===3118 && Number(ren.commission_cents)===624,'renewal line has plan, amount and commission');
+const cn=ln.find(l=>l.kind==='cancelled'); ok(cn && Number(cn.paid_cents)===0 && Number(cn.commission_cents)===0,'cancellation line has no money');
+const oldln=await q(`select * from public.partner_statement_lines($1::date)`,[qs]);
+ok(oldln.filter(l=>l.anon_id===a11&&l.kind==='first').length===1,'exactly one "first" payment per client');
+ok(oldln.filter(l=>l.anon_id===a11&&l.kind==='renewal').length>=1,'later payments are renewals');
+await su(); await as(U(2));
+ok((await q(`select * from public.partner_referrals()`)).length===1 && (await q(`select * from public.partner_statement_lines($1::date)`,[cq])).length===0,'another partner sees none of it');
+await su(); await as(U(11),'authenticated'); let d2=false; try{ await q(`select * from public.referral_events`);}catch(e){d2=true}; ok(d2,'the lifecycle log is not directly readable');
 // ===== 10. deleting a referred user keeps the ledger, removes the link =====
 await su();
 await q(`delete from auth.users where id=$1`,[U(12)]);

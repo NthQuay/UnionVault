@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { COMMISSION_EVENTS, paymentArgs, refundArgs, creditNoteArgs, disputeArgs } from './commission.ts'
+import { COMMISSION_EVENTS, paymentArgs, paymentLifecycleArgs, cancelArgs, invoicePlan, planMonths, refundArgs, creditNoteArgs, disputeArgs } from './commission.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -38,6 +38,13 @@ serve(async (req) => {
       await handlePaymentFailed(event.data.object, SB_URL, SB_SERVICE)
     } else if (COMMISSION_EVENTS.includes(type)) {
       await handleCommissionEvent(event, SB_URL, SB_SERVICE, STRIPE_KEY)
+    }
+    // Cancellation requested / resumed / ended, for the vendor-facing log. Never allowed to break subscription handling.
+    if (type === 'customer.subscription.updated' || type === 'customer.subscription.deleted') {
+      try {
+        const a = cancelArgs(event)
+        if (a) await rpc(SB_URL, SB_SERVICE, 'affiliate_record_lifecycle', a)
+      } catch (e) { console.error('lifecycle log failed', type, e) }
     }
   } catch (e) {
     console.error('Webhook handler error:', type, e)
@@ -237,7 +244,11 @@ async function handleCommissionEvent(event: Record<string, any>, sbUrl: string, 
   if (row?.processed_at) return
 
   if (event.type === 'invoice.paid') {
-    const a = paymentArgs(event); if (a) await rpc(sbUrl, sbKey, 'affiliate_record_payment', a)
+    const inv = event.data.object
+    let { months, priceId } = invoicePlan(inv)
+    if (months == null && priceId) { try { months = planMonths((await stripeGet(`prices/${encodeURIComponent(priceId)}`, stripeKey))?.recurring) } catch (_) { /* plan stays unknown */ } }
+    const life = paymentLifecycleArgs(event, months); if (life) await rpc(sbUrl, sbKey, 'affiliate_record_lifecycle', life)
+    const a = paymentArgs(event, months); if (a) await rpc(sbUrl, sbKey, 'affiliate_record_payment', a)
   } else if (event.type === 'charge.refunded') {
     const charge = event.data.object
     const invoiceId = await invoiceIdForCharge(charge, stripeKey)

@@ -20,11 +20,31 @@ alter table public.partners
 comment on column public.partners.commission_months is
   'How many months after sign-up a referred client earns commission. NULL = for as long as they stay subscribed.';
 
+-- The plan a client was on when a payment was made (months per billing period: 1, 3, 6, 12), so statements can show it.
+alter table public.commission_entries add column if not exists plan_months int check (plan_months is null or plan_months > 0);
+
+-- A small log of what happened to each referred client's subscription, independent of the rate:
+-- every payment (with plan and amount), cancellation requested / resumed, subscription ended. Vendors see it anonymised.
+create table if not exists public.referral_events (
+  id            uuid primary key default gen_random_uuid(),
+  referral_id   uuid not null references public.referrals(id) on delete cascade,
+  kind          text not null check (kind in ('payment', 'cancel_requested', 'resumed', 'cancelled')),
+  stripe_event_id text not null,
+  occurred_at   timestamptz not null,
+  plan_months   int check (plan_months is null or plan_months > 0),
+  amount_cents  bigint,                       -- ex-tax amount of a payment
+  created_at    timestamptz not null default now(),
+  unique (stripe_event_id, kind)
+);
+create index if not exists referral_events_ref_idx on public.referral_events (referral_id, occurred_at);
+alter table public.referral_events enable row level security;   -- no policies: read through the security-definer functions only
+revoke all on public.referral_events from anon, authenticated;
+
 -- ── a paid invoice → one commission row ────────────────────────────────────────────────────────────────
 create or replace function public.affiliate_record_payment(
   p_event_id text, p_invoice_id text, p_charge_id text, p_customer_id text,
   p_gross_cents bigint, p_tax_cents bigint, p_occurred_at timestamptz,
-  p_currency text default 'aud', p_fee_cents bigint default null)
+  p_currency text default 'aud', p_fee_cents bigint default null, p_plan_months int default null)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   v_uid uuid; r public.referrals; pt public.partners; v_base bigint; v_comm bigint;
@@ -60,16 +80,38 @@ begin
 
   insert into public.commission_entries
     (partner_id, referral_id, kind, status, source, stripe_event_id, stripe_invoice_id, stripe_charge_id, currency,
-     gross_cents, tax_cents, fee_cents, basis, rate, commission_cents, occurred_at, period_start)
+     gross_cents, tax_cents, fee_cents, basis, rate, commission_cents, occurred_at, period_start, plan_months)
   values
     (pt.id, r.id, 'payment', 'pending', 'subscription', p_event_id, p_invoice_id, p_charge_id, coalesce(p_currency, 'aud'),
      p_gross_cents, coalesce(p_tax_cents, 0), p_fee_cents, pt.basis, pt.rate, v_comm, p_occurred_at,
-     public.affiliate_quarter_start(p_occurred_at))
+     public.affiliate_quarter_start(p_occurred_at), p_plan_months)
   on conflict do nothing;                                                           -- a retried event / invoice is harmless
   if not found then return jsonb_build_object('status', 'duplicate'); end if;
 
   update public.referrals set stripe_customer_id = coalesce(stripe_customer_id, p_customer_id) where id = r.id;
   return jsonb_build_object('status', 'recorded', 'commission_cents', v_comm);
+end $$;
+
+-- ── lifecycle log: payments (with plan), cancellation requested / resumed, subscription ended ──────────────────
+-- Recorded for every ATTRIBUTED referral whatever the partner's rate, so a vendor can see plans and cancellations.
+create or replace function public.affiliate_record_lifecycle(
+  p_event_id text, p_kind text, p_customer_id text, p_occurred_at timestamptz,
+  p_plan_months int default null, p_amount_cents bigint default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare v_uid uuid; r public.referrals;
+begin
+  if p_kind not in ('payment', 'cancel_requested', 'resumed', 'cancelled') or p_event_id is null or p_customer_id is null then
+    return jsonb_build_object('status', 'bad_input');
+  end if;
+  select s.user_id into v_uid from public.subscriptions s where s.stripe_customer_id = p_customer_id limit 1;
+  if v_uid is null then return jsonb_build_object('status', 'no_user'); end if;
+  select * into r from public.referrals where user_id = v_uid and status = 'attributed';
+  if not found then return jsonb_build_object('status', 'not_referred'); end if;
+  insert into public.referral_events (referral_id, kind, stripe_event_id, occurred_at, plan_months, amount_cents)
+  values (r.id, p_kind, p_event_id, p_occurred_at, p_plan_months, p_amount_cents)
+  on conflict do nothing;
+  if not found then return jsonb_build_object('status', 'duplicate'); end if;
+  return jsonb_build_object('status', 'recorded');
 end $$;
 
 -- ── a refund / credit note / lost dispute → a negative row against the original payment ───────────────────
@@ -167,17 +209,54 @@ begin
 end $$;
 
 -- ── read functions for the portal ───────────────────────────────────────────────────────────────────────────
--- A partner's statement lines for one calendar quarter: anonymous client ID, what the client paid, the commission.
-create or replace function public.partner_statement_lines(p_period date)
-returns table (occurred_at timestamptz, anon_id text, kind text, paid_cents bigint, commission_cents bigint, status text)
+-- Referred clients as the partner sees them: anonymous ID, current plan (latest payment), and whether they are cancelling.
+-- (Return type changed from 20261110, so the old function is dropped first.)
+drop function if exists public.partner_referrals();
+create function public.partner_referrals()
+returns table (anon_id text, signed_up_at timestamptz, subscription_status text, plan_months int, plan_amount_cents bigint, cancel_state text)
 language sql stable security definer set search_path = public as $$
-  select ce.occurred_at, substr(md5(coalesce(r.user_id, r.id)::text), 1, 8), ce.kind, ce.gross_cents - ce.tax_cents, ce.commission_cents, ce.status
-  from public.commission_entries ce
-  join public.partners p on p.id = ce.partner_id and p.user_id = auth.uid()
-  join public.referrals r on r.id = ce.referral_id
-  where ce.period_start = p_period
-  order by ce.occurred_at;
+  select substr(md5(coalesce(r.user_id, r.id)::text), 1, 8), r.signed_up_at, coalesce(s.status, 'none'),
+    lp.plan_months, lp.amount_cents,
+    case lc.kind when 'cancel_requested' then 'requested' when 'cancelled' then 'ended' else null end
+  from public.referrals r
+  join public.partners p on p.id = r.partner_id and p.user_id = auth.uid()
+  left join public.subscriptions s on s.user_id = r.user_id
+  left join lateral (select e.plan_months, e.amount_cents from public.referral_events e
+                      where e.referral_id = r.id and e.kind = 'payment' order by e.occurred_at desc limit 1) lp on true
+  left join lateral (select e.kind from public.referral_events e
+                      where e.referral_id = r.id and e.kind in ('cancel_requested', 'resumed', 'cancelled') order by e.occurred_at desc limit 1) lc on true
+  where r.status = 'attributed'
+  order by r.signed_up_at desc;
 $$;
+revoke all on function public.partner_referrals() from public, anon;
+grant execute on function public.partner_referrals() to authenticated;
+
+-- A partner's statement lines for one calendar quarter: every payment (first / renewal), refund and cancellation event,
+-- with the client's anonymous ID and plan.
+create or replace function public.partner_statement_lines(p_period date)
+returns table (occurred_at timestamptz, anon_id text, kind text, plan_months int, paid_cents bigint, commission_cents bigint, status text)
+language sql stable security definer set search_path = public as $$
+  with mine as (select p.id from public.partners p where p.user_id = auth.uid()),
+  money as (
+    select ce.occurred_at, ce.referral_id,
+      case when ce.kind = 'reversal' then 'reversal'
+           when row_number() over (partition by ce.referral_id order by ce.occurred_at) = 1 and ce.kind = 'payment' then 'first'
+           else 'renewal' end as kind,
+      ce.plan_months, ce.gross_cents - ce.tax_cents as paid_cents, ce.commission_cents, ce.status, ce.period_start
+    from public.commission_entries ce where ce.partner_id in (select id from mine)),
+  events as (
+    select e.occurred_at, e.referral_id, e.kind, e.plan_months, 0::bigint as paid_cents, 0::bigint as commission_cents, ''::text as status,
+           public.affiliate_quarter_start(e.occurred_at) as period_start
+    from public.referral_events e join public.referrals r on r.id = e.referral_id
+    where r.partner_id in (select id from mine) and e.kind <> 'payment')
+  select u.occurred_at, substr(md5(coalesce(r.user_id, r.id)::text), 1, 8), u.kind, u.plan_months, u.paid_cents, u.commission_cents, u.status
+  from (select * from money union all select * from events) u
+  join public.referrals r on r.id = u.referral_id
+  where u.period_start = p_period
+  order by u.occurred_at;
+$$;
+revoke all on function public.partner_statement_lines(date) from public, anon, authenticated;
+grant execute on function public.partner_statement_lines(date) to authenticated;
 
 -- Admin: what is owed to each partner right now, and the payouts so far.
 create or replace function public.admin_payout_overview()
@@ -199,11 +278,12 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 -- ── privileges ────────────────────────────────────────────────────────────────────────────────────────────────────
-revoke all on function public.affiliate_record_payment(text, text, text, text, bigint, bigint, timestamptz, text, bigint),
-  public.affiliate_record_reversal(text, text, text, text, text, bigint, timestamptz),
+revoke all on function public.affiliate_record_payment(text, text, text, text, bigint, bigint, timestamptz, text, bigint, int),
+  public.affiliate_record_reversal(text, text, text, text, text, bigint, timestamptz), public.affiliate_record_lifecycle(text, text, text, timestamptz, int, bigint),
   public.affiliate_create_payout(uuid, date), public.affiliate_mark_payout_paid(uuid, text), public.affiliate_void_payout(uuid),
   public.partner_statement_lines(date), public.admin_payout_overview(), public.admin_payouts() from public, anon, authenticated;
-grant execute on function public.affiliate_record_payment(text, text, text, text, bigint, bigint, timestamptz, text, bigint),
-  public.affiliate_record_reversal(text, text, text, text, text, bigint, timestamptz) to service_role;
+grant execute on function public.affiliate_record_payment(text, text, text, text, bigint, bigint, timestamptz, text, bigint, int),
+  public.affiliate_record_reversal(text, text, text, text, text, bigint, timestamptz),
+  public.affiliate_record_lifecycle(text, text, text, timestamptz, int, bigint) to service_role;
 grant execute on function public.affiliate_create_payout(uuid, date), public.affiliate_mark_payout_paid(uuid, text), public.affiliate_void_payout(uuid),
   public.partner_statement_lines(date), public.admin_payout_overview(), public.admin_payouts() to authenticated;
