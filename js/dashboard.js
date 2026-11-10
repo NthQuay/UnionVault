@@ -191,6 +191,28 @@ function _invitedGuestIdSet(){
   return invited;
 }
 
+/* ── Updated Terms & Privacy notice ─────────────────────────────────────────────
+   Shown on the dashboard to signed-in users until they press Agree or close it (x). The choice is stored with the
+   account settings (so it does not reappear on another device) together with the version and time. Bump
+   _TERMS_VERSION whenever the Terms change in a way users must be told about. */
+const _TERMS_VERSION = '2026-11';
+function _termsBannerHtml(){
+  if(typeof _sbSession==='undefined' || !_sbSession) return '';
+  const a = STATE.settings && STATE.settings.termsAck;
+  if(a && a.v===_TERMS_VERSION) return '';
+  return `<div class="uv-terms-banner" id="uv-terms-banner" role="region" aria-label="Updated Terms and Privacy Policy">
+    <div class="utb-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+    <div class="utb-txt"><strong>We\u2019ve updated our Terms &amp; Privacy Policy</strong><span>New sections cover Recommended vendors, vendor referral commissions, and what we record when you use a vendor link. <a href="#" onclick="event.preventDefault();_openTermsModal()">Read what\u2019s changed</a></span></div>
+    <div class="utb-btns"><button class="utb-agree" onclick="_termsAck('agree')">Agree</button><button class="utb-x" onclick="_termsAck('dismiss')" aria-label="Dismiss" title="Dismiss">\u00d7</button></div>
+  </div>`;
+}
+function _termsAck(how){
+  STATE.settings = STATE.settings || {};
+  STATE.settings.termsAck = { v:_TERMS_VERSION, how:how, at:new Date().toISOString() };
+  try{ saveToStorage(); }catch(_){}
+  const el = document.getElementById('uv-terms-banner'); if(el) el.remove();
+}
+
 function renderDashboard(c, actions){
   // Edit layout toggle button
   actions.innerHTML = `
@@ -772,7 +794,7 @@ function renderDashboard(c, actions){
     if(_uvTier==='trial' && _uvTrialDaysLeft>0) _subBanner=`<div class="uv-trial-banner"><span><strong>${_uvTrialDaysLeft} day${_uvTrialDaysLeft===1?'':'s'} left</strong> in your free trial</span><button onclick="_uvOpenSubPage()">Upgrade now</button></div>`;
     else if(_uvTier==='free') _subBanner=`<div class="uv-upgrade-card-dash"><div class="uv-dash-title">Unlock Full Access</div><div class="uv-dash-sub">Get unlimited guests, seating plans, print &amp; export, and more</div><button onclick="_uvOpenSubPage()">Upgrade now</button></div>`;
   }
-  c.innerHTML = _subBanner + heroHtml + editBarHtml + `<div id="dash-widgets">` + widgetsHtml + `</div>` + visionHtml;
+  c.innerHTML = _termsBannerHtml() + _subBanner + heroHtml + editBarHtml + `<div id="dash-widgets">` + widgetsHtml + `</div>` + visionHtml;
   setTimeout(()=>{ requestAnimationFrame(_fitDashNextUp); _ensureDashNextUpObserver(); }, 0);
 }
 
