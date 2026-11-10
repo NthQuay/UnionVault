@@ -1,5 +1,5 @@
 # HANDOFF — Session 19
-*Written 2026-11-10 · `NthQuay/UnionVault` `main` = live build **v513.2** · vendor portal repo `NthQuay/UnionVault-vendors` (live at https://vendors.unionvault.app, HTTPS enforced)*
+*Updated 2026-11-10 (evening) · `NthQuay/UnionVault` `main` = build **v513.5** (see §8 about its deploy)  · vendor portal repo `NthQuay/UnionVault-vendors` (live at https://vendors.unionvault.app, HTTPS enforced)*
 
 Read `CLAUDE.md` first (standing facts). This file is what changed in session 19 and what is next.
 
@@ -16,6 +16,14 @@ Read `CLAUDE.md` first (standing facts). This file is what changed in session 19
 | v512.1–v513.0 | Outbound vendor links go through the `vendor-click` edge function (tracked); call/email taps send a ping; Storyline has Website + Contact form + Call + Email (no booking URL). |
 | v513.1 | Recommended vendors now load from the database (`recommended_vendors()`); the array in `js/invitations.js` is only an offline fallback; last good list cached in localStorage (`uv_vlu_cache_v1`). Signed-in clicks carry a short-lived signed click token (`ct`) so the admin can see which account clicked. |
 | v513.2 | New Terms & Privacy text (sections 1–14) in `index.html` and `maintenance.html`; dashboard notice with **Agree** only (no ×): shown to accounts created before 2026-11-10 10:00 UTC until they press Agree; stored as `STATE.settings.termsAck = {v:'2026-11', how:'agree', at}`. To re-notify after a future Terms change, bump `_TERMS_VERSION` in `js/dashboard.js`. The Terms text lives in `index.html` (`#lp-terms-modal`) and `maintenance.html` (`#terms-modal`); the matching plain-text version is not stored in the repo. |
+
+
+### Later builds (same day)
+| Build | What shipped |
+|---|---|
+| v513.3 | `js/ref.js` (new, in `sw.js` SHELL): remembers `?ref=<code>` for 90 days, claims it with `claim_referral` after the first sign-in. **Verified live**: a test sign-up through `/?ref=storyline` was attributed to Storyline. Note the app does not sign people in after email confirmation — the claim happens at their first sign-in. |
+| v513.4 | Terms notice: the saved session has no account creation date, so it is fetched once from `/auth/v1/user` (cached in `uv_acct_created`); notice hidden until known, never shown to accounts created after 2026-11-10 10:00 UTC. |
+| v513.5 | Merge of another Claude session's branch `claude/wizardly-lovelace-6ahlux`: ACCC referral-commission disclosure line on the sign-up tab (`.auth-disclosure`), website badge no longer hidden behind Editorial/Atelier sections, website gallery photos can be dropped to reorder. Build numbers were the only conflict. |
 
 Pushing to `main` works from the session (`git push origin HEAD:main`) — v513.2 went out that way after the user's explicit "Accept". Still honour the rule: previews in light + dark, wait for Accept, then push.
 
@@ -61,16 +69,15 @@ Apply order, all done: `20261110_affiliate_schema` (main repo) → `20261111_ven
 5. Phase 2 (mocked, not built): couple-facing full vendor page (cover photo, gallery, bio, packages, reviews) and in-app messaging to vendors with an inbox tab in the portal. The listing fields it needs (photos, bio, packages) already exist and are exposed by `recommended_vendors()`.
 6. Update `docs/CLAUDE_CODE_CONTEXT.md` if it still describes the old hard-coded vendor list.
 
-## 6. NEXT: commission & payout system (parked, schema already live)
+## 6. Commission & payout system — BUILT and LIVE (waiting for the first real payment)
 
-Already in the database (no data yet): `partners`, `referrals` (unique per user, never overwritten), `commission_entries` (ledger; unique indexes make Stripe webhook retries harmless: `stripe_event_id`, one `payment` per `stripe_invoice_id`, refund / credit-note / dispute ids), `payouts` (per calendar quarter, Brisbane time), `stripe_events`, `claim_referral(code, clicked_at)`, `partner_summary/partner_referrals/partner_statements`, `affiliate_settings` (90-day attribution window, 72-hour new-account window, default basis `ex_tax`). RLS tests: `supabase/tests/affiliate_rls.sql`.
-
-Still to build:
-- **Referral capture** (`js/ref.js`, new file → add to `SHELL` in `sw.js`): read `?ref=<code>` on landing, store code + click time in localStorage (90 days), call `claim_referral` after sign-up/first sign-in. Terms already disclose this storage.
-- **`stripe-webhook` edge function** (service role): verify signature; record in `stripe_events`; on `invoice.paid` write a `payment` ledger row (rate and basis snapshotted from the partner, `period_start` via `affiliate_quarter_start`); on `charge.refunded`, `credit_note.created`, `charge.dispute.*` write negative `reversal` rows pointing at the original entry. **Skip partners whose `rate` is NULL**, referrals not `attributed`, and self-referrals. Only the first payment cycle vs recurring — **decision needed** (commission on every renewal or the first N months).
-- **Partner statements tab** in the vendors portal using `partner_statements()`; **admin payouts** view: create a draft payout per partner per quarter, mark paid with a reference (sets entries `paid`).
-- Tests (extend `affiliate_rls.sql` + a webhook unit test), README section, and a dry run against Stripe test mode before any real money.
-- Known design points: ledger rows are never edited, only reversed; amounts in integer cents; commission basis `ex_tax` unless a partner says otherwise; payouts quarterly in arrears.
+- **Rule (Storyline counter-proposal, 10 Nov):** 20% of each referred client's subscription payments, recurring for as long as they stay subscribed (`partners.commission_months` NULL = no limit); attribution 90 days; payout quarterly in arrears; not covered: existing accounts, self-referrals, couples who book through the vendor listing. A partner with a NULL rate earns nothing (Jordan). The 5% booking referral fee and quarterly netting in the proposal are **phase 2** (needs in-app enquiries) and are not built.
+- **Database (`20261117_commission_engine.sql`, applied):** `affiliate_record_payment` (service role), `affiliate_record_reversal` (refund / credit-note / lost-dispute rows, negative, point at the original payment, capped so nothing reverses twice), `affiliate_record_lifecycle` + table `referral_events` (payments with plan, cancellation requested / resumed / ended — recorded for every attributed referral whatever the rate), `affiliate_create_payout` / `affiliate_mark_payout_paid` / `affiliate_void_payout` (admin only), `partner_referrals()` (anonymous ID, plan, cancel state), `partner_statement_lines(quarter)` (first payment / renewal / refund / cancellation lines), `admin_payout_overview`, `admin_payouts`. Rounding is half away from zero ($12.99 × 20% = $2.60). Ledger rows are never edited.
+- **Stripe:** live webhook endpoint `we_1UWr0pBK4MlrXpHgFx064t01` (API version `2026-10-28.endive`) now sends `invoice.paid`, `charge.refunded`, `charge.dispute.closed`, `credit_note.created` in addition to the four subscription events. Edge function `stripe-webhook` **v10** (`index.ts` + `commission.ts`) handles them; whole-event idempotency in `stripe_events`. The plan is read from the invoice line (or fetched from the price on newer API shapes). **Not yet exercised by a real payment** — watch the first one in the function logs (`commission affiliate_record_payment …`).
+- **Vendors portal (branch `claude/portal-payouts` in `NthQuay/UnionVault-vendors`, must be merged to that repo's `main`):** Referrals tab → plan per anonymous client ("Month-to-month · $12.99/mo", "3-month · $10.39/mo"), status Paying / Cancelling / Cancelled, quarterly statements with every line; admin **Payouts** tab (create draft for the last finished quarter, mark paid with a reference, cancel draft). Wording: "20% of referred users' subscription fees".
+- **Tests:** `node supabase/tests/commission_engine.test.mjs` (69 checks on the real migrations in PGlite — `npm install --no-save @electric-sql/pglite` first) and `node --experimental-strip-types supabase/tests/stripe_commission_test.mts`.
+- **Not built / ideas:** admin per-partner ledger with the referred person's real email, plan and events (the admin currently sees totals and payouts only); a guard that blocks payouts until a partner has accepted an agreement (agreement text is still empty by design); emailing partners their statements.
+- **Test data:** one test referral exists (`admin@nthquay.com` → Storyline, attributed, no payments). Remove it after the test account is deleted so Ben's portal doesn't count it.
 
 ## 7. Working notes / gotchas
 
@@ -79,3 +86,9 @@ Still to build:
 - The click-token design exists because tracked links can't send an Authorization header and a login token must never sit in a URL.
 - Scratchpad paths change between worker restarts (`/tmp/claude-0/-home-user…` vs `-home-user-UnionVault…`).
 - Previews and mock-ups from this session: `docs/sessions/*.png`.
+
+## 8. State at the end of this session
+- `main` = merge of PR #16 (v513.5). **GitHub Pages deploy of that merge timed out** (build succeeded, "Deploy to GitHub Pages" step hit its 10-minute limit — same as PR #14 earlier; direct pushes deployed fine). It was re-run; if the live `sw.js` still says an older `CACHE`, use "Re-run failed jobs" on the run in the Actions tab or push any small commit.
+- Sample-data mode (`?demo=vendor|admin`) in the vendor portal is **kept on purpose** — the owner will fine-tune the portal with it.
+- The vendor-list disclosure wording ("UnionVault may earn a commission…") is kept deliberately: the 5% booking fee is expected to be agreed; revisit if that part of the deal falls through.
+- Do not ask about Ben's commission rate — the owner will say if it changes (database currently 20% for Storyline, NULL for Jordan).
