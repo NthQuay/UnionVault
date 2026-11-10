@@ -6473,13 +6473,26 @@ section.b-center .faq details{position:relative}
 .faq-static .faq-i:last-child{border-bottom:none}
 .faq-static .faq-i b{font-family:${t2.headFont};font-size:${sch(19)}px;font-weight:500;display:block;color:${t2.item};margin-bottom:4px}
 .faq-static .faq-i p{margin:0}
-footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-spacing:.14em;text-transform:uppercase;color:${t2.text};opacity:.7;border-top:1px solid ${t2.heading}12}
+footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-spacing:.14em;text-transform:uppercase;color:${t2.text};border-top:1px solid ${t2.heading}12}
+/* The couple-name caption's own fade. This used to sit on <footer> itself, which also wraps
+   .madewith — but ANY opacity below 1 makes an element a stacking context AND a containing
+   block for its position:fixed descendants (same family as transform/filter), so the badge's
+   "fixed to the viewport" stopped meaning the viewport: it meant "fixed to footer's box",
+   compared for paint order only against footer's own (otherwise empty) local stack. Harmless
+   while every section was plain, unpositioned flow — but Editorial/Atelier's fx-spread photos
+   and copy panels carry their OWN explicit z-index (2–3), which (correctly) beats footer's
+   now-trapped badge every time, because the badge's z-index:50 was never being compared
+   against them at all. Moving the fade onto just the caption text keeps <footer> itself inert. */
+.footer-names{opacity:.7}
 /* The attribution lockup. The mark holds its OWN colours and its OWN font — it does not
    take the couple's. A mark that renders in their heading colour and their heading font is
    not a mark; it is a label, and it is a different label on every site. Only the LABEL
    above it ("Website made with") is theirs, because that is their sentence, not our name. */
 .madewith{margin-top:${sp(22)}px;display:flex;flex-direction:column;align-items:center;gap:8px;text-transform:none;letter-spacing:0}
-body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;margin-top:0;padding:34px 18px 16px;background:linear-gradient(to top, ${t2.background||t2.page} 0, ${t2.background||t2.page} calc(100% - 34px), transparent 100%)}
+/* opacity:.7 here (not on <footer>) reproduces the fixed badge's old inherited fade without
+   the trap above. Scoped to top-nav only: the side-nav badge lives in <nav>, not <footer> —
+   it was never faded, and shouldn't newly become so. */
+body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;margin-top:0;padding:34px 18px 16px;opacity:.7;background:linear-gradient(to top, ${t2.background||t2.page} 0, ${t2.background||t2.page} calc(100% - 34px), transparent 100%)}
 @media(max-height:400px){body:not(.sidenav) .madewith{position:static;background:none;padding:0;margin-top:${sp(22)}px}}
 .mw-lbl{font-family:${t2.bodyFont};font-size:${scb(10)}px;letter-spacing:.08em;color:${t2.text};opacity:.75}
 .mw-lock{display:inline-flex;align-items:center;gap:7px}
@@ -6666,7 +6679,7 @@ ${nav?`<nav>${nav}${t2.navPos==='side'?`<div class="sidebar-names">${_escHtml(_w
   </div><a class="sb-collapsed-crest" href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault"><img src="${brand.crest==='dark'?WB_CREST_DARK:WB_CREST_LIGHT}" alt="" width="20" height="18"/></a>`:''}</nav>`:''}
 ${t2.navPos==='side'?`<div class="site-content"><main>${blocks}</main></div>`:`<main>${blocks}</main>
 <footer>
-  ${_escHtml(_wbCouple())}
+  <span class="footer-names">${_escHtml(_wbCouple())}</span>
   ${w.brandOff ? '' : `<div class="madewith">
     <span class="mw-lbl">Website made with</span>
     <a class="mw-lock" href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault" style="text-decoration:none">
