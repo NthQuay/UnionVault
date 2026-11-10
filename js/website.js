@@ -2253,18 +2253,16 @@ function _wbGalleryBody(){
           ? `<span onclick="event.stopPropagation();_wbGalleryDeleteUpload('${it.id}')" title="Remove this uploaded photo"
                style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer">✕</span>`
           : '';
-        // v149: picked tiles are draggable to reorder within w.gallery. A real drag doesn't
-        // fire a click, so tap-to-toggle and drag-to-reorder don't collide. A small grip badge
+        // v149: picked tiles reorder within w.gallery via pointer events (mouse AND touch —
+        // HTML5 drag-and-drop never fires drop on a touch device, so a phone drag just
+        // floated with nowhere to land). A real drag suppresses the tap-to-toggle click that
+        // follows pointerup, so dragging and tapping don't collide. A small grip badge
         // (bottom-left on picked, non-upload tiles; uploads already use bottom-left for tags —
         // there the grip goes top-right beside nothing, so we place it top-left-ish safely).
-        const dragAttrs = on ? `draggable="true"
-          ondragstart="_wbGalDragStart(event,'${it.id}')"
-          ondragover="_wbGalDragOver(event,'${it.id}')"
-          ondrop="_wbGalDrop(event,'${it.id}')"
-          ondragend="_wbGalDragEnd(event)"` : '';
+        const dragAttrs = on ? `onpointerdown="_wbGalPD(event,'${it.id}')"` : '';
         const grip = on ? `<span class="wb-gal-grip" title="Drag to reorder" style="position:absolute;bottom:4px;right:4px;width:19px;height:19px;border-radius:5px;background:rgba(0,0,0,.42);color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></span>` : '';
-        return `<button type="button" data-galid="${it.id}" onclick="_wbGalleryPick('${it.id}')" ${dragAttrs} style="position:relative;padding:0;border:3px solid ${on?'var(--gold)':'transparent'};border-radius:8px;overflow:hidden;cursor:${on?'grab':'pointer'};aspect-ratio:1;background:var(--surface)">
+        return `<button type="button" class="wb-tile" data-galid="${it.id}" onclick="_wbGalleryPick('${it.id}')" ${dragAttrs} style="position:relative;padding:0;border:3px solid ${on?'var(--gold)':'transparent'};border-radius:8px;overflow:hidden;cursor:${on?'grab':'pointer'};aspect-ratio:1;background:var(--surface);touch-action:${on?'none':'auto'}">
           <img src="${url}" alt="${_escHtml(it.title||'')}" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none"/>
           ${on?`<span style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px">✓</span>`:''}
           ${delX}
@@ -2276,50 +2274,95 @@ function _wbGalleryBody(){
     <div style="font-size:10.5px;color:var(--muted);margin-top:9px;line-height:1.5">Uploaded photos are website-only. Tap <b style="color:var(--gold-deep)">＋ Inspiration</b> on one to add it to your Inspiration gallery too.</div>`;
   return intro+grid;
 }
+let _wbGalSuppressClick=false;
 function _wbGalleryPick(id){
+  if(_wbGalSuppressClick) return;               // a real drag just ended on this tile
   const g=_wbSite().gallery;
   const i=g.indexOf(id);
   if(i>=0) g.splice(i,1); else g.push(id);
   saveToStorage();
   _wbGalleryRefresh();
 }
-// ── Gallery reorder (drag picked tiles within w.gallery) ──────────────────────
-// Only picked tiles are draggable; w.gallery IS the order the site renders, so a drop
-// splices the dragged id in front of the drop target. A real drag suppresses the click,
-// so this never accidentally toggles a photo off.
-let _wbGalDragId=null;
-function _wbGalDragStart(e,id){
-  _wbGalDragId=id;
-  try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',id); }catch(_){}
-  const btn=e.currentTarget; if(btn) btn.style.opacity='.45';
+// ── Gallery reorder (pointer events, mouse AND touch) ─────────────────────────
+// Only picked tiles reorder; w.gallery IS the order the site renders, so a drop splices
+// the dragged id in front of the drop target. HTML5 drag-and-drop never fires drop on a
+// touch device, so this mirrors the _wbTP tile-reorder pattern used for image blocks:
+// mouse drags past a few pixels, touch presses and holds ~0.25s first (so a scroll swipe
+// isn't mistaken for a drag). A real drag suppresses the click that follows pointerup, so
+// dragging never also toggles the photo off.
+let _wbGP=null;
+function _wbGalPD(e,id){
+  if(e.pointerType==='mouse'&&e.button!==0) return;
+  _wbGalPDEnd();
+  const tile=e.currentTarget;
+  _wbGP={id,tile,x:e.clientX,y:e.clientY,pid:e.pointerId,touch:e.pointerType!=='mouse',on:false,ghost:null,over:null,timer:null};
+  const t=_wbGP;
+  if(t.touch) t.timer=setTimeout(()=>_wbGalPStart(),260);
+  document.addEventListener('pointermove',_wbGalPMove);
+  document.addEventListener('pointerup',_wbGalPUp);
+  document.addEventListener('pointercancel',_wbGalPCancel);
 }
-function _wbGalDragOver(e,id){
-  if(_wbGalDragId==null || id===_wbGalDragId) return;
-  e.preventDefault();                          // allow the drop
-  try{ e.dataTransfer.dropEffect='move'; }catch(_){}
-  const shell=document.getElementById('wb-gallery-shell');
-  if(shell) shell.querySelectorAll('[data-galid]').forEach(b=>{ if(b!==e.currentTarget) b.style.outline=''; });
-  const btn=e.currentTarget;
-  if(btn){ btn.style.outline='2px dashed var(--gold)'; btn.style.outlineOffset='-2px'; }
+function _wbGalPStart(){
+  const t=_wbGP; if(!t||t.on) return;
+  t.on=true;
+  t.tile.classList.add('wb-tile-drag');
+  const g=t.tile.cloneNode(true); g.classList.remove('wb-tile-drag');
+  g.style.cssText='position:fixed;z-index:100000;width:'+t.tile.offsetWidth+'px;height:'+t.tile.offsetHeight+'px;pointer-events:none;opacity:.88;box-shadow:0 6px 18px rgba(0,0,0,.35);border-radius:8px;transform:scale(1.08)';
+  document.body.appendChild(g); t.ghost=g;
+  _wbGalPPlace(t.x,t.y);
+  try{ navigator.vibrate&&navigator.vibrate(12); }catch(_){}
 }
-function _wbGalDrop(e,targetId){
+function _wbGalPPlace(x,y){
+  const t=_wbGP; if(!t||!t.ghost) return;
+  t.ghost.style.left=(x-t.ghost.offsetWidth/2)+'px'; t.ghost.style.top=(y-t.ghost.offsetHeight/2)+'px';
+  const el=document.elementFromPoint(x,y);
+  const tl=el&&el.closest?el.closest('[data-galid]'):null;
+  document.querySelectorAll('.wb-tile-over').forEach(n=>n.classList.remove('wb-tile-over'));
+  // Only another PICKED tile is a valid drop target — w.gallery is the array being
+  // reordered, and dropping on an unpicked tile has no position within it.
+  t.over=(tl&&tl.dataset.galid!==t.id&&_wbSite().gallery.indexOf(tl.dataset.galid)>=0)?tl:null;
+  if(t.over) t.over.classList.add('wb-tile-over');
+}
+function _wbGalPMove(e){
+  const t=_wbGP; if(!t||e.pointerId!==t.pid) return;
+  if(!t.on){
+    const d=Math.hypot(e.clientX-t.x,e.clientY-t.y);
+    if(t.touch){ if(d>14){ _wbGalPDEnd(); } return; }   // finger moved first: it is a scroll, not a drag
+    if(d>5){ t.x=e.clientX; t.y=e.clientY; _wbGalPStart(); }
+    return;
+  }
   e.preventDefault();
-  const g=_wbSite().gallery;
-  const from=g.indexOf(_wbGalDragId), to=g.indexOf(targetId);
-  if(from<0 || to<0 || from===to){ _wbGalDragEnd(e); return; }
-  const [moved]=g.splice(from,1);
-  // Re-find the target index AFTER removal, then insert before it.
-  const t=g.indexOf(targetId);
-  g.splice(t<0?g.length:t, 0, moved);
-  saveToStorage();
-  _wbGalDragId=null;
-  _wbGalleryRefresh();                          // redraws grid in new order + repaints preview
+  _wbGalPPlace(e.clientX,e.clientY);
 }
-function _wbGalDragEnd(e){
-  _wbGalDragId=null;
-  // Clear any leftover drag styling across the grid.
-  const shell=document.getElementById('wb-gallery-shell');
-  if(shell) shell.querySelectorAll('[data-galid]').forEach(b=>{ b.style.opacity=''; b.style.outline=''; });
+function _wbGalPUp(e){
+  const t=_wbGP; if(!t||e.pointerId!==t.pid) return;
+  const targetId=t.on&&t.over?t.over.dataset.galid:null;
+  const {id,on}=t;
+  _wbGalPDEnd();
+  if(on){
+    _wbGalSuppressClick=true;
+    setTimeout(()=>{ _wbGalSuppressClick=false; },50);
+  }
+  if(targetId && targetId!==id){
+    const g=_wbSite().gallery;
+    const from=g.indexOf(id), to=g.indexOf(targetId);
+    if(from>=0 && to>=0 && from!==to){
+      const [moved]=g.splice(from,1);
+      const t2=g.indexOf(targetId);                // re-find the target index AFTER removal
+      g.splice(t2<0?g.length:t2, 0, moved);
+      saveToStorage();
+      _wbGalleryRefresh();                          // redraws grid in new order + repaints preview
+    }
+  }
+}
+function _wbGalPCancel(){ _wbGalPDEnd(); }
+function _wbGalPDEnd(){
+  const t=_wbGP; _wbGP=null;
+  document.removeEventListener('pointermove',_wbGalPMove);
+  document.removeEventListener('pointerup',_wbGalPUp);
+  document.removeEventListener('pointercancel',_wbGalPCancel);
+  if(t){ if(t.timer) clearTimeout(t.timer); if(t.ghost) t.ghost.remove(); t.tile&&t.tile.classList.remove('wb-tile-drag'); }
+  document.querySelectorAll('.wb-tile-over').forEach(n=>n.classList.remove('wb-tile-over'));
 }
 // Upload a new photo straight into the gallery (website-only). Reuses the shared
 // compressImage + _mediaPut pipeline, so it's stored and walked like every other image.
@@ -6430,13 +6473,26 @@ section.b-center .faq details{position:relative}
 .faq-static .faq-i:last-child{border-bottom:none}
 .faq-static .faq-i b{font-family:${t2.headFont};font-size:${sch(19)}px;font-weight:500;display:block;color:${t2.item};margin-bottom:4px}
 .faq-static .faq-i p{margin:0}
-footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-spacing:.14em;text-transform:uppercase;color:${t2.text};opacity:.7;border-top:1px solid ${t2.heading}12}
+footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-spacing:.14em;text-transform:uppercase;color:${t2.text};border-top:1px solid ${t2.heading}12}
+/* The couple-name caption's own fade. This used to sit on <footer> itself, which also wraps
+   .madewith — but ANY opacity below 1 makes an element a stacking context AND a containing
+   block for its position:fixed descendants (same family as transform/filter), so the badge's
+   "fixed to the viewport" stopped meaning the viewport: it meant "fixed to footer's box",
+   compared for paint order only against footer's own (otherwise empty) local stack. Harmless
+   while every section was plain, unpositioned flow — but Editorial/Atelier's fx-spread photos
+   and copy panels carry their OWN explicit z-index (2–3), which (correctly) beats footer's
+   now-trapped badge every time, because the badge's z-index:50 was never being compared
+   against them at all. Moving the fade onto just the caption text keeps <footer> itself inert. */
+.footer-names{opacity:.7}
 /* The attribution lockup. The mark holds its OWN colours and its OWN font — it does not
    take the couple's. A mark that renders in their heading colour and their heading font is
    not a mark; it is a label, and it is a different label on every site. Only the LABEL
    above it ("Website made with") is theirs, because that is their sentence, not our name. */
 .madewith{margin-top:${sp(22)}px;display:flex;flex-direction:column;align-items:center;gap:8px;text-transform:none;letter-spacing:0}
-body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;margin-top:0;padding:34px 18px 16px;background:linear-gradient(to top, ${t2.background||t2.page} 0, ${t2.background||t2.page} calc(100% - 34px), transparent 100%)}
+/* opacity:.7 here (not on <footer>) reproduces the fixed badge's old inherited fade without
+   the trap above. Scoped to top-nav only: the side-nav badge lives in <nav>, not <footer> —
+   it was never faded, and shouldn't newly become so. */
+body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;margin-top:0;padding:34px 18px 16px;opacity:.7;background:linear-gradient(to top, ${t2.background||t2.page} 0, ${t2.background||t2.page} calc(100% - 34px), transparent 100%)}
 @media(max-height:400px){body:not(.sidenav) .madewith{position:static;background:none;padding:0;margin-top:${sp(22)}px}}
 .mw-lbl{font-family:${t2.bodyFont};font-size:${scb(10)}px;letter-spacing:.08em;color:${t2.text};opacity:.75}
 .mw-lock{display:inline-flex;align-items:center;gap:7px}
@@ -6623,7 +6679,7 @@ ${nav?`<nav>${nav}${t2.navPos==='side'?`<div class="sidebar-names">${_escHtml(_w
   </div><a class="sb-collapsed-crest" href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault"><img src="${brand.crest==='dark'?WB_CREST_DARK:WB_CREST_LIGHT}" alt="" width="20" height="18"/></a>`:''}</nav>`:''}
 ${t2.navPos==='side'?`<div class="site-content"><main>${blocks}</main></div>`:`<main>${blocks}</main>
 <footer>
-  ${_escHtml(_wbCouple())}
+  <span class="footer-names">${_escHtml(_wbCouple())}</span>
   ${w.brandOff ? '' : `<div class="madewith">
     <span class="mw-lbl">Website made with</span>
     <a class="mw-lock" href="https://unionvault.app" target="_blank" rel="noopener" aria-label="Union Vault" style="text-decoration:none">
