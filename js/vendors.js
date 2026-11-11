@@ -636,7 +636,7 @@ async function _generateVendorToken(){
     window.__vbEmailCtx={ to:_vemail, vendorName:name, briefUrl:fullLink, expiryDisplay:expiryDisplay||'', mailto:_mailto };
     const _emailBtn=_vemail
       ? `<button class="btn btn-outline btn-sm" id="vbm-email-btn" onclick="_sendVendorBriefEmailNow(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg> Email vendor</button>`
-      : `<a class="btn btn-outline btn-sm" href="${_mailto}" style="text-decoration:none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg> Email vendor</a>`;
+      : `<span style="font-size:11.5px;color:var(--muted);align-self:center">Add an email address to this vendor to send the brief from UnionVault.</span>`;
     const body = document.getElementById('vbm-body');
     if(body) body.innerHTML = `
       <div class="vbm-title">Link created ✓</div>
@@ -664,12 +664,10 @@ async function _generateVendorToken(){
   }
 }
 // Send the just-created vendor brief link via UnionVault (branded email, same Design
-// settings as every other comms email); falls back to the mailto draft on any failure,
-// same pattern as the RSVP send sheet.
+// settings as every other comms email). On failure it says so and offers a retry.
 async function _sendVendorBriefEmailNow(btn){
   const ctx=window.__vbEmailCtx; if(!ctx) return;
-  const fallback=()=>{ window.location.href=ctx.mailto; };
-  if(!_sbSession){ fallback(); return; }
+  if(!_sbSession){ if(typeof _showInfoToast==='function') _showInfoToast('Sign in to send emails from UnionVault.', null, null); return; }
   if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
   const ed=(typeof _commsDesignFor==='function'?_commsDesignFor('vbrief'):((STATE.settings&&STATE.settings.emailDesign)||{}));
   const vbText=(STATE.settings&&STATE.settings.commsText&&STATE.settings.commsText.vendorBrief)||{};
@@ -693,9 +691,8 @@ async function _sendVendorBriefEmailNow(btn){
     if(typeof _showInfoToast==='function') _showInfoToast('Brief emailed to '+ctx.to+'.', null, null);
     return;
   }
-  if(btn){ btn.disabled=false; btn.textContent='Email vendor'; }
-  if(typeof _showInfoToast==='function') _showInfoToast('Couldn\'t send from UnionVault — opening your mail app instead.', null, null);
-  fallback();
+  if(btn){ btn.disabled=false; btn.textContent='Try again'; }
+  if(typeof _showInfoToast==='function') _showInfoToast('Couldn\'t send — check your connection and try again.', null, null);
 }
 
 // Revoke (delete) a vendor token.
@@ -835,7 +832,7 @@ function _vendorCardHtml(v){
   const lines=[];
   if(v.contact) lines.push(`<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);margin-top:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${esc(v.contact)}</div>`);
   if(v.phone && !st.vcHidePhone){ const tel=String(v.phone).replace(/[^+\d]/g,''); lines.push(`<div style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><a href="tel:${esc(tel)}"${_vluSavedPingAttr(v,'call')} style="color:var(--gold-deep);text-decoration:underline;word-break:break-all">${esc(v.phone)}</a></div>`); }
-  if(v.email && !st.vcHideEmail) lines.push(`<div style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:6px;word-break:break-all"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg><a href="mailto:${esc(v.email)}"${_vluSavedPingAttr(v,'email')} style="color:var(--gold-deep);text-decoration:underline">${esc(v.email)}</a></div>`);
+  if(v.email && !st.vcHideEmail) lines.push(`<div style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:6px;word-break:break-all"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg><a href="#" data-vm-email="${esc(v.email)}" data-vm-name="${esc(v.contact||v.business||'')}" data-vm-ping="${_vluPreferredFor(v)?esc(v.lookupId||''):''}" onclick="event.preventDefault();openVendorMessageFrom(this)" style="color:var(--gold-deep);text-decoration:underline">${esc(v.email)}</a></div>`);
   if(v.address && !st.vcHideAddress) lines.push(`<div style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><a href="${esc(_mapsUrl(v.address))}" target="_blank" rel="noopener noreferrer" style="color:var(--gold-deep);text-decoration:underline;word-break:break-word">${esc(v.address)}</a></div>`);
   if(v.website && !st.vcHideWebsite){ const url=esc(_normalizeUrl(v.website)); lines.push(`<div style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><a href="${esc(_vluSavedWebHref(v,_normalizeUrl(v.website)))}" target="_blank" rel="noopener noreferrer" style="color:var(--gold-deep);text-decoration:underline;word-break:break-all">${esc(_urlDomain(v.website))}</a></div>`); }
   if(v.hours && !st.vcHideHours) lines.push(`<div style="display:flex;align-items:flex-start;gap:7px;font-size:12px;margin-top:6px;color:var(--ink)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span style="white-space:pre-line">${esc(v.hours)}</span></div>`);
@@ -1067,7 +1064,7 @@ function _budgetVendorBadges(target, bid, sid){
 function _budgetVendorBadgePopup(vendorId, bid, sid){
   const v=(STATE.vendors||[]).find(x=>x.id===vendorId); if(!v) return;
   const sm=_vendorStatusMeta(v.status); const esc=_escHtml;
-  const line=(icon,val,href)=>val?`<div style="font-size:12px;color:var(--ink);display:flex;align-items:center;gap:7px;margin-top:6px">${icon}${href?`<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:var(--gold-deep);text-decoration:underline;word-break:break-word">${esc(val)}</a>`:`<span style="word-break:break-word">${esc(val)}</span>`}</div>`:'';
+  const line=(icon,val,href)=>val?`<div style="font-size:12px;color:var(--ink);display:flex;align-items:center;gap:7px;margin-top:6px">${icon}${href&&href.startsWith('mailto:')?`<a href="#" data-vm-email="${esc(val)}" data-vm-name="${esc(v.contact||v.business||'')}" onclick="event.preventDefault();openVendorMessageFrom(this)" style="color:var(--gold-deep);text-decoration:underline;word-break:break-word">${esc(val)}</a>`:href?`<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:var(--gold-deep);text-decoration:underline;word-break:break-word">${esc(val)}</a>`:`<span style="word-break:break-word">${esc(val)}</span>`}</div>`:'';
   const phoneIcon='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
   const pinIcon='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
   const mailIcon='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>';
@@ -2490,7 +2487,7 @@ function _apptShowDetails(ctx, a){
     const tel=String(a.phone).replace(/[^+\d]/g,'');
     rowHtml.push(`<div>${labelSpan('Phone')} · <a href="tel:${esc(tel)}" onclick="event.stopPropagation()" style="color:var(--gold-deep);text-decoration:underline">${esc(a.phone)}</a></div>`);
   }
-  if(a.email) rowHtml.push(`<div style="word-break:break-all">${labelSpan('Email')} · <a href="mailto:${esc(a.email)}" onclick="event.stopPropagation()" style="color:var(--gold-deep);text-decoration:underline">${esc(a.email)}</a></div>`);
+  if(a.email) rowHtml.push(`<div style="word-break:break-all">${labelSpan('Email')} · <a href="#" data-vm-email="${esc(a.email)}" data-vm-name="${esc(a.contact||a.business||'')}" onclick="event.preventDefault();event.stopPropagation();openVendorMessageFrom(this)" style="color:var(--gold-deep);text-decoration:underline">${esc(a.email)}</a></div>`);
   if(a.website) rowHtml.push(`<div style="word-break:break-all">${labelSpan('Website')} · <a href="${esc(_normalizeUrl(a.website))}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:var(--gold-deep);text-decoration:underline">${esc(_urlDomain(a.website))}</a></div>`);
   if(Number(a.fee)>0) rowHtml.push(`<div>${labelSpan('Fee')} · ${esc(fmt(Number(a.fee)))}</div>`);
   const detailRows=rowHtml.join('');
@@ -2960,16 +2957,20 @@ function _apptEmailSend(){
         <div style="font-size:12px;color:var(--muted)">${list}</div>
       </div>`, doneFooter);
     } else {
-      // Fallback: open mailto + download ics
-      // Fallback for whoever couldn't be emailed directly: mail-app draft + .ics download.
+      // Nothing opens in the user's mail app: say who didn't get it and offer a retry.
       const flist=failed.map(e=>_escHtml(e)).join(', ');
-      if(task&&a){ _apptDownloadIcs(task,a); _apptOpenEmailDraft(task,a,failed); }
-      openConfirm2('Invite ready', `<div style="display:flex;align-items:flex-start;gap:10px">
-        <span style="width:30px;height:30px;border-radius:50%;background:rgba(92,138,78,.16);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--green,#5C8A4E)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-        <div style="font-size:13.5px;color:var(--ink);line-height:1.5">${failed.length<recips.length?`Sent to ${recips.length-failed.length} of ${recips.length}. `:''}Email draft opened for <strong>${flist}</strong>. Open the downloaded .ics file to add the appointment to your calendar.</div>
-      </div>`, doneFooter);
+      window.__apptRetry={task,a,failed};
+      openConfirm2('Couldn\'t send', `<div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="width:30px;height:30px;border-radius:50%;background:rgba(180,60,50,.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red,#B43C32);font-weight:700">!</span>
+        <div style="font-size:13.5px;color:var(--ink);line-height:1.5">${failed.length<recips.length?`Sent to ${recips.length-failed.length} of ${recips.length}. `:''}Couldn't send to <strong>${flist}</strong>. Check your connection and try again.</div>
+      </div>`, `<button class="btn btn-outline btn-sm" onclick="_closeConfirm2Direct()">Close</button> <button class="btn btn-primary btn-sm" onclick="_apptRetrySend()">Try again</button>`);
     }
   });
+}
+function _apptRetrySend(){
+  const r=window.__apptRetry; if(!r) return;
+  _apptEmailTask=r.task; _apptEmailAppt=r.a; _apptEmailRecips=r.failed.slice();
+  _apptEmailSend();
 }
 // ── Appointment fee → budget offer (per appointment) ──
 let _apptFeeTaskId=null, _apptFeeApptId=null;
@@ -3162,8 +3163,18 @@ function _renderApptEmailPreview(){
   </div>`;
   const footer=`<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Close</button>
     <button class="btn btn-outline btn-sm" onclick="_apptDownloadIcs(_apptPreviewTask,_apptPreviewAppt)">Download .ics</button>
-    <button class="btn btn-primary btn-sm" onclick="_apptOpenEmailDraft(_apptPreviewTask,_apptPreviewAppt,_apptPreviewAppt.recipients)">Open email draft</button>`;
+    <button class="btn btn-primary btn-sm" id="apv-test-btn" onclick="_apptPreviewSendTest(this)">Send test to my email</button>`;
   openModal('Appointment email preview', body, footer);
+}
+async function _apptPreviewSendTest(btn){
+  const me=((STATE.settings&&STATE.settings.userEmail)||(_sbSession&&_sbSession.user&&_sbSession.user.email)||'').trim();
+  if(!me){ if(typeof _showInfoToast==='function') _showInfoToast('Add your email in Settings first.',null,null); return; }
+  if(!(_sbSession&&_sbSession.access_token)){ if(typeof _showInfoToast==='function') _showInfoToast('Sign in to send emails from UnionVault.',null,null); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+  try{ await _sbEnsureFreshToken(); }catch(_){}
+  const failed=await _apptEmailSendViaEdge(_apptPreviewTask,_apptPreviewAppt,[me]);
+  if(btn){ btn.disabled=false; btn.textContent=failed.length?'Try again':'Sent ✓ — send again'; }
+  if(typeof _showInfoToast==='function') _showInfoToast(failed.length?'Couldn\'t send the test — try again.':'Test email sent to '+me+'.',null,null);
 }
 function _apptPreviewRefresh(){
   const t=_apptPreviewTask, a=_apptPreviewAppt; if(!t) return;

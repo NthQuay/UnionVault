@@ -956,26 +956,31 @@ function rsvpNudgeText(gid){
   if(!num) return;
   window.location.href=`sms:${num}?&body=${encodeURIComponent(msg)}`;
 }
-function rsvpNudgeEmail(gid){
-  const g=STATE.guests.find(x=>x.id===gid); if(!g) return;
-  const ev=STATE.event||{};
-  const couple=[ev.partner1,ev.partner2].filter(Boolean).join(' & ');
-  const subject=couple?`RSVP — ${couple}`:'RSVP reminder';
-  const msg=_rsvpNudgeMessage(g);
-  window.location.href=`mailto:${encodeURIComponent(g.email||'')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
+// Nudges go out from UnionVault (invites@unionvault.app, replies to the couple) as the branded
+// RSVP reminder — one email per household, never via the user's own mail app.
+async function rsvpNudgeEmail(gid){
+  const btn=document.getElementById('nudge-em-'+gid);
+  const sk=_bsSlotKeyForGuest(gid); const row=sk&&_bsRowFor('reminder',sk);
+  if(!(_sbSession&&_sbSession.access_token)){ if(typeof _showInfoToast==='function') _showInfoToast('Sign in to send emails from UnionVault.',null,null); return; }
+  if(!row||!row.addrs){ if(typeof _showInfoToast==='function') _showInfoToast(row&&row.reason==='bounced'?'That address bounced before — try another way to reach them.':'No email address on file.',null,null); return; }
+  // a nudge goes to the guest it was tapped for; if they have no usable address of their own, to the household
+  row.addrs.forEach(a=>{ a.on=(a.guestId===gid); }); if(!row.addrs.some(a=>a.on)) row.addrs.forEach(a=>{ a.on=true; });
+  if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+  try{ await _sbEnsureFreshToken(); }catch(_){}
+  const r=await _bsSendOne(row,'reminder');
+  if(r.ok){
+    _bsRecord('reminder',sk); if(typeof saveToStorage==='function') saveToStorage();
+    if(btn){ btn.textContent='Sent ✓'; }
+    if(typeof _showInfoToast==='function') _showInfoToast('Reminder sent to '+row.addrs.filter(a=>a.on).map(a=>a.email).join(', ')+'.',null,null);
+  } else {
+    if(btn){ btn.disabled=false; btn.textContent='Retry'; }
+    if(typeof _showInfoToast==='function') _showInfoToast('Couldn\'t send — '+(r.error||'try again')+'. Tap Retry.',null,null);
+  }
 }
 function rsvpNudgeEmailAll(){
-  const ev=STATE.event||{};
-  const couple=[ev.partner1,ev.partner2].filter(Boolean).join(' & ');
-  const dateStr=ev.date?fmtDate(ev.date):'';
-  const recips=_rsvpNudgeList().filter(g=>(g.email||'').trim()).map(g=>g.email.trim());
-  if(!recips.length){ alert('None of the awaiting guests have an email on file.'); return; }
-  const subject=couple?`RSVP — ${couple}`:'RSVP reminder';
-  const occasion=couple?`${couple}'s wedding`:'our wedding';
-  const whenBit=dateStr?` on ${dateStr}`:'';
-  const body=`Hi, we're finalising numbers for ${occasion}${whenBit}. Could you let us know if you'll be able to join us? We'd love to have you there.`;
-  // Use BCC so addresses stay private.
-  window.location.href=`mailto:?bcc=${encodeURIComponent(recips.join(','))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const keys=[...new Set(_rsvpNudgeList().filter(g=>(g.email||'').trim()).map(g=>_bsSlotKeyForGuest(g.id)).filter(Boolean))];
+  if(!keys.length){ if(typeof _showInfoToast==='function') _showInfoToast('None of the awaiting guests have an email on file.',null,null); return; }
+  openBulkSend('reminder', keys);
 }
 function openRsvpNudge(){
   const list=_rsvpNudgeList();
@@ -985,7 +990,7 @@ function openRsvpNudge(){
     const email=String(g.email||'').trim();
     let btn, contact, contactCol='var(--muted)';
     if(phone){ btn=`<button class="btn btn-outline btn-sm" onclick="rsvpNudgeText('${g.id}')" style="gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Text</button>`; contact=phone; }
-    else if(email){ btn=`<button class="btn btn-outline btn-sm" onclick="rsvpNudgeEmail('${g.id}')" style="gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>Email</button>`; contact=email; }
+    else if(email){ btn=`<button class="btn btn-outline btn-sm" id="nudge-em-${g.id}" onclick="rsvpNudgeEmail('${g.id}')" style="gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>Email</button>`; contact=email; }
     else { btn=`<button class="btn btn-sm" style="opacity:.55;cursor:not-allowed" disabled>—</button>`; contact='No phone or email on file'; contactCol='var(--red)'; }
     return `<div style="display:flex;align-items:center;gap:11px;padding:9px 10px;border:.5px solid var(--border);border-radius:11px;margin-bottom:7px">
         <div style="width:32px;height:32px;border-radius:50%;background:var(--surface);color:var(--gold-deep);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">${_rsvpNudgeInitials(g.name)}</div>
@@ -994,7 +999,7 @@ function openRsvpNudge(){
       </div>`;
   }).join(''):`<div style="text-align:center;color:var(--muted);padding:26px 10px"><div style="font-size:14px;color:var(--ink);margin-bottom:4px">Everyone's responded.</div><div style="font-size:12.5px">No guests are awaiting a reply right now.</div></div>`;
   const bulk=emailable?`<button class="btn btn-primary" style="width:100%;justify-content:center;gap:6px;margin-top:6px" onclick="rsvpNudgeEmailAll()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Email everyone with an address (${emailable})</button>`:'';
-  const intro=list.length?`<div style="font-size:12px;color:var(--muted);margin-bottom:13px">Send a friendly nudge — the message is pre-filled, you just hit send.</div>`:'';
+  const intro=list.length?`<div style="font-size:12px;color:var(--muted);margin-bottom:13px">Send a friendly nudge. Emails go straight from UnionVault; texts open your Messages app pre-filled.</div>`:'';
   openModal('Still awaiting reply', intro+rows+bulk, `<button class="btn btn-outline btn-sm" onclick="closeModalDirect()">Close</button>`);
   // The modal title is set via textContent, so inject the count pill as rich HTML after.
   const _nt=document.getElementById('modal-title');
@@ -1654,7 +1659,10 @@ async function _loadOnlineRsvps(){
 function renderRsvpMgr(c, actions){
   // Combined RSVP & Invites page. Topbar: invite-mode toggle + manage guests.
   if(actions){
-    actions.innerHTML=`<button class="btn btn-sm btn-outline rsvp-invites-btn" onclick="openRsvpNudge()" title="Chase guests who haven't responded" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
+    actions.innerHTML=`<button class="btn btn-sm btn-outline rsvp-invites-btn" onclick="openBulkSendMenu()" title="Email save the dates, invitations or reminders to everyone at once" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      <span class="rsvp-invites-label">Send all</span>
+    </button><button class="btn btn-sm btn-outline rsvp-invites-btn" onclick="openRsvpNudge()" title="Chase guests who haven't responded" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span class="rsvp-invites-label">Nudge</span>
     </button>

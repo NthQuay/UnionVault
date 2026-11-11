@@ -32,7 +32,7 @@ serve(async (req) => {
   }
 
   let body: {
-    to: string[]; subject: string; body: string; ics?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string; htmlText?: string; signature?: string[]; toNames?: string[]
+    to: string[]; subject: string; body: string; ics?: string; fromName?: string; replyTo?: string; kicker?: string; title?: string; htmlText?: string; signature?: string[]; toNames?: string[]; logKind?: string
     templateId?: string; designOpts?: { accentColor?: string; fontFamily?: string; bodyFont?: string; showLogo?: boolean; headerImage?: string }; preview?: boolean
   }
   try { body = await req.json() } catch {
@@ -50,8 +50,10 @@ serve(async (req) => {
   }
 
   // "Liam & Amanda <appointments@unionvault.app>", replies to the couple.
+  // Plain messages to a vendor / contact (logKind 'other') come from messages@ and are filed as "message", not "appointment".
+  const isMessage = body.logKind === 'other'
   const name = String(fromName ?? '').replace(/[<>"\r\n]/g, '').trim().slice(0, 80) || 'UnionVault'
-  const payload: Record<string, unknown> = { from: `${name} <${FROM_ADDR}>`, to, subject, text }
+  const payload: Record<string, unknown> = { from: `${name} <${isMessage ? 'messages@unionvault.app' : FROM_ADDR}>`, to, subject, text }
   const rt = EMAIL_RE.test(String(replyTo ?? '')) ? String(replyTo) : user.email
   if (rt) payload.reply_to = rt
   const sigLines = Array.isArray(signature) ? signature.map((l) => String(l).slice(0, 200)).slice(0, 4) : []
@@ -120,7 +122,7 @@ serve(async (req) => {
   const sent = await r.json().catch(() => ({})) as { id?: string }
   const names = Array.isArray(body.toNames) ? body.toNames.map((n) => String(n ?? '').slice(0, 120)) : []
   await logSent(SB_URL, SB_SERVICE, to.map((email, i) => ({
-    couple_id: user.id, kind: 'appointment', subject, to_email: String(email), to_name: names[i] || null,
+    couple_id: user.id, kind: isMessage ? 'other' : 'appointment', subject, to_email: String(email), to_name: names[i] || null,
     from_name: name, resend_id: sent.id || null, html: payload.html,
   })))
   return new Response(JSON.stringify({ ok: true }), {

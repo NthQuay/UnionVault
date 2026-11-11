@@ -7,7 +7,7 @@
 // fetched only when "View email" is tapped, never with the list.
 
 const _SL_KINDS={
-  savedate:'Save the date', invite:'Invite', reminder:'RSVP reminder', vendor:'Vendor brief',
+  savedate:'Save the date', invite:'Invite', reminder:'RSVP reminder', vendor:'Vendor brief', other:'Message',
   appointment:'Appointment', confirm:'RSVP confirmation', ww:'Wishing Well details', other:'Email',
 };
 // Filter chips on the Sent tab. Vendors covers briefs and appointments together.
@@ -66,7 +66,7 @@ function _slFiltered(){
   return (_slRows||[]).filter(r=>{
     if(_slGuest && !_slGuestMatch(r,g)) return false;
     if(_slKind==='auto' && !r.automatic) return false;
-    if(_slKind==='vendors' && !(r.kind==='vendor'||r.kind==='appointment')) return false;
+    if(_slKind==='vendors' && !(r.kind==='vendor'||r.kind==='appointment'||r.kind==='other')) return false;
     if(['savedate','invite','reminder'].includes(_slKind) && r.kind!==_slKind) return false;
     if(q && !((r.to_name||'')+' '+(r.to_email||'')+' '+(r.subject||'')).toLowerCase().includes(q)) return false;
     return true;
@@ -151,7 +151,7 @@ function _slOpen(id, overGuest){
     <dl class="sl-kv">
       <dt>Subject</dt><dd>${_escHtml(r.subject||'—')}</dd>
       <dt>To</dt><dd>${_escHtml(r.to_name?r.to_name+' · '+r.to_email:r.to_email)}</dd>
-      <dt>From</dt><dd>${_escHtml((r.from_name||'UnionVault')+' · '+(r.kind==='appointment'||r.kind==='vendor'?'appointments':r.automatic?'notifications':'invites')+'@unionvault.app')}</dd>
+      <dt>From</dt><dd>${_escHtml((r.from_name||'UnionVault')+' · '+(r.kind==='other'?'messages':r.kind==='appointment'||r.kind==='vendor'?'appointments':r.automatic?'notifications':'invites')+'@unionvault.app')}</dd>
       <dt>Sent</dt><dd>${_escHtml(_slFull(d))}</dd>
       ${r.automatic?`<dt>Type</dt><dd>Sent automatically</dd>`:''}
     </dl>
