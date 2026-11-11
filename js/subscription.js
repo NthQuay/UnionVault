@@ -140,7 +140,7 @@ function _uvShowUpgradeModal(feature){
       </div>
       <div class="uv-upgrade-title">Unlock ${_escH(label)}</div>
       <div class="uv-upgrade-sub">This feature is available with Full Access.${
-        isTrialEligible ? ' Start your 14-day free trial — no payment required upfront.' : ''
+        isTrialEligible ? ' Your first 14 days are free — you won\'t be charged until the trial ends, and you can cancel anytime.' : ''
       }</div>
       <div class="uv-upgrade-feats">
         <div class="uv-upgrade-feat">&#10003; Unlimited guests with dietary &amp; meal tracking</div>
