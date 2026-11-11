@@ -351,6 +351,24 @@ let _groupBannerExpiry=0;        // epoch ms when the banner auto-clears (5 min 
 let _groupBannerTimer=null;      // setTimeout handle for the auto-clear
 const _GROUP_BANNER_MS=5*60*1000;// keep the suggestion bar for at least 5 minutes
 
+// "Keep separate": pairs the user has rejected, stored as sorted "idA|idB" keys so the same two
+// guests are never suggested as a couple/household again (survives re-imports and reloads).
+function _grPairKey(a,b){ return a<b ? a+'|'+b : b+'|'+a; }
+function _grIsRejected(a,b){ return (STATE.groupRejects||[]).indexOf(_grPairKey(a,b))>=0; }
+function _grKeepSeparate(sid){
+  const s=_grFind(sid); if(!s) return;
+  if(!Array.isArray(STATE.groupRejects)) STATE.groupRejects=[];
+  const ids=s.memberIds.slice();
+  for(let a=0;a<ids.length;a++) for(let b=a+1;b<ids.length;b++){
+    const k=_grPairKey(ids[a],ids[b]); if(STATE.groupRejects.indexOf(k)<0) STATE.groupRejects.push(k);
+  }
+  _groupSuggestions=_groupSuggestions.filter(x=>x.id!==sid);
+  saveToStorage();
+  if(typeof _showInfoToast==='function') _showInfoToast('Got it \u2014 we won\'t suggest grouping them again.', null, null);
+  if(!_groupSuggestions.length){ _groupReviewOpen=false; closeModalDirect(); if(_currentPage==='guests') renderGuestList(); }
+  else _grRender();
+}
+
 // Build suggestion groups from the freshly-imported guest ids.
 // Suggestion shape: { id, kind:'couple'|'family'|'plusone', memberIds:[...], looseIds:[...],
 //   confidence:'high'|'low', reason:'amp'|'address'|'surname'|'plusone', surname, accepted:bool,
@@ -480,6 +498,18 @@ function _buildGroupSuggestions(addedIds){
       memberIds:ids, looseIds:[], confidence:'low', reason:'surname',
       surname:members[0].name.split(/\s+/).pop(), accepted:false });
   });
+
+  // Never re-suggest pairs the user has said to keep separate (STATE.groupRejects, saved with the guest list).
+  for(let i=out.length-1;i>=0;i--){
+    const s=out[i];
+    if(s.kind==='plusone' || s.reason==='amp') continue;
+    let ids=s.memberIds.slice();
+    for(let a=0;a<ids.length;a++){ for(let b=a+1;b<ids.length;b++){
+      if(_grIsRejected(ids[a],ids[b])){ ids.splice(b,1); b--; }
+    } }
+    if(ids.length<2){ out.splice(i,1); continue; }
+    if(ids.length!==s.memberIds.length){ s.memberIds=ids; if(ids.length===2) s.kind='couple'; }
+  }
 
   // Never suggest a couple pairing where any member is marked child or infant.
   for(let i=out.length-1;i>=0;i--){
@@ -736,7 +766,11 @@ function _grCardHtml(s){
   } else if(!isCouple && memberCount===2 && (!s.couples||!s.couples.length)){
     actions=`<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px" onclick="_grDemoteCouple('${s.id}')">Make a couple instead</button>`;
   }
-  const actionRow=actions?`<div style="padding-left:25px;margin-top:8px">${actions}</div>`:'';
+  // Every real group (not an & split, which has its own "keep separate") can be rejected for good.
+  if(s.reason!=='amp' && s.memberIds.length>=2){
+    actions+=`<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px" title="Never suggest grouping these guests again" onclick="_grKeepSeparate('${s.id}')">Not a group \u2014 don't suggest again</button>`;
+  }
+  const actionRow=actions?`<div style="padding-left:25px;margin-top:8px;display:flex;gap:7px;flex-wrap:wrap">${actions}</div>`:'';
   const dim=tooSmall?'opacity:.6':'';
   const border=s.accepted?'1.5px solid var(--gold)':'1.5px solid var(--border)';
   const note=tooSmall?`<div style="padding-left:25px;font-size:10.5px;color:var(--muted);margin-top:6px">Drag a guest back in \u2014 a group needs at least two people.</div>`:'';
