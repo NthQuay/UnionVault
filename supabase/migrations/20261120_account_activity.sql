@@ -150,3 +150,7 @@ insert into public.account_events (user_id, email, kind, occurred_at, emailed_at
 select s.user_id, lower(u.email), 'subscribed', s.created_at, now(), jsonb_build_object('backfill', true, 'status', s.status)
 from public.subscriptions s join auth.users u on u.id = s.user_id
 where not exists (select 1 from public.account_events e where e.user_id = s.user_id and e.kind = 'subscribed');
+
+-- Follow-up (applied as account_activity_trial_fix): the free trial now starts when someone subscribes
+-- (Stripe trialing), not at signup, so "trial" in admin_accounts() comes from the subscription only and
+-- admin_account_detail().trial_ends is the subscription's trial_end. See compute_tier().
