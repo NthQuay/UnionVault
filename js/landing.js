@@ -140,13 +140,11 @@ async function _lpSignIn() {
 async function _lpSignUp() {
   var email = (document.getElementById('auth-up-email').value || '').trim();
   var pw = document.getElementById('auth-up-pw').value || '';
-  var pw2 = document.getElementById('auth-up-pw2').value || '';
   var errEl = document.getElementById('lp-up-err');
   var btn = document.getElementById('lp-up-btn');
   errEl.style.display = 'none'; errEl.style.color = '#c0392b';
   if(!email || !pw){ errEl.textContent = 'Please fill in all fields.'; errEl.style.display = ''; return; }
   if(pw.length < 8){ errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = ''; return; }
-  if(pw !== pw2){ errEl.textContent = "Passwords don't match."; errEl.style.display = ''; return; }
   btn.disabled = true; btn.textContent = 'Creating account…';
   var r = await _sbSignUp(email, pw);
   btn.disabled = false; btn.textContent = 'Create free account';
