@@ -654,7 +654,18 @@ function renderTimeline(c, actions){
                 <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:500;color:var(--ink);line-height:1.2">${it.title||'Untitled'}</span>
                 ${it.pub?'':`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><title>Hidden from guests</title><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`}
               </div>
-              <span style="flex-shrink:0;font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${cat.color};background:${cat.dot}1A;padding:3px 8px;border-radius:20px;white-space:nowrap">${cat.label}</span>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+                <span style="font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${cat.color};background:${cat.dot}1A;padding:3px 8px;border-radius:20px;white-space:nowrap">${cat.label}</span>
+                ${STATE.timelines && STATE.timelines.length>1 ? `<span style="position:relative">
+                  <button type="button" onclick="event.stopPropagation();_tlToggleMoveMenu(event,'${it.id}')" title="Move to another timeline" aria-label="Move to another timeline" aria-haspopup="true" style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--muted);padding:0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+                  </button>
+                  <div id="tl-mv-${it.id}" class="tl-mv-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:40;min-width:170px;background:var(--cream);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 20px rgba(26,26,24,.14);overflow:hidden">
+                    <div style="padding:8px 12px 5px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Move to</div>
+                    ${STATE.timelines.filter(t=>t.id!==STATE.activeTimelineId).map(t=>`<button type="button" onclick="event.stopPropagation();_tlMoveItem('${it.id}','${t.id}')" style="width:100%;background:none;border:none;cursor:pointer;padding:9px 12px;text-align:left;font-size:12.5px;font-family:inherit;color:var(--ink);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(t.name)}</button>`).join('')}
+                  </div>
+                </span>` : ''}
+              </div>
             </div>
             ${meta.length?`<div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-size:12.5px;color:var(--muted)">
               ${it.location?`<span style="display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${it.location}</span>`:''}
@@ -932,6 +943,36 @@ function saveTimelineItem(editId){
   }
   _tlSyncActiveItems();
   saveToStorage(); closeModalDirect(); navigate('timeline');
+}
+// ── Quick "Move to timeline" menu, per moment row ──────────────────────────────
+// A small arrow button beside each moment's category pill, so moving it to another
+// timeline doesn't require opening the full Edit Moment form (which also has this,
+// further down — this is the fast path for the same action).
+function _tlToggleMoveMenu(e, id){
+  if(e) e.stopPropagation();
+  const m=document.getElementById('tl-mv-'+id); if(!m) return;
+  const wasOpen=m.style.display==='block';
+  _tlCloseAllMoveMenus();
+  if(wasOpen) return;
+  m.style.display='block';
+  const close=ev=>{ if(!m.contains(ev.target)){ _tlCloseAllMoveMenus(); document.removeEventListener('click',close); } };
+  setTimeout(()=>document.addEventListener('click',close),0);
+}
+function _tlCloseAllMoveMenus(){
+  document.querySelectorAll('.tl-mv-menu').forEach(m=>{ m.style.display='none'; });
+}
+function _tlMoveItem(id, destId){
+  _tlCloseAllMoveMenus();
+  const idx=STATE.timeline.findIndex(x=>x.id===id);
+  if(idx===-1) return;
+  const dest=STATE.timelines.find(t=>t.id===destId);
+  if(!dest) return;
+  const [it]=STATE.timeline.splice(idx,1);
+  dest.items.push(it);
+  _tlSyncActiveItems();
+  saveToStorage();
+  navigate('timeline');
+  if(typeof _showInfoToast==='function') _showInfoToast('Moved "'+(it.title||it.time||'Moment')+'" to '+(dest.name||'the other timeline')+'.', null, null);
 }
 function deleteTimelineItem(id){
   const _t0=STATE.timeline.find(x=>x.id===id);
