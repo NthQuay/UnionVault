@@ -2360,16 +2360,18 @@ body.dark .tl-view-seg button{background:#24242A;color:#A2957A}
 body.dark .tl-view-seg button+button{border-left-color:#6E6450}
 body.dark .tl-view-seg button.active{background:#A2957A;color:#1B1A1E}
 
-/* Song chip on run-sheet rows */
-.song-chip{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:6px 10px;background:var(--surface);border:.5px solid var(--border);border-radius:9px;font-size:12px;max-width:100%}
+/* Song chip(s) on run-sheet rows — one per tagged song, stacked. A chip with a link is an
+   <a> (the whole chip, not just .sc-play) and gets a hover/focus cue; one without is a plain div. */
+.song-chip{display:flex;align-items:center;gap:6px;margin-top:9px;padding:6px 10px;background:var(--surface);border:.5px solid var(--border);border-radius:9px;font-size:12px;max-width:100%;text-decoration:none;color:inherit}
 .song-chip .sc-note{width:15px;height:15px;flex-shrink:0;color:var(--gold-deep)}
 .song-chip .sc-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .song-chip .sc-title{font-weight:600;color:var(--ink)}
 .song-chip .sc-artist{color:var(--muted)}
 .song-chip .sc-start{flex-shrink:0;font-size:10.5px;font-weight:600;color:var(--gold-deep);background:rgba(139,115,85,.12);padding:1px 6px;border-radius:20px}
 body.dark .song-chip .sc-start{background:rgba(196,168,130,.18)}
-.song-chip .sc-play{flex-shrink:0;color:var(--gold-deep);display:inline-flex;text-decoration:none}
-.song-multi{font-size:10.5px;color:var(--muted);margin-top:5px;padding-left:2px}
+.song-chip .sc-play{flex-shrink:0;color:var(--gold-deep);display:inline-flex}
+a.song-chip.sc-link{cursor:pointer}
+a.song-chip.sc-link:hover,a.song-chip.sc-link:focus-visible{border-color:var(--gold);background:rgba(139,115,85,.07)}
 
 /* Music view cards */
 .music-intro{color:var(--muted);font-size:13.5px;margin-bottom:20px;max-width:620px}
@@ -2388,11 +2390,17 @@ body.dark .music-card .mc-start{background:rgba(196,168,130,.18);color:var(--gol
 .music-card .mc-notes{margin-top:9px;font-size:12.5px;color:var(--muted);line-height:1.45;padding:8px 11px;background:var(--surface);border-radius:8px;border-left:2px solid var(--gold)}
 .music-count{font-size:12.5px;color:var(--muted);text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);max-width:620px}
 
-/* Song editor blocks in the moment form */
-.song-block{border:1px dashed var(--border);border-radius:10px;padding:13px;margin-top:8px;background:var(--surface)}
-.song-block-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.song-block-title{font-size:12px;font-weight:600;color:var(--gold-deep);display:inline-flex;align-items:center;gap:6px}
-.song-rm{border:none;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;border-radius:5px}
+/* Song rows in the moment form — compact summaries; full fields live in a secondary
+   (confirm2) modal opened via _tlEditSongBlock/tlAddSongBlock, not inline here, so adding
+   several songs doesn't grow the Edit Moment form tall. */
+.song-row{display:flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:9px;padding:2px 2px 2px 4px;margin-top:8px;background:var(--surface)}
+.song-row-main{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:9px 6px;text-align:left;font-family:inherit}
+.song-row-ico{flex-shrink:0;color:var(--gold-deep)}
+.song-row-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--ink)}
+.song-row-title{font-weight:600}
+.song-row-artist{color:var(--muted);font-weight:400}
+.song-row-cue{margin-left:8px;font-size:11px;color:var(--muted);font-style:italic}
+.song-rm{border:none;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:6px 8px;border-radius:5px;flex-shrink:0}
 .song-rm:hover{color:var(--red)}
 .add-song-btn{margin-top:4px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gold-deep);background:#FBF8F3;border:.5px solid #E3D7C4;border-radius:8px;padding:8px 14px;cursor:pointer}
 body.dark .add-song-btn{background:#24242A;border-color:#6E6450;color:var(--gold)}
@@ -2403,7 +2411,8 @@ body.dark .add-song-btn{background:#24242A;border-color:#6E6450;color:var(--gold
   .music-card{grid-template-columns:1fr;gap:6px}
   .music-card .mc-when{text-align:left;display:flex;align-items:baseline;gap:8px;padding-bottom:2px;border-bottom:1px solid var(--border);margin-bottom:4px}
   .music-card .mc-moment{margin-top:0}
-  .song-block .fr2{grid-template-columns:1fr!important}
+  .fr2{grid-template-columns:1fr!important}
+  .song-row-cue{display:block;margin-left:0;margin-top:1px}
 }
 
 /* ══ Invite / reminder method tracking ══ */
@@ -3156,11 +3165,6 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
   .uv-sp-row{grid-template-columns:minmax(0,1fr) 24px;gap:6px 8px}
   .uv-sp-row .uv-sp-lbl{grid-column:1/-1}
 }
-/* Timeline: location shortcuts under the Location field */
-.tl-loc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
-.tl-loc-chip{padding:4px 10px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:11.5px;cursor:pointer;font-family:inherit}
-.tl-loc-chip:hover{border-color:var(--gold)}
-.tl-loc-chip.on{border-color:var(--gold);color:var(--gold-deep);font-weight:600}
 /* Inspiration → Our style */
 .inspo-style-pills{display:flex;flex-wrap:wrap;gap:6px}
 .inspo-style-pill{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:12px;font-family:inherit;cursor:pointer;transition:all .14s}
