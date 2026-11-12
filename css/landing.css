@@ -81,7 +81,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 
 /* ══ HERO (split) ══ */
 .hero{display:grid;grid-template-columns:1fr 490px;min-height:calc(100vh - 60px);margin-top:60px}
-@media(max-width:860px){.hero{grid-template-columns:1fr}}
+@media(max-width:860px){.hero{grid-template-columns:1fr}.hero-right{order:-1}}
 
 .hero-left{
   background:var(--panel-bg);position:relative;overflow:hidden;
@@ -133,6 +133,8 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);display:flex;align-items:center}
 .btn-gold{width:100%;padding:13px;background:var(--gold);color:#fff;border:none;border-radius:8px;font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;letter-spacing:.03em;transition:background .15s;margin-top:6px}
 .btn-gold:hover{background:var(--gold-deep)}
+.trust-row{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin-top:12px}
+.trust-row span{font-size:11.5px;color:var(--muted);font-weight:500}
 .auth-links{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .auth-links a{font-size:13px;color:var(--gold);text-decoration:none}
 @keyframes lp-spin{to{transform:rotate(360deg)}}
@@ -156,6 +158,9 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #features{background:var(--cream);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .feat-img{margin-top:40px;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(74,63,53,.10);border:1px solid var(--border)}
 .feat-img img{display:block;width:100%;height:auto}
+.feat-links{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:24px}
+.feat-links a{font-size:12.5px;color:var(--gold-deep);text-decoration:none;font-weight:500}
+.feat-links a:hover{text-decoration:underline}
 
 /* ══ PRICING ══ */
 #pricing{background:var(--cream-mid);border-bottom:1px solid var(--border)}
