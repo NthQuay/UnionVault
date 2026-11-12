@@ -770,6 +770,17 @@ function loadFromStorage(){
       if(n.allergyNote) g.allergyNote=[g.allergyNote,n.allergyNote].filter(Boolean).join(', ');
       if(n.dietOther) g.dietOther=[g.dietOther,n.dietOther].filter(Boolean).join(', ');
     });
+    // Repeated dietary keys (e.g. ['allergy','allergy']) reached some guests via an RSVP
+    // carry-across bug: a submitted row holds both the bare checkbox token and its own
+    // ':<note>' detail as separate entries, and the old code mapped both straight to the
+    // same bare key with no de-dup — a duplicate chip on the guest list, and a double-count
+    // in the catering/allergy tally. Fixed at the source; this heals guests already saved
+    // with the duplicate. Idempotent — a no-op once the array holds no repeats.
+    (STATE.guests||[]).forEach(g=>{
+      if(!g || !Array.isArray(g.dietary) || g.dietary.length<2) return;
+      const deduped=[...new Set(g.dietary)];
+      if(deduped.length!==g.dietary.length) g.dietary=deduped;
+    });
     if(saved.checklist)  STATE.checklist = saved.checklist;
     if(saved.vendors)    STATE.vendors = saved.vendors;
     if(!Array.isArray(STATE.vendors)) STATE.vendors = [];

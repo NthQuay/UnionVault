@@ -1243,21 +1243,10 @@ function _orsvpRender(){
     document.querySelectorAll('#orsvp-stats .orsvp-stat').forEach(t=>t.classList.toggle('on', t.dataset.orsvpF===filter));
   }
   const _pdi=function(d){if(d&&d.startsWith('other:'))return'Other'+(d.slice(6)?' ('+d.slice(6)+')':'');if(d&&d.startsWith('allergy:'))return'Allergy'+(d.slice(8)?': '+d.slice(8):'');const m={vegetarian:'Vegetarian',pescatarian:'Pescatarian',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose int.',gluten:'Gluten int.',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut allergy'};return m[d]||d;};
-  // A submitted row can carry both the bare checkbox token ('allergy') and its free-text
-  // detail ('allergy:<note>') as two separate array entries — merge them into one token
-  // (detailed when a note was given) so the card/list views render a single chip instead
-  // of a duplicate bare one next to the detailed one.
-  const _mergeDietItems=function(items){
-    const detail={};
-    items.forEach(d=>{ if(d&&d.startsWith('allergy:'))detail.allergy=d.slice(8); else if(d&&d.startsWith('other:'))detail.other=d.slice(6); });
-    const seen=new Set();const base=[];
-    items.forEach(d=>{ if(!d||d.startsWith('allergy:')||d.startsWith('other:'))return; if(seen.has(d))return; seen.add(d); base.push(d); });
-    // A detail can in principle arrive with no matching bare token (e.g. a legacy row) —
-    // don't let it silently vanish, surface it as its own entry.
-    if(detail.allergy&&!base.includes('allergy'))base.push('allergy');
-    if(detail.other&&!base.includes('other'))base.push('other');
-    return base.map(d=>{ if(d==='allergy'&&detail.allergy)return'allergy:'+detail.allergy; if(d==='other'&&detail.other)return'other:'+detail.other; return d; });
-  };
+  // _mergeDietItems (utils.js): a submitted row can carry both the bare checkbox token
+  // ('allergy') and its free-text detail ('allergy:<note>') as two separate array entries —
+  // merged into one token so the card/list views render a single chip, not a duplicate bare
+  // one next to the detailed one.
   const _fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
   const _badge=st=>st==='yes'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(74,124,89,.1);color:var(--green);font-size:11px;font-weight:600;white-space:nowrap">✓ Attending</span>`:st==='no'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(192,57,43,.07);color:var(--red);font-size:11px;font-weight:600;white-space:nowrap">✗ Declined</span>`:'';
 
@@ -1591,14 +1580,20 @@ async function _loadOnlineRsvps(){
         }
         // Carry dietary across if the guest has none set
         if(Array.isArray(r.dietary)&&r.dietary.length&&(!g.dietary||!g.dietary.length)){
-          g.dietary=r.dietary.map(function(d){
+          // Merge the bare token + its own ':<note>' detail into one entry FIRST — r.dietary
+          // can hold both ('allergy' from the checkbox, 'allergy:Potato' from the typed
+          // detail), and mapping each straight to its bare key before merging produced
+          // ['allergy','allergy'] on the guest record (a visible duplicate chip, and a
+          // double-count in the catering/allergy tally).
+          const _merged=_mergeDietItems(r.dietary);
+          g.dietary=_merged.map(function(d){
             if(d&&d.startsWith('other:'))return'other';
             if(d&&d.startsWith('allergy:'))return'allergy';
             return d;
           });
-          const _oi=r.dietary.find(function(d){return d&&d.startsWith('other:');});
+          const _oi=_merged.find(function(d){return d&&d.startsWith('other:');});
           if(_oi&&!g.dietOther) g.dietOther=_oi.slice(6);
-          const _ai=r.dietary.find(function(d){return d&&d.startsWith('allergy:');});
+          const _ai=_merged.find(function(d){return d&&d.startsWith('allergy:');});
           if(_ai&&!g.allergyNote) g.allergyNote=_ai.slice(8);
           rowChanged=true;
         }
