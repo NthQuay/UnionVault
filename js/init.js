@@ -877,6 +877,10 @@ function _showVendorError(type){
       if(_bootCloud.saved.settings) Object.assign(STATE.settings, _bootCloud.saved.settings);
       ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','timelines','timelineCats','families','invites'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
       ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','groupRejects','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets','activeTimelineId'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
+      // This merge is the authoritative cloud copy for this account — safe to let the
+      // save below schedule auto-sync normally. This path never calls
+      // _autoSyncCheckOnBoot, so nothing else would clear the boot-race guard.
+      _autoSyncBootPending=false;
       saveToStorage();
       document.getElementById('welcome-overlay').classList.add('hidden');
       updateTopbarSub();
@@ -891,7 +895,9 @@ function _showVendorError(type){
         _showSetupModal();
       }
     } else {
-      // No cloud data for this account → show setup
+      // No cloud data for this account → show setup. Nothing to protect, and nothing
+      // else on this path would clear the boot-race guard.
+      _autoSyncBootPending=false;
       document.getElementById('welcome-overlay').classList.add('hidden');
       updateTopbarSub();
       navigate('dashboard');

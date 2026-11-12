@@ -114,6 +114,9 @@ async function _lpSignIn() {
       ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','timelines','timelineCats','families','invites'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
       ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','groupRejects','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets','activeTimelineId'].forEach(function(k){ if(cloudChk.saved[k]) STATE[k]=cloudChk.saved[k]; });
       saveToStorage();
+      // The cloud merge just above is the authoritative copy — this path never calls
+      // _autoSyncCheckOnBoot, so nothing else would clear the boot-race guard.
+      _autoSyncBootPending=false;
       if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
       if(typeof navigate !== 'undefined') navigate('dashboard');
       // Only skip setup if partner names were actually entered (guards against blank auto-saved state)
@@ -126,7 +129,9 @@ async function _lpSignIn() {
         _showSetupModal();
       }
     } else {
-      // No cloud data — show setup
+      // No cloud data — show setup. Nothing to protect (no real cloud copy exists yet),
+      // and nothing else on this path would clear the boot-race guard.
+      _autoSyncBootPending=false;
       if(typeof navigate !== 'undefined') navigate('dashboard');
       _showSetupModal();
     }
