@@ -145,9 +145,9 @@ function _rsvpWidgetDeadline(){
         <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">Your RSVP Link</span><span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Share link &amp; QR code</span></span>
         <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
       </button>
-      <button type="button" onclick="_openRsvpFormFieldsModal()" style="flex:1;min-width:140px;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
+      <button type="button" onclick="openRsvpDesignModal()" style="flex:1;min-width:140px;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;font-family:inherit">
         <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
-        <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">RSVP form fields</span><span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Choose what guests fill in</span></span>
+        <span style="min-width:0;flex:1"><span style="display:block;font-size:12px;color:var(--ink);line-height:1.3;font-weight:500">RSVP design</span><span style="display:block;font-size:9.5px;color:var(--muted);margin-top:1px;line-height:1.35">Appearance, form fields &amp; button labels</span></span>
         <span style="color:var(--sw-idle,#C9B89C);flex-shrink:0;font-size:15px;line-height:1">›</span>
       </button>
     </div>
@@ -183,8 +183,12 @@ function _openRsvpLinkModal(){
     if(el&&typeof QRCode!=='undefined'){ el.innerHTML=''; new QRCode(el,{text:url,width:160,height:160,colorDark:'#1A1A18',colorLight:'#ffffff'}); }
   },50);
 }
-function _openRsvpFormFieldsModal(){
-  openModal('RSVP form fields',_rsvpFormFieldsCardHtml(),'');
+// Appearance, form fields & button labels — the one place these are edited. The
+// website builder's RSVP section links here too (openWbRsvp() in js/website.js) rather
+// than keeping its own copy, so there's nowhere for the two to disagree.
+function openRsvpDesignModal(){
+  openModal('RSVP design',_rsvpDesignBodyHtml(),'');
+  setTimeout(_wbRsvpRefreshPreview,0);
 }
 function _rsvpDlToggle(e){
   e.stopPropagation();
@@ -279,6 +283,7 @@ function _rsvpSetField(key,prop,val){
   w.rsvp.fields[key][prop]=val;
   saveToStorage();
   navigate('rsvp-mgr');
+  _rsvpDesignRefresh();
 }
 function _rsvpCustomFieldAdd(){
   if(!STATE.settings) STATE.settings={};
@@ -286,6 +291,7 @@ function _rsvpCustomFieldAdd(){
   STATE.settings.rsvpCustomFields.push({id:'cf_'+uid(),label:'',type:'text',show:true,required:false});
   saveToStorage();
   navigate('rsvp-mgr');
+  _rsvpDesignRefresh();
   setTimeout(()=>{const inputs=document.querySelectorAll('[data-custom-field-input]');if(inputs.length)inputs[inputs.length-1].focus();},100);
 }
 function _rsvpCustomFieldUpdate(id,prop,val){
@@ -294,12 +300,14 @@ function _rsvpCustomFieldUpdate(id,prop,val){
   if(f) f[prop]=val;
   saveToStorage();
   navigate('rsvp-mgr');
+  _rsvpDesignRefresh();
 }
 function _rsvpCustomFieldRemove(id){
   if(!STATE.settings||!Array.isArray(STATE.settings.rsvpCustomFields)) return;
   STATE.settings.rsvpCustomFields=STATE.settings.rsvpCustomFields.filter(c=>c.id!==id);
   saveToStorage();
   navigate('rsvp-mgr');
+  _rsvpDesignRefresh();
 }
 function _rsvpFormFieldsCardHtml(){
   const flds=(_wbSite().rsvp||{}).fields||{};
@@ -1248,21 +1256,10 @@ function _orsvpRender(){
     document.querySelectorAll('#orsvp-stats .orsvp-stat').forEach(t=>t.classList.toggle('on', t.dataset.orsvpF===filter));
   }
   const _pdi=function(d){if(d&&d.startsWith('other:'))return'Other'+(d.slice(6)?' ('+d.slice(6)+')':'');if(d&&d.startsWith('allergy:'))return'Allergy'+(d.slice(8)?': '+d.slice(8):'');const m={vegetarian:'Vegetarian',pescatarian:'Pescatarian',vegan:'Vegan',halal:'Halal',kosher:'Kosher',lactose:'Lactose int.',gluten:'Gluten int.',allergy:'Allergy',other:'Other',glutenfree:'GF',dairyfree:'DF',nutallergy:'Nut allergy'};return m[d]||d;};
-  // A submitted row can carry both the bare checkbox token ('allergy') and its free-text
-  // detail ('allergy:<note>') as two separate array entries — merge them into one token
-  // (detailed when a note was given) so the card/list views render a single chip instead
-  // of a duplicate bare one next to the detailed one.
-  const _mergeDietItems=function(items){
-    const detail={};
-    items.forEach(d=>{ if(d&&d.startsWith('allergy:'))detail.allergy=d.slice(8); else if(d&&d.startsWith('other:'))detail.other=d.slice(6); });
-    const seen=new Set();const base=[];
-    items.forEach(d=>{ if(!d||d.startsWith('allergy:')||d.startsWith('other:'))return; if(seen.has(d))return; seen.add(d); base.push(d); });
-    // A detail can in principle arrive with no matching bare token (e.g. a legacy row) —
-    // don't let it silently vanish, surface it as its own entry.
-    if(detail.allergy&&!base.includes('allergy'))base.push('allergy');
-    if(detail.other&&!base.includes('other'))base.push('other');
-    return base.map(d=>{ if(d==='allergy'&&detail.allergy)return'allergy:'+detail.allergy; if(d==='other'&&detail.other)return'other:'+detail.other; return d; });
-  };
+  // _mergeDietItems (utils.js): a submitted row can carry both the bare checkbox token
+  // ('allergy') and its free-text detail ('allergy:<note>') as two separate array entries —
+  // merged into one token so the card/list views render a single chip, not a duplicate bare
+  // one next to the detailed one.
   const _fmt=iso=>{if(!iso)return'—';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
   const _badge=st=>st==='yes'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(74,124,89,.1);color:var(--green);font-size:11px;font-weight:600;white-space:nowrap">✓ Attending</span>`:st==='no'?`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:rgba(192,57,43,.07);color:var(--red);font-size:11px;font-weight:600;white-space:nowrap">✗ Declined</span>`:'';
 
@@ -1596,14 +1593,20 @@ async function _loadOnlineRsvps(){
         }
         // Carry dietary across if the guest has none set
         if(Array.isArray(r.dietary)&&r.dietary.length&&(!g.dietary||!g.dietary.length)){
-          g.dietary=r.dietary.map(function(d){
+          // Merge the bare token + its own ':<note>' detail into one entry FIRST — r.dietary
+          // can hold both ('allergy' from the checkbox, 'allergy:Potato' from the typed
+          // detail), and mapping each straight to its bare key before merging produced
+          // ['allergy','allergy'] on the guest record (a visible duplicate chip, and a
+          // double-count in the catering/allergy tally).
+          const _merged=_mergeDietItems(r.dietary);
+          g.dietary=_merged.map(function(d){
             if(d&&d.startsWith('other:'))return'other';
             if(d&&d.startsWith('allergy:'))return'allergy';
             return d;
           });
-          const _oi=r.dietary.find(function(d){return d&&d.startsWith('other:');});
+          const _oi=_merged.find(function(d){return d&&d.startsWith('other:');});
           if(_oi&&!g.dietOther) g.dietOther=_oi.slice(6);
-          const _ai=r.dietary.find(function(d){return d&&d.startsWith('allergy:');});
+          const _ai=_merged.find(function(d){return d&&d.startsWith('allergy:');});
           if(_ai&&!g.allergyNote) g.allergyNote=_ai.slice(8);
           rowChanged=true;
         }

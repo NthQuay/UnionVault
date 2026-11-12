@@ -1949,9 +1949,37 @@ function _wbRsvpRefreshPreview(){
 function openWbRsvp(){
   const url = _rsvpLink();
   const hasUid = !url.endsWith('?rsvp=true');
+  _wbPanel('RSVP', `<div style="display:flex;flex-direction:column;gap:16px">
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Share this link with your guests. When they open it they'll see a form to submit their RSVP — no login needed.</div>
+    ${hasUid
+      ? `<div style="display:flex;gap:8px;align-items:stretch">
+           <input readonly class="form-input" value="${_escHtml(url)}" id="rsvp-link-inp" style="flex:1;font-size:11.5px;cursor:text" onclick="this.select()"/>
+           <button type="button" class="btn btn-outline" onclick="_copyRsvpLink()" style="white-space:nowrap">Copy</button>
+         </div>`
+      : '<div style="color:var(--red);font-size:12.5px">Sign in to get your RSVP link.</div>'}
+
+    <button type="button" class="btn btn-outline" onclick="openRsvpDesignModal()" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Edit RSVP design
+    </button>
+    <div style="font-size:11px;color:var(--muted);margin-top:-10px">Appearance, form fields &amp; button labels — the same settings as RSVP &amp; Invites &rarr; RSVP design, edited in one place.</div>
+
+    ${_wbLayoutHtml('rsvp')}
+    ${_wbBlocksHtml('rsvp')}
+  </div>`,
+  `<button class="btn btn-outline" onclick="_wbNavGuard('guests')" style="margin-right:auto">View responses</button>
+   <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+   <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
+}
+// Shared "RSVP design" settings — Appearance (header/page style, colour scheme), Form
+// fields and Button labels. Used by BOTH the website builder's RSVP section (a link to
+// openRsvpDesignModal(), see openWbRsvp() above) and the RSVP & Invites page
+// (openRsvpDesignModal() in js/rsvp.js) — ONE modal, so there is nowhere left for these
+// settings to be edited twice with two different answers.
+function _rsvpDesignBodyHtml(){
   const w=_wbSite(), r=w.rsvp;
   const pSel=r.palette||'sage', sSel=r.headerStyle||'classic';
-  const fields=r.fields||{}, cc=r.customColors||{};
+  const cc=r.customColors||{};
   const pal=(STATE.inspo&&STATE.inspo.colors)||[];
 
   const styleCard=(id,label,svgBody)=>`<button type="button" id="rsvp-style-${id}" data-style="${id}"
@@ -1982,32 +2010,14 @@ function openWbRsvp(){
     </div>`;
   }).join('');
 
-  const fieldTog=(field,label)=>{
-    const on=field in fields?!!fields[field]:true;
-    return `<label class="tl-pub-row" style="padding:9px 10px;border-radius:0;cursor:pointer">
-      <span class="tl-pub-title">${label}</span>
-      <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
-        <input type="checkbox" ${on?'checked':''} onchange="_wbRsvpToggleField('${field}',this.checked)"/>
-        <span class="toggle-track"></span>
-      </span>
-    </label>`;
-  };
-
-  _wbPanel('RSVP', `<div style="display:flex;flex-direction:column;gap:16px">
+  return `<div style="display:flex;flex-direction:column;gap:16px">
     <div>
       <div class="wb-slot-lbl" style="margin-bottom:6px">Preview</div>
       <iframe id="rsvp-prev-frame" scrolling="no" sandbox="allow-same-origin"
         style="width:100%;height:220px;border:1px solid var(--border);border-radius:10px;display:block"></iframe>
     </div>
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Share this link with your guests. When they open it they'll see a form to submit their RSVP — no login needed.</div>
-    ${hasUid
-      ? `<div style="display:flex;gap:8px;align-items:stretch">
-           <input readonly class="form-input" value="${_escHtml(url)}" id="rsvp-link-inp" style="flex:1;font-size:11.5px;cursor:text" onclick="this.select()"/>
-           <button type="button" class="btn btn-outline" onclick="_copyRsvpLink()" style="white-space:nowrap">Copy</button>
-         </div>`
-      : '<div style="color:var(--red);font-size:12.5px">Sign in to get your RSVP link.</div>'}
 
-    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding-top:4px">Appearance</div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Appearance</div>
 
     <div>
       <div class="wb-slot-lbl" style="margin-bottom:6px">Header style</div>
@@ -2045,16 +2055,10 @@ function openWbRsvp(){
       <div id="rsvp-custom-rows">${pSel==='custom'?renderCustomRows():''}</div>
     </div>
 
-    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding-top:4px">Form fields</div>
-    <div style="display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:-8px">
-      ${fieldTog('dietary','Dietary requirements')}
-      ${fieldTog('email','Email address')}
-      ${fieldTog('phone','Phone number')}
-      ${fieldTog('address','Postal address')}
-      ${fieldTog('message','Message to couple')}
-    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Form fields</div>
+    ${_rsvpFormFieldsCardHtml()}
 
-    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding-top:4px">Button labels</div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Button labels</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:-8px">
       <div class="form-group" style="margin:0">
         <label class="form-label" style="margin-bottom:4px">Attending</label>
@@ -2067,14 +2071,19 @@ function openWbRsvp(){
           oninput="_wbRsvpSet('btnNo',this.value)" style="font-size:13px"/>
       </div>
     </div>
-
-    ${_wbLayoutHtml('rsvp')}
-    ${_wbBlocksHtml('rsvp')}
-  </div>`,
-  `<button class="btn btn-outline" onclick="_wbNavGuard('guests')" style="margin-right:auto">View responses</button>
-   <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
-   <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
-  setTimeout(_wbRsvpRefreshPreview, 0);
+  </div>`;
+}
+// Re-renders the "RSVP design" modal's body in place after a Form Fields change
+// (_rsvpSetField / the custom-field functions in js/rsvp.js) — those save data and
+// navigate() the page behind the modal, which never touches the modal's own, already-
+// injected HTML. Without this, a field toggle would save correctly but look unchanged
+// until the modal was closed and reopened. Guarded on #rsvp-prev-frame so it's a no-op
+// if some other modal happens to be open.
+function _rsvpDesignRefresh(){
+  const body=document.getElementById('modal-body');
+  if(!body || !document.getElementById('rsvp-prev-frame')) return;
+  body.innerHTML=_rsvpDesignBodyHtml();
+  _wbRsvpRefreshPreview();
 }
 function _copyRsvpLink(){
   const inp = document.getElementById('rsvp-link-inp');
@@ -2167,10 +2176,6 @@ function _wbRsvpSetColor(role, hex, rowEl){
     if(lbl){lbl.style.background=hex;const inp=lbl.querySelector('input[type=color]');if(inp)inp.value=hex;}
   }
   _wbRsvpRefreshPreview();
-}
-function _wbRsvpToggleField(field, on){
-  const r=_wbSite().rsvp; if(!r.fields) r.fields={};
-  r.fields[field]=on; saveToStorage(); _wbLiveSoon();
 }
 function _wbRsvpSet(key, val){
   _wbSite().rsvp[key]=val; saveToStorage(); _wbLiveSoon();
@@ -5196,7 +5201,7 @@ function _wbBuildSite(forDownload){
   // The mark's colourway, resolved once from the PAGE colour — that is what the footer sits
   // on. Not the accent, and not the app's own theme (which is Mandy's, not her guests').
   const brand = _wbBrand(t2.page);
-  const _uvRsvp=w.rsvp||{},_uvRfields=_uvRsvp.fields||{};
+  const _uvRsvp=w.rsvp||{};
   const _uvCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
   // Context for the "email me a copy of my RSVP confirmation" checkbox — computed once
   // here (admin/build context, where _wbIcs()/_wbCouple()/STATE.event are reachable) and
@@ -5257,7 +5262,10 @@ function _wbBuildSite(forDownload){
   const _uvLockPaidOk = !(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid());
   const _uvLockEnabled=!!(STATE.settings&&STATE.settings.rsvpLockEnabled)&&!!(STATE.settings.rsvpLockPassword)&&_uvLockPaidOk;
   const _uvLockPw=_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'');
-  const _uvDietaryOn=!(_uvRfields.dietary===false);
+  // Dietary requirements always show to guests now — there is no setting that hides this
+  // step (the old per-site toggle that could is gone; a stray stored `false` from before
+  // that change is simply ignored).
+  const _uvDietaryOn=true;
   const _uvHasStep2=_uvMealOn||_uvDietaryOn;
   // Permanent "Alternative meal" option (couple can hide it in Meal Settings).
   const _uvMealDietOn=_uvMealOn&&_uvDietaryOn&&STATE.settings.mealDietaryOn!==false;

@@ -385,6 +385,21 @@ function _parseAllergyText(str){
   out.note=rest.join(', ');
   return out;
 }
+/* A submitted RSVP row can carry both the bare checkbox token ('allergy') and its free-text
+   detail ('allergy:<note>') as two separate array entries — merge them into one token
+   (detailed when a note was given) so a reader doesn't see a duplicate bare chip next to
+   the detailed one, and so a tally doesn't count the same guest's allergy twice. */
+function _mergeDietItems(items){
+  const detail={};
+  (items||[]).forEach(d=>{ if(d&&d.startsWith('allergy:'))detail.allergy=d.slice(8); else if(d&&d.startsWith('other:'))detail.other=d.slice(6); });
+  const seen=new Set();const base=[];
+  (items||[]).forEach(d=>{ if(!d||d.startsWith('allergy:')||d.startsWith('other:'))return; if(seen.has(d))return; seen.add(d); base.push(d); });
+  // A detail can in principle arrive with no matching bare token (e.g. a legacy row) —
+  // don't let it silently vanish, surface it as its own entry.
+  if(detail.allergy&&!base.includes('allergy'))base.push('allergy');
+  if(detail.other&&!base.includes('other'))base.push('other');
+  return base.map(d=>{ if(d==='allergy'&&detail.allergy)return'allergy:'+detail.allergy; if(d==='other'&&detail.other)return'other:'+detail.other; return d; });
+}
 function dietIcons(diets){
   const svgMap={
     vegetarian:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Vegetarian"><path d="M12 2C6 2 3 7 3 12c0 4 2.5 7 6 8"/><path d="M12 2c4 3 7 7 7 10 0 4-2.5 7-6 8"/><line x1="12" y1="22" x2="12" y2="10"/></svg>`,
