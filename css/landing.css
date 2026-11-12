@@ -156,6 +156,9 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--ink);min-h
 #features{background:var(--cream);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .feat-img{margin-top:40px;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(74,63,53,.10);border:1px solid var(--border)}
 .feat-img img{display:block;width:100%;height:auto}
+.feat-links{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:24px}
+.feat-links a{font-size:12.5px;color:var(--gold-deep);text-decoration:none;font-weight:500}
+.feat-links a:hover{text-decoration:underline}
 
 /* ══ PRICING ══ */
 #pricing{background:var(--cream-mid);border-bottom:1px solid var(--border)}
