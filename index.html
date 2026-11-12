@@ -21,6 +21,36 @@
 <link rel="canonical" href="https://unionvault.app/"/>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"Union Vault","url":"https://unionvault.app/"},{"@type":"Organization","name":"Union Vault","url":"https://unionvault.app/","logo":"https://unionvault.app/icons/icon-512.png","email":"support@unionvault.app","sameAs":["https://www.instagram.com/unionvault.app/","https://www.facebook.com/unionvault.app/","https://www.tiktok.com/@unionvault.app"]}]}</script>
 <script>(function(){var h=location.hash.slice(1);if((h&&/^[a-z0-9][a-z0-9-]{0,59}$/.test(h)&&['auth','faq','contact','signup','login','register','pricing','features','hero','about'].indexOf(h)<0)||location.search.indexOf('rsvp=')>=0){document.documentElement.style.visibility='hidden';}}());</script>
+<!-- ══ AD PIXELS ══════════════════════════════════════════════════════════════
+     TODO: replace the two placeholder IDs below before this does anything.
+     - Meta: Events Manager → Data Sources → your Pixel → Settings → copy the
+       Pixel ID (a number, e.g. 1234567890123456).
+     - TikTok: Ads Manager → Assets → Events → Web Events → your Pixel → Setup
+       → copy the Pixel Code ID (starts with "C", e.g. C4A1B2C3D4E5F6).
+     Until real IDs are in, both snippets load but send events to nobody. -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', 'REPLACE_WITH_META_PIXEL_ID');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=REPLACE_WITH_META_PIXEL_ID&ev=PageView&noscript=1"
+/></noscript>
+<script>
+!function (w, d, t) {
+  w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<e.length;n++)ttq.setAndDefer(e,e[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+  ttq.load('REPLACE_WITH_TIKTOK_PIXEL_ID');
+  ttq.page();
+}(window, document, 'ttq');
+</script>
+<!-- ══ END AD PIXELS ══════════════════════════════════════════════════════════ -->
 <!-- ── PWA (Stage 1) ─────────────────────────────────────────────────────────────
      Installable + offline app shell. Purely additive: with no network, no service
      worker support, or opened straight from disk as a file://, every tag below is

@@ -153,6 +153,11 @@ async function _lpSignUp() {
   errEl.textContent = '✓ Account created! Check your email to verify, then sign in.';
   errEl.style.display = '';
   btn.disabled = true;
+  // Ad-platform conversion events — the signal that lets Meta/TikTok optimise
+  // delivery toward people who actually sign up, not just people who click.
+  // No-ops harmlessly if a pixel is blocked or its ID hasn't been set yet.
+  try{ if(typeof fbq === 'function') fbq('track', 'CompleteRegistration'); }catch(_){}
+  try{ if(typeof ttq !== 'undefined' && ttq.track) ttq.track('CompleteRegistration'); }catch(_){}
 }
 
 function _lpContinueOffline() {
