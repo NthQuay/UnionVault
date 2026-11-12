@@ -18,6 +18,7 @@ Read the latest `docs/sessions/HANDOFF_SESSION*.md` and `docs/CLAUDE_CODE_CONTEX
 - **GitHub repo is `NthQuay/UnionVault`** (the old `mandyjane/UnionVault` name only redirects). Start sessions with NthQuay/UnionVault as the source.
 - No build step, no bundler. `index.html` is the app shell; CSS in `css/`, JS in `js/`, loaded via `<script>` tags. Branch `main` only; `git push -u origin main`.
 - Bump `APP_BUILD` in `js/autocomplete.js` and `CACHE` in `sw.js` together on every app deploy (and `APP_BUILD_DATE`). Add new JS/CSS files to the `SHELL` array in `sw.js`.
+- **Bump the build number right before merging into `main`, not while the branch is in progress.** Two feature branches that each bump it mid-development are a guaranteed merge conflict on those two lines — it's happened repeatedly when running parallel sessions on separate branches. Base the bump on whatever `main`'s build number actually is at merge time, as the last change before merging — not on a number picked when the branch started.
 - **Build numbers use point releases** (user's rule, from v509): each deploy adds .1 — `v509` (= v509.0) → `v509.1` … `v509.9` → `v510.0` → `v510.1`. Same string in both places, e.g. `APP_BUILD='v509.1'`, `CACHE = 'union-vault-v509.1'`.
 - Visual changes: light + dark preview first, wait for Accept / Reject / Adjust.
 - **Colour pickers: never the native one.** The user hates the Android native colour dialog. `js/colorpicker.js` intercepts every `<input type="color">` and opens the app's own picker — keep it that way; don't add pickers that bypass it.
