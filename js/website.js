@@ -676,10 +676,16 @@ function renderWebsite(c, actions){
     </div>`;
   }).join('');
 
+  // Desktop-only: the user can drag the handle below to narrow this column and give the
+  // preview more room (or widen it back). Persisted width, clamped to a sane range; below
+  // the grid breakpoint the shell isn't a grid at all, so there's nothing to apply this to.
+  const _wbListW = STATE.settings && STATE.settings.wbListW;
+  const _wbShellStyle = (_wbListW && window.innerWidth>=1100) ? ` style="grid-template-columns:${_wbListW}px minmax(0,1fr) 360px"` : '';
+
   c.innerHTML = `<div class="wb-intro" style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:14px">
     Your site reads from the planner — change a detail there and it changes here. Drag to reorder, tap a section to edit.
   </div>
-  <div class="wb-shell${_wbStripOpen?'':' wb-strip-shut'}">
+  <div class="wb-shell${_wbStripOpen?'':' wb-strip-shut'}"${_wbShellStyle}>
     <div class="wb-list" style="background:var(--cream);border:1px solid var(--border);border-radius:14px;overflow:hidden">
       ${publishRow}${themeRow}${rows}
       <div style="padding:10px 12px;text-align:center;border-top:1px solid var(--border)">
@@ -688,6 +694,7 @@ function renderWebsite(c, actions){
         </button>
       </div>
     </div>
+    ${window.innerWidth>=1100?`<div id="wb-panel-resize" class="wb-panel-resize" style="left:${(_wbListW||300)+10}px" title="Drag to resize"><span class="floor-panel-resize-grip"></span></div>`:''}
     <div class="wb-pane">
       <div class="wb-strip-bar" onclick="_wbStripToggle()" aria-expanded="${_wbStripOpen?'true':'false'}">
         <span style="display:flex;align-items:center;gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Preview</span>
@@ -710,6 +717,42 @@ function renderWebsite(c, actions){
     </div>
   </div>`;
   _wbLivePaint();
+  const _rh=document.getElementById('wb-panel-resize');
+  if(_rh) _rh.addEventListener('pointerdown',_wbPanelResizeDown);
+  if(!_wbPanelDocWired){
+    document.addEventListener('pointermove',_wbPanelResizeMove);
+    document.addEventListener('pointerup',_wbPanelResizeUp);
+    document.addEventListener('pointercancel',_wbPanelResizeUp);
+    _wbPanelDocWired=true;
+  }
+}
+// Desktop-only drag handle (see .wb-panel-resize in css/app.css) that lets the section-list
+// column give the preview more room, or take more of its own back. Mirrors the pattern used
+// for the seating-plan floorplan resize (_floorPanelResizeDown/Move/Up): clamp, live-patch
+// during drag, persist on release.
+let _wbPanelDrag=null, _wbPanelDocWired=false;
+const WB_LIST_MIN=220, WB_LIST_MAX=420;
+function _wbPanelResizeDown(e){
+  const col=document.querySelector('.wb-list'); if(!col) return;
+  _wbPanelDrag={ startX:e.clientX, startW:col.offsetWidth };
+  document.getElementById('wb-panel-resize').classList.add('dragging');
+  try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+  e.preventDefault();
+}
+function _wbPanelResizeMove(e){
+  if(!_wbPanelDrag) return;
+  const shell=document.querySelector('.wb-shell'); const handle=document.getElementById('wb-panel-resize');
+  if(!shell||!handle) return;
+  const w=Math.max(WB_LIST_MIN, Math.min(WB_LIST_MAX, _wbPanelDrag.startW + (e.clientX - _wbPanelDrag.startX)));
+  shell.style.gridTemplateColumns=`${w}px minmax(0,1fr) 360px`;
+  handle.style.left=(w+10)+'px';
+}
+function _wbPanelResizeUp(e){
+  if(!_wbPanelDrag) return;
+  const col=document.querySelector('.wb-list');
+  if(col){ if(!STATE.settings) STATE.settings={}; STATE.settings.wbListW=Math.round(col.offsetWidth); saveToStorage(); }
+  _wbPanelDrag=null;
+  const h=document.getElementById('wb-panel-resize'); if(h) h.classList.remove('dragging');
 }
 
 // Repaint the sticky desktop pane. The iframe only exists above 1100px, so this is a

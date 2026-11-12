@@ -578,7 +578,7 @@ body.dark .table-card.table-arrange-mode{border-color:rgba(168,152,128,.4);backg
      reflow, because the guest site is responsive.
      The whole thing is capped at 1520px so the site never renders wider than a real
      browser would show it. */
-  .wb-shell{max-width:1400px;display:grid;grid-template-columns:300px minmax(0,1fr) 360px;gap:20px;align-items:start}
+  .wb-shell{max-width:1400px;display:grid;grid-template-columns:300px minmax(0,1fr) 360px;gap:20px;align-items:start;position:relative}
   .wb-pane{display:block}
   /* At 340px the source chip has nowhere to go — not inline (no room) and not on its own
      line (it would push the row too tall for a list this dense). The SUBLINE is the live
@@ -1783,6 +1783,12 @@ body.dark .ftxt-caps{color:var(--gold)}
 .floor-panel-resize{position:absolute;top:0;bottom:0;right:-15px;width:15px;display:flex;align-items:center;justify-content:center;cursor:col-resize;touch-action:none;z-index:5}
 .floor-panel-resize-grip{width:4px;height:36px;border-radius:3px;background:var(--border);transition:background .15s,height .15s}
 .floor-panel-resize:hover .floor-panel-resize-grip,.floor-panel-resize.dragging .floor-panel-resize-grip{background:var(--gold-deep);height:52px}
+/* Website builder's section-list resize handle — same grip visual as .floor-panel-resize,
+   but positioned with `left` (not `right`) since it sits on .wb-shell itself (a grid
+   container whose first column's width is user-adjustable) rather than on the column it
+   resizes, which has overflow:hidden and would clip a right:-15px child. */
+.wb-panel-resize{position:absolute;top:0;bottom:0;width:20px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;cursor:col-resize;touch-action:none;z-index:5}
+.wb-panel-resize:hover .floor-panel-resize-grip,.wb-panel-resize.dragging .floor-panel-resize-grip{background:var(--gold-deep);height:52px}
 .seat-seg{display:inline-flex;border:.5px solid #E3D7C4;border-radius:9px;overflow:hidden;background:#FBF8F3}
 body.dark .seat-seg{border-color:#6E6450;background:#24242A}
 .seat-seg button{border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--muted);padding:6px 9px;display:inline-flex;align-items:center;gap:4px;transition:all .15s}
