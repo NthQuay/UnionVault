@@ -2617,13 +2617,32 @@ function _wbStaysListHtml(){
 }
 var _wbStaySearchResults=[];
 async function _wbStaysSearch(){
-  const addr=STATE.event.venueAddress||(STATE.event.venue||'');
+  const addr=(STATE.event.venueAddress||'').trim();
+  const venueName=(STATE.event.venue||'').trim();
   const box=document.getElementById('wb-stays-search');
   if(!box) return;
   box.innerHTML='<div style="font-size:12.5px;color:var(--muted);padding:4px 0">Searching…</div>';
   try{
-    const geo=await _wbStaysGeocode(addr);
-    if(!geo){ box.innerHTML='<div style="font-size:12.5px;color:var(--error,#c0392b)">Could not find your venue location. Try updating the address in Wedding Details.</div>'; return; }
+    // Nominatim can silently degrade an unresolved house number down to just "the road" or
+    // "the suburb" — same response shape, drastically less precise, and nothing used to
+    // notice. A named venue is usually its own tagged point (a winery, a function centre…)
+    // and geocodes exactly, so when the address match comes back this coarse, try the venue
+    // name too — real seen case: the address alone landed 3+ km away, on a random point
+    // along a 15km rural road, while the name alone found the venue exactly.
+    //
+    // The name ALONE is risky, though — "Ocean View Estates" also exists as an unrelated
+    // street in the US, and a bare business name has nothing to disambiguate it by. The
+    // house number is usually what failed to match, not the suburb/state/postcode after
+    // it, so pair the name with that locality tail instead of the name alone: specific
+    // enough to disambiguate, without reintroducing the exact number that already failed.
+    let hit=addr?await _wbStaysGeocode(addr):null;
+    if(venueName && !_wbGeocodeIsPrecise(hit)){
+      const localityTail=addr.includes(',') ? addr.split(',').slice(1).join(',').trim() : '';
+      const nameHit=await _wbStaysGeocode(localityTail?`${venueName}, ${localityTail}`:venueName);
+      if(_wbGeocodeIsPrecise(nameHit)||!hit) hit=nameHit;
+    }
+    if(!hit){ box.innerHTML='<div style="font-size:12.5px;color:var(--error,#c0392b)">Could not find your venue location. Try updating the address in Wedding Details.</div>'; return; }
+    const geo={lat:parseFloat(hit.lat),lon:parseFloat(hit.lon)};
     const raw=await _wbStaysOverpass(geo.lat,geo.lon,10000);
     if(!raw.length){ box.innerHTML='<div style="font-size:12.5px;color:var(--muted)">No accommodation found within 10 km.</div>'; return; }
     _wbStaySearchResults=raw;
@@ -2632,16 +2651,25 @@ async function _wbStaysSearch(){
     box.innerHTML='<div style="font-size:12.5px;color:var(--error,#c0392b)">Search failed. Check your internet connection and try again.</div>';
   }
 }
-async function _wbStaysGeocode(address){
-  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(address),{headers:{'Accept':'application/json','User-Agent':'UnionVaultApp/1.0'}});
+// A geocode match whose `class` is one of these is a road, a suburb/town, an administrative
+// area, etc. — not a specific place. Good enough when nothing better is available, but worth
+// trying an alternate query for first.
+const _GEOCODE_COARSE_CLASSES=new Set(['highway','boundary','place']);
+function _wbGeocodeIsPrecise(hit){ return !!hit && !_GEOCODE_COARSE_CLASSES.has(hit.class); }
+async function _wbStaysGeocode(query){
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(query),{headers:{'Accept':'application/json','User-Agent':'UnionVaultApp/1.0'}});
   const d=await r.json();
-  return d&&d.length?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;
+  return (d&&d.length)?d[0]:null;
 }
 async function _wbStaysOverpass(lat,lon,radius){
-  const q=`[out:json][timeout:25];(node["tourism"~"hotel|motel|hostel|guest_house|apartment|bed_and_breakfast"](around:${radius},${lat},${lon});way["tourism"~"hotel|motel|hostel|guest_house|apartment|bed_and_breakfast"](around:${radius},${lat},${lon}););out center tags;`;
+  // Every OSM tourism=* value that means "somewhere a guest can sleep" — the original list
+  // (hotel/motel/hostel/guest_house/apartment/bed_and_breakfast) missed the categories most
+  // likely to be ALL that exists near a rural venue: cabins, farm-stays and caravan parks.
+  const tags='hotel|motel|hostel|guest_house|apartment|bed_and_breakfast|chalet|camp_site|caravan_site|alpine_hut|wilderness_hut';
+  const q=`[out:json][timeout:25];(node["tourism"~"${tags}"](around:${radius},${lat},${lon});way["tourism"~"${tags}"](around:${radius},${lat},${lon}););out center tags;`;
   const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
   const d=await r.json();
-  const typeLabel={hotel:'Hotel',motel:'Motel',hostel:'Hostel',guest_house:'Guest house',apartment:'Apartment',bed_and_breakfast:'B&B'};
+  const typeLabel={hotel:'Hotel',motel:'Motel',hostel:'Hostel',guest_house:'Guest house',apartment:'Apartment',bed_and_breakfast:'B&B',chalet:'Chalet',camp_site:'Camping',caravan_site:'Caravan park',alpine_hut:'Hut',wilderness_hut:'Hut'};
   return (d.elements||[]).map(el=>{
     const t=el.tags||{};
     const elLat=el.lat||(el.center&&el.center.lat)||lat;
