@@ -336,9 +336,18 @@ function renderChecklist(c,actions){
 
     DATE_GROUPS.forEach(grp => {
       const crossMode = checklistDoneMode==='cross';
-      if(crossMode && grp.key==='done') return; // no separate Completed group in cross mode
       let items;
-      if(crossMode){
+      if(crossMode && grp.key==='overdue'){
+        // Never show a completed item under "Overdue" — once done, it isn't overdue, whatever
+        // its due date was. (Every other band below forces done:false to test it, which is
+        // exactly what put finished-late tasks back under this alarm-coloured heading.)
+        items = sorted.filter(i => grp.testFn(i));
+      } else if(crossMode && grp.key==='done'){
+        // The one thing "Overdue" no longer catches for a completed item: one whose due date
+        // has passed. Every other completed item already has a neutral home above — its band
+        // by due date, or "No due date" — via the forced-not-done test those use below.
+        items = sorted.filter(i => i.done && i.dueDate && monthsUntil(i.dueDate)<0);
+      } else if(crossMode){
         // Place items (done or not) into their date band by due-date logic.
         items = sorted.filter(i => grp.testFn(i.done ? {...i, done:false} : i));
       } else {
