@@ -676,10 +676,16 @@ function renderWebsite(c, actions){
     </div>`;
   }).join('');
 
+  // Desktop-only: the user can drag the handle below to narrow this column and give the
+  // preview more room (or widen it back). Persisted width, clamped to a sane range; below
+  // the grid breakpoint the shell isn't a grid at all, so there's nothing to apply this to.
+  const _wbListW = STATE.settings && STATE.settings.wbListW;
+  const _wbShellStyle = (_wbListW && window.innerWidth>=1100) ? ` style="grid-template-columns:${_wbListW}px minmax(0,1fr) 360px"` : '';
+
   c.innerHTML = `<div class="wb-intro" style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:14px">
     Your site reads from the planner — change a detail there and it changes here. Drag to reorder, tap a section to edit.
   </div>
-  <div class="wb-shell${_wbStripOpen?'':' wb-strip-shut'}">
+  <div class="wb-shell${_wbStripOpen?'':' wb-strip-shut'}"${_wbShellStyle}>
     <div class="wb-list" style="background:var(--cream);border:1px solid var(--border);border-radius:14px;overflow:hidden">
       ${publishRow}${themeRow}${rows}
       <div style="padding:10px 12px;text-align:center;border-top:1px solid var(--border)">
@@ -688,6 +694,7 @@ function renderWebsite(c, actions){
         </button>
       </div>
     </div>
+    ${window.innerWidth>=1100?`<div id="wb-panel-resize" class="wb-panel-resize" style="left:${(_wbListW||300)+10}px" title="Drag to resize"><span class="floor-panel-resize-grip"></span></div>`:''}
     <div class="wb-pane">
       <div class="wb-strip-bar" onclick="_wbStripToggle()" aria-expanded="${_wbStripOpen?'true':'false'}">
         <span style="display:flex;align-items:center;gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Preview</span>
@@ -710,6 +717,42 @@ function renderWebsite(c, actions){
     </div>
   </div>`;
   _wbLivePaint();
+  const _rh=document.getElementById('wb-panel-resize');
+  if(_rh) _rh.addEventListener('pointerdown',_wbPanelResizeDown);
+  if(!_wbPanelDocWired){
+    document.addEventListener('pointermove',_wbPanelResizeMove);
+    document.addEventListener('pointerup',_wbPanelResizeUp);
+    document.addEventListener('pointercancel',_wbPanelResizeUp);
+    _wbPanelDocWired=true;
+  }
+}
+// Desktop-only drag handle (see .wb-panel-resize in css/app.css) that lets the section-list
+// column give the preview more room, or take more of its own back. Mirrors the pattern used
+// for the seating-plan floorplan resize (_floorPanelResizeDown/Move/Up): clamp, live-patch
+// during drag, persist on release.
+let _wbPanelDrag=null, _wbPanelDocWired=false;
+const WB_LIST_MIN=220, WB_LIST_MAX=420;
+function _wbPanelResizeDown(e){
+  const col=document.querySelector('.wb-list'); if(!col) return;
+  _wbPanelDrag={ startX:e.clientX, startW:col.offsetWidth };
+  document.getElementById('wb-panel-resize').classList.add('dragging');
+  try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+  e.preventDefault();
+}
+function _wbPanelResizeMove(e){
+  if(!_wbPanelDrag) return;
+  const shell=document.querySelector('.wb-shell'); const handle=document.getElementById('wb-panel-resize');
+  if(!shell||!handle) return;
+  const w=Math.max(WB_LIST_MIN, Math.min(WB_LIST_MAX, _wbPanelDrag.startW + (e.clientX - _wbPanelDrag.startX)));
+  shell.style.gridTemplateColumns=`${w}px minmax(0,1fr) 360px`;
+  handle.style.left=(w+10)+'px';
+}
+function _wbPanelResizeUp(e){
+  if(!_wbPanelDrag) return;
+  const col=document.querySelector('.wb-list');
+  if(col){ if(!STATE.settings) STATE.settings={}; STATE.settings.wbListW=Math.round(col.offsetWidth); saveToStorage(); }
+  _wbPanelDrag=null;
+  const h=document.getElementById('wb-panel-resize'); if(h) h.classList.remove('dragging');
 }
 
 // Repaint the sticky desktop pane. The iframe only exists above 1100px, so this is a
@@ -1949,9 +1992,37 @@ function _wbRsvpRefreshPreview(){
 function openWbRsvp(){
   const url = _rsvpLink();
   const hasUid = !url.endsWith('?rsvp=true');
+  _wbPanel('RSVP', `<div style="display:flex;flex-direction:column;gap:16px">
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Share this link with your guests. When they open it they'll see a form to submit their RSVP — no login needed.</div>
+    ${hasUid
+      ? `<div style="display:flex;gap:8px;align-items:stretch">
+           <input readonly class="form-input" value="${_escHtml(url)}" id="rsvp-link-inp" style="flex:1;font-size:11.5px;cursor:text" onclick="this.select()"/>
+           <button type="button" class="btn btn-outline" onclick="_copyRsvpLink()" style="white-space:nowrap">Copy</button>
+         </div>`
+      : '<div style="color:var(--red);font-size:12.5px">Sign in to get your RSVP link.</div>'}
+
+    <button type="button" class="btn btn-outline" onclick="openRsvpDesignModal()" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Edit RSVP design
+    </button>
+    <div style="font-size:11px;color:var(--muted);margin-top:-10px">Appearance, form fields &amp; button labels — the same settings as RSVP &amp; Invites &rarr; RSVP design, edited in one place.</div>
+
+    ${_wbLayoutHtml('rsvp')}
+    ${_wbBlocksHtml('rsvp')}
+  </div>`,
+  `<button class="btn btn-outline" onclick="_wbNavGuard('guests')" style="margin-right:auto">View responses</button>
+   <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+   <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
+}
+// Shared "RSVP design" settings — Appearance (header/page style, colour scheme), Form
+// fields and Button labels. Used by BOTH the website builder's RSVP section (a link to
+// openRsvpDesignModal(), see openWbRsvp() above) and the RSVP & Invites page
+// (openRsvpDesignModal() in js/rsvp.js) — ONE modal, so there is nowhere left for these
+// settings to be edited twice with two different answers.
+function _rsvpDesignBodyHtml(){
   const w=_wbSite(), r=w.rsvp;
   const pSel=r.palette||'sage', sSel=r.headerStyle||'classic';
-  const fields=r.fields||{}, cc=r.customColors||{};
+  const cc=r.customColors||{};
   const pal=(STATE.inspo&&STATE.inspo.colors)||[];
 
   const styleCard=(id,label,svgBody)=>`<button type="button" id="rsvp-style-${id}" data-style="${id}"
@@ -1982,32 +2053,14 @@ function openWbRsvp(){
     </div>`;
   }).join('');
 
-  const fieldTog=(field,label)=>{
-    const on=field in fields?!!fields[field]:true;
-    return `<label class="tl-pub-row" style="padding:9px 10px;border-radius:0;cursor:pointer">
-      <span class="tl-pub-title">${label}</span>
-      <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
-        <input type="checkbox" ${on?'checked':''} onchange="_wbRsvpToggleField('${field}',this.checked)"/>
-        <span class="toggle-track"></span>
-      </span>
-    </label>`;
-  };
-
-  _wbPanel('RSVP', `<div style="display:flex;flex-direction:column;gap:16px">
+  return `<div style="display:flex;flex-direction:column;gap:16px">
     <div>
       <div class="wb-slot-lbl" style="margin-bottom:6px">Preview</div>
       <iframe id="rsvp-prev-frame" scrolling="no" sandbox="allow-same-origin"
         style="width:100%;height:220px;border:1px solid var(--border);border-radius:10px;display:block"></iframe>
     </div>
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.55">Share this link with your guests. When they open it they'll see a form to submit their RSVP — no login needed.</div>
-    ${hasUid
-      ? `<div style="display:flex;gap:8px;align-items:stretch">
-           <input readonly class="form-input" value="${_escHtml(url)}" id="rsvp-link-inp" style="flex:1;font-size:11.5px;cursor:text" onclick="this.select()"/>
-           <button type="button" class="btn btn-outline" onclick="_copyRsvpLink()" style="white-space:nowrap">Copy</button>
-         </div>`
-      : '<div style="color:var(--red);font-size:12.5px">Sign in to get your RSVP link.</div>'}
 
-    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding-top:4px">Appearance</div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Appearance</div>
 
     <div>
       <div class="wb-slot-lbl" style="margin-bottom:6px">Header style</div>
@@ -2045,16 +2098,10 @@ function openWbRsvp(){
       <div id="rsvp-custom-rows">${pSel==='custom'?renderCustomRows():''}</div>
     </div>
 
-    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding-top:4px">Form fields</div>
-    <div style="display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:-8px">
-      ${fieldTog('dietary','Dietary requirements')}
-      ${fieldTog('email','Email address')}
-      ${fieldTog('phone','Phone number')}
-      ${fieldTog('address','Postal address')}
-      ${fieldTog('message','Message to couple')}
-    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Form fields</div>
+    ${_rsvpFormFieldsCardHtml()}
 
-    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding-top:4px">Button labels</div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Button labels</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:-8px">
       <div class="form-group" style="margin:0">
         <label class="form-label" style="margin-bottom:4px">Attending</label>
@@ -2067,14 +2114,19 @@ function openWbRsvp(){
           oninput="_wbRsvpSet('btnNo',this.value)" style="font-size:13px"/>
       </div>
     </div>
-
-    ${_wbLayoutHtml('rsvp')}
-    ${_wbBlocksHtml('rsvp')}
-  </div>`,
-  `<button class="btn btn-outline" onclick="_wbNavGuard('guests')" style="margin-right:auto">View responses</button>
-   <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
-   <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
-  setTimeout(_wbRsvpRefreshPreview, 0);
+  </div>`;
+}
+// Re-renders the "RSVP design" modal's body in place after a Form Fields change
+// (_rsvpSetField / the custom-field functions in js/rsvp.js) — those save data and
+// navigate() the page behind the modal, which never touches the modal's own, already-
+// injected HTML. Without this, a field toggle would save correctly but look unchanged
+// until the modal was closed and reopened. Guarded on #rsvp-prev-frame so it's a no-op
+// if some other modal happens to be open.
+function _rsvpDesignRefresh(){
+  const body=document.getElementById('modal-body');
+  if(!body || !document.getElementById('rsvp-prev-frame')) return;
+  body.innerHTML=_rsvpDesignBodyHtml();
+  _wbRsvpRefreshPreview();
 }
 function _copyRsvpLink(){
   const inp = document.getElementById('rsvp-link-inp');
@@ -2167,10 +2219,6 @@ function _wbRsvpSetColor(role, hex, rowEl){
     if(lbl){lbl.style.background=hex;const inp=lbl.querySelector('input[type=color]');if(inp)inp.value=hex;}
   }
   _wbRsvpRefreshPreview();
-}
-function _wbRsvpToggleField(field, on){
-  const r=_wbSite().rsvp; if(!r.fields) r.fields={};
-  r.fields[field]=on; saveToStorage(); _wbLiveSoon();
 }
 function _wbRsvpSet(key, val){
   _wbSite().rsvp[key]=val; saveToStorage(); _wbLiveSoon();
@@ -2987,12 +3035,16 @@ function _wbHeroBody(){
         <span style="font-size:12px">Choose a photo</span>
       </button>`}
     ${has?`
+      ${_wbIsFxFormat()?`
+      <div class="wb-blk-hint" style="margin-bottom:13px">This format always uses its own fixed header layout, so there's no "Style" choice here.</div>
+      `:`
       <div class="wb-slot-lbl" style="margin-bottom:6px">Style</div>
       <span class="inv-seg" style="margin-bottom:13px">
         <button type="button" class="${h.style==='over'?'active':''}" onclick="_wbHeroSet('style','over')">Names over photo</button>
         <button type="button" class="${h.style==='below'?'active':''}" onclick="_wbHeroSet('style','below')">Photo below names</button>
       </span>
-      ${h.style==='over'?`
+      `}
+      ${(_wbIsFxFormat()||h.style==='over')?`
         <div class="wb-slot-lbl" style="margin-bottom:6px">Height</div>
         <span class="inv-seg" style="margin-bottom:13px">
           <button type="button" class="${h.height==='short'?'active':''}" onclick="_wbHeroSet('height','short')">Short</button>
@@ -3007,12 +3059,14 @@ function _wbHeroBody(){
         <div class="wb-slot-lbl" id="wb-hero-scrim-lbl" style="margin-bottom:6px">Darken · ${h.scrim}%</div>
         <input type="range" min="0" max="100" value="${h.scrim}" oninput="_wbHeroScrim(this.value)"
                style="width:100%;accent-color:var(--gold)"/>
+        ${(!_wbIsFxFormat()||(_wbSite().theme||{}).format==='magazine')?`
         <div class="wb-slot-lbl" style="margin:13px 0 6px">Names</div>
         <span class="inv-seg">
           <button type="button" class="${h.ink==='light'?'active':''}" onclick="_wbHeroSet('ink','light')">Light</button>
           <button type="button" class="${h.ink==='dark'?'active':''}" onclick="_wbHeroSet('ink','dark')">Dark</button>
         </span>
         <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">A photo behind text is the classic way to make a heading unreadable. Darken the photo, or switch the names to dark — whichever your photo wants.</div>
+        `:''}
 
         <div class="wb-slot-lbl" style="margin:15px 0 7px">Show on the photo</div>
         <div style="display:flex;flex-direction:column;gap:6px">
@@ -3052,12 +3106,13 @@ function _wbHeroRepaint(){
 // preview of a different photo. Both call this. One function, one truth — and when the
 // hero's rendering changes, there is one place to change it, not two that drift.
 function _wbHeroImgCss(h){
-  // Zoom only applies to `over` — a photo BELOW the names has no frame to be zoomed
-  // within, and the guest site renders it as a plain 3/2 cover crop. Applying the zoom
-  // here would preview a photo the guest will never see. The focal point applies to BOTH:
-  // .hero-below is object-fit:cover in a fixed box, so object-position genuinely chooses
-  // its crop.
-  const zoom = h.style==='over' ? Math.max(50,Math.min(250,Number(h.zoom)||100)) : 100;
+  // Zoom only applies to `over` (or an Editorial/Atelier format, which always renders the
+  // photo as a full cover image regardless of the Style setting) — a photo BELOW the names
+  // in a classic/modern format has no frame to be zoomed within, and the guest site renders
+  // it as a plain 3/2 cover crop. Applying the zoom here would preview a photo the guest
+  // will never see. The focal point applies to all of these: .hero-below is object-fit:cover
+  // in a fixed box, so object-position genuinely chooses its crop.
+  const zoom = (_wbIsFxFormat()||h.style==='over') ? Math.max(50,Math.min(250,Number(h.zoom)||100)) : 100;
   const pos=h.pos||'50% 50%';
 
   // ⚠️ THE ZOOM IS ANCHORED TO `contain`. 100% = THE WHOLE PHOTO, nothing cropped.
@@ -4768,12 +4823,15 @@ function _wbBuildSite(forDownload){
         const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         const dd=okD?String(d.getDate()).padStart(2,'0'):'', mm=okD?String(d.getMonth()+1).padStart(2,'0'):'';
         const place = (e.venue||'').trim();
-        const img = heroOk ? `<img src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${pos}"/>` : '';
+        // Same zoom/darken the non-fx "over" header applies — a cover photo is a cover
+        // photo whatever the surrounding layout, and both formats always show one.
+        const img = heroOk ? `<img src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${pos};transform:scale(${zoom/100});transform-origin:${pos}"/>` : '';
+        const scrimSpan = (heroOk && scrim>0) ? `<span class="hero-scrim" style="background:rgba(0,0,0,${scrim})"></span>` : '';
         const extra = [homeSlot('top'), h.sub?`<p class="sub">${_escHtml(h.sub)}</p>`:'', homeSlot('bottom')].filter(Boolean).join('');
         if(t.format==='magazine'){
           return `<header id="home" class="fx-cover${heroOk?'':' fx-noimg'}${hero.ink==='dark'?' fx-ink-dark':''}">
         <div class="fx-topbar"><span>The Wedding Issue</span><span>${okD?`${mos[d.getMonth()]} ${d.getFullYear()}`:'Special Edition'}</span></div>
-        <div class="fx-coverimg" style="min-height:${WB_HERO_H[hero.height]||WB_HERO_H.tall}">${img}
+        <div class="fx-coverimg" style="min-height:${WB_HERO_H[hero.height]||WB_HERO_H.tall}">${img}${scrimSpan}
           ${showN?`<div class="fx-mast">${namesHtml}</div>`:''}
           <div class="fx-lines">
             <span class="fx-sc">${okD?'Save the date':'Together with their families'}</span>
@@ -4795,7 +4853,7 @@ function _wbBuildSite(forDownload){
           <div class="fx-meta">${(showD&&okD)?`<div><span class="fx-sc">Date</span><b>${_escHtml(d.getDate()+' '+mos[d.getMonth()]+' '+d.getFullYear())}</b></div>`:''}${place?`<div><span class="fx-sc">Place</span><b>${_escHtml(place)}</b></div>`:''}</div>
           ${icsBtn}
         </div>
-        ${img?`<figure class="fx-hfig">${img}</figure>`:''}
+        ${img?`<figure class="fx-hfig" style="min-height:${WB_HERO_H[hero.height]||WB_HERO_H.tall}">${img}${scrimSpan}</figure>`:''}
         ${extra?`<div class="fx-cover-extra">${extra}</div>`:''}
       </header>`;
       }
@@ -5196,7 +5254,7 @@ function _wbBuildSite(forDownload){
   // The mark's colourway, resolved once from the PAGE colour — that is what the footer sits
   // on. Not the accent, and not the app's own theme (which is Mandy's, not her guests').
   const brand = _wbBrand(t2.page);
-  const _uvRsvp=w.rsvp||{},_uvRfields=_uvRsvp.fields||{};
+  const _uvRsvp=w.rsvp||{};
   const _uvCoupleId=_escHtml(_wbPublicOwnerUid||(_sbSession&&_sbSession.user&&_sbSession.user.id)||'');
   // Context for the "email me a copy of my RSVP confirmation" checkbox — computed once
   // here (admin/build context, where _wbIcs()/_wbCouple()/STATE.event are reachable) and
@@ -5257,7 +5315,10 @@ function _wbBuildSite(forDownload){
   const _uvLockPaidOk = !(_sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid());
   const _uvLockEnabled=!!(STATE.settings&&STATE.settings.rsvpLockEnabled)&&!!(STATE.settings.rsvpLockPassword)&&_uvLockPaidOk;
   const _uvLockPw=_escHtml((STATE.settings&&STATE.settings.rsvpLockPassword)||'');
-  const _uvDietaryOn=!(_uvRfields.dietary===false);
+  // Dietary requirements always show to guests now — there is no setting that hides this
+  // step (the old per-site toggle that could is gone; a stray stored `false` from before
+  // that change is simply ignored).
+  const _uvDietaryOn=true;
   const _uvHasStep2=_uvMealOn||_uvDietaryOn;
   // Permanent "Alternative meal" option (couple can hide it in Meal Settings).
   const _uvMealDietOn=_uvMealOn&&_uvDietaryOn&&STATE.settings.mealDietaryOn!==false;

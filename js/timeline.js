@@ -491,18 +491,23 @@ function tlSafeLink(u){
 const _TL_NOTE_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
 const _TL_PLAY_SVG='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
 
-// Song chip shown on a run-sheet row. Shows the first song; "+ N more" when there are others.
+// Song chip(s) shown on a run-sheet row — one per tagged song, not just the first. A chip
+// with a link IS the link (the whole chip, not just the play icon) — tapping anywhere on it
+// opens the song in a new tab/app, same as tapping the icon used to.
 function tlSongChipHtml(it){
   const songs=Array.isArray(it.songs)?it.songs.filter(s=>s&&(s.title||s.artist)):[];
   if(!songs.length) return '';
-  const s=songs[0];
-  const link=tlSafeLink(s.link);
-  const title=_escHtml(s.title||'Untitled');
-  const artist=s.artist?` <span class="sc-artist">· ${_escHtml(s.artist)}</span>`:'';
-  const start=s.start?`<span class="sc-start">from ${_escHtml(s.start)}</span>`:'';
-  const play=link?`<a class="sc-play" href="${_escHtml(link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open link">${_TL_PLAY_SVG}</a>`:'';
-  const more=songs.length>1?`<div class="song-multi">+ ${songs.length-1} more song${songs.length-1!==1?'s':''} tagged</div>`:'';
-  return `<div class="song-chip"><span class="sc-note">${_TL_NOTE_SVG}</span><span class="sc-txt"><span class="sc-title">${title}</span>${artist}</span>${start}${play}</div>${more}`;
+  return songs.map(s=>{
+    const link=tlSafeLink(s.link);
+    const title=_escHtml(s.title||'Untitled');
+    const artist=s.artist?` <span class="sc-artist">· ${_escHtml(s.artist)}</span>`:'';
+    const start=s.start?`<span class="sc-start">from ${_escHtml(s.start)}</span>`:'';
+    const play=link?`<span class="sc-play">${_TL_PLAY_SVG}</span>`:'';
+    const inner=`<span class="sc-note">${_TL_NOTE_SVG}</span><span class="sc-txt"><span class="sc-title">${title}</span>${artist}</span>${start}${play}`;
+    return link
+      ? `<a class="song-chip sc-link" href="${_escHtml(link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open link">${inner}</a>`
+      : `<div class="song-chip">${inner}</div>`;
+  }).join('');
 }
 
 // Flatten every tagged song across the day into running order, carrying its moment context.
@@ -654,7 +659,18 @@ function renderTimeline(c, actions){
                 <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:500;color:var(--ink);line-height:1.2">${it.title||'Untitled'}</span>
                 ${it.pub?'':`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><title>Hidden from guests</title><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`}
               </div>
-              <span style="flex-shrink:0;font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${cat.color};background:${cat.dot}1A;padding:3px 8px;border-radius:20px;white-space:nowrap">${cat.label}</span>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+                <span style="font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${cat.color};background:${cat.dot}1A;padding:3px 8px;border-radius:20px;white-space:nowrap">${cat.label}</span>
+                ${STATE.timelines && STATE.timelines.length>1 ? `<span style="position:relative">
+                  <button type="button" onclick="event.stopPropagation();_tlToggleMoveMenu(event,'${it.id}')" title="Move to another timeline" aria-label="Move to another timeline" aria-haspopup="true" style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:none;border:none;cursor:pointer;color:var(--muted);padding:0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+                  </button>
+                  <div id="tl-mv-${it.id}" class="tl-mv-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:40;min-width:170px;background:var(--cream);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 20px rgba(26,26,24,.14);overflow:hidden">
+                    <div style="padding:8px 12px 5px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Move to</div>
+                    ${STATE.timelines.filter(t=>t.id!==STATE.activeTimelineId).map(t=>`<button type="button" onclick="event.stopPropagation();_tlMoveItem('${it.id}','${t.id}')" style="width:100%;background:none;border:none;cursor:pointer;padding:9px 12px;text-align:left;font-size:12.5px;font-family:inherit;color:var(--ink);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(t.name)}</button>`).join('')}
+                  </div>
+                </span>` : ''}
+              </div>
             </div>
             ${meta.length?`<div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-size:12.5px;color:var(--muted)">
               ${it.location?`<span style="display:inline-flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${it.location}</span>`:''}
@@ -785,19 +801,12 @@ function _tlCatDelete(id){
 }
 
 // Location shortcuts: the couple's rooms/spaces and venue(s) from Event Details.
-function _tlLocChipsHtml(cur){
+// Named spaces + venue(s), offered as native suggestions on the Location field (typing
+// still accepts anything — this is a datalist, not a closed set of choices).
+function _tlLocOptionsHtml(){
   const opts = typeof _evLocationOptions==='function' ? _evLocationOptions() : [];
   if(!opts.length) return '';
-  const c=String(cur||'').trim();
-  return `<div class="tl-loc-chips" id="tl-loc-chips">${opts.map(o=>`<button type="button" class="tl-loc-chip${o===c?' on':''}" data-loc="${_escHtml(o)}" onclick="_tlPickLoc(this)">${_escHtml(o)}</button>`).join('')}</div>`;
-}
-function _tlPickLoc(btn){
-  const inp=document.getElementById('tl-loc'); if(!inp) return;
-  inp.value=btn.dataset.loc||''; _tlLocChipsSync();
-}
-function _tlLocChipsSync(){
-  const v=((document.getElementById('tl-loc')||{}).value||'').trim();
-  document.querySelectorAll('#tl-loc-chips .tl-loc-chip').forEach(b=>b.classList.toggle('on', b.dataset.loc===v));
+  return `<datalist id="tl-loc-list">${opts.map(o=>`<option value="${_escHtml(o)}">`).join('')}</datalist>`;
 }
 function timelineFormBody(it){
   it = it || { time:'', title:'', location:'', who:'', notes:'', cat:'reception' };
@@ -812,7 +821,7 @@ function timelineFormBody(it){
     </div>
     <div class="form-group" style="margin-top:6px"><label class="form-label">Moment</label><input class="form-input" id="tl-title" placeholder="e.g. First Dance" value="${(it.title||'').replace(/"/g,'&quot;')}"/></div>
     <div class="form-row" style="margin-top:6px">
-      <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tl-loc" placeholder="e.g. Ballroom" value="${(it.location||'').replace(/"/g,'&quot;')}" oninput="_tlLocChipsSync()"/>${_tlLocChipsHtml(it.location||'')}</div>
+      <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="tl-loc" list="tl-loc-list" autocomplete="off" placeholder="e.g. Ballroom" value="${(it.location||'').replace(/"/g,'&quot;')}"/>${_tlLocOptionsHtml()}</div>
       <div class="form-group"><label class="form-label">Who / Vendor</label><input class="form-input" id="tl-who" placeholder="e.g. Photographer" value="${(it.who||'').replace(/"/g,'&quot;')}"/></div>
     </div>
     <div class="form-group" style="margin-top:6px"><label class="form-label">Notes</label><textarea class="form-input" id="tl-notes" rows="2" placeholder="Optional details..." style="resize:vertical">${(it.notes||'').replace(/</g,'&lt;')}</textarea></div>
@@ -824,8 +833,8 @@ function timelineFormBody(it){
     </div>
     <div class="form-group" style="margin-top:6px">
       <label class="form-label">Songs for this moment</label>
-      <div id="tl-song-list">${(Array.isArray(it.songs)?it.songs:[]).map((s,i)=>tlSongBlockHtml(s,i+1)).join('')}</div>
-      <button type="button" class="add-song-btn" onclick="tlAddSongBlock()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Add ${(Array.isArray(it.songs)&&it.songs.length)?'another ':''}song</button>
+      <div id="tl-song-list">${_tlSongListInit(it.songs)}</div>
+      <button type="button" class="add-song-btn" id="tl-add-song-btn" onclick="tlAddSongBlock()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Add ${_tlFormSongs.length?'another ':''}song</button>
     </div>
     <label class="tl-pub-row" for="tl-pub">
       <span>
@@ -843,51 +852,92 @@ function timelineFormBody(it){
   </div>`;
 }
 
-// One editable song block. `i` is only used for the visible "Song N" label (recomputed on add/remove).
-function tlSongBlockHtml(s, i){
-  s = s || {};
-  const v = x => String(x||'').replace(/"/g,'&quot;');
-  return `<div class="song-block" data-song-block>
-    <div class="song-block-head">
-      <span class="song-block-title"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span class="song-block-num">Song${i?' '+i:''}</span></span>
-      <button type="button" class="song-rm" title="Remove song" onclick="tlRemoveSongBlock(this)">✕</button>
-    </div>
-    <div class="fr2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div><label class="form-label">Title</label><input class="form-input tl-song-title" placeholder="e.g. At Last" value="${v(s.title)}"/></div>
-      <div><label class="form-label">Artist</label><input class="form-input tl-song-artist" placeholder="e.g. Etta James" value="${v(s.artist)}"/></div>
-    </div>
-    <div class="fr2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div><label class="form-label">Cue / when</label><input class="form-input tl-song-cue" placeholder="e.g. Processional" value="${v(s.cue)}"/></div>
-      <div><label class="form-label">Start at (m:ss)</label><input class="form-input tl-song-start" placeholder="optional" value="${v(s.start)}"/></div>
-    </div>
-    <div style="margin-bottom:12px"><label class="form-label">Link (Spotify / YouTube)</label><input class="form-input tl-song-link" placeholder="optional" value="${v(s.link)}"/></div>
-    <div><label class="form-label">Notes for DJ / band</label><input class="form-input tl-song-notes" placeholder="optional" value="${v(s.notes)}"/></div>
+// ── Songs for this moment — compact rows in the main form; full fields live in a
+// secondary (confirm2) modal so adding several songs doesn't grow the Edit Moment form
+// tall. _tlFormSongs is the working copy for whichever Add/Edit Moment form is open;
+// tlCollectSongs() (called on Save) just returns it — nothing here reads the DOM anymore.
+let _tlFormSongs = [];
+function _tlSongListInit(songs){
+  _tlFormSongs = Array.isArray(songs) ? songs.map(s=>Object.assign({},s)) : [];
+  return _tlFormSongs.map((s,i)=>_tlSongRowHtml(s,i)).join('');
+}
+function _tlSongRowHtml(s,i){
+  const title=_escHtml(s.title||s.artist||'Untitled song');
+  const artist=(s.title&&s.artist)?` <span class="song-row-artist">· ${_escHtml(s.artist)}</span>`:'';
+  const cue=s.cue?`<span class="song-row-cue">${_escHtml(s.cue)}</span>`:'';
+  return `<div class="song-row" data-i="${i}">
+    <button type="button" class="song-row-main" onclick="_tlEditSongBlock(${i})">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" class="song-row-ico"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <span class="song-row-txt"><span class="song-row-title">${title}</span>${artist}${cue}</span>
+    </button>
+    <button type="button" class="song-rm" title="Remove song" onclick="event.stopPropagation();_tlConfirmRemoveSong(${i})">✕</button>
   </div>`;
 }
-function tlRenumberSongs(){
-  const list=document.getElementById('tl-song-list'); if(!list) return;
-  list.querySelectorAll('[data-song-block] .song-block-num').forEach((el,i)=>{ el.textContent='Song '+(i+1); });
-  const btn=list.parentElement.querySelector('.add-song-btn');
-  if(btn){ const has=list.querySelector('[data-song-block]'); btn.lastChild.textContent = has?'Add another song':'Add song'; }
+function _tlRefreshSongList(){
+  const list=document.getElementById('tl-song-list');
+  if(list) list.innerHTML=_tlFormSongs.map((s,i)=>_tlSongRowHtml(s,i)).join('');
+  const btn=document.getElementById('tl-add-song-btn');
+  if(btn) btn.lastChild.textContent = _tlFormSongs.length?'Add another song':'Add song';
 }
 function tlAddSongBlock(){
   if(typeof _uvRequirePaid==='function'&&!_uvRequirePaid('timeline')) return;
-  const list=document.getElementById('tl-song-list'); if(!list) return;
-  const tmp=document.createElement('div'); tmp.innerHTML=tlSongBlockHtml({}, 0);
-  list.appendChild(tmp.firstElementChild); tlRenumberSongs();
+  _tlOpenSongEditor(-1);
 }
-function tlRemoveSongBlock(btn){
-  const block=btn.closest('[data-song-block]'); if(block){ block.remove(); tlRenumberSongs(); }
+function _tlEditSongBlock(i){
+  _tlOpenSongEditor(i);
+}
+// index -1 = new song; otherwise the position in _tlFormSongs being edited.
+function _tlOpenSongEditor(index){
+  const isNew = index<0;
+  const s = isNew ? {} : (_tlFormSongs[index]||{});
+  const v = x => String(x||'').replace(/"/g,'&quot;');
+  const body=`<div class="fr2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label class="form-label">Title</label><input class="form-input" id="tls-title" placeholder="e.g. At Last" value="${v(s.title)}"/></div>
+      <div><label class="form-label">Artist</label><input class="form-input" id="tls-artist" placeholder="e.g. Etta James" value="${v(s.artist)}"/></div>
+    </div>
+    <div class="fr2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label class="form-label">Cue / when</label><input class="form-input" id="tls-cue" placeholder="e.g. Processional" value="${v(s.cue)}"/></div>
+      <div><label class="form-label">Start at (m:ss)</label><input class="form-input" id="tls-start" placeholder="optional" value="${v(s.start)}"/></div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px"><label class="form-label">Link (Spotify / YouTube)</label><input class="form-input" id="tls-link" placeholder="optional" value="${v(s.link)}"/></div>
+    <div class="form-group"><label class="form-label">Notes for DJ / band</label><input class="form-input" id="tls-notes" placeholder="optional" value="${v(s.notes)}"/></div>`;
+  const footer=`<button class="btn btn-outline" onclick="_closeConfirm2Direct()">Cancel</button>
+    <button class="btn btn-primary" onclick="_tlSaveSongEditor(${index})">${isNew?'Add song':'Save song'}</button>`;
+  openConfirm2(isNew?'Add song':'Edit song', body, footer);
+  setTimeout(()=>{ const el=document.getElementById('tls-title'); if(el) el.focus(); },30);
+}
+function _tlSaveSongEditor(index){
+  const g=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
+  const song={ title:g('tls-title'), artist:g('tls-artist'), cue:g('tls-cue'), start:g('tls-start'), link:g('tls-link'), notes:g('tls-notes') };
+  _closeConfirm2Direct();
+  if(!song.title&&!song.artist&&!song.cue&&!song.link&&!song.notes) return; // nothing entered — don't add a blank row
+  if(index<0) _tlFormSongs.push(song); else _tlFormSongs[index]=song;
+  _tlRefreshSongList();
+}
+// Stacks a confirm dialog ON TOP of the open Add/Edit Moment modal (which stays open
+// underneath) — same pattern as _confirmDeleteAttach. _confirmDeleteDialog isn't used here
+// because it targets the MAIN modal and would replace the moment form, not stack on it.
+function _tlConfirmRemoveSong(i){
+  const s=_tlFormSongs[i]; if(!s) return;
+  const label=_escHtml(s.title||s.artist||'This song');
+  const body=`<div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;align-items:center;gap:9px">
+      <span style="width:26px;height:26px;border-radius:50%;background:rgba(192,57,43,.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+      <div style="font-size:13.5px;color:var(--ink);font-weight:500">Remove this song?</div>
+    </div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">"${label}" will be removed from this moment.</div>
+  </div>`;
+  const footer=`<button class="btn btn-outline btn-sm" onclick="_closeConfirm2Direct()">Cancel</button>
+    <button class="btn btn-sm" onclick="_tlDoRemoveSong(${i})" style="background:var(--red);color:#fff;border:1px solid var(--red)">Remove</button>`;
+  openConfirm2('Remove song', body, footer);
+}
+function _tlDoRemoveSong(i){
+  _tlFormSongs.splice(i,1);
+  _closeConfirm2Direct();
+  _tlRefreshSongList();
 }
 function tlCollectSongs(){
-  const out=[];
-  document.querySelectorAll('#tl-song-list [data-song-block]').forEach(b=>{
-    const g=cl=>{ const el=b.querySelector('.'+cl); return el?el.value.trim():''; };
-    const title=g('tl-song-title'), artist=g('tl-song-artist'), cue=g('tl-song-cue'),
-          start=g('tl-song-start'), link=g('tl-song-link'), notes=g('tl-song-notes');
-    if(title||artist||cue||start||link||notes){ out.push({title,artist,cue,start,link,notes}); }
-  });
-  return out;
+  return _tlFormSongs.slice();
 }
 
 function openAddTimelineItem(){
@@ -932,6 +982,36 @@ function saveTimelineItem(editId){
   }
   _tlSyncActiveItems();
   saveToStorage(); closeModalDirect(); navigate('timeline');
+}
+// ── Quick "Move to timeline" menu, per moment row ──────────────────────────────
+// A small arrow button beside each moment's category pill, so moving it to another
+// timeline doesn't require opening the full Edit Moment form (which also has this,
+// further down — this is the fast path for the same action).
+function _tlToggleMoveMenu(e, id){
+  if(e) e.stopPropagation();
+  const m=document.getElementById('tl-mv-'+id); if(!m) return;
+  const wasOpen=m.style.display==='block';
+  _tlCloseAllMoveMenus();
+  if(wasOpen) return;
+  m.style.display='block';
+  const close=ev=>{ if(!m.contains(ev.target)){ _tlCloseAllMoveMenus(); document.removeEventListener('click',close); } };
+  setTimeout(()=>document.addEventListener('click',close),0);
+}
+function _tlCloseAllMoveMenus(){
+  document.querySelectorAll('.tl-mv-menu').forEach(m=>{ m.style.display='none'; });
+}
+function _tlMoveItem(id, destId){
+  _tlCloseAllMoveMenus();
+  const idx=STATE.timeline.findIndex(x=>x.id===id);
+  if(idx===-1) return;
+  const dest=STATE.timelines.find(t=>t.id===destId);
+  if(!dest) return;
+  const [it]=STATE.timeline.splice(idx,1);
+  dest.items.push(it);
+  _tlSyncActiveItems();
+  saveToStorage();
+  navigate('timeline');
+  if(typeof _showInfoToast==='function') _showInfoToast('Moved "'+(it.title||it.time||'Moment')+'" to '+(dest.name||'the other timeline')+'.', null, null);
 }
 function deleteTimelineItem(id){
   const _t0=STATE.timeline.find(x=>x.id===id);

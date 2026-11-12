@@ -101,6 +101,11 @@ let _floorDrag=null, _floorDocWired=false, _floorFitScale=1, _floorCW=0, _floorC
 let _floorUserZoom=1, _floorPanX=0, _floorPanY=0, _floorBaseFit=1;
 let _floorZoomSettle=null; // debounce: drops the .zooming GPU hint after a gesture settles
 const FLOOR_ZOOM_MIN=1, FLOOR_ZOOM_MAX=4;
+// Desktop-only drag handle that lets the floorplan column take more width from the
+// Unassigned Guests sidebar; sidebar keeps a 200px min-width and CSS flex-wrap drops it
+// below the floorplan once there's no longer room for both side by side.
+let _floorPanelDrag=null, _floorPanelDocWired=false;
+const FLOOR_VP_MIN=300;
 
 function setSeatingLayout(v){ STATE.settings.seatingLayout=v; saveToStorage(); navigate('seating'); }
 function setSeatingTableStyle(v){ STATE.settings.seatingTableStyle=v; saveToStorage(); navigate('seating'); setTimeout(()=>{ const m=document.getElementById('seat-cog-menu'); if(m){ m.style.display='block'; _seatAttachCogCloser(); } }, 40); }
@@ -1549,6 +1554,8 @@ function _wireFloor(){
   document.querySelectorAll('#floor-canvas .floor-seat').forEach(p=>{
     p.addEventListener('pointerdown',_floorSeatDown);
   });
+  const _panelHandle=document.getElementById('floor-panel-resize');
+  if(_panelHandle) _panelHandle.addEventListener('pointerdown',_floorPanelResizeDown);
   if(!_floorDocWired){
     document.addEventListener('pointermove',_floorPointerMove);
     document.addEventListener('pointerup',_floorPointerUp);
@@ -1559,6 +1566,12 @@ function _wireFloor(){
       else { _floorClearStrayGhosts(); }
     });
     _floorDocWired=true;
+  }
+  if(!_floorPanelDocWired){
+    document.addEventListener('pointermove',_floorPanelResizeMove);
+    document.addEventListener('pointerup',_floorPanelResizeUp);
+    document.addEventListener('pointercancel',_floorPanelResizeUp);
+    _floorPanelDocWired=true;
   }
   _applyFloorFit();
   if(!_floorFitWired){
@@ -1648,6 +1661,39 @@ function _wireFloorZoom(){
   vp.addEventListener('pointercancel', endPan);
   // Show a grab cursor whenever Ctrl/⌘ is held over the floorplan, to hint panning.
   vp.addEventListener('pointermove', (e)=>{ if(!_panDrag) vp.style.cursor=(e.ctrlKey||e.metaKey)?'grab':''; });
+}
+// Panel-resize handle (desktop): drag to give the floorplan column more width at the
+// Unassigned Guests sidebar's expense. #floor-and-pool is flex-wrap, and the sidebar's
+// flex-basis matches its min-width, so once the dragged width leaves it less than
+// 200px of room the sidebar wraps onto its own line below the floorplan — no extra
+// bookkeeping needed, the browser's own wrap does the "no room permits" part.
+function _floorPanelResizeDown(e){
+  const col=document.getElementById('floor-vp-col'); if(!col) return;
+  _floorPanelDrag={ startX:e.clientX, startW:col.offsetWidth };
+  document.getElementById('floor-panel-resize').classList.add('dragging');
+  try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+  e.preventDefault();
+}
+function _floorPanelResizeMove(e){
+  if(!_floorPanelDrag) return;
+  const col=document.getElementById('floor-vp-col'); if(!col) return;
+  // Clamp to the canvas's own content width, same ceiling renderSeatingFloor applies —
+  // without it, a fast drag can leave the column wider than the page itself (a fixed
+  // flex-basis past the content width overflows rather than wrapping) until the next render.
+  const canvas=document.getElementById('floor-canvas');
+  const maxW=canvas?(parseFloat(canvas.dataset.cw)||Infinity):Infinity;
+  const w=Math.min(maxW, Math.max(FLOOR_VP_MIN, _floorPanelDrag.startW + (e.clientX - _floorPanelDrag.startX)));
+  col.style.flex=`0 0 ${w}px`;
+  col.style.width=w+'px';
+  _applyFloorFit();
+}
+function _floorPanelResizeUp(e){
+  if(!_floorPanelDrag) return;
+  const col=document.getElementById('floor-vp-col');
+  if(col) STATE.settings.floorViewportW=Math.round(col.offsetWidth);
+  _floorPanelDrag=null;
+  const h=document.getElementById('floor-panel-resize'); if(h) h.classList.remove('dragging');
+  saveToStorage();
 }
 // Fit the floorplan to the viewport width (scales down on narrow / mobile screens),
 // then apply any user zoom + pan on top.
@@ -1974,8 +2020,14 @@ function renderSeatingFloor(c,actions){
     _initAvailW=Math.max(0,((c&&c.clientWidth)||0)-padX);
   }catch(_){}
   const _showPoolSidebar=(!arrangeTablesMode)&&(_initAvailW>=700);
-  // When sidebar shown, canvas takes at most 62% so the sidebar gets the rest
-  const _vpAvailW=_showPoolSidebar?Math.max(300,Math.min(canvasW,Math.round(_initAvailW*0.62))):_initAvailW;
+  // When sidebar shown, canvas takes at most 62% by default so the sidebar gets the
+  // rest — unless the user has dragged the panel-resize handle, in which case honour
+  // their chosen width (clamped to the floorplan's own content width; no point being
+  // wider than that, it would just be blank space).
+  const _storedVpW=STATE.settings.floorViewportW;
+  const _vpAvailW=_showPoolSidebar
+    ? (_storedVpW ? Math.max(FLOOR_VP_MIN, Math.min(_storedVpW, canvasW)) : Math.max(FLOOR_VP_MIN,Math.min(canvasW,Math.round(_initAvailW*0.62))))
+    : _initAvailW;
   let _initCanvasStyle, _initVpStyle;
   if(_vpAvailW && _vpAvailW < canvasW){
     const s=_vpAvailW/canvasW;
@@ -2007,8 +2059,8 @@ function renderSeatingFloor(c,actions){
     ${_floorLockBtnHtml()}
     <span style="font-size:11.5px;color:var(--muted);margin-left:auto;text-align:right">${_floorLayoutLocked()?(_floorAllLocked()?'Locked — nothing can be moved · zoom &amp; pan still work':'Tables &amp; areas locked · guests can still be seated'):'<span class="floor-hint-full">Drag tables to arrange · Ctrl + scroll to zoom · Ctrl + drag to move the plan</span><span class="floor-hint-short">Drag tables to arrange</span>'}</span>
   </div>
-  <div id="floor-and-pool" style="display:flex;gap:16px;align-items:flex-start">
-    <div style="${_showPoolSidebar?`flex:0 0 ${_vpAvailW}px;width:${_vpAvailW}px`:'flex:1 1 0%'};min-width:0">
+  <div id="floor-and-pool" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+    <div id="floor-vp-col" style="${_showPoolSidebar?`flex:0 0 ${_vpAvailW}px;width:${_vpAvailW}px;position:relative`:'flex:1 1 0%'};min-width:0">
       <div id="floor-viewport" style="${_initVpStyle};position:relative">
         <div id="floor-canvas" class="floor-canvas${STATE.settings.floorGrid?' grid-on':''}${_floorLayoutLocked()?' floor-locked':''}${_floorAllLocked()?' floor-locked-all':''}" data-cw="${canvasW}" data-ch="${canvasH}" style="${_initCanvasStyle}" ondragover="event.preventDefault()">
           ${(STATE.settings.floorDecor||[]).map(_floorDecorHtml).join('')}
@@ -2022,8 +2074,9 @@ function renderSeatingFloor(c,actions){
           <button type="button" onclick="_floorZoomReset()" title="Reset zoom" aria-label="Reset zoom"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 9 8 9"/></svg></button>
         </div>`:''}
       </div>
+      ${_showPoolSidebar?`<div id="floor-panel-resize" class="floor-panel-resize" title="Drag to resize — the Unassigned Guests panel will shrink to fit"><span class="floor-panel-resize-grip"></span></div>`:''}
     </div>
-    ${_showPoolSidebar?`<div id="floor-pool-sidebar" style="flex:1 1 0%;min-width:200px;position:sticky;top:56px;max-height:calc(100vh - 80px);overflow-y:auto">
+    ${_showPoolSidebar?`<div id="floor-pool-sidebar" style="flex:1 1 200px;min-width:200px;position:sticky;top:56px;max-height:calc(100vh - 80px);overflow-y:auto">
       <div class="card" style="margin-bottom:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <div class="section-eyebrow" style="margin-bottom:0;font-size:11px">Unassigned Guests</div>
