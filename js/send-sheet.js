@@ -610,6 +610,7 @@ function _ssRender(open){
     ${blockedHtml}
     ${siteNoticeHtml}
     ${toHtml}
+    <div id="ss-err" style="display:none;font-size:12.5px;color:var(--red);border:.5px solid var(--red);border-radius:10px;padding:8px 11px">Couldn't send this email. Nothing was delivered — tap <strong>Try again</strong>.</div>
     ${attachHtml}
     <div style="${lab}">Message</div>
     ${mode==='email-direct'&&typeof _rteMdToHtml==='function'
@@ -621,7 +622,7 @@ function _ssRender(open){
   </div>`;
   const primary = mode==='email-direct' ? 'Send email'
     : mode==='share' ? 'Share to '+_ssMethodLabel(s.method)
-    : s.method==='email' ? 'Open mail app'
+    : s.method==='email' ? 'Sign in to send'
     : s.method==='text' ? 'Open Messages' : 'Open '+_ssMethodLabel(s.method);
   const footer=`<button class="btn btn-outline btn-sm" onclick="_ss=null;_closeConfirm2Direct()">Cancel</button>
     <button class="btn btn-primary btn-sm" id="ss-go" onclick="_ssGo()">${esc(primary)}</button>`;
@@ -668,9 +669,14 @@ async function _ssGo(){
       ok = r.ok && (await r.json()).ok===true;
     }catch(_){ ok=false; }
     if(ok){ _ssDone('Email sent to '+s.to+'.'); return; }
-    if(btn){ btn.disabled=false; btn.textContent='Send email'; }
-    if(typeof _showInfoToast==='function') _showInfoToast('Couldn\'t send from UnionVault — opening your mail app instead.', null, null);
-    _ssFallback(msg); return;
+    if(btn){ btn.disabled=false; btn.textContent='Try again'; }
+    const _err=document.getElementById('ss-err'); if(_err) _err.style.display='';
+    if(typeof _showInfoToast==='function') _showInfoToast('Couldn\'t send — check your connection and try again.', null, null);
+    return;
+  }
+  if(s.method==='email'){
+    if(typeof _showInfoToast==='function') _showInfoToast('Sign in to send emails from UnionVault.', null, null);
+    return;
   }
   if(s.asset.file && s.addLink) await _ssEnsureUploaded();
   _ssFallback(msg);

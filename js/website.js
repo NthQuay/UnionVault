@@ -6444,10 +6444,10 @@ section.b-center .stays{text-align:center}
 .ww-email-close{background:none;border:none;cursor:pointer;color:${t2.text};opacity:.55;font-size:22px;line-height:1;padding:0 2px;flex-shrink:0}
 .ww-email-close:hover{opacity:1}
 .ww-email-err{font-size:12px;color:#DC2626;min-height:16px;margin:6px 0 0}
-.ww-pay-row{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid ${t2.heading}10;font-size:${scb(14)}px}
+.ww-pay-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:8px 0;border-bottom:1px solid ${t2.heading}10;font-size:${scb(14)}px}
 .ww-pay-row:last-child{border-bottom:none}
 .ww-pay-label{font-size:${scb(11)}px;letter-spacing:.1em;text-transform:uppercase;color:${t2.accent};flex-shrink:0}
-.ww-pay-value{color:${t2.text};text-align:right}
+.ww-pay-value{color:${t2.text};text-align:right;min-width:0;overflow-wrap:anywhere;word-break:break-word}
 .ww-store-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid ${t2.accent};border-radius:8px;padding:8px 16px;font-size:${scb(13)}px;color:${t2.accent};text-decoration:none;transition:background .15s}
 .ww-store-btn:hover{background:${t2.accent}11}
 .ww-registry{margin-top:28px}
@@ -7079,14 +7079,14 @@ function _wwRowHtml(x){
   const addrLine = addr
     ? `<span style="display:block;font-size:11px;color:var(--muted);margin-top:3px"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${_wwEsc(addr)}</span>`
     : `<span style="display:block;font-size:11px;color:var(--gold-deep);margin-top:3px;cursor:pointer" onclick="closeDots();openWwContribution('${x.id}')"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Add address</span>`;
-  return `<div style="display:flex;align-items:center;gap:12px;background:var(--card,var(--cream));border:1px solid var(--border);border-radius:11px;padding:11px 13px">
+  return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 12px;background:var(--card,var(--cream));border:1px solid var(--border);border-radius:11px;padding:11px 13px">
       <span style="width:32px;height:32px;border-radius:50%;background:var(--surface);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:500;align-self:flex-start;margin-top:1px">${_wwEsc(_wwInitials(x.name))}</span>
-      <div style="flex:1;min-width:0;overflow:hidden">
-        <span style="display:block;font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wwEsc(x.name||'Anonymous')}</span>
+      <div style="flex:1 1 170px;min-width:0;overflow-wrap:anywhere">
+        <span style="display:block;font-size:13.5px;color:var(--ink);overflow-wrap:anywhere">${_wwEsc(x.name||'Anonymous')}</span>
         <span style="display:block;font-size:11px;color:var(--muted)">${_wwEsc(meta)}</span>
         ${noteLine}${addrLine}
       </div>
-      <div style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;align-self:flex-start;margin-top:1px">
+      <div style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;align-self:flex-start;margin-top:1px;margin-left:auto">
         <span style="font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--ink)">${fmt(Number(x.amount)||0)}</span>
         <span style="display:inline-flex;gap:6px;align-items:center;margin:0 2px">${cardBtn}${thankBtn}</span>
         <div class="dots-menu">
@@ -7346,7 +7346,7 @@ function _wwPreviewHtml(ww){
   const payBlock = payRows.length
     ? `<div style="background:var(--surface);border-radius:12px;padding:14px 16px;margin:16px 0">
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">How to contribute</div>
-        <div style="font-size:13px;color:var(--ink);line-height:1.9">${payRows.join('<br>')}</div>
+        <div style="font-size:13px;color:var(--ink);line-height:1.9;overflow-wrap:anywhere">${payRows.join('<br>')}</div>
       </div>`
     : `<div style="background:var(--surface);border-radius:12px;padding:16px;margin:16px 0;text-align:center;font-size:12.5px;color:var(--muted)">Tap Add details to show your payment details here.</div>`;
 
@@ -7541,7 +7541,7 @@ function _wwContribPickerInit(){
     return `<div data-idx="${idx}" tabindex="0" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;cursor:pointer"
       onmouseenter="this.style.background='var(--surface)'" onmouseleave="this.style.background=''" onmousedown="event.preventDefault()">
       <span style="width:28px;height:28px;border-radius:50%;background:var(--surface);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${_wwEsc(_wwInitials(g.name))}</span>
-      <span style="flex:1;min-width:0"><span style="display:block;font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_wwEsc(g.name)}</span>${sub?`<span style="display:block;font-size:11px;color:var(--muted);margin-top:1px">${sub}</span>`:''}</span>
+      <span style="flex:1;min-width:0;overflow-wrap:anywhere"><span style="display:block;font-size:13.5px;color:var(--ink);overflow-wrap:anywhere">${_wwEsc(g.name)}</span>${sub?`<span style="display:block;font-size:11px;color:var(--muted);margin-top:1px">${sub}</span>`:''}</span>
       ${_wwPickerStatusPill(g.status, past)}
     </div>`;
   };

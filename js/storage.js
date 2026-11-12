@@ -35,6 +35,7 @@ function saveToStorage(){
     families: STATE.families||[],
     invites: STATE.invites||[],
     inviteMeta: STATE.inviteMeta||{},
+    groupRejects: STATE.groupRejects||[],
     invitation: STATE.invitation||{},
     dashWidgetOrder: STATE.dashWidgetOrder,
     dashLayout: STATE.dashLayout,

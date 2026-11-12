@@ -833,6 +833,7 @@ function loadFromStorage(){
     if(!STATE.tagDefs || typeof STATE.tagDefs!=='object') STATE.tagDefs = {};
     if(saved.invites)STATE.invites = saved.invites;
     if(saved.inviteMeta && typeof saved.inviteMeta==='object') STATE.inviteMeta = saved.inviteMeta;
+    if(Array.isArray(saved.groupRejects)) STATE.groupRejects = saved.groupRejects;
     if(saved.invitation && typeof saved.invitation==='object') STATE.invitation = saved.invitation;
     if(saved.dashWidgetOrder)STATE.dashWidgetOrder = saved.dashWidgetOrder;
     if(saved.dashLayout)STATE.dashLayout = saved.dashLayout;

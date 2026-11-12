@@ -163,6 +163,7 @@ function _invitationSectionHtml(which){
 function _invitationCreate(){ _invComingSoon(); }
 function _invitationUpload(){ _invTriggerUpload(); }
 function _invitationSend(channel){
+  if(channel==='email'){ openBulkSend('invite'); return; }
   if(channel==='text'){
     if(typeof _showInfoToast==='function') _showInfoToast('Text messages are sent per-guest from the RSVP tracker.',null,null);
     return;
@@ -660,7 +661,7 @@ function _vluCardHtml(v){
       <p style="font-size:12.5px;color:var(--ink);line-height:1.5;margin:10px 0 0">\u201c${_escHtml(v.note)}\u201d<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:4px">${_escHtml(v.byline)}</span></p>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
         ${btn('Website','website',first==='website')}${btn('Instagram','instagram',first==='instagram')}${btn('Contact form','contact',false)}${btn('Book online','book',false)}
-        ${v.phone?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s+/g,''))}" onclick="_vluPing('${v.id}','call')">Call</a>`:''}${v.email?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="mailto:${_escHtml(v.email)}" onclick="_vluPing('${v.id}','email')">Email</a>`:''}
+        ${v.phone?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s+/g,''))}" onclick="_vluPing('${v.id}','call')">Call</a>`:''}${v.email?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="#" data-vm-email="${_escHtml(v.email)}" data-vm-name="${_escHtml(v.business||v.contact||'')}" data-vm-ping="${v.id}" onclick="event.preventDefault();openVendorMessageFrom(this)">Email</a>`:''}
       </div>
     </div>
   </div>`;
@@ -857,7 +858,7 @@ function _vluMsgPanelHtml(v){
 
   /* picked, but not reachable through the planner — offer the real routes */
   const acts=[];
-  if(v.email) acts.push(`<a class="btn btn-sm btn-primary" style="height:34px;display:inline-flex;align-items:center;gap:5px;text-decoration:none" href="mailto:${_escHtml(v.email)}"${v.pingId?` onclick="_vluPing('${v.pingId}','email')"`:''}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>Email</a>`);
+  if(v.email) acts.push(`<a class="btn btn-sm btn-primary" style="height:34px;display:inline-flex;align-items:center;gap:5px;text-decoration:none" href="#" data-vm-email="${_escHtml(v.email)}" data-vm-name="${_escHtml(v.business||v.name||v.contact||'')}" data-vm-ping="${v.pingId||''}" onclick="event.preventDefault();openVendorMessageFrom(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>Email</a>`);
   if(v.phone) acts.push(`<a class="btn btn-sm btn-outline" style="height:34px;display:inline-flex;align-items:center;text-decoration:none" href="tel:${_escHtml(String(v.phone).replace(/[^+\d]/g,''))}"${v.pingId?` onclick="_vluPing('${v.pingId}','call')"`:''}>Call</a>`);
 
   return `${bubble}
