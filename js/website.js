@@ -676,10 +676,16 @@ function renderWebsite(c, actions){
     </div>`;
   }).join('');
 
+  // Desktop-only: the user can drag the handle below to narrow this column and give the
+  // preview more room (or widen it back). Persisted width, clamped to a sane range; below
+  // the grid breakpoint the shell isn't a grid at all, so there's nothing to apply this to.
+  const _wbListW = STATE.settings && STATE.settings.wbListW;
+  const _wbShellStyle = (_wbListW && window.innerWidth>=1100) ? ` style="grid-template-columns:${_wbListW}px minmax(0,1fr) 360px"` : '';
+
   c.innerHTML = `<div class="wb-intro" style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:14px">
     Your site reads from the planner — change a detail there and it changes here. Drag to reorder, tap a section to edit.
   </div>
-  <div class="wb-shell${_wbStripOpen?'':' wb-strip-shut'}">
+  <div class="wb-shell${_wbStripOpen?'':' wb-strip-shut'}"${_wbShellStyle}>
     <div class="wb-list" style="background:var(--cream);border:1px solid var(--border);border-radius:14px;overflow:hidden">
       ${publishRow}${themeRow}${rows}
       <div style="padding:10px 12px;text-align:center;border-top:1px solid var(--border)">
@@ -688,6 +694,7 @@ function renderWebsite(c, actions){
         </button>
       </div>
     </div>
+    ${window.innerWidth>=1100?`<div id="wb-panel-resize" class="wb-panel-resize" style="left:${(_wbListW||300)+10}px" title="Drag to resize"><span class="floor-panel-resize-grip"></span></div>`:''}
     <div class="wb-pane">
       <div class="wb-strip-bar" onclick="_wbStripToggle()" aria-expanded="${_wbStripOpen?'true':'false'}">
         <span style="display:flex;align-items:center;gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Preview</span>
@@ -710,6 +717,42 @@ function renderWebsite(c, actions){
     </div>
   </div>`;
   _wbLivePaint();
+  const _rh=document.getElementById('wb-panel-resize');
+  if(_rh) _rh.addEventListener('pointerdown',_wbPanelResizeDown);
+  if(!_wbPanelDocWired){
+    document.addEventListener('pointermove',_wbPanelResizeMove);
+    document.addEventListener('pointerup',_wbPanelResizeUp);
+    document.addEventListener('pointercancel',_wbPanelResizeUp);
+    _wbPanelDocWired=true;
+  }
+}
+// Desktop-only drag handle (see .wb-panel-resize in css/app.css) that lets the section-list
+// column give the preview more room, or take more of its own back. Mirrors the pattern used
+// for the seating-plan floorplan resize (_floorPanelResizeDown/Move/Up): clamp, live-patch
+// during drag, persist on release.
+let _wbPanelDrag=null, _wbPanelDocWired=false;
+const WB_LIST_MIN=220, WB_LIST_MAX=420;
+function _wbPanelResizeDown(e){
+  const col=document.querySelector('.wb-list'); if(!col) return;
+  _wbPanelDrag={ startX:e.clientX, startW:col.offsetWidth };
+  document.getElementById('wb-panel-resize').classList.add('dragging');
+  try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+  e.preventDefault();
+}
+function _wbPanelResizeMove(e){
+  if(!_wbPanelDrag) return;
+  const shell=document.querySelector('.wb-shell'); const handle=document.getElementById('wb-panel-resize');
+  if(!shell||!handle) return;
+  const w=Math.max(WB_LIST_MIN, Math.min(WB_LIST_MAX, _wbPanelDrag.startW + (e.clientX - _wbPanelDrag.startX)));
+  shell.style.gridTemplateColumns=`${w}px minmax(0,1fr) 360px`;
+  handle.style.left=(w+10)+'px';
+}
+function _wbPanelResizeUp(e){
+  if(!_wbPanelDrag) return;
+  const col=document.querySelector('.wb-list');
+  if(col){ if(!STATE.settings) STATE.settings={}; STATE.settings.wbListW=Math.round(col.offsetWidth); saveToStorage(); }
+  _wbPanelDrag=null;
+  const h=document.getElementById('wb-panel-resize'); if(h) h.classList.remove('dragging');
 }
 
 // Repaint the sticky desktop pane. The iframe only exists above 1100px, so this is a
@@ -2992,12 +3035,16 @@ function _wbHeroBody(){
         <span style="font-size:12px">Choose a photo</span>
       </button>`}
     ${has?`
+      ${_wbIsFxFormat()?`
+      <div class="wb-blk-hint" style="margin-bottom:13px">This format always uses its own fixed header layout, so there's no "Style" choice here.</div>
+      `:`
       <div class="wb-slot-lbl" style="margin-bottom:6px">Style</div>
       <span class="inv-seg" style="margin-bottom:13px">
         <button type="button" class="${h.style==='over'?'active':''}" onclick="_wbHeroSet('style','over')">Names over photo</button>
         <button type="button" class="${h.style==='below'?'active':''}" onclick="_wbHeroSet('style','below')">Photo below names</button>
       </span>
-      ${h.style==='over'?`
+      `}
+      ${(_wbIsFxFormat()||h.style==='over')?`
         <div class="wb-slot-lbl" style="margin-bottom:6px">Height</div>
         <span class="inv-seg" style="margin-bottom:13px">
           <button type="button" class="${h.height==='short'?'active':''}" onclick="_wbHeroSet('height','short')">Short</button>
@@ -3012,12 +3059,14 @@ function _wbHeroBody(){
         <div class="wb-slot-lbl" id="wb-hero-scrim-lbl" style="margin-bottom:6px">Darken · ${h.scrim}%</div>
         <input type="range" min="0" max="100" value="${h.scrim}" oninput="_wbHeroScrim(this.value)"
                style="width:100%;accent-color:var(--gold)"/>
+        ${(!_wbIsFxFormat()||(_wbSite().theme||{}).format==='magazine')?`
         <div class="wb-slot-lbl" style="margin:13px 0 6px">Names</div>
         <span class="inv-seg">
           <button type="button" class="${h.ink==='light'?'active':''}" onclick="_wbHeroSet('ink','light')">Light</button>
           <button type="button" class="${h.ink==='dark'?'active':''}" onclick="_wbHeroSet('ink','dark')">Dark</button>
         </span>
         <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">A photo behind text is the classic way to make a heading unreadable. Darken the photo, or switch the names to dark — whichever your photo wants.</div>
+        `:''}
 
         <div class="wb-slot-lbl" style="margin:15px 0 7px">Show on the photo</div>
         <div style="display:flex;flex-direction:column;gap:6px">
@@ -3057,12 +3106,13 @@ function _wbHeroRepaint(){
 // preview of a different photo. Both call this. One function, one truth — and when the
 // hero's rendering changes, there is one place to change it, not two that drift.
 function _wbHeroImgCss(h){
-  // Zoom only applies to `over` — a photo BELOW the names has no frame to be zoomed
-  // within, and the guest site renders it as a plain 3/2 cover crop. Applying the zoom
-  // here would preview a photo the guest will never see. The focal point applies to BOTH:
-  // .hero-below is object-fit:cover in a fixed box, so object-position genuinely chooses
-  // its crop.
-  const zoom = h.style==='over' ? Math.max(50,Math.min(250,Number(h.zoom)||100)) : 100;
+  // Zoom only applies to `over` (or an Editorial/Atelier format, which always renders the
+  // photo as a full cover image regardless of the Style setting) — a photo BELOW the names
+  // in a classic/modern format has no frame to be zoomed within, and the guest site renders
+  // it as a plain 3/2 cover crop. Applying the zoom here would preview a photo the guest
+  // will never see. The focal point applies to all of these: .hero-below is object-fit:cover
+  // in a fixed box, so object-position genuinely chooses its crop.
+  const zoom = (_wbIsFxFormat()||h.style==='over') ? Math.max(50,Math.min(250,Number(h.zoom)||100)) : 100;
   const pos=h.pos||'50% 50%';
 
   // ⚠️ THE ZOOM IS ANCHORED TO `contain`. 100% = THE WHOLE PHOTO, nothing cropped.
@@ -4773,12 +4823,15 @@ function _wbBuildSite(forDownload){
         const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         const dd=okD?String(d.getDate()).padStart(2,'0'):'', mm=okD?String(d.getMonth()+1).padStart(2,'0'):'';
         const place = (e.venue||'').trim();
-        const img = heroOk ? `<img src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${pos}"/>` : '';
+        // Same zoom/darken the non-fx "over" header applies — a cover photo is a cover
+        // photo whatever the surrounding layout, and both formats always show one.
+        const img = heroOk ? `<img src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${pos};transform:scale(${zoom/100});transform-origin:${pos}"/>` : '';
+        const scrimSpan = (heroOk && scrim>0) ? `<span class="hero-scrim" style="background:rgba(0,0,0,${scrim})"></span>` : '';
         const extra = [homeSlot('top'), h.sub?`<p class="sub">${_escHtml(h.sub)}</p>`:'', homeSlot('bottom')].filter(Boolean).join('');
         if(t.format==='magazine'){
           return `<header id="home" class="fx-cover${heroOk?'':' fx-noimg'}${hero.ink==='dark'?' fx-ink-dark':''}">
         <div class="fx-topbar"><span>The Wedding Issue</span><span>${okD?`${mos[d.getMonth()]} ${d.getFullYear()}`:'Special Edition'}</span></div>
-        <div class="fx-coverimg" style="min-height:${WB_HERO_H[hero.height]||WB_HERO_H.tall}">${img}
+        <div class="fx-coverimg" style="min-height:${WB_HERO_H[hero.height]||WB_HERO_H.tall}">${img}${scrimSpan}
           ${showN?`<div class="fx-mast">${namesHtml}</div>`:''}
           <div class="fx-lines">
             <span class="fx-sc">${okD?'Save the date':'Together with their families'}</span>
@@ -4800,7 +4853,7 @@ function _wbBuildSite(forDownload){
           <div class="fx-meta">${(showD&&okD)?`<div><span class="fx-sc">Date</span><b>${_escHtml(d.getDate()+' '+mos[d.getMonth()]+' '+d.getFullYear())}</b></div>`:''}${place?`<div><span class="fx-sc">Place</span><b>${_escHtml(place)}</b></div>`:''}</div>
           ${icsBtn}
         </div>
-        ${img?`<figure class="fx-hfig">${img}</figure>`:''}
+        ${img?`<figure class="fx-hfig" style="min-height:${WB_HERO_H[hero.height]||WB_HERO_H.tall}">${img}${scrimSpan}</figure>`:''}
         ${extra?`<div class="fx-cover-extra">${extra}</div>`:''}
       </header>`;
       }
