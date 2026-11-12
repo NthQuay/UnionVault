@@ -3235,3 +3235,14 @@ html.uvcp-lock,html.uvcp-lock body{overflow:hidden}
   .uvcp{max-width:none;border-radius:18px 18px 0 0;padding:16px 18px calc(16px + env(safe-area-inset-bottom))}
   .uvcp-sv{height:190px}
 }
+
+/* Updated Terms & Privacy notice (dashboard) */
+.uv-terms-banner{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:12px;padding:11px 12px 11px 14px;margin-bottom:16px}
+.uv-terms-banner .utb-ic{color:var(--gold-deep);flex:none;display:flex}
+.uv-terms-banner .utb-txt{flex:1;min-width:0;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.uv-terms-banner .utb-txt strong{display:block;font-size:13px;font-weight:600;color:var(--ink)}
+.uv-terms-banner .utb-txt a{color:var(--gold-deep);text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+.uv-terms-banner .utb-btns{display:flex;align-items:center;gap:6px;flex:none}
+.uv-terms-banner .utb-agree{background:var(--gold);color:#fff;border:none;border-radius:8px;padding:7px 16px;font:600 12.5px var(--font-body,'Inter',sans-serif);cursor:pointer}
+.uv-terms-banner .utb-agree:hover{background:var(--gold-deep)}
+@media (max-width:560px){.uv-terms-banner{flex-wrap:wrap}.uv-terms-banner .utb-txt{flex-basis:calc(100% - 40px)}.uv-terms-banner .utb-btns{width:100%;justify-content:flex-end}}

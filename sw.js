@@ -1,11 +1,11 @@
-const CACHE = 'union-vault-v513.9';
+const CACHE = 'union-vault-v514.1';
 const SHELL = [
   '/', '/index.html',
   '/css/fonts.css', '/css/app.css', '/css/landing.css', '/css/setup-wizard.css',
   '/js/wallpaper.js', '/js/state.js', '/js/utils.js', '/js/navigation.js',
   '/js/dashboard.js', '/js/details.js', '/js/guests.js', '/js/timeline.js',
-  '/js/send-sheet.js', '/js/colorpicker.js', '/js/rsvp.js', '/js/checklist.js', '/js/vendors.js',
-  '/js/budget.js', '/js/seating.js', '/js/supabase.js', '/js/subscription.js', '/js/autocomplete.js',
+  '/js/send-sheet.js', '/js/bulk-send.js', '/js/colorpicker.js', '/js/rsvp.js', '/js/checklist.js', '/js/vendors.js',
+  '/js/budget.js', '/js/seating.js', '/js/supabase.js', '/js/ref.js', '/js/subscription.js', '/js/autocomplete.js',
   '/js/floorplan.js', '/js/inspiration.js', '/js/visionboard.js',
   '/js/wishingwell.js', '/js/website.js', '/js/comms.js', '/js/sent-log.js', '/js/invitations.js', '/js/events.js',
   '/js/settings.js', '/js/import.js', '/js/attachments.js', '/js/export.js',

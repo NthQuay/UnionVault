@@ -163,6 +163,7 @@ function _invitationSectionHtml(which){
 function _invitationCreate(){ _invComingSoon(); }
 function _invitationUpload(){ _invTriggerUpload(); }
 function _invitationSend(channel){
+  if(channel==='email'){ openBulkSend('invite'); return; }
   if(channel==='text'){
     if(typeof _showInfoToast==='function') _showInfoToast('Text messages are sent per-guest from the RSVP tracker.',null,null);
     return;
@@ -446,7 +447,9 @@ function _vluMsgBack(){
    Suppliers the founders used at their own wedding. Real businesses only — no invented
    ratings, prices or reviews. The Google rating is typed in by hand with the month it was
    taken ("as of"), so it never claims to be live. Links open as "sponsored" (affiliate). */
-const VLU_VENDORS = [
+/* This list is only the OFFLINE FALLBACK. The live list comes from the database (recommended_vendors(), see
+   _vluLoadRemote below), so vendors edit their own listing in the vendor portal and nothing here needs changing. */
+let VLU_VENDORS = [
   { id:'storyline', mono:'SC', name:'Storyline Ceremonies', cat:'Celebrants', catLabel:'Marriage Celebrant & MC', tag:'Preferred vendor',
     area:'Ceremony at a location of your choice. $2 per km outside a 40km radius of Brisbane\u2019s CBD.',
     rating:{ score:5.0, count:9, asOf:'2026-11' }, phone:'0475 296 057', hours:'Open daily 9:30am\u20134:30pm',
@@ -487,7 +490,22 @@ const _VLU_CLICK_URL = 'https://hzafdlfprtzfxtyaebmc.supabase.co/functions/v1/ve
 /* Flip to true ONLY after the vendor_links/vendor_clicks tables exist and the vendor-click function is deployed;
    until then links go straight to the vendor so nobody is sent to the wrong place. */
 const _VLU_TRACKING_LIVE = true;
-function _vluTrackUrl(vendorId, link){ return _VLU_CLICK_URL + '?v=' + encodeURIComponent(vendorId) + '&l=' + encodeURIComponent(link); }
+/* Signed-in couples get a short-lived click token so the admin can see which account clicked. It is NOT their login
+   (a login token must never sit in a link) and only lets the click function note the account. Guests send nothing. */
+let _vluCt = null, _vluCtBusy = false;
+function _vluEnsureToken(){
+  try{
+    if(_vluCtBusy || (_vluCt && _vluCt.exp*1000 > Date.now()+300000)) return;
+    if(typeof _sbSession==='undefined' || !_sbSession || !_sbSession.access_token) return;
+    _vluCtBusy = true;
+    fetch(_VLU_CLICK_URL+'?mint=1',{method:'POST',headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_sbSession.access_token}})
+      .then(r=>r.ok?r.json():null).then(d=>{ if(d && d.t) _vluCt=d; }).catch(()=>{}).then(()=>{ _vluCtBusy=false; });
+  }catch(_){ _vluCtBusy=false; }
+}
+function _vluTrackUrl(vendorId, link){
+  _vluEnsureToken();
+  return _VLU_CLICK_URL + '?v=' + encodeURIComponent(vendorId) + '&l=' + encodeURIComponent(link) + ((_vluCt && _vluCt.exp*1000 > Date.now()) ? '&ct=' + encodeURIComponent(_vluCt.t) : '');
+}
 /* Phone and email taps cannot be redirected, so they send a tiny "ping" and then carry on as normal. */
 function _vluPing(vendorId, link){
   if(!_VLU_TRACKING_LIVE) return;
@@ -534,7 +552,40 @@ function _vluInPlanner(v){
   return (STATE.vendors||[]).some(x => x.lookupId === v.id);
 }
 function _vluAlt(id){ return id.charCodeAt(1) % 2 === 1; }
+/* ── live list from the database ─────────────────────────────────────────────────────────
+   Only vendors you have published are returned. The last good answer is kept on this device so the page still works
+   offline; if the very first load fails the built-in list above is used. */
+const _VLU_CACHE_KEY = 'uv_vlu_cache_v1';
+function _vluMedia(path){ return !path ? '' : /^https?:/.test(path) ? path : _SB_URL + '/storage/v1/object/public/vendor-media/' + path; }
+function _vluNormalise(r){
+  return { id:r.id, mono:r.mono||String(r.name||'').trim().slice(0,2).toUpperCase(), name:r.name, cat:r.cat, catLabel:r.catLabel||r.cat,
+    tag:r.tag||'Preferred vendor', area:r.area||'', rating:r.rating||null, phone:r.phone||'', hours:r.hours||'', email:r.email||'',
+    note:r.note||'', byline:r.byline||'', siteUrl:r.siteUrl||'', links:r.links||{},
+    bio:r.bio||'', logo:_vluMedia(r.logo), photos:(r.photos||[]).map(_vluMedia), packages:r.packages||[] };
+}
+function _vluApplyList(arr){
+  const next = arr.map(_vluNormalise), same = JSON.stringify(next) === JSON.stringify(VLU_VENDORS);
+  VLU_VENDORS = next;
+  if(!same && typeof _currentPage!=='undefined' && _currentPage==='vendors' && typeof navigate==='function' && !document.querySelector('.modal-overlay:not(.hidden)')) navigate('vendors');
+}
+async function _vluLoadRemote(){
+  try{ const c = JSON.parse(localStorage.getItem(_VLU_CACHE_KEY)||'null'); if(c && Array.isArray(c.list) && Date.now()-c.at < 30*86400000) _vluApplyList(c.list); }catch(_){}
+  try{
+    const ctl = new AbortController(), t = setTimeout(()=>ctl.abort(), 8000);
+    const r = await fetch(_SB_URL+'/rest/v1/rpc/recommended_vendors',{method:'POST',signal:ctl.signal,
+      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json'},body:'{}'});
+    clearTimeout(t);
+    if(!r.ok) return;
+    const list = await r.json();
+    if(!Array.isArray(list)) return;
+    try{ localStorage.setItem(_VLU_CACHE_KEY, JSON.stringify({at:Date.now(), list})); }catch(_){}
+    _vluApplyList(list);
+  }catch(e){ console.warn('Recommended vendors: using saved list', e); }
+}
+setTimeout(_vluLoadRemote, 0);
+
 function _vluFiltered(){
+  _vluEnsureToken();
   return _vluCat === 'All' ? VLU_VENDORS.slice() : VLU_VENDORS.filter(v => v.cat === _vluCat);
 }
 function _vluRatingHtml(v){
@@ -610,7 +661,7 @@ function _vluCardHtml(v){
       <p style="font-size:12.5px;color:var(--ink);line-height:1.5;margin:10px 0 0">\u201c${_escHtml(v.note)}\u201d<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:4px">${_escHtml(v.byline)}</span></p>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
         ${btn('Website','website',first==='website')}${btn('Instagram','instagram',first==='instagram')}${btn('Contact form','contact',false)}${btn('Book online','book',false)}
-        ${v.phone?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s+/g,''))}" onclick="_vluPing('${v.id}','call')">Call</a>`:''}${v.email?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="mailto:${_escHtml(v.email)}" onclick="_vluPing('${v.id}','email')">Email</a>`:''}
+        ${v.phone?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="tel:${_escHtml(v.phone.replace(/\s+/g,''))}" onclick="_vluPing('${v.id}','call')">Call</a>`:''}${v.email?`<a class="btn btn-outline btn-sm" style="font-size:11.5px;text-decoration:none" href="#" data-vm-email="${_escHtml(v.email)}" data-vm-name="${_escHtml(v.business||v.contact||'')}" data-vm-ping="${v.id}" onclick="event.preventDefault();openVendorMessageFrom(this)">Email</a>`:''}
       </div>
     </div>
   </div>`;
@@ -621,7 +672,7 @@ function _vluBrowseHtml(){
   const list=_vluFiltered();
   return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px">${chip('All','All',VLU_VENDORS.length)}${cats.map(c=>chip(c,c,null)).join('')}</div>
     <div style="display:flex;flex-direction:column;gap:12px;max-width:560px">${list.map(_vluCardHtml).join('')}</div>
-    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:16px;padding-top:10px;border-top:1px solid var(--border);max-width:560px"><b style="color:var(--ink)">Disclosure:</b> these are suppliers we used and recommend. If you book through our links, UnionVault may earn a commission at no extra cost to you. ${_VLU_TRACKING_LIVE?'Links open through Union Vault so we can count referrals. ':''}Google ratings are copied by hand and may be out of date.</div>`;
+    <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:16px;padding-top:10px;border-top:1px solid var(--border);max-width:560px"><b style="color:var(--ink)">Disclosure:</b> these are suppliers we used and recommend. If you book through our links, UnionVault may earn a commission at no extra cost to you. ${_VLU_TRACKING_LIVE?'Links open through Union Vault so we can count referrals, and we note which account used them. ':''}Google ratings are copied by hand and may be out of date.</div>`;
 }
 
 const VLU_KEY_CATS = [
@@ -807,7 +858,7 @@ function _vluMsgPanelHtml(v){
 
   /* picked, but not reachable through the planner — offer the real routes */
   const acts=[];
-  if(v.email) acts.push(`<a class="btn btn-sm btn-primary" style="height:34px;display:inline-flex;align-items:center;gap:5px;text-decoration:none" href="mailto:${_escHtml(v.email)}"${v.pingId?` onclick="_vluPing('${v.pingId}','email')"`:''}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>Email</a>`);
+  if(v.email) acts.push(`<a class="btn btn-sm btn-primary" style="height:34px;display:inline-flex;align-items:center;gap:5px;text-decoration:none" href="#" data-vm-email="${_escHtml(v.email)}" data-vm-name="${_escHtml(v.business||v.name||v.contact||'')}" data-vm-ping="${v.pingId||''}" onclick="event.preventDefault();openVendorMessageFrom(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>Email</a>`);
   if(v.phone) acts.push(`<a class="btn btn-sm btn-outline" style="height:34px;display:inline-flex;align-items:center;text-decoration:none" href="tel:${_escHtml(String(v.phone).replace(/[^+\d]/g,''))}"${v.pingId?` onclick="_vluPing('${v.pingId}','call')"`:''}>Call</a>`);
 
   return `${bubble}

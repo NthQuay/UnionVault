@@ -15,9 +15,12 @@ returns boolean language sql stable security definer set search_path = public as
   select exists (select 1 from public.app_admins where user_id = auth.uid());
 $$;
 
+revoke execute on function public.is_admin() from public, anon;
+grant execute on function public.is_admin() to authenticated;
+
 -- Calendar quarter (Australia/Brisbane) that contains a moment; returns its first day.
 create or replace function public.affiliate_quarter_start(ts timestamptz)
-returns date language sql immutable as $$
+returns date language sql immutable set search_path = public as $$
   select date_trunc('quarter', ts at time zone 'Australia/Brisbane')::date;
 $$;
 

@@ -876,7 +876,7 @@ function _showVendorError(type){
       if(_bootCloud.saved.event)    Object.assign(STATE.event, _bootCloud.saved.event);
       if(_bootCloud.saved.settings) Object.assign(STATE.settings, _bootCloud.saved.settings);
       ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','timelines','timelineCats','families','invites'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
-      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets','activeTimelineId'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
+      ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','groupRejects','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets','activeTimelineId'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
       saveToStorage();
       document.getElementById('welcome-overlay').classList.add('hidden');
       updateTopbarSub();

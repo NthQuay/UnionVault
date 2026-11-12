@@ -14,6 +14,6 @@ Wedding Planning Website &amp; App — live at https://unionvault.app
 
 ---
 
-© 2026 Amanda Tomlinson. All rights reserved.
+© 2026 NthQuay Pty Ltd. All rights reserved.
 
 Union Vault is proprietary software. No licence is granted — express or implied — to use, copy, reproduce, modify, distribute, sublicense, or create derivative works from any part of this codebase or its assets. Unauthorised use constitutes copyright infringement.

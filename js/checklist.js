@@ -1243,7 +1243,7 @@ function _calApptPopup(taskId, apptId){
   else if(a.virtual){ locVal='Virtual'; }
   else if(a.address){ const mh=_escHtml(_mapsUrl(a.address)); locVal=`<a href="${mh}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color:var(--gold-deep);text-decoration:underline">${_escHtml(a.address)}</a>`; }
   const telVal=a.phone?`<a href="tel:${_escHtml(String(a.phone).replace(/[^+\d]/g,''))}" onclick="event.stopPropagation()" style="color:var(--gold-deep);text-decoration:underline">${_escHtml(a.phone)}</a>`:'';
-  const emailVal=a.email?`<a href="mailto:${_escHtml(a.email)}" onclick="event.stopPropagation()" style="color:var(--gold-deep);text-decoration:underline">${_escHtml(a.email)}</a>`:'';
+  const emailVal=a.email?`<a href="#" data-vm-email="${_escHtml(a.email)}" data-vm-name="${_escHtml(a.contact||a.business||'')}" onclick="event.preventDefault();event.stopPropagation();openVendorMessageFrom(this)" style="color:var(--gold-deep);text-decoration:underline">${_escHtml(a.email)}</a>`:'';
   const rows=[
     _calPopupRow('Task', _escHtml(t.text||'')),
     a.type?_calPopupRow('Type', _escHtml(a.type)+(virtualPill?' '+virtualPill:'')):'',

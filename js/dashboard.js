@@ -191,6 +191,56 @@ function _invitedGuestIdSet(){
   return invited;
 }
 
+/* ── Updated Terms & Privacy notice ─────────────────────────────────────────────
+   Shown on the dashboard to signed-in users (accounts that pre-date the update) until they press Agree. The agreement is stored with the
+   account settings (so it does not reappear on another device) together with the version and time. Bump
+   _TERMS_VERSION whenever the Terms change in a way users must be told about. */
+const _TERMS_VERSION = '2026-11';
+/* Accounts created after this moment agreed to the new Terms at sign-up, so they are not shown the notice. */
+const _TERMS_NOTICE_BEFORE = '2026-11-10T10:00:00Z';
+/* The saved session does not carry the account's creation date, so it is fetched once (and remembered on this device).
+   Until it is known the notice stays hidden, then the dashboard redraws. */
+let _termsCreated = null, _termsCreatedFor = null, _termsCreatedBusy = false;
+function _termsAccountCreated(){
+  const s = (typeof _sbSession!=='undefined') ? _sbSession : null;
+  if(!s || !s.user) return null;
+  if(_termsCreatedFor !== s.user.id){ _termsCreated = null; _termsCreatedFor = s.user.id; }
+  if(_termsCreated) return _termsCreated;
+  if(s.user.created_at){ _termsCreated = Date.parse(s.user.created_at); return _termsCreated; }
+  try{ const c = JSON.parse(localStorage.getItem('uv_acct_created')||'null'); if(c && c.id===s.user.id && c.t){ _termsCreated = c.t; return _termsCreated; } }catch(_){}
+  if(!_termsCreatedBusy && s.access_token){
+    _termsCreatedBusy = true;
+    fetch(_SB_URL+'/auth/v1/user',{headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+s.access_token}})
+      .then(r=>r.ok?r.json():null)
+      .then(u=>{
+        if(u && u.created_at){
+          _termsCreated = Date.parse(u.created_at);
+          try{ localStorage.setItem('uv_acct_created', JSON.stringify({id:s.user.id,t:_termsCreated})); }catch(_){}
+          if(typeof _currentPage!=='undefined' && _currentPage==='dashboard' && typeof navigate==='function') navigate('dashboard');
+        }
+      }).catch(()=>{}).then(()=>{ _termsCreatedBusy = false; });
+  }
+  return null;
+}
+function _termsBannerHtml(){
+  if(typeof _sbSession==='undefined' || !_sbSession) return '';
+  const made = _termsAccountCreated();
+  if(made == null || made >= Date.parse(_TERMS_NOTICE_BEFORE)) return '';     // unknown yet, or a new account that agreed at sign-up
+  const a = STATE.settings && STATE.settings.termsAck;
+  if(a && a.v===_TERMS_VERSION) return '';
+  return `<div class="uv-terms-banner" id="uv-terms-banner" role="region" aria-label="Updated Terms and Privacy Policy">
+    <div class="utb-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+    <div class="utb-txt"><strong>We\u2019ve updated our Terms &amp; Privacy Policy</strong><span>New sections cover Recommended vendors, vendor referral commissions, and what we record when you use a vendor link. <a href="#" onclick="event.preventDefault();_openTermsModal()">Read what\u2019s changed</a></span></div>
+    <div class="utb-btns"><button class="utb-agree" onclick="_termsAck('agree')">Agree</button></div>
+  </div>`;
+}
+function _termsAck(how){
+  STATE.settings = STATE.settings || {};
+  STATE.settings.termsAck = { v:_TERMS_VERSION, how:how, at:new Date().toISOString() };
+  try{ saveToStorage(); }catch(_){}
+  const el = document.getElementById('uv-terms-banner'); if(el) el.remove();
+}
+
 function renderDashboard(c, actions){
   // Edit layout toggle button
   actions.innerHTML = `
@@ -772,7 +822,7 @@ function renderDashboard(c, actions){
     if(_uvTier==='trial' && _uvTrialDaysLeft>0) _subBanner=`<div class="uv-trial-banner"><span><strong>${_uvTrialDaysLeft} day${_uvTrialDaysLeft===1?'':'s'} left</strong> in your free trial</span><button onclick="_uvOpenSubPage()">Upgrade now</button></div>`;
     else if(_uvTier==='free') _subBanner=`<div class="uv-upgrade-card-dash"><div class="uv-dash-title">Unlock Full Access</div><div class="uv-dash-sub">Get unlimited guests, seating plans, print &amp; export, and more</div><button onclick="_uvOpenSubPage()">Upgrade now</button></div>`;
   }
-  c.innerHTML = _subBanner + heroHtml + editBarHtml + `<div id="dash-widgets">` + widgetsHtml + `</div>` + visionHtml;
+  c.innerHTML = _termsBannerHtml() + _subBanner + heroHtml + editBarHtml + `<div id="dash-widgets">` + widgetsHtml + `</div>` + visionHtml;
   setTimeout(()=>{ requestAnimationFrame(_fitDashNextUp); _ensureDashNextUpObserver(); }, 0);
 }
 
