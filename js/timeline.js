@@ -1712,13 +1712,23 @@ function _fitGuestBtns(){
       // not before. rAF runs before layout/RO within a frame, so a single rAF would
       // clear the flag too early and the RO (seeing settling=false) would re-trigger
       // the loop. A 0ms timeout lands in the next task, safely after the RO callback.
-      setTimeout(()=>{ _fitGuestSettling=false; }, 0);
+      setTimeout(()=>{
+        _fitGuestSettling=false;
+        document.querySelectorAll('.gbtn-group.fit-measuring,.gfilter-group.fit-measuring').forEach(g=>g.classList.remove('fit-measuring'));
+      }, 0);
     }
   });
 }
 let _fitGuestPending=0;
 let _fitGuestSettling=false;
 function _fitGuestBtnsImpl(){
+  // .gbtn/.gfilter-chip buttons carry .btn's `transition:all .15s`, which includes the
+  // min-width/padding/gap properties the icons-only/short-labels classes toggle. Reading
+  // scrollWidth synchronously right after a classList change can land mid-transition —
+  // measuring a half-animated width instead of the settled one — which the next pass
+  // then "corrects" for, producing the actual flicker. .fit-measuring kills transitions
+  // for the duration of this pass so every measurement reflects the final layout.
+  document.querySelectorAll('.gbtn-group,.gfilter-group').forEach(g=>g.classList.add('fit-measuring'));
   document.querySelectorAll('.gbtn-group').forEach(group=>{
     if(!group.isConnected) return;
     // Available width = the space the group is allowed to occupy. The group and its
@@ -1763,6 +1773,7 @@ function _fitGuestBtnsImpl(){
     // we collapsed. Without this, a width sitting within ~1px of the threshold flips
     // between labelled and icon-only on each pass (the visible flicker).
     const wasIconsOnly=group.classList.contains('icons-only');
+    const wasShortLabels=group.classList.contains('short-labels');
     const expandMargin=wasIconsOnly?10:1; // need 10px clear room to re-expand
     group.classList.remove('icons-only');
     group.classList.remove('reorder-collapsed');
@@ -1790,9 +1801,14 @@ function _fitGuestBtnsImpl(){
     }
     // Stage 3: swap long→short labels (e.g. "Card view"→"Card") if the group has a
     // short tier — keeps a text label rather than dropping straight to an icon.
+    // Same hysteresis as Stage 1: newly adopting short-labels from icons-only needs
+    // clear extra room, but staying in short-labels only needs it to still roughly fit —
+    // without this asymmetry a width sitting right on this boundary flickers between
+    // "Card" and the icon on every pass (sub-pixel layout jitter is enough to cross it).
     if(group.querySelector('.gbtn-label-short')){
+      const shortExpandMargin=wasShortLabels?1:10;
       group.classList.add('short-labels');
-      if(measureWidth()<=avail+1) return;               // fits with short labels
+      if(measureWidth()<=avail-shortExpandMargin+1) return;               // fits with short labels (with hysteresis)
       group.classList.remove('short-labels');
     }
     // Stage 4: fall back to all-icons.

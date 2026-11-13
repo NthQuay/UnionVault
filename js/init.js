@@ -914,4 +914,11 @@ function _showVendorError(type){
     navigate('dashboard');
     document.getElementById('welcome-overlay').classList.remove('hidden');
   }
+
+  // Live RSVP updates: start/stop the short-interval poll as sign-in state changes,
+  // and start it now if already signed in on this boot.
+  if(typeof _sbOnAuthChange==='function' && typeof _rsvpStartPolling==='function'){
+    _sbOnAuthChange(function(user){ if(user) _rsvpStartPolling(); else if(typeof _rsvpStopPolling==='function') _rsvpStopPolling(); });
+  }
+  if(_sbSession && typeof _rsvpStartPolling==='function') _rsvpStartPolling();
 })();
