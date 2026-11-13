@@ -55,6 +55,10 @@ async function _authSignIn(){
     }
   }
   try{localStorage.setItem('uv_uid',r.user.id);}catch(_){}
+  // This path never reloads and never calls _autoSyncCheckOnBoot (local data already
+  // matched this account), so nothing else would clear the boot-race guard — leaving it
+  // stuck true would silently disable auto-sync for the rest of the session.
+  _autoSyncBootPending=false;
   closeAuthModal();
   if(typeof _currentPage!=='undefined'&&_currentPage==='settings') navigate('settings');
   _cloudToast('Signed in as '+r.user.email);
@@ -462,6 +466,16 @@ window._autoSyncState='idle';
 window._autoSyncLastSaved=null;
 let _autoSyncTimer=null;
 const _AUTOSYNC_DEBOUNCE=2000; // 2 s
+// True until the boot-time cloud conflict check (_autoSyncCheckOnBoot) has resolved once.
+// navigate('dashboard') on boot calls saveToStorage() immediately, which would otherwise
+// schedule a push 2s later — racing the 800ms-delayed boot check that may still replace
+// STATE with cloud data. If a section (e.g. website/inspo) was stale or missing locally,
+// a per-field migration default (_wbSite()'s `if(!w.on) w.on={}`, etc.) can fill the gap
+// in the meantime, and the race-won push then uploads that half-defaulted object,
+// overwriting the real cloud copy for exactly those fields. Blocking the first schedule
+// until the boot check finishes (success, failure, or skip) closes that window without
+// touching normal steady-state auto-sync behaviour.
+let _autoSyncBootPending=true;
 
 function _autoSyncEnabled(){
   return _sbSession && (typeof STATE==='undefined' || STATE.settings==null || STATE.settings.autoSync!==false);
@@ -516,6 +530,7 @@ function _autoSyncToggleChange(on){
 
 function _autoSyncSchedule(){
   if(!_autoSyncEnabled()) return;
+  if(_autoSyncBootPending) return; // never race the boot-time cloud conflict check — see declaration
   if(_autoSyncTimer) clearTimeout(_autoSyncTimer);
   _autoSyncTimer=setTimeout(_autoSyncFlush,_AUTOSYNC_DEBOUNCE);
 }
@@ -563,74 +578,85 @@ window.addEventListener('beforeunload',function(){
 });
 
 async function _autoSyncCheckOnBoot(){
-  if(!_sbSession) return;
-  // If we just reloaded after a JSON import, push local data UP — don't load from cloud.
-  var _importFlag = null;
-  try{ _importFlag = sessionStorage.getItem('uv_import_pending'); }catch(_){}
-  if(_importFlag){
-    try{ sessionStorage.removeItem('uv_import_pending'); }catch(_){}
-    // Stamp a recent _lastCloudSave so the conflict checker treats local as up-to-date
-    // and does NOT pull old cloud data over the freshly imported data.
-    // We do NOT auto-cloud-save here: the user should verify the import looks right first.
-    // The regular auto-sync schedule will push it up after the next manual save or auto-push interval.
-    if(!STATE.settings._lastCloudSave){
-      STATE.settings._lastCloudSave = new Date().toISOString();
-      saveToStorage();
-      // Cancel the auto-sync that saveToStorage() just scheduled.
-      // Imported data must be pushed to cloud ONLY when the user explicitly clicks "Save to Cloud".
-      if(_autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; }
-    }
-    if(typeof _cloudToast !== 'undefined') _cloudToast('Data imported ✓ — click Save to Cloud to back it up');
-    return;
-  }
-  await _sbEnsureFreshToken();
-  // If token refresh failed (expired refresh token), clear session and prompt re-login
-  if(_sbTokenExpired()){
-    _sbPersist(null);
-    const ol=document.getElementById('welcome-overlay');
-    if(ol) ol.classList.remove('hidden');
-    return;
-  }
   try{
-    const res=await fetch(`${_SB_URL}/rest/v1/planner_data?user_id=eq.${_sbSession.user.id}&select=updated_at`,{
-      headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_sbSession.access_token}
-    });
-    if(!res.ok){
-      // 401 = token was rejected; clear session and show login prompt
-      if(res.status===401){ _sbPersist(null); const ol=document.getElementById('welcome-overlay'); if(ol) ol.classList.remove('hidden'); }
+    if(!_sbSession) return;
+    // If we just reloaded after a JSON import, push local data UP — don't load from cloud.
+    var _importFlag = null;
+    try{ _importFlag = sessionStorage.getItem('uv_import_pending'); }catch(_){}
+    if(_importFlag){
+      try{ sessionStorage.removeItem('uv_import_pending'); }catch(_){}
+      // Stamp a recent _lastCloudSave so the conflict checker treats local as up-to-date
+      // and does NOT pull old cloud data over the freshly imported data.
+      // We do NOT auto-cloud-save here: the user should verify the import looks right first.
+      // The regular auto-sync schedule will push it up after the next manual save or auto-push interval.
+      if(!STATE.settings._lastCloudSave){
+        STATE.settings._lastCloudSave = new Date().toISOString();
+        saveToStorage();
+        // Cancel the auto-sync that saveToStorage() just scheduled.
+        // Imported data must be pushed to cloud ONLY when the user explicitly clicks "Save to Cloud".
+        if(_autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; }
+      }
+      if(typeof _cloudToast !== 'undefined') _cloudToast('Data imported ✓ — click Save to Cloud to back it up');
       return;
     }
-    const rows=await res.json();
-    if(!rows||!rows.length) return;
-    const localTsRaw=STATE.settings&&STATE.settings._lastCloudSave;
-    const maxTs=Math.max(...rows.map(r=>r.updated_at?new Date(r.updated_at).getTime():0));
-    if(!maxTs) return;
-    const cloudTs=maxTs;
-    if(!localTsRaw){
-      // Never cloud-synced on this device
-      // If there's existing local data, ask first — don't silently overwrite it
-      const hasLocal=!!(STATE.guests&&STATE.guests.length)||!!(STATE.event&&(STATE.event.names||STATE.event.date));
-      if(hasLocal){
-        const _sup=(function(){try{var v=localStorage.getItem('uv-suppress-conflict');return v==='0'?false:true;}catch(e){}return STATE.settings?.suppressVersionMismatch!==false;})();
-        if(_sup){ await cloudLoadClick(true); return; }
-        _showConflictDialog(cloudTs,0);
+    await _sbEnsureFreshToken();
+    // If token refresh failed (expired refresh token), clear session and prompt re-login
+    if(_sbTokenExpired()){
+      _sbPersist(null);
+      const ol=document.getElementById('welcome-overlay');
+      if(ol) ol.classList.remove('hidden');
+      return;
+    }
+    try{
+      const res=await fetch(`${_SB_URL}/rest/v1/planner_data?user_id=eq.${_sbSession.user.id}&select=updated_at`,{
+        headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_sbSession.access_token}
+      });
+      if(!res.ok){
+        // 401 = token was rejected; clear session and show login prompt
+        if(res.status===401){ _sbPersist(null); const ol=document.getElementById('welcome-overlay'); if(ol) ol.classList.remove('hidden'); }
         return;
       }
-      // No local data — safe to restore silently
-      cloudLoadClick(false);
-      return;
-    }
-    const localTs=new Date(localTsRaw).getTime();
-    if(cloudTs-localTs>5000){
-      // Cloud is newer — show dialog so user can choose to keep local changes
-      const _sup=(function(){try{var v=localStorage.getItem('uv-suppress-conflict');return v==='0'?false:true;}catch(e){}return STATE.settings?.suppressVersionMismatch!==false;})();
-      if(_sup){ await cloudLoadClick(true); return; }
-      _showConflictDialog(cloudTs,localTs);
-    } else {
-      // Cloud is same age or older — push local up if auto-sync is on
-      if(_autoSyncEnabled()) _autoSyncSchedule();
-    }
-  }catch(e){ console.warn('Boot conflict check failed',e); }
+      const rows=await res.json();
+      if(!rows||!rows.length) return;
+      const localTsRaw=STATE.settings&&STATE.settings._lastCloudSave;
+      const maxTs=Math.max(...rows.map(r=>r.updated_at?new Date(r.updated_at).getTime():0));
+      if(!maxTs) return;
+      const cloudTs=maxTs;
+      if(!localTsRaw){
+        // Never cloud-synced on this device
+        // If there's existing local data, ask first — don't silently overwrite it
+        const hasLocal=!!(STATE.guests&&STATE.guests.length)||!!(STATE.event&&(STATE.event.names||STATE.event.date));
+        if(hasLocal){
+          const _sup=(function(){try{var v=localStorage.getItem('uv-suppress-conflict');return v==='0'?false:true;}catch(e){}return STATE.settings?.suppressVersionMismatch!==false;})();
+          if(_sup){ await cloudLoadClick(true); return; }
+          _showConflictDialog(cloudTs,0);
+          return;
+        }
+        // No local data — safe to restore silently
+        await cloudLoadClick(false);
+        return;
+      }
+      const localTs=new Date(localTsRaw).getTime();
+      if(cloudTs-localTs>5000){
+        // Cloud is newer — show dialog so user can choose to keep local changes
+        const _sup=(function(){try{var v=localStorage.getItem('uv-suppress-conflict');return v==='0'?false:true;}catch(e){}return STATE.settings?.suppressVersionMismatch!==false;})();
+        if(_sup){ await cloudLoadClick(true); return; }
+        _showConflictDialog(cloudTs,localTs);
+      } else {
+        // Cloud is same age or older — push local up if auto-sync is on
+        _autoSyncBootPending=false;
+        if(_autoSyncEnabled()) _autoSyncSchedule();
+      }
+    }catch(e){ console.warn('Boot conflict check failed',e); }
+  } finally {
+    // Whatever happened above — signed out, import pending, token dead, network error,
+    // conflict dialog shown, or a cloud load just finished replacing STATE — the boot-time
+    // race window this guards is over. Clearing it here (not at the top) is the whole
+    // point: it waits for any awaited cloudLoadClick() to finish replacing STATE.website/
+    // .inspo etc. FIRST, so a schedule triggered the instant this resolves still reflects
+    // the real cloud copy rather than a mid-flight local default.
+    _autoSyncBootPending=false;
+  }
 }
 // Poll for cloud updates every 5 minutes while a session is active
 setInterval(function(){ if(_sbSession) _autoSyncCheckOnBoot(); }, 5*60*1000);

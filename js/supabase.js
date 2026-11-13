@@ -303,6 +303,10 @@ async function cloudLoadClick(silent){
   // Cancel the auto-sync push-back that saveToStorage just scheduled — data came FROM the cloud
   // so there is nothing to push; the next real user edit will reschedule it naturally
   if(typeof _autoSyncTimer!=='undefined' && _autoSyncTimer){ clearTimeout(_autoSyncTimer); _autoSyncTimer=null; }
+  // STATE now mirrors the cloud copy, so it's safe to let future schedule() calls through —
+  // every other caller of cloudLoadClick (manual restore, conflict resolution, the periodic
+  // boot check) funnels through here, so clearing it in this one place covers them all.
+  if(typeof _autoSyncBootPending!=='undefined') _autoSyncBootPending=false;
   if(typeof updateTopbarSub==='function') updateTopbarSub();
   navigate(_currentPage||'dashboard');
   if(!silent) _cloudToast('Loaded from cloud ✓');

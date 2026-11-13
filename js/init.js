@@ -534,7 +534,7 @@ async function _publicWeddingExtras(uid){
 async function _showVendorPortal(token){
   let vendor={}, couple={}, theme={}, expired=false;
   // Declared out here (not inside the fetch block) so the sections rendered further down can read them.
-  let sectionData={}, guestCountDisplay=null;
+  let sectionData={}, guestCountDisplay=null, coupleEmail='';
   try{
     // One RPC returns just this token's brief (the token table itself isn't publicly listable).
     const res = await fetch(`${_SB_URL}/rest/v1/rpc/vendor_brief`,{
@@ -567,6 +567,7 @@ async function _showVendorPortal(token){
                  vendors:[Object.assign({business:vendor.vendor_name}, vc)] };
       theme = b.theme||{};
       sectionData = b.sectionData||{};
+      coupleEmail = b.coupleEmail||'';
     } else { _showVendorError('not-found'); return; }
   }catch(e){ console.warn('Vendor portal error',e); _showVendorError('error'); return; }
 
@@ -685,10 +686,10 @@ async function _showVendorPortal(token){
       <div>
         <div style="font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--pub-accent);padding-bottom:8px;border-bottom:1px solid var(--pub-border);margin-bottom:10px">Contact</div>
         <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--pub-surface);border:1px solid var(--pub-border);border-radius:10px">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--pub-accent);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Cormorant Garamond',serif;font-size:17px;flex-shrink:0">${(matchedVendor.contact||'?')[0]}</div>
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--pub-accent);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Cormorant Garamond',serif;font-size:17px;flex-shrink:0">${_escHtml((coupleName||'?')[0])}</div>
           <div>
-            <div style="font-size:13px;font-weight:500;color:var(--pub-ink)">${matchedVendor.contact||'—'}</div>
-            ${matchedVendor.email?`<div style="font-size:11.5px;color:var(--pub-text);margin-top:1px">${matchedVendor.email}</div>`:''}
+            <div style="font-size:13px;font-weight:500;color:var(--pub-ink)">${_escHtml(coupleName||'—')}</div>
+            ${coupleEmail?`<div style="font-size:11.5px;color:var(--pub-text);margin-top:1px">${_escHtml(coupleEmail)}</div>`:''}
           </div>
         </div>
       </div>
@@ -876,6 +877,10 @@ function _showVendorError(type){
       if(_bootCloud.saved.settings) Object.assign(STATE.settings, _bootCloud.saved.settings);
       ['guests','checklist','vendors','quotes','checklistCategories','checklistDrafts','checklistCatOrder','tables','timeline','timelines','timelineCats','families','invites'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
       ['budget','seating','inspo','visionboard','wishingwell','website','events','tagDefs','inviteMeta','groupRejects','invitation','dashWidgetOrder','dashLayout','dashHiddenWidgets','activeTimelineId'].forEach(function(k){ if(_bootCloud.saved[k]) STATE[k]=_bootCloud.saved[k]; });
+      // This merge is the authoritative cloud copy for this account — safe to let the
+      // save below schedule auto-sync normally. This path never calls
+      // _autoSyncCheckOnBoot, so nothing else would clear the boot-race guard.
+      _autoSyncBootPending=false;
       saveToStorage();
       document.getElementById('welcome-overlay').classList.add('hidden');
       updateTopbarSub();
@@ -890,7 +895,9 @@ function _showVendorError(type){
         _showSetupModal();
       }
     } else {
-      // No cloud data for this account → show setup
+      // No cloud data for this account → show setup. Nothing to protect, and nothing
+      // else on this path would clear the boot-race guard.
+      _autoSyncBootPending=false;
       document.getElementById('welcome-overlay').classList.add('hidden');
       updateTopbarSub();
       navigate('dashboard');
