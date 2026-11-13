@@ -2762,6 +2762,18 @@ body.dark .vlu-msgcomp .snd{color:var(--ink)}
 .setup-modal-title em{font-style:italic;color:var(--gold-deep)}
 .setup-modal-sub{font-size:13.5px;color:var(--muted);margin-bottom:26px;line-height:1.6}
 
+/* ── RSVP live-update banner (badge + banner for an incoming RSVP) ── */
+#rsvp-live-banner{transform:translateY(-100%);opacity:0;transition:transform .32s cubic-bezier(.22,.8,.3,1),opacity .32s ease}
+#rsvp-live-banner.in{transform:translateY(0);opacity:1}
+
+/* ── RSVP live-update: large centred Response Summary modal ── */
+.rsvp-summary-modal-overlay{position:fixed;inset:0;z-index:9999;background:rgba(26,22,18,.5);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .22s ease}
+.rsvp-summary-modal-overlay.in{opacity:1}
+.rsvp-summary-modal-card{background:var(--cream);border-radius:20px;padding:40px 44px 34px;max-width:480px;width:100%;box-shadow:0 30px 70px rgba(0,0,0,.28),0 0 0 1px var(--border);position:relative;transform:scale(.94) translateY(8px);transition:transform .28s cubic-bezier(.22,.8,.3,1)}
+.rsvp-summary-modal-overlay.in .rsvp-summary-modal-card{transform:scale(1) translateY(0)}
+.rsvp-summary-modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:8px;display:flex}
+.rsvp-summary-modal-close:hover{background:var(--surface);color:var(--ink)}
+
 /* ── SUBSCRIPTION: Upgrade Modal ── */
 .uv-upgrade-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;animation:uvFadeIn .2s ease}
 @keyframes uvFadeIn{from{opacity:0}to{opacity:1}}

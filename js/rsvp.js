@@ -19,6 +19,232 @@ function rsvpStats(){
   return {attending,declined,awaiting,total,responded,rate,invited,notSent};
 }
 
+// ── Live RSVP updates (banner + badge + animated Response Summary) ──────────
+// When a guest responds (today: the demo trigger below; wired to a real feed
+// later), three things happen: the sidebar badge count goes up, a banner
+// announces it, and — if the Response Summary card is already on screen —
+// its donut and numbers animate from the old stats to the new ones instead
+// of snapping. `_rsvpPendingAnimFrom` carries the "before" stats across a
+// navigate() so the card can mount already showing the old state, then
+// transition, when the banner is what took you there.
+let _rsvpPendingAnimFrom = null;
+let _rsvpBannerTimer = null;
+
+function _tweenNumberEl(el, from, to, duration, suffix){
+  if(!el) return;
+  from = Number(from)||0; to = Number(to)||0;
+  if(from===to){ el.textContent = to + (suffix||''); return; }
+  const start = performance.now();
+  (function step(now){
+    const t = Math.min(1, (now-start)/duration);
+    const eased = 1 - Math.pow(1-t, 3);
+    el.textContent = Math.round(from + (to-from)*eased) + (suffix||'');
+    if(t<1) requestAnimationFrame(step);
+  })(start);
+}
+
+// Animates a mounted Response Summary (Style 1) from whatever it's currently
+// showing to `s`. `idSuffix` targets either the in-page card (default, no
+// suffix) or the large centred modal version ('-modal') — same markup, two
+// copies, never both live at once. No-ops quietly if that copy isn't on
+// screen (different style chosen, section hidden, modal closed, etc).
+function _rsvpAnimateSummaryTo(s, idSuffix){
+  idSuffix = idSuffix || '';
+  const wrap = document.getElementById('rsvp-summary-wrap'+idSuffix);
+  const attendEl = document.getElementById('rsvp-donut-attend'+idSuffix);
+  const declineEl = document.getElementById('rsvp-donut-decline'+idSuffix);
+  if(!wrap || !attendEl || !declineEl) return;
+  const C = 2*Math.PI*15.9;
+  const pct = n => s.total ? (n/s.total*100) : 0;
+  const aLen = pct(s.attending)/100*C, dLen = pct(s.declined)/100*C;
+  attendEl.setAttribute('stroke-dasharray', `${aLen.toFixed(2)} ${(C-aLen).toFixed(2)}`);
+  declineEl.setAttribute('stroke-dasharray', `${dLen.toFixed(2)} ${(C-dLen).toFixed(2)}`);
+  declineEl.setAttribute('stroke-dashoffset', `${(C*0.25 - aLen).toFixed(2)}`);
+  const pctEl = document.getElementById('rsvp-donut-pct'+idSuffix);
+  if(pctEl){
+    const fromRate = parseInt(pctEl.textContent, 10) || 0;
+    _tweenNumberEl(pctEl, fromRate, s.rate, 900, '%');
+  }
+  const rateLineEl = document.getElementById('rsvp-rateline-pct'+idSuffix);
+  if(rateLineEl) _tweenNumberEl(rateLineEl, parseInt(rateLineEl.textContent,10)||0, s.rate, 900, '%');
+  [['attending',s.attending],['declined',s.declined],['awaiting',s.awaiting]].forEach(([key,n])=>{
+    const nEl = document.getElementById('rsvp-row-'+key+'-n'+idSuffix);
+    const pEl = document.getElementById('rsvp-row-'+key+'-pct'+idSuffix);
+    if(nEl) _tweenNumberEl(nEl, parseInt(nEl.textContent,10)||0, n, 900, '');
+    if(pEl) _tweenNumberEl(pEl, parseInt(pEl.textContent,10)||0, Math.round(pct(n)), 900, '%');
+  });
+}
+
+// Shows a "+N" (or "N") pill with an up arrow next to one row's count —
+// green for an Attending increase, red for a Declined increase. Fades in
+// after the count/donut tween settles, so it reads as the punchline.
+function _rsvpShowDeltaBadge(idSuffix, key, delta){
+  const el = document.getElementById('rsvp-row-'+key+'-delta'+idSuffix);
+  if(!el || !delta) return;
+  const color = key==='declined' ? 'var(--red)' : 'var(--green)';
+  el.style.color = color;
+  el.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>+'+delta;
+  requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; });
+}
+function _rsvpHideDeltaBadges(idSuffix){
+  ['attending','declined','awaiting'].forEach(key=>{
+    const el = document.getElementById('rsvp-row-'+key+'-delta'+idSuffix);
+    if(el){ el.style.opacity='0'; el.style.transform='translateY(2px)'; el.innerHTML=''; }
+  });
+}
+
+// ── Large centred "Response update" modal ────────────────────────────────
+// This is what actually plays when a live update is what brought you to the
+// RSVP & Invites page (banner or badge click): a bigger copy of the same
+// Response Summary card, centred over everything. It always opens at zero —
+// empty donut, 0% — and counts all the way up to the real current numbers,
+// then the row that actually moved (Attending or Declined) gets a coloured
+// "+N" badge once the count settles. The in-page card underneath just shows
+// the final numbers plainly — no competing animation there.
+function _openRsvpSummaryModal(fromStats, toStats){
+  const overlay = document.getElementById('rsvp-summary-modal-overlay');
+  const body = document.getElementById('rsvp-summary-modal-body');
+  if(!overlay || !body) return;
+  const zeroStats = {attending:0, declined:0, awaiting:0, total:toStats.total, rate:0};
+  body.innerHTML = rsvpSummaryBody(zeroStats, '-modal', true);
+  _rsvpHideDeltaBadges('-modal');
+  overlay.style.display = 'flex';
+  requestAnimationFrame(()=>{
+    overlay.classList.add('in');
+    requestAnimationFrame(()=>{
+      _rsvpAnimateSummaryTo(toStats, '-modal');
+      const dAttend = (toStats.attending||0)-(fromStats.attending||0);
+      const dDecline = (toStats.declined||0)-(fromStats.declined||0);
+      setTimeout(()=>{
+        if(dAttend>0) _rsvpShowDeltaBadge('-modal','attending',dAttend);
+        else if(dDecline>0) _rsvpShowDeltaBadge('-modal','declined',dDecline);
+      }, 950);
+    });
+  });
+}
+function _closeRsvpSummaryModal(){
+  const overlay = document.getElementById('rsvp-summary-modal-overlay');
+  if(!overlay) return;
+  overlay.classList.remove('in');
+  setTimeout(()=>{ if(!overlay.classList.contains('in')) overlay.style.display='none'; }, 220);
+}
+
+function _showRsvpLiveBanner(guestName, status){
+  const el = document.getElementById('rsvp-live-banner');
+  if(!el) return;
+  const accepted = status==='attending';
+  el.style.background = accepted ? 'var(--green)' : 'var(--red)';
+  const icon = document.getElementById('rsvp-live-banner-icon');
+  if(icon) icon.innerHTML = accepted
+    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+  const text = document.getElementById('rsvp-live-banner-text');
+  if(text) text.textContent = accepted
+    ? guestName+' just RSVP’d — Attending! 🎉'
+    : guestName+' has sent their regrets.';
+  el.style.display = 'flex';
+  requestAnimationFrame(()=>el.classList.add('in'));
+  clearTimeout(_rsvpBannerTimer);
+  _rsvpBannerTimer = setTimeout(_dismissRsvpLiveBanner, 8000);
+}
+function _dismissRsvpLiveBanner(){
+  const el = document.getElementById('rsvp-live-banner');
+  if(!el) return;
+  el.classList.remove('in');
+  setTimeout(()=>{ if(!el.classList.contains('in')) el.style.display='none'; }, 260);
+}
+function _rsvpBannerClick(){
+  clearTimeout(_rsvpBannerTimer);
+  _dismissRsvpLiveBanner();
+  navigate('rsvp-mgr');
+}
+
+// The real entry point once a response arrives — swap `rsvp` for the real
+// value from whatever feed reports it (today only called by the demo
+// trigger below). Updates the guest, the badge, the banner, and — if the
+// Response Summary is already mounted on screen — animates it live.
+function _rsvpLiveUpdate(guestId, rsvp){
+  const g = (STATE.guests||[]).find(x=>x.id===guestId);
+  if(!g) return;
+  const before = rsvpStats();
+  g.rsvp = rsvp;
+  g.rsvpDate = new Date().toISOString().slice(0,10);
+  saveToStorage();
+  const after = rsvpStats();
+  if(typeof _rsvpBadgeCount!=='undefined'){
+    _rsvpBadgeCount = (_rsvpBadgeCount||0) + 1;
+    if(typeof _updateRsvpNavBadge==='function') _updateRsvpNavBadge();
+  }
+  _showRsvpLiveBanner(g.name, rsvp);
+  if(_currentPage==='rsvp-mgr'){
+    // Already looking at it — animate in place, right now.
+    _rsvpAnimateSummaryTo(after);
+    if(typeof rsvpRerenderList==='function') rsvpRerenderList();
+  } else {
+    // Not on the page yet — carry the "before" stats so that if the banner
+    // (or the nav item) is what brings them there, the card mounts showing
+    // the old numbers and animates to the new ones instead of just snapping.
+    _rsvpPendingAnimFrom = before;
+  }
+}
+
+// Demo-only trigger for recording/screenshots: picks an awaiting A-list
+// guest and has them respond. `status` is 'attending' or 'declined'.
+function _simulateIncomingRsvp(status){
+  status = status==='declined' ? 'declined' : 'attending';
+  const g = (STATE.guests||[]).find(x=>(x.listType||'A')!=='B' && (!x.rsvp||x.rsvp==='awaiting'));
+  if(!g){ console.warn('No awaiting guest left to simulate.'); return; }
+  _rsvpLiveUpdate(g.id, status);
+}
+
+// ── Real live-update feed: short-interval polling for new online RSVP responses ──
+// Drives the same banner/badge/modal as the demo trigger above, via _rsvpLiveUpdate.
+// This only reacts to the attending/declined status change itself — the fuller sync
+// (dietary, meal, phone, plus-one name propagation) still happens in _loadOnlineRsvps
+// whenever the RSVP page is viewed/refreshed, so nothing here duplicates or races that.
+let _rsvpPollTimer = null;
+let _rsvpPollBusy = false;
+const _RSVP_POLL_CURSOR_KEY = 'rsvp_last_polled';
+const _RSVP_POLL_MS = 9000;
+
+async function _rsvpPollForUpdates(){
+  if(_rsvpPollBusy || !_sbSession || document.hidden) return;
+  _rsvpPollBusy = true;
+  try{
+    let cursor = '';
+    try{ cursor = localStorage.getItem(_RSVP_POLL_CURSOR_KEY) || ''; }catch(e){}
+    if(!cursor){
+      // First time polling runs on this device — start the clock from now rather
+      // than replaying every past response as a "live" event.
+      try{ localStorage.setItem(_RSVP_POLL_CURSOR_KEY, new Date().toISOString()); }catch(e){}
+      return;
+    }
+    const uid = _sbSession.user.id;
+    const url = `${_SB_URL}/rest/v1/rsvp_responses?couple_id=eq.${encodeURIComponent(uid)}&created_at=gt.${encodeURIComponent(cursor)}&select=guest_id,attending,created_at&order=created_at.asc&limit=20`;
+    const res = await fetch(url, {headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Accept':'application/json'}});
+    if(!res.ok) return;
+    const rows = await res.json();
+    if(!Array.isArray(rows) || !rows.length) return;
+    rows.forEach(r=>{
+      if(!r.guest_id || (r.attending!=='yes' && r.attending!=='no')) return; // no reliable match without a guest_id
+      _rsvpLiveUpdate(r.guest_id, r.attending==='yes'?'attending':'declined');
+    });
+    const last = rows[rows.length-1];
+    if(last && last.created_at){ try{ localStorage.setItem(_RSVP_POLL_CURSOR_KEY, last.created_at); }catch(e){} }
+  }catch(e){ console.warn('_rsvpPollForUpdates error', e); }
+  finally{ _rsvpPollBusy = false; }
+}
+
+function _rsvpStartPolling(){
+  if(_rsvpPollTimer) return; // already running
+  _rsvpPollForUpdates();
+  _rsvpPollTimer = setInterval(_rsvpPollForUpdates, _RSVP_POLL_MS);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) _rsvpPollForUpdates(); });
+}
+function _rsvpStopPolling(){
+  if(_rsvpPollTimer){ clearInterval(_rsvpPollTimer); _rsvpPollTimer=null; }
+}
+
 // ── Shared guest-stat helpers for the new dockable widgets ──
 // All count A-list guests only (B-list excluded), matching rsvpStats().
 function _rsvpGuestStats(){
@@ -357,28 +583,34 @@ function _rsvpWidgetSeating(){
 }
 
 // Renders the Response Summary body in one of three layouts (1=stat cards+bar, 2=donut, 3=hero, ... )
-function rsvpSummaryBody(s){
+// `idSuffix` lets a second copy of the same markup (the large centred modal)
+// coexist with the in-page card without id collisions. `large` scales the
+// donut and type up for that modal; the in-page card never passes it.
+function rsvpSummaryBody(s, idSuffix, large){
+  idSuffix = idSuffix || '';
   const style=STATE.settings.rsvpSummaryStyle||1;
   const pct=n=>s.total?(n/s.total*100):0;
-  const rateLine=`<div style="font-size:11.5px;color:var(--muted);margin-top:10px">${s.rate}% response rate &middot; ${s.total} guest${s.total!==1?'s':''} on list</div>`;
+  const rateLine=`<div style="font-size:${large?'14px':'11.5px'};color:var(--muted);margin-top:${large?'18px':'10px'};text-align:${large?'center':'left'}"><span id="rsvp-rateline-pct${idSuffix}">${s.rate}%</span> response rate &middot; ${s.total} guest${s.total!==1?'s':''} on list</div>`;
 
   // Style 1 — donut + legend
   if(style===1){
     const C=2*Math.PI*15.9;
     const aLen=pct(s.attending)/100*C, dLen=pct(s.declined)/100*C;
-    return `<div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">
-      <svg width="116" height="116" viewBox="0 0 42 42" style="flex-shrink:0">
+    const rowIds={Attending:'attending',Declined:'declined',Awaiting:'awaiting'};
+    const svgSize = large ? 220 : 116;
+    return `<div style="display:flex;align-items:center;gap:${large?'36px':'22px'};flex-wrap:wrap;${large?'justify-content:center':''}" id="rsvp-summary-wrap${idSuffix}" data-total="${s.total}">
+      <svg width="${svgSize}" height="${svgSize}" viewBox="0 0 42 42" style="flex-shrink:0">
         <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--surface)" stroke-width="6"/>
-        <circle class="green-prog-stroke" cx="21" cy="21" r="15.9" fill="none" stroke="var(--green)" stroke-width="6" stroke-dasharray="${aLen.toFixed(2)} ${(C-aLen).toFixed(2)}" stroke-dashoffset="${(C*0.25).toFixed(2)}" transform="rotate(0 21 21)"/>
-        <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--red)" stroke-width="6" stroke-dasharray="${dLen.toFixed(2)} ${(C-dLen).toFixed(2)}" stroke-dashoffset="${(C*0.25 - aLen).toFixed(2)}"/>
-        <text x="21" y="20.5" text-anchor="middle" style="font-size:7px;font-weight:600;fill:var(--ink)">${s.rate}%</text>
+        <circle id="rsvp-donut-attend${idSuffix}" class="green-prog-stroke" cx="21" cy="21" r="15.9" fill="none" stroke="var(--green)" stroke-width="6" stroke-dasharray="${aLen.toFixed(2)} ${(C-aLen).toFixed(2)}" stroke-dashoffset="${(C*0.25).toFixed(2)}" transform="rotate(0 21 21)" style="transition:stroke-dasharray .9s cubic-bezier(.22,.8,.3,1)"/>
+        <circle id="rsvp-donut-decline${idSuffix}" cx="21" cy="21" r="15.9" fill="none" stroke="var(--red)" stroke-width="6" stroke-dasharray="${dLen.toFixed(2)} ${(C-dLen).toFixed(2)}" stroke-dashoffset="${(C*0.25 - aLen).toFixed(2)}" style="transition:stroke-dasharray .9s cubic-bezier(.22,.8,.3,1),stroke-dashoffset .9s cubic-bezier(.22,.8,.3,1)"/>
+        <text id="rsvp-donut-pct${idSuffix}" x="21" y="20.5" text-anchor="middle" style="font-size:7px;font-weight:600;fill:var(--ink)">${s.rate}%</text>
         <text x="21" y="26" text-anchor="middle" style="font-size:2.6px;fill:var(--muted)">responded</text>
       </svg>
-      <div style="flex:1;min-width:150px">
+      <div style="flex:${large?'0 0 auto':'1'};min-width:${large?'200px':'150px'}">
         ${[['Attending',s.attending,'var(--green)'],['Declined',s.declined,'var(--red)'],['Awaiting',s.awaiting,'var(--parchment)']].map(([lbl,n,col])=>`
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px">
-            <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${col};margin-right:8px;vertical-align:middle"></span>${lbl}</span>
-            <span><span style="font-size:11px;color:var(--muted);margin-right:7px">${Math.round(pct(n))}%</span><span style="font-weight:600">${n}</span></span>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:${large?'9px':'5px'} 0;font-size:${large?'17px':'13px'};gap:24px">
+            <span><span style="display:inline-block;width:${large?'11px':'9px'};height:${large?'11px':'9px'};border-radius:2px;background:${col};margin-right:8px;vertical-align:middle"></span>${lbl}</span>
+            <span><span id="rsvp-row-${rowIds[lbl]}-delta${idSuffix}" style="display:inline-flex;align-items:center;gap:2px;font-size:${large?'13px':'11px'};font-weight:700;margin-right:8px;opacity:0;transform:translateY(2px);transition:opacity .3s ease,transform .3s ease"></span><span id="rsvp-row-${rowIds[lbl]}-pct${idSuffix}" style="font-size:${large?'13px':'11px'};color:var(--muted);margin-right:7px">${Math.round(pct(n))}%</span><span id="rsvp-row-${rowIds[lbl]}-n${idSuffix}" style="font-weight:600">${n}</span></span>
           </div>`).join('')}
       </div>
     </div>${rateLine}`;

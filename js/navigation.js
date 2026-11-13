@@ -91,7 +91,18 @@ function navigate(page){
   _updateBudgetNavBadge();
   _updateChecklistNavBadge();
   _updateSeatingNavBadge();
-  if(page==='rsvp-mgr'){_markRsvpViewed();}else if(typeof _fetchRsvpBadgeCount==='function'){_fetchRsvpBadgeCount();}
+  if(page==='rsvp-mgr'){
+    _markRsvpViewed();
+    // Just arrived via a live-update banner/badge click: the in-page card
+    // already rendered with the real current stats (no stale "before" state
+    // left in it) — instead, pop the large centred modal so the "before" is
+    // what it opens showing, then animates to "after" right in the centre
+    // of the screen, where it can't be missed.
+    if(typeof _rsvpPendingAnimFrom!=='undefined' && _rsvpPendingAnimFrom){
+      const fromStats=_rsvpPendingAnimFrom; _rsvpPendingAnimFrom=null;
+      if(typeof _openRsvpSummaryModal==='function') _openRsvpSummaryModal(fromStats, rsvpStats());
+    }
+  }else if(typeof _fetchRsvpBadgeCount==='function'){_fetchRsvpBadgeCount();}
   // Restore the pre-render scroll position on a same-page refresh so an in-place change
   // (budget toggle, amount edit, etc.) keeps the user where they were instead of jumping
   // to the top. Done after the new content is in the DOM so the scroll height exists.
