@@ -2345,7 +2345,10 @@ function _wbGalPD(e,id){
   const tile=e.currentTarget;
   _wbGP={id,tile,x:e.clientX,y:e.clientY,pid:e.pointerId,touch:e.pointerType!=='mouse',on:false,ghost:null,over:null,timer:null};
   const t=_wbGP;
-  if(t.touch) t.timer=setTimeout(()=>_wbGalPStart(),260);
+  // Touch-only fallback: holding still (no deliberate movement) also starts the drag,
+  // rather than requiring the finger to move first. Picked tiles are touch-action:none,
+  // so the page can never steal this as a scroll — there's nothing left to wait out.
+  if(t.touch) t.timer=setTimeout(()=>_wbGalPStart(),160);
   document.addEventListener('pointermove',_wbGalPMove);
   document.addEventListener('pointerup',_wbGalPUp);
   document.addEventListener('pointercancel',_wbGalPCancel);
@@ -2363,20 +2366,32 @@ function _wbGalPStart(){
 function _wbGalPPlace(x,y){
   const t=_wbGP; if(!t||!t.ghost) return;
   t.ghost.style.left=(x-t.ghost.offsetWidth/2)+'px'; t.ghost.style.top=(y-t.ghost.offsetHeight/2)+'px';
-  const el=document.elementFromPoint(x,y);
-  const tl=el&&el.closest?el.closest('[data-galid]'):null;
   document.querySelectorAll('.wb-tile-over').forEach(n=>n.classList.remove('wb-tile-over'));
-  // Only another PICKED tile is a valid drop target — w.gallery is the array being
-  // reordered, and dropping on an unpicked tile has no position within it.
-  t.over=(tl&&tl.dataset.galid!==t.id&&_wbSite().gallery.indexOf(tl.dataset.galid)>=0)?tl:null;
+  // Nearest PICKED tile by distance from the pointer, not an exact point-in-rect hit —
+  // the ghost sits right on top of whatever's under it (and is itself scaled up), so
+  // elementFromPoint often missed the real target underneath. w.gallery is the array
+  // being reordered; an unpicked tile has no position within it.
+  const gallery=_wbSite().gallery;
+  let best=null, bestDist=Infinity, bestSize=0;
+  document.querySelectorAll('[data-galid]').forEach(tl=>{
+    const gid=tl.dataset.galid;
+    if(gid===t.id || gallery.indexOf(gid)<0) return;
+    const r=tl.getBoundingClientRect();
+    const d=Math.hypot(x-(r.left+r.width/2), y-(r.top+r.height/2));
+    if(d<bestDist){ bestDist=d; best=tl; bestSize=Math.max(r.width,r.height); }
+  });
+  t.over=(best && bestDist<bestSize) ? best : null;   // within ~one tile's width of its centre
   if(t.over) t.over.classList.add('wb-tile-over');
 }
 function _wbGalPMove(e){
   const t=_wbGP; if(!t||e.pointerId!==t.pid) return;
   if(!t.on){
     const d=Math.hypot(e.clientX-t.x,e.clientY-t.y);
-    if(t.touch){ if(d>14){ _wbGalPDEnd(); } return; }   // finger moved first: it is a scroll, not a drag
-    if(d>5){ t.x=e.clientX; t.y=e.clientY; _wbGalPStart(); }
+    // Same movement threshold for touch and mouse — picked tiles are touch-action:none,
+    // so the browser can't steal this gesture as a page scroll either way. Touch used to
+    // cancel outright past 14px while waiting on the hold timer, which made a tile nearly
+    // impossible to pick up with a real finger (any small tremor killed the whole gesture).
+    if(d>10){ t.x=e.clientX; t.y=e.clientY; _wbGalPStart(); }
     return;
   }
   e.preventDefault();
@@ -2397,7 +2412,13 @@ function _wbGalPUp(e){
     if(from>=0 && to>=0 && from!==to){
       const [moved]=g.splice(from,1);
       const t2=g.indexOf(targetId);                // re-find the target index AFTER removal
-      g.splice(t2<0?g.length:t2, 0, moved);
+      // Land on the side of the target you dropped from, not always "before" it — dropping
+      // forward (from<to) onto the very next tile used to re-find it at its own old slot
+      // and insert there, which put the moved tile right back where it started: a visible
+      // no-op on the single most common drag, an adjacent swap. "Before" only still makes
+      // sense when dropping backward (from>to), where the target's index isn't shifted.
+      const insertAt=t2<0?g.length:(from<to?t2+1:t2);
+      g.splice(insertAt, 0, moved);
       saveToStorage();
       _wbGalleryRefresh();                          // redraws grid in new order + repaints preview
     }
