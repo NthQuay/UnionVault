@@ -826,6 +826,11 @@ body.dark .nav-seat-count{background:var(--gold);color:#1B1A1E}
 .topbar-actions .btn{height:30px;padding-top:0;padding-bottom:0;box-sizing:border-box}
 /* Guest toolbar: collapse button labels to icon-only when the group is narrow */
 .gbtn-group.icons-only .gbtn-label{display:none}
+/* Kills .btn's transition while the JS fitter (_fitGuestBtnsImpl) is measuring a pass,
+   so a just-toggled class's min-width/padding/gap resolves to its final value instantly
+   instead of being read mid-animation — a stale mid-transition measurement is what was
+   causing the view-toggle button to flicker between its icon and short label. */
+.gbtn-group.fit-measuring .gbtn,.gfilter-group.fit-measuring .gfilter-chip{transition:none!important}
 /* View-toggle buttons (List view / Card view) share a fixed footprint so the toolbar
    doesn't shift when toggling between the two ("Card" is naturally wider than "List").
    89px matches the slimmer List-view button. Tighter side padding lets the wider
