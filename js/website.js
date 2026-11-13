@@ -6718,7 +6718,13 @@ section.fx h2 i,header.fx-atelier-head .lead i{color:${t2.accent}}
   .fx-names{padding:${sp(30)}px 20px 0}
   header.fx-atelier-head h1{margin-right:0;font-size:clamp(${sch(52)}px,17vw,${sch(80)}px)}
   .fx-meta{gap:16px}.fx-meta div{min-width:0;flex:1}
-  .fx-hfig{margin:${sp(24)}px 20px ${sp(32)}px;min-height:0;aspect-ratio:4/5}
+  /* !important: the figure carries an inline min-height (WB_HERO_H, a desktop "how tall
+     should the hero be" preset) that a plain selector here can never outrank. Left in
+     place on mobile, that inline height combined with aspect-ratio:4/5 forces the WIDTH
+     needed to keep that ratio at that height — wider than the single-column layout has
+     room for, overflowing the figure (and the whole page) off the right edge. Same fix
+     already used below for the no-photo case (header.fx-noimg .fx-coverimg). */
+  .fx-hfig{margin:${sp(24)}px 20px ${sp(32)}px;min-height:0!important;aspect-ratio:4/5}
   section.fx-spread{display:flex;flex-direction:column;padding:${sp(40)}px 0 ${sp(48)}px}
   .fx-fig{width:74%;align-self:flex-start;box-shadow:none}
   section.fx-spread.flip .fx-fig{align-self:flex-end}
