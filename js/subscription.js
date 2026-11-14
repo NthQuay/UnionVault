@@ -33,7 +33,7 @@ function _uvIsPaid(){ return _uvTier === 'full' || _uvTier === 'trial'; }
 function _uvIsFree(){ return _uvTier === 'free'; }
 
 function _uvGuestLimitReached(){
-  return !_uvIsPaid() && _sbSession && STATE.guests && STATE.guests.length >= 50;
+  return !_uvIsPaid() && _sbSession && STATE.guests && STATE.guests.length >= 80;
 }
 
 function _uvRequirePaid(feature){

@@ -649,6 +649,25 @@ function _rteTokHtml(k){ return `<span class="rte-tok" contenteditable="false" d
 function _rteBtnRowHtml(k){
   return `<p class="rte-btnrow" contenteditable="false"><span class="rte-btn" data-btn="${k}">${_escHtml(_RTE_BTNS[k])}<button type="button" class="rte-btn-x" onclick="_rteRemoveBtn(this)" aria-label="Remove button">×</button></span></p>`;
 }
+// A <b>/<i>/<u> that wraps nothing but a single token gets unwrapped into the token's own
+// inline style instead. Needed for underline specifically — text-decoration from an
+// ancestor doesn't paint through a display:inline-block child (the token chip) — and kept
+// consistent for bold/italic too, and for combinations (e.g. a token that's both bold and
+// underlined), by unwrapping repeatedly up the ancestor chain.
+function _rteTokWrapFix(html){
+  const box=document.createElement('div'); box.innerHTML=html;
+  box.querySelectorAll('.rte-tok').forEach(tok=>{
+    let p=tok.parentNode;
+    while(p && p.childNodes.length===1 && /^(B|STRONG|I|EM|U)$/.test(p.nodeName)){
+      if(p.nodeName==='B'||p.nodeName==='STRONG') tok.style.fontWeight='700';
+      else if(p.nodeName==='I'||p.nodeName==='EM') tok.style.fontStyle='italic';
+      else if(p.nodeName==='U') tok.style.textDecorationLine='underline';
+      p.replaceWith(tok);
+      p=tok.parentNode;
+    }
+  });
+  return box.innerHTML;
+}
 function _rteMdToHtml(md){
   const paras=String(md||'').replace(/\r/g,'').split(/\n{2,}/);
   const html=paras.map(p=>{
@@ -666,7 +685,7 @@ function _rteMdToHtml(md){
       .replace(/\n/g,'<br>');
     return `<p${cls?' class="'+cls+'"':''}>${h||'<br>'}</p>`;
   }).join('');
-  return html||'<p><br></p>';
+  return _rteTokWrapFix(html)||'<p><br></p>';
 }
 function _rteHtmlToMd(root){
   // Markers hug the words: "**word** " not "**word **", and never span a line break.
@@ -677,7 +696,14 @@ function _rteHtmlToMd(root){
   const inline=n=>{
     if(n.nodeType===3) return n.nodeValue.replace(/ /g,' ');
     if(n.nodeType!==1) return '';
-    if(n.classList.contains('rte-tok')) return '{'+n.dataset.tok+'}';
+    if(n.classList.contains('rte-tok')){
+      let out='{'+n.dataset.tok+'}';
+      const st=n.style||{};
+      if(st.textDecorationLine==='underline'||st.textDecoration==='underline') out=wrap(out,'__');
+      if(st.fontStyle==='italic') out=wrap(out,'*');
+      if(st.fontWeight==='bold'||+st.fontWeight>=600) out=wrap(out,'**');
+      return out;
+    }
     if(n.classList.contains('rte-btn-x')) return '';
     const tag=n.nodeName;
     if(tag==='BR') return '\n';
@@ -762,7 +788,44 @@ function _rtePaste(e){
   const t=(e.clipboardData||window.clipboardData).getData('text/plain')||'';
   try{ document.execCommand('insertText',false,t); }catch(_){}
 }
-function _rteCmd(id,cmd){ const ed=document.getElementById(id); if(!ed) return; ed.focus(); try{ document.execCommand(cmd,false,null); }catch(_){} _rteSync(ed); }
+// Tokens are contenteditable="false" atoms: execCommand silently skips them (a browser
+// never wraps a non-editable node in <b>/<i>/<u>, even mid-selection — it only wraps the
+// editable text around one), so Bold/Italic/Underline on a selection touching a token
+// sets its style directly instead. The "off" value is an explicit override (never ''), so
+// it always beats an inherited <b>/<i>/<u> ancestor — e.g. a default template that ships
+// with a token pre-wrapped in bold markdown.
+function _rteTokFmtCss(cmd){ return cmd==='bold'?'fontWeight':cmd==='italic'?'fontStyle':cmd==='underline'?'textDecorationLine':null; }
+function _rteTokFmtOnOff(cmd){
+  if(cmd==='bold') return ['700','400'];
+  if(cmd==='italic') return ['italic','normal'];
+  if(cmd==='underline') return ['underline','none'];
+  return [null,null];
+}
+function _rteSelectedToks(ed){
+  const s=window.getSelection(); if(!s.rangeCount) return [];
+  const r=s.getRangeAt(0);
+  return [...ed.querySelectorAll('.rte-tok')].filter(t=>{ try{ return r.intersectsNode(t); }catch(_){ return false; } });
+}
+// Decide the target style up front (before execCommand runs) — execCommand tidies up
+// inline styles across the whole selection as a side effect, including wiping out
+// whatever we'd set on the token first, so we apply ours last instead.
+function _rteTokFmtPlan(ed,cmd){
+  const prop=_rteTokFmtCss(cmd); if(!prop) return null;
+  const toks=_rteSelectedToks(ed); if(!toks.length) return null;
+  const [on,off]=_rteTokFmtOnOff(cmd);
+  // Effective (computed) state catches tokens made bold/italic/underlined via an
+  // ancestor tag, not just a direct inline style, so the first click toggles correctly.
+  const allOn=toks.every(t=>getComputedStyle(t)[prop]===on || t.style[prop]===on);
+  return {toks, prop, val:allOn?off:on};
+}
+function _rteApplyTokFmtPlan(plan){ if(plan) plan.toks.forEach(t=>{ t.style[plan.prop]=plan.val; }); }
+function _rteCmd(id,cmd){
+  const ed=document.getElementById(id); if(!ed) return; ed.focus();
+  const plan=(cmd==='bold'||cmd==='italic'||cmd==='underline')?_rteTokFmtPlan(ed,cmd):null;
+  try{ document.execCommand(cmd,false,null); }catch(_){}
+  _rteApplyTokFmtPlan(plan);
+  _rteSync(ed);
+}
 function _rteBlock(ed){
   const s=window.getSelection(); if(!s.rangeCount) return null;
   let n=s.anchorNode; while(n&&n.parentNode!==ed) n=n.parentNode;

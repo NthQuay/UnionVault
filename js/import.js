@@ -263,7 +263,7 @@ function finaliseGuestImport(skipped=0){
   _newlyImportedIds=new Set();
   const addedIds=[];
   const _freeGuestCap = _sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid();
-  let _freeSlots = _freeGuestCap ? Math.max(0, 50 - (STATE.guests||[]).length) : Infinity;
+  let _freeSlots = _freeGuestCap ? Math.max(0, 80 - (STATE.guests||[]).length) : Infinity;
   _pendingImportGuests.forEach(g=>{
     if(g.action==='skip'||g.skip){skipped++;return;}
     if(g.action==='update'&&g.existingId){

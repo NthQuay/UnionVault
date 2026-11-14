@@ -2967,7 +2967,7 @@ body.dark .rte-menu{background:#1F1F24;box-shadow:0 12px 28px rgba(0,0,0,.45)}
 .rte-sizemenu .rte-sz-intro{font-style:italic;font-weight:500}
 .rte-ed.is-empty{position:relative}
 .rte-ed.is-empty::before{content:attr(data-ph);position:absolute;left:14px;right:14px;top:12px;color:var(--muted);opacity:.7;pointer-events:none}
-.rte-tok{display:inline-block;background:var(--parchment);color:var(--gold-deep);border:1px solid var(--gold-med,var(--border));border-radius:6px;padding:0 6px;font-size:.88em;font-weight:600;font-style:normal;line-height:1.5;white-space:nowrap;user-select:all;vertical-align:baseline}
+.rte-tok{display:inline-block;background:var(--parchment);color:var(--gold-deep);border:1px solid var(--gold-med,var(--border));border-radius:6px;padding:0 6px;font-size:.88em;line-height:1.5;white-space:nowrap;user-select:all;vertical-align:baseline}
 body.dark .rte-tok{background:rgba(196,168,130,.16);border-color:rgba(196,168,130,.3);color:var(--gold)}
 .rte-btnrow{text-align:center;margin:10px 0!important}
 .rte-btn{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--gold);color:var(--gold-deep);background:var(--parchment);border-radius:8px;padding:5px 8px 5px 14px;font-size:13px;font-weight:600;user-select:none}
