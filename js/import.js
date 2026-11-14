@@ -259,7 +259,7 @@ function setAllDupAction(action){
   dupes.forEach((_,i)=>setDupAction(i,action));
 }
 function finaliseGuestImport(skipped=0){
-  let added=0,updated=0;
+  let added=0,updated=0,capped=0;
   _newlyImportedIds=new Set();
   const addedIds=[];
   const _freeGuestCap = _sbSession && typeof _uvIsPaid==='function' && !_uvIsPaid();
@@ -278,7 +278,7 @@ function finaliseGuestImport(skipped=0){
       }
       return;
     }
-    if(_freeGuestCap && _freeSlots <= 0){ skipped++; return; }
+    if(_freeGuestCap && _freeSlots <= 0){ capped++; return; }
     const{id,name,prefix,rsvp,phone,email,address,handle,handlePlatform,relationship,dietary,tags,allergens,allergyNote,dietOther}=g;
     STATE.guests.push({id,name,prefix:prefix||'',rsvp,dietary,tags,allergens:allergens||[],allergyNote:allergyNote||'',dietOther:dietOther||'',phone,email,address,handle:handle||'',handlePlatform:(handle||'').trim()?(handlePlatform||'instagram'):undefined,relationship:relationship||'Guest',coupleId:null,plusOneId:null,plusOne:false,isMain:true,notes:'',listType:'A'});
     { const _ng=STATE.guests[STATE.guests.length-1]; const _ab=_ageBandFromTags(tags); if(_ab) _setGuestAgeBand(_ng,_ab); }
@@ -292,12 +292,17 @@ function finaliseGuestImport(skipped=0){
     if(added)parts.push(`✓ ${added} guest${added!==1?'s':''} added`);
     if(updated)parts.push(`${updated} updated`);
     if(skipped)parts.push(`${skipped} skipped`);
+    if(capped)parts.push(`${capped} not added — free plan limit reached`);
     const t=document.createElement('div');
     t.textContent=parts.join(' · ')||'Import complete';
-    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:10px 22px;border-radius:24px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:10px 22px;border-radius:24px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center';
     document.body.appendChild(t);
     requestAnimationFrame(()=>{t.style.opacity='1';setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400);},3200);});
   },100);
+  // Some rows didn't make it in purely because of the free-plan cap (not duplicates) —
+  // the toast alone doesn't give a way to act on that, so follow it with the same
+  // upgrade prompt a manual add would show.
+  if(capped) setTimeout(()=>{ if(typeof _uvShowUpgradeModal==='function') _uvShowUpgradeModal('unlimitedGuests'); }, 900);
   // After the list paints, offer to group any newly-added guests that share a surname.
   if(addedIds.length){ setTimeout(()=>_promptSurnameGrouping(addedIds), 350); }
 }
