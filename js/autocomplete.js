@@ -1142,7 +1142,7 @@ function _couplePoolLabel(g,p){
 // units (a solo guest, or a whole couple/family) gets one; members inside
 // the same group sit flush together under their connector bracket.
 function _poolChipRow(g,divider){
-  return `<span class="seat-chip${divider?' pool-row-div':''}" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`;
+  return `<span class="seat-chip${divider?' pool-row-div':''}" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)} ${g.name}${_ageBandBadge(g)||''}</span>`;
 }
 function _poolGroupsHtml(unseated){
   if(!unseated.length) return '<span style="font-size:13px;color:var(--muted);display:block;padding:8px 4px">All guests assigned ✓</span>';
