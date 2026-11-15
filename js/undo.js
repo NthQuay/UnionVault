@@ -4,15 +4,22 @@
 // (e.g. a guest's seating assignment, a budget item's sub-items) come back too.
 // ═══════════════════════════════════════════════════════════════════════════
 const _UNDO_SLICES=['guests','families','seating','tables','vendors','budget','checklist','checklistDrafts','events','timeline','inspo','visionboard','wishingwell','invites','quotes','tagDefs','guestFilter'];
+// Settings-nested slices (STATE.settings.<key>) that also need to round-trip through an
+// undo snapshot — floorDecor lives under settings, not as a top-level STATE key.
+const _UNDO_SETTINGS_SLICES=['floorDecor'];
 let _undoTimer=null, _undoPending=null, _undoSeq=0;
 
 function _undoSnapshot(){
   const snap={};
   _UNDO_SLICES.forEach(k=>{ if(k in STATE) snap[k]=JSON.parse(JSON.stringify(STATE[k])); });
+  _UNDO_SETTINGS_SLICES.forEach(k=>{ if(STATE.settings&&k in STATE.settings) snap['settings.'+k]=JSON.parse(JSON.stringify(STATE.settings[k])); });
   return snap;
 }
 function _undoRestoreSnapshot(snap){
-  Object.keys(snap).forEach(k=>{ STATE[k]=JSON.parse(JSON.stringify(snap[k])); });
+  Object.keys(snap).forEach(k=>{
+    if(k.indexOf('settings.')===0){ if(!STATE.settings) STATE.settings={}; STATE.settings[k.slice(9)]=JSON.parse(JSON.stringify(snap[k])); }
+    else STATE[k]=JSON.parse(JSON.stringify(snap[k]));
+  });
 }
 
 // label: short text after "Deleted " (already escaped-safe plain string).

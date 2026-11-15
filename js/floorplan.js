@@ -107,6 +107,145 @@ const FLOOR_ZOOM_MIN=1, FLOOR_ZOOM_MAX=4;
 let _floorPanelDrag=null, _floorPanelDocWired=false;
 const FLOOR_VP_MIN=300;
 
+// ── Floorplan undo (silent stack, Ctrl/Cmd+Z or the Undo button) ────────────
+// Separate from the app-wide toast-based delete-undo (js/undo.js): a drag,
+// a nudge, a stepper tap are far too frequent for a 6s toast every time, so
+// this is a quiet capped stack instead — same snapshot shape, no UI until
+// Undo is actually pressed.
+let _floorUndoStack=[];
+const _FLOOR_UNDO_MAX=20;
+function _floorCommitUndo(snap){
+  if(!snap) return;
+  _floorUndoStack.push(snap);
+  if(_floorUndoStack.length>_FLOOR_UNDO_MAX) _floorUndoStack.shift();
+}
+function _floorUndo(){
+  const snap=_floorUndoStack.pop();
+  if(!snap) return;
+  _undoRestoreSnapshot(snap);
+  saveToStorage();
+  navigate('seating');
+  if(typeof _showInfoToast==='function') _showInfoToast('Undone', null, null);
+}
+
+// ── Multi-select (tables & areas) ───────────────────────────────────────────
+// Off by default so the floorplan's existing tap-to-manage-seats behaviour is
+// unchanged; turning Select on repurposes a plain tap into toggling selection
+// instead, so several tables/areas can be nudged, duplicated or deleted together.
+let _floorSelectMode=false;
+let _floorSelected=new Set(); // keys: 'table:<id>' | 'decor:<id>'
+function _floorSelKey(kind,id){ return kind+':'+id; }
+function toggleFloorSelectMode(){
+  _floorSelectMode=!_floorSelectMode;
+  if(!_floorSelectMode) _floorSelected.clear();
+  navigate('seating');
+}
+function _floorToggleSelect(kind,id){
+  const key=_floorSelKey(kind,id);
+  if(_floorSelected.has(key)) _floorSelected.delete(key); else _floorSelected.add(key);
+  navigate('seating');
+}
+function _floorClearSelection(){
+  if(!_floorSelected.size) return;
+  _floorSelected.clear();
+  navigate('seating');
+}
+function _floorSelectedItems(){
+  return [..._floorSelected].map(key=>{
+    const i=key.indexOf(':'), kind=key.slice(0,i), id=key.slice(i+1);
+    const obj=kind==='table' ? (STATE.tables||[]).find(x=>x.id===id) : (STATE.settings.floorDecor||[]).find(x=>x.id===id);
+    return obj?{kind,id,obj}:null;
+  }).filter(Boolean);
+}
+// Arrow-key nudge — 1px per press, 10px with Shift. Keyboard-only alternative
+// to dragging, which is the fiddliest part of floorplan editing on touch.
+function _floorNudgeSelection(dx,dy){
+  const items=_floorSelectedItems(); if(!items.length) return;
+  _floorCommitUndo(_undoSnapshot());
+  items.forEach(({obj})=>{ obj.x=(obj.x||0)+dx; obj.y=(obj.y||0)+dy; });
+  saveToStorage(); navigate('seating');
+}
+function _floorDuplicateOne(kind,id){
+  _floorCommitUndo(_undoSnapshot());
+  if(kind==='table'){
+    const t=(STATE.tables||[]).find(x=>x.id===id); if(!t) return null;
+    const nt=JSON.parse(JSON.stringify(t));
+    nt.id='t'+Date.now()+Math.floor(Math.random()*1000);
+    nt.x=(t.x||0)+24; nt.y=(t.y||0)+24;
+    delete nt.headLeft; delete nt.headRight;
+    STATE.tables.push(nt);
+    STATE.seating[nt.id]=[]; // a seated guest can't sit at two tables — the copy starts empty
+    return {kind,id:nt.id};
+  }
+  const d=(STATE.settings.floorDecor||[]).find(x=>x.id===id); if(!d) return null;
+  const nd=JSON.parse(JSON.stringify(d));
+  nd.id='d'+Date.now()+Math.floor(Math.random()*1000);
+  nd.x=(d.x||0)+24; nd.y=(d.y||0)+24;
+  STATE.settings.floorDecor.push(nd);
+  return {kind,id:nd.id};
+}
+function _floorDuplicateSelection(){
+  const items=_floorSelectedItems(); if(!items.length) return;
+  _floorCommitUndo(_undoSnapshot());
+  const newKeys=[];
+  items.forEach(({kind,id},i)=>{
+    if(kind==='table'){
+      const t=(STATE.tables||[]).find(x=>x.id===id); if(!t) return;
+      const nt=JSON.parse(JSON.stringify(t));
+      nt.id='t'+Date.now()+i+Math.floor(Math.random()*1000);
+      nt.x=(t.x||0)+24; nt.y=(t.y||0)+24;
+      delete nt.headLeft; delete nt.headRight;
+      STATE.tables.push(nt);
+      STATE.seating[nt.id]=[]; // a seated guest can't sit at two tables — the copy starts empty
+      newKeys.push(_floorSelKey('table',nt.id));
+    } else {
+      const d=(STATE.settings.floorDecor||[]).find(x=>x.id===id); if(!d) return;
+      const nd=JSON.parse(JSON.stringify(d));
+      nd.id='d'+Date.now()+i+Math.floor(Math.random()*1000);
+      nd.x=(d.x||0)+24; nd.y=(d.y||0)+24;
+      STATE.settings.floorDecor.push(nd);
+      newKeys.push(_floorSelKey('decor',nd.id));
+    }
+  });
+  _floorSelected=new Set(newKeys); // the copies become the selection, ready to nudge into place
+  saveToStorage(); navigate('seating');
+}
+function _floorDeleteSelection(){
+  const items=_floorSelectedItems(); if(!items.length) return;
+  _floorCommitUndo(_undoSnapshot());
+  items.forEach(({kind,id})=>{
+    if(kind==='table'){ STATE.tables=STATE.tables.filter(x=>x.id!==id); delete STATE.seating[id]; }
+    else { STATE.settings.floorDecor=(STATE.settings.floorDecor||[]).filter(x=>x.id!==id); }
+  });
+  _floorSelected.clear();
+  saveToStorage(); navigate('seating');
+}
+// Single-item convenience wrapper so modal "Duplicate" buttons don't need the
+// multi-select machinery — used by the per-table/per-area edit modals.
+function _floorDuplicateAndEdit(kind,id){
+  const r=_floorDuplicateOne(kind,id); if(!r) return;
+  saveToStorage(); navigate('seating');
+  if(kind==='table') openTableSeatManager(r.id); else openDecorManager(r.id);
+}
+// Keyboard: arrow-nudge, Ctrl/Cmd+D duplicate, Delete/Backspace remove, Ctrl/Cmd+Z undo,
+// Escape clears the selection. Scoped to the Seating page and never while typing.
+function _floorKeydown(e){
+  if(_currentPage!=='seating') return;
+  const tag=(document.activeElement&&document.activeElement.tagName)||'';
+  if(tag==='INPUT'||tag==='TEXTAREA'||document.activeElement&&document.activeElement.isContentEditable) return;
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){ e.preventDefault(); _floorUndo(); return; }
+  if(!_floorSelected.size) return;
+  const step=e.shiftKey?10:1;
+  if(e.key==='ArrowUp'){ e.preventDefault(); _floorNudgeSelection(0,-step); }
+  else if(e.key==='ArrowDown'){ e.preventDefault(); _floorNudgeSelection(0,step); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); _floorNudgeSelection(-step,0); }
+  else if(e.key==='ArrowRight'){ e.preventDefault(); _floorNudgeSelection(step,0); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){ e.preventDefault(); _floorDuplicateSelection(); }
+  else if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); _floorDeleteSelection(); }
+  else if(e.key==='Escape'){ _floorClearSelection(); }
+}
+if(!window._floorKeydownWired){ window._floorKeydownWired=true; document.addEventListener('keydown',_floorKeydown); }
+
 function setSeatingLayout(v){ STATE.settings.seatingLayout=v; saveToStorage(); navigate('seating'); }
 function setSeatingTableStyle(v){ STATE.settings.seatingTableStyle=v; saveToStorage(); navigate('seating'); setTimeout(()=>{ const m=document.getElementById('seat-cog-menu'); if(m){ m.style.display='block'; _seatAttachCogCloser(); } }, 40); }
 
@@ -955,7 +1094,8 @@ function _floorTableHtml(t,style,cf,sep){
   const rotHandle=`<span class="floor-rotate" data-id="${t.id}" title="Drag to rotate" style="position:absolute;left:${Math.round(w/2)-10}px;top:${_hTop}px;width:20px;height:20px;border-radius:50%;background:var(--cream);border:1.5px solid var(--gold-deep);display:flex;align-items:center;justify-content:center;cursor:grab;font-size:12px;color:var(--gold-deep);user-select:none;z-index:3">↺</span><span style="position:absolute;left:${Math.round(w/2)-0.5}px;top:${_sTop}px;width:1px;height:20px;background:var(--border);opacity:.5;pointer-events:none"></span>`;
   /* ftbl-rot is a separate inner wrapper that carries the rotation transform.
      floor-table itself stays transform-free so left/top drag never fights GPU compositing. */
-  return `<div class="floor-table" data-kind="table" data-id="${t.id}" id="ftab-${t.id}"
+  const _selCls=_floorSelected.has(_floorSelKey('table',t.id))?' floor-selected':'';
+  return `<div class="floor-table${_selCls}" data-kind="table" data-id="${t.id}" id="ftab-${t.id}"
     style="left:${t.x||0}px;top:${t.y||0}px;width:${w}px;height:${h}px"
     ondragover="event.preventDefault()" ondrop="_floorDropOnTable(event,'${t.id}')">
     <div class="ftbl-rot" style="position:absolute;left:0;top:0;width:${w}px;height:${h}px;transform:rotate(${rot}deg);transform-origin:center center">
@@ -1006,7 +1146,8 @@ function _decorGeom(d){
 function _floorDecorHtml(d){
   const g=_decorGeom(d), def=g.def, w=g.w, h=g.h, icon=g.icon, rot=g.rot, lblTransform=g.lblTransform;
   const rotHandle=`<span class="floor-rotate" data-id="${d.id}" data-kind="decor" title="Drag to rotate" style="position:absolute;left:${Math.round(w/2)-10}px;top:-34px;width:20px;height:20px;border-radius:50%;background:var(--cream);border:1.5px solid var(--gold-deep);display:flex;align-items:center;justify-content:center;cursor:grab;font-size:12px;color:var(--gold-deep);user-select:none;z-index:4">↺</span><span style="position:absolute;left:${Math.round(w/2)-0.5}px;top:-26px;width:1px;height:20px;background:var(--border);opacity:.5;pointer-events:none"></span>`;
-  return `<div class="floor-decor" data-kind="decor" data-id="${d.id}" id="fdec-${d.id}"
+  const _selCls=_floorSelected.has(_floorSelKey('decor',d.id))?' floor-selected':'';
+  return `<div class="floor-decor${_selCls}" data-kind="decor" data-id="${d.id}" id="fdec-${d.id}"
     style="left:${d.x||0}px;top:${d.y||0}px;width:${w}px;height:${h}px">
     <div class="fdec-rot" style="position:absolute;left:0;top:0;width:${w}px;height:${h}px;transform:rotate(${rot}deg);transform-origin:center center">
       ${_decorBody(d,def,w,h,icon,lblTransform)}
@@ -1151,8 +1292,72 @@ openFloorTextEditor=function(id){
 
 function removeDecor(id){
   if(_floorLayoutLocked()) return;
+  _floorCommitUndo(_undoSnapshot());
   STATE.settings.floorDecor=(STATE.settings.floorDecor||[]).filter(d=>d.id!==id);
   saveToStorage(); navigate('seating');
+}
+// Tap-to-open modal for an area — the alternative to dragging its (small,
+// fiddly-on-touch) resize/rotate handles directly on the canvas, same idea as
+// openTableSeatManager for tables.
+function openDecorManager(id){
+  const d=(STATE.settings.floorDecor||[]).find(x=>x.id===id); if(!d) return;
+  const def=DECOR_DEFS[d.type]||{};
+  const curRot=(((d.rotation||0)%360)+360)%360;
+  const body=`
+    <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">
+      <div><div class="form-label">Width</div>
+        <div style="display:inline-flex;align-items:center;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick="_mgrDecorResize('${d.id}','w',-10)" title="Narrower">−</button>
+          <span style="font-weight:600;min-width:40px;text-align:center">${Math.round(d.w||0)}</span>
+          <button class="btn btn-outline btn-sm" onclick="_mgrDecorResize('${d.id}','w',10)" title="Wider">+</button>
+        </div>
+      </div>
+      <div><div class="form-label">Height</div>
+        <div style="display:inline-flex;align-items:center;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick="_mgrDecorResize('${d.id}','h',-10)" title="Shorter">−</button>
+          <span style="font-weight:600;min-width:40px;text-align:center">${Math.round(d.h||0)}</span>
+          <button class="btn btn-outline btn-sm" onclick="_mgrDecorResize('${d.id}','h',10)" title="Taller">+</button>
+        </div>
+      </div>
+      <div><div class="form-label">Rotation</div>
+        <div style="display:inline-flex;align-items:center;gap:7px">
+          <button class="btn btn-sm" onclick="_mgrDecorRotate45('${d.id}')" title="Tap to rotate 45°"
+            style="display:inline-flex;align-items:center;gap:7px;font-weight:600;border:1px solid var(--gold-deep);color:var(--gold-deep);background:rgba(201,161,74,.10)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            ${curRot}°
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="_mgrDecorResetRotation('${d.id}')" title="Reset rotation to 0°" aria-label="Reset rotation to 0°"
+            style="display:inline-flex;align-items:center;justify-content:center;padding:0;width:31px;height:31px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.36 2.64L3 8"/><line x1="3" y1="3" x2="3" y2="8"/><line x1="3" y1="8" x2="8" y2="8"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  const footer=`<button class="btn btn-outline btn-sm" onclick="closeModalDirect();_floorDuplicateAndEdit('decor','${d.id}')" title="Duplicate this area">Duplicate</button>
+    <button class="btn btn-outline btn-sm" style="color:var(--red-deep);border-color:var(--red-deep)" onclick="closeModalDirect();removeDecor('${d.id}')">Delete</button>
+    <button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`;
+  openModal(_escHtml(def.label||'Area'), body, footer);
+}
+function _mgrDecorResize(id,dim,delta){
+  const d=(STATE.settings.floorDecor||[]).find(x=>x.id===id); if(!d) return;
+  _floorCommitUndo(_undoSnapshot());
+  const cur=dim==='w'?(d.w||120):(d.h||56);
+  const next=Math.max(dim==='w'?40:30, Math.min(700, Math.round(cur+delta)));
+  if(dim==='w') d.w=next; else d.h=next;
+  saveToStorage(); navigate('seating'); openDecorManager(id);
+}
+function _mgrDecorRotate45(id){
+  const d=(STATE.settings.floorDecor||[]).find(x=>x.id===id); if(!d) return;
+  _floorCommitUndo(_undoSnapshot());
+  d.rotation=(((d.rotation||0)+45)%360+360)%360;
+  saveToStorage(); navigate('seating'); openDecorManager(id);
+}
+function _mgrDecorResetRotation(id){
+  const d=(STATE.settings.floorDecor||[]).find(x=>x.id===id); if(!d) return;
+  if((d.rotation||0)===0) return;
+  _floorCommitUndo(_undoSnapshot());
+  d.rotation=0;
+  saveToStorage(); navigate('seating'); openDecorManager(id);
 }
 function openAddDecor(){
   const order=['text','door','doubledoor','threshold','dance','stage','entrance','bar','lectern','cake','gift','photo','buffet','restroom'];
@@ -1245,7 +1450,7 @@ function _floorPointerDown(e){
   _floorDrag={ mode:'move', el, kind, id,
     startX:e.clientX, startY:e.clientY,
     origLeft:parseFloat(el.style.left)||0, origTop:parseFloat(el.style.top)||0,
-    rotation,
+    rotation, preSnap:_undoSnapshot(),
     cw:_floorCW||cr.width, ch:_floorCH||cr.height, moved:false };
   try{ el.setPointerCapture(e.pointerId); }catch(_){}
   e.preventDefault();
@@ -1262,7 +1467,7 @@ function _floorResizeDown(e){
   _floorDrag={ mode:(kind==='table'?'tscale':'resize'), el, kind, id,
     startX:e.clientX, startY:e.clientY,
     origW:el.offsetWidth, origH:el.offsetHeight,
-    left:parseFloat(el.style.left)||0, top:parseFloat(el.style.top)||0,
+    left:parseFloat(el.style.left)||0, top:parseFloat(el.style.top)||0, preSnap:_undoSnapshot(),
     cw:_floorCW||cr.width, ch:_floorCH||cr.height };
   if(kind==='table'){
     const t=STATE.tables.find(x=>x.id===id)||{}; const base=_tableBaseSize(t);
@@ -1501,7 +1706,7 @@ function _floorRotateDown(e){
   const centerX=er.left+er.width/2, centerY=er.top+er.height/2;
   const startAngle=Math.atan2(e.clientY-centerY, e.clientX-centerX)*180/Math.PI;
   const obj=(kind==='decor'?(STATE.settings.floorDecor||[]):STATE.tables).find(x=>x.id===id)||{};
-  _floorDrag={mode:'rotate',kind,id,el,rotEl,startAngle,origRot:obj.rotation||0,centerX,centerY,currentRot:obj.rotation||0};
+  _floorDrag={mode:'rotate',kind,id,el,rotEl,startAngle,origRot:obj.rotation||0,centerX,centerY,currentRot:obj.rotation||0,preSnap:_undoSnapshot()};
   try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
   e.preventDefault();
 }
@@ -1510,6 +1715,7 @@ function _floorPointerUp(e){
   const d=_floorDrag; _floorDrag=null;
   if(d.mode==='seat'){ _floorSeatUp(d,e||{clientX:d.startX,clientY:d.startY}); return; }
   if(d.mode==='rotate'){
+    _floorCommitUndo(d.preSnap);
     if(d.kind==='decor'){
       const dec=(STATE.settings.floorDecor||[]).find(x=>x.id===d.id);
       if(dec) dec.rotation=Math.round(d.currentRot||0);
@@ -1520,12 +1726,14 @@ function _floorPointerUp(e){
     saveToStorage(); navigate('seating'); return;
   }
   if(d.mode==='tscale'){
+    _floorCommitUndo(d.preSnap);
     const t=STATE.tables.find(x=>x.id===d.id);
     if(t){ t.scale=Math.round((d.s||d.origScale)*100)/100; }
     saveToStorage(); navigate('seating');
     return;
   }
   if(d.mode==='resize'){
+    _floorCommitUndo(d.preSnap);
     const nw=Math.round(parseFloat(d.el.style.width)||d.origW);
     const nh=Math.round(parseFloat(d.el.style.height)||d.origH);
     const dec=(STATE.settings.floorDecor||[]).find(x=>x.id===d.id);
@@ -1535,10 +1743,15 @@ function _floorPointerUp(e){
   }
   const nl=Math.round(parseFloat(d.el.style.left)||0), nt=Math.round(parseFloat(d.el.style.top)||0);
   if(d.moved){
+    _floorCommitUndo(d.preSnap);
     if(d.kind==='table'){ const t=STATE.tables.find(x=>x.id===d.id); if(t){ t.x=nl; t.y=nt; } saveToStorage(); navigate('seating'); }
     else { const dec=(STATE.settings.floorDecor||[]).find(x=>x.id===d.id); if(dec){ dec.x=nl; dec.y=nt; } saveToStorage(); }
+  } else if(_floorSelectMode){
+    _floorToggleSelect(d.kind,d.id);
   } else if(d.kind==='table'){
     openTableSeatManager(d.id);
+  } else if(d.kind==='decor'){
+    openDecorManager(d.id);
   }
 }
 function _wireFloor(){
@@ -1835,6 +2048,13 @@ function openTableSeatManager(id){
           <button class="btn btn-outline btn-sm" onclick="_mgrSetSeats('${t.id}',1)">+</button>
         </div>
       </div>
+      <div><div class="form-label">Size</div>
+        <div style="display:inline-flex;align-items:center;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick="_mgrSetScale('${t.id}',-0.1)" title="Smaller">−</button>
+          <span style="font-weight:600;min-width:44px;text-align:center">${Math.round(tScale*100)}%</span>
+          <button class="btn btn-outline btn-sm" onclick="_mgrSetScale('${t.id}',0.1)" title="Bigger">+</button>
+        </div>
+      </div>
       <div><div class="form-label">Rotation</div>
         <div style="display:inline-flex;align-items:center;gap:7px">
           <button class="btn btn-sm" onclick="_mgrRotate45('${t.id}')" title="Tap to rotate 45°"
@@ -1853,7 +2073,8 @@ function openTableSeatManager(id){
     ${headSection}
     <div class="form-label" style="margin-top:6px;margin-bottom:3px">Seated (${filled})${filled>1?' <span style="font-weight:400;text-transform:none;color:var(--muted);font-size:11px">— drag to reorder</span>':''}</div>
     <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:2px">${seatedChips}</div>`;
-  const footer=`<button class="btn btn-outline btn-sm" style="color:var(--red-deep);border-color:var(--red-deep)" onclick="closeModalDirect();deleteTable('${t.id}')">Delete Table</button>
+  const footer=`<button class="btn btn-outline btn-sm" onclick="closeModalDirect();_floorDuplicateAndEdit('table','${t.id}')" title="Duplicate this table (seats start empty)">Duplicate</button>
+    <button class="btn btn-outline btn-sm" style="color:var(--red-deep);border-color:var(--red-deep)" onclick="closeModalDirect();deleteTable('${t.id}')">Delete Table</button>
     <button class="btn btn-primary" onclick="closeModalDirect()">Done</button>`;
   openModal(_escHtml(t.name||'Table')+' — Seating', body, footer);
   const mb=document.getElementById('modal-box'); if(mb) mb.classList.add('seat-mgr-compact');
@@ -1892,12 +2113,14 @@ function _mgrChipDrop(e){
 function _mgrChipDragEnd(e){ try{ e.currentTarget.style.opacity=''; }catch(_){} _mgrChipDrag=null; }
 function _mgrRotate45(tid){
   const t=STATE.tables.find(x=>x.id===tid); if(!t) return;
+  _floorCommitUndo(_undoSnapshot());
   t.rotation=(((t.rotation||0)+45)%360+360)%360;
   saveToStorage(); navigate('seating'); openTableSeatManager(tid);
 }
 function _mgrResetRotation(tid){
   const t=STATE.tables.find(x=>x.id===tid); if(!t) return;
   if((t.rotation||0)===0) return;
+  _floorCommitUndo(_undoSnapshot());
   t.rotation=0;
   saveToStorage(); navigate('seating'); openTableSeatManager(tid);
 }
@@ -1921,6 +2144,17 @@ function _mgrSetSeats(tid,delta){
   // still doesn't fit, the picker lets the user choose who leaves — consistent
   // with the Edit Seats dialog.
   _applySeatCount(tid, v, ()=>{ navigate('seating'); openTableSeatManager(tid); });
+}
+// Size stepper — the modal alternative to dragging the (small, fiddly-on-touch) resize
+// handle on the canvas. Same 0.6–2.6 bounds as that drag (see _floorPointerMove/tscale).
+function _mgrSetScale(tid,delta){
+  const t=STATE.tables.find(x=>x.id===tid); if(!t) return;
+  const cur=t.scale||1;
+  const next=Math.round(Math.min(2.6,Math.max(0.6,cur+delta))*100)/100;
+  if(next===cur) return;
+  _floorCommitUndo(_undoSnapshot());
+  t.scale=next;
+  saveToStorage(); navigate('seating'); openTableSeatManager(tid);
 }
 function _mgrMatchAllScale(tid){
   const t=STATE.tables.find(x=>x.id===tid); if(!t) return;
@@ -2057,8 +2291,25 @@ function renderSeatingFloor(c,actions){
       Grid
     </button>
     ${_floorLockBtnHtml()}
+    <button class="snap-toggle" onclick="_floorUndo()" title="Undo the last move, resize, rotate, duplicate or delete (Ctrl/⌘+Z)" ${_floorUndoStack.length?'':'disabled style="opacity:.45;cursor:not-allowed"'}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+      Undo
+    </button>
+    <button class="snap-toggle ${_floorSelectMode?'on':''}" onclick="toggleFloorSelectMode()" title="Select several tables/areas to nudge, duplicate or delete together" ${_floorLayoutLocked()?'disabled style="opacity:.45;cursor:not-allowed"':''}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+      Select
+    </button>
     <span style="font-size:11.5px;color:var(--muted);margin-left:auto;text-align:right">${_floorLayoutLocked()?(_floorAllLocked()?'Locked — nothing can be moved · zoom &amp; pan still work':'Tables &amp; areas locked · guests can still be seated'):'<span class="floor-hint-full">Drag tables to arrange · Ctrl + scroll to zoom · Ctrl + drag to move the plan</span><span class="floor-hint-short">Drag tables to arrange</span>'}</span>
   </div>
+  ${_floorSelectMode&&_floorSelected.size?`<div style="display:flex;align-items:center;gap:10px;margin:-6px 0 12px;padding:8px 12px;background:var(--parchment);border:.5px solid var(--gold);border-radius:9px;font-size:12.5px">
+    <span style="font-weight:600">${_floorSelected.size} selected</span>
+    <span style="color:var(--muted)">Arrow keys to nudge · Shift for 10px</span>
+    <span style="margin-left:auto;display:flex;gap:6px">
+      <button class="btn btn-outline btn-sm" onclick="_floorDuplicateSelection()">Duplicate</button>
+      <button class="btn btn-outline btn-sm" style="color:var(--red-deep);border-color:var(--red-deep)" onclick="_floorDeleteSelection()">Delete</button>
+      <button class="btn btn-outline btn-sm" onclick="_floorClearSelection()">Clear</button>
+    </span>
+  </div>`:''}
   <div id="floor-and-pool" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
     <div id="floor-vp-col" style="${_showPoolSidebar?`flex:0 0 ${_vpAvailW}px;width:${_vpAvailW}px;position:relative`:'flex:1 1 0%'};min-width:0">
       <div id="floor-viewport" style="${_initVpStyle};position:relative">
@@ -2078,32 +2329,28 @@ function renderSeatingFloor(c,actions){
     </div>
     ${_showPoolSidebar?`<div id="floor-pool-sidebar" style="flex:1 1 200px;min-width:200px;position:sticky;top:56px;max-height:calc(100vh - 80px);overflow-y:auto">
       <div class="card" style="margin-bottom:0">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <div class="section-eyebrow" style="margin-bottom:0;font-size:11px">Unassigned Guests</div>
-          <div style="position:relative;flex:1;min-width:0">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:7px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input id="seating-search" class="form-input" placeholder="Search…" style="padding:4px 28px 4px 24px;font-size:11.5px;height:27px;width:100%"
-              oninput="filterSeatingPool(this.value)" onkeydown="if(event.key==='Escape'){this.value='';filterSeatingPool('')}"/>
-            <button type="button" onclick="filterSeatingPool('');const _se=document.getElementById('seating-search');if(_se){_se.value='';_se.focus()}" title="Clear" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;line-height:0;display:flex;align-items:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-          </div>
+        <div class="section-eyebrow" style="margin-bottom:8px;font-size:11px">Unassigned Guests</div>
+        <div style="position:relative;margin-bottom:10px">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:7px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="seating-search" class="form-input" placeholder="Search…" style="padding:4px 28px 4px 24px;font-size:11.5px;height:27px;width:100%"
+            oninput="filterSeatingPool(this.value)" onkeydown="if(event.key==='Escape'){this.value='';filterSeatingPool('')}"/>
+          <button type="button" onclick="filterSeatingPool('');const _se=document.getElementById('seating-search');if(_se){_se.value='';_se.focus()}" title="Clear" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;line-height:0;display:flex;align-items:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
-        <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-wrap:wrap;gap:6px;padding:2px">
+        <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-direction:column;padding:2px 4px">
           ${_poolGroupsHtml(unseated)}
         </div>
       </div>
     </div>`:''}
   </div>
   ${!_showPoolSidebar?`<div class="card">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-      <div class="section-eyebrow" style="margin-bottom:0">Unassigned Guests</div>
-      <div style="position:relative;flex:1;min-width:140px;max-width:260px;margin-left:auto">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="seating-search" class="form-input" placeholder="Search…" style="padding:5px 36px 5px 28px;font-size:12px;height:30px"
-          oninput="filterSeatingPool(this.value)" onkeydown="if(event.key==='Escape'){this.value='';filterSeatingPool('')}"/>
-        <button type="button" onclick="filterSeatingPool('');const _se=document.getElementById('seating-search');if(_se){_se.value='';_se.focus()}" title="Clear" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;line-height:0;display:flex;align-items:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      </div>
+    <div class="section-eyebrow" style="margin-bottom:8px">Unassigned Guests</div>
+    <div style="position:relative;max-width:320px;margin-bottom:12px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="seating-search" class="form-input" placeholder="Search…" style="padding:5px 36px 5px 28px;font-size:12px;height:30px;width:100%"
+        oninput="filterSeatingPool(this.value)" onkeydown="if(event.key==='Escape'){this.value='';filterSeatingPool('')}"/>
+      <button type="button" onclick="filterSeatingPool('');const _se=document.getElementById('seating-search');if(_se){_se.value='';_se.focus()}" title="Clear" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;line-height:0;display:flex;align-items:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
-    <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-wrap:wrap;gap:6px;padding:4px">
+    <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-direction:column;padding:4px">
       ${_poolGroupsHtml(unseated)}
     </div>
   </div>`:''}` ;

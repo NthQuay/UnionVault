@@ -448,14 +448,23 @@ function _unseatedBannerHtml(){
     <button class="btn btn-outline btn-sm" onclick="_focusUnseatedPool()" style="flex-shrink:0;white-space:nowrap">Seat them</button>
   </div>`;
 }
-// "Seat them" scrolls to the Unassigned pool on THIS page. It does not navigate:
-// you are already where the work happens.
+// "Seat them" scrolls to the Unassigned pool on THIS page and pulses just the
+// chips for the attending-unseated guests named in the banner (reusing the same
+// chip-found highlight the guest-finder uses) — not the whole pool, which (with
+// "Show only attending" off) also holds awaiting/declined guests the banner
+// isn't about. Also clears any active search so a chip it's trying to show
+// isn't sitting hidden behind a stale filter.
 function _focusUnseatedPool(){
   const el=document.getElementById('seating-pool');
   if(!el) return;
+  const s=document.getElementById('seating-search');
+  if(s && s.value){ s.value=''; if(typeof filterSeatingPool==='function') filterSeatingPool(''); }
   el.scrollIntoView({behavior:'smooth',block:'center'});
-  el.classList.add('pool-drop-active');
-  setTimeout(()=>{ el.classList.remove('pool-drop-active'); },1400);
+  const ids=_unseatedAttending().map(g=>g.id);
+  if(typeof _highlightChipInPool==='function') ids.forEach(id=>_highlightChipInPool(id));
+  setTimeout(()=>{
+    ids.forEach(id=>{ const c=el.querySelector('.seat-chip[data-gid="'+id+'"]'); if(c) c.classList.remove('chip-found'); });
+  },1800);
 }
 function _updateBudgetNavBadge(){
   const el = document.getElementById('nav-budget-badge');

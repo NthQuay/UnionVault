@@ -1684,20 +1684,19 @@ body.dark .budget-subitem-box{background:#26262C;border:none}
 .seat-chip:active{cursor:grabbing;opacity:.7}
 .seat-chip-grip{color:var(--muted);font-size:11px;letter-spacing:-1px;margin-right:1px;cursor:grab}
 .seat-chip-drag.drag-over{border-color:var(--gold-deep);box-shadow:0 0 0 1px var(--gold-deep)}
-/* ── Pool groups (couple / family blocks in unassigned panel) ─────── */
-.pool-group{border:1.5px solid var(--border);border-radius:9px;padding:6px 8px 5px;background:var(--surface);margin-bottom:6px;width:100%;box-sizing:border-box;cursor:grab;user-select:none;transition:border-color .15s}
+/* ── Unassigned-guests pool: one continuous list, not wrapped pills. Couples/
+   families use the same bracket-and-icon connector as the Guest List/RSVP
+   tracker (see _gtConnectorHtml) instead of a separate boxed card. ────── */
+#seating-pool{display:flex;flex-direction:column;align-items:stretch}
+#seating-pool .seat-chip{display:flex;width:100%;margin:0;padding:7px 6px;border:none;border-radius:0;background:transparent;border-bottom:.5px solid var(--border)}
+#seating-pool .seat-chip:last-child{border-bottom:none}
+#seating-pool .seat-chip:active{opacity:.6}
+.pool-group{position:relative;padding-left:20px;cursor:grab;user-select:none;border-radius:6px}
 .pool-group:active{cursor:grabbing;opacity:.75}
-.pool-group.pg-couple{border-color:#c5b8e0}
-.pool-group.pg-family{border-color:#a8c4a0}
-.pool-group.pg-drag-over{border-color:var(--gold-deep);box-shadow:0 0 0 1px var(--gold-deep)}
-body.dark .pool-group{background:#1e1e24}
-body.dark .pool-group.pg-couple{border-color:#7a5f96}
-body.dark .pool-group.pg-family{border-color:#4e7a58}
-.pool-group-hd{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;pointer-events:none}
-.pool-group-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pool-group-seat-btn{font-size:10px;font-weight:600;font-family:inherit;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--cream);color:var(--gold-deep);cursor:pointer;flex-shrink:0;pointer-events:auto;white-space:nowrap}
-.pool-group-chips{display:flex;flex-wrap:wrap;gap:4px;pointer-events:auto}
-.pool-group-chips .seat-chip{margin:0}
+.pool-group.pg-drag-over{box-shadow:inset 0 0 0 1.5px var(--gold-deep)}
+.pool-group-rows{display:flex;flex-direction:column;pointer-events:auto}
+.pool-group-rows .seat-chip:last-child{border-bottom:.5px solid var(--border)}
+.pool-group:last-child .pool-group-rows .seat-chip:last-child{border-bottom:none}
 /* ── Seating Floorplan ─────────────────────────────────────────────── */
 .floor-canvas{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;overflow-anchor:none;transform-origin:0 0}
 .floor-canvas.zooming{will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
@@ -1731,6 +1730,9 @@ body.dark .floor-zoom-ctrl{box-shadow:0 2px 12px rgba(0,0,0,.5)}
 .floor-canvas.floor-locked-all .floor-seat{cursor:default}
 .floor-canvas.floor-locked .floor-decor .decor-x{display:none!important}
 .floor-table:active{cursor:grabbing}
+/* Multi-select: a persistent ring (not the pulsing seat/chip "found" animation —
+   this is a held state, not a momentary flash). */
+.floor-table.floor-selected,.floor-decor.floor-selected{outline:2px solid var(--gold-deep);outline-offset:3px;border-radius:6px}
 @keyframes seatFindPulse{0%{box-shadow:0 0 0 0 rgba(201,161,74,.6)}70%{box-shadow:0 0 0 13px rgba(201,161,74,0)}100%{box-shadow:0 0 0 0 rgba(201,161,74,0)}}
 .floor-seat.seat-found{background:var(--gold)!important;animation:seatFindPulse 1.3s ease-out infinite;z-index:6;outline:2px solid var(--gold-deep);outline-offset:1px}
 /* Free placement (v139): empty chairs are drop targets. They are invisible until a
@@ -1781,10 +1783,17 @@ body.dark .ftxt-caps{color:var(--gold)}
 .pngbw [data-pipon="1"]{background:transparent!important;border:1.5px solid #6f6f6f!important}
 .pngbw .sp-pip-init{color:#4a4a4a!important}
 .pngbw .decor-zone,.pngbw .floor-name-tag{filter:grayscale(1)}
-.floor-resize{position:absolute;right:-6px;bottom:-6px;width:15px;height:15px;border-radius:4px;background:var(--panel,var(--cream));border:1px solid var(--border);color:var(--muted);cursor:nwse-resize;opacity:0;transition:opacity .15s;display:flex;align-items:center;justify-content:center;touch-action:none;z-index:3}
-.floor-table:hover .floor-resize,.floor-decor:hover .floor-resize{opacity:1}
-.floor-rotate,.floor-rotate+span{opacity:0;transition:opacity .15s}
-.floor-table:hover .floor-rotate,.floor-table:hover .floor-rotate+span,.floor-decor:hover .floor-rotate,.floor-decor:hover .floor-rotate+span{opacity:1}
+.floor-resize{position:absolute;right:-6px;bottom:-6px;width:15px;height:15px;border-radius:4px;background:var(--panel,var(--cream));border:1px solid var(--border);color:var(--muted);cursor:nwse-resize;opacity:.6;transition:opacity .15s;display:flex;align-items:center;justify-content:center;touch-action:none;z-index:3}
+.floor-rotate,.floor-rotate+span{transition:opacity .15s}
+/* Mouse/stylus: hover-reveal, as before. Touch has no :hover to reveal them with, so
+   they stay at a faint-but-tappable opacity (set above/inline) at all times instead —
+   same idle/on-contact split already used for the guest-list edit pencil. */
+@media (hover:hover),(pointer:fine){
+  .floor-resize{opacity:0}
+  .floor-table:hover .floor-resize,.floor-decor:hover .floor-resize{opacity:1}
+  .floor-rotate,.floor-rotate+span{opacity:0}
+  .floor-table:hover .floor-rotate,.floor-table:hover .floor-rotate+span,.floor-decor:hover .floor-rotate,.floor-decor:hover .floor-rotate+span{opacity:1}
+}
 .floor-panel-resize{position:absolute;top:0;bottom:0;right:-15px;width:15px;display:flex;align-items:center;justify-content:center;cursor:col-resize;touch-action:none;z-index:5}
 .floor-panel-resize-grip{width:4px;height:36px;border-radius:3px;background:var(--border);transition:background .15s,height .15s}
 .floor-panel-resize:hover .floor-panel-resize-grip,.floor-panel-resize.dragging .floor-panel-resize-grip{background:var(--gold-deep);height:52px}

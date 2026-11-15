@@ -1135,31 +1135,29 @@ function _couplePoolLabel(g,p){
   return fn(g.name)+' & '+fn(p.name);
 }
 
-// ── Pool HTML with group blocks ───────────────────────────────────────
+// ── Pool HTML: one continuous list of rows. Grouped couples/families are shown
+// with the same bracket-and-icon connector as the Guest List / RSVP tracker,
+// instead of their own separate boxed card — same grouping language everywhere.
+function _poolChipRow(g){
+  return `<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`;
+}
 function _poolGroupsHtml(unseated){
-  if(!unseated.length) return '<span style="font-size:13px;color:var(--muted)">All guests assigned ✓</span>';
+  if(!unseated.length) return '<span style="font-size:13px;color:var(--muted);display:block;padding:8px 4px">All guests assigned ✓</span>';
   const showKids=!(STATE.settings&&STATE.settings.seatHideChildren);
   const visible=showKids?unseated:unseated.filter(g=>_guestAgeBand(g)==='adult');
-  if(!visible.length) return '<span style="font-size:13px;color:var(--muted)">All adult guests assigned ✓</span>';
+  if(!visible.length) return '<span style="font-size:13px;color:var(--muted);display:block;padding:8px 4px">All adult guests assigned ✓</span>';
   const useGroups=!(STATE.settings&&STATE.settings.seatFlatPool);
   if(!useGroups){
-    return visible.map(g=>`<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`).join('');
+    return visible.map(_poolChipRow).join('');
   }
   const groups=_poolGroups(visible);
   return groups.map(grp=>{
-    if(grp.type==='solo'){
-      const g=grp.members[0];
-      return `<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`;
-    }
+    if(grp.type==='solo') return _poolChipRow(grp.members[0]);
     const idsJson=JSON.stringify(grp.ids).replace(/"/g,'&quot;');
-    const svgCouple='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3.5"/><path d="M3 20v-1.5a5 5 0 0 1 5-5h2"/><circle cx="17" cy="7" r="3.5"/><path d="M13 14.5a5 5 0 0 1 5-5h1a5 5 0 0 1 5 5V20"/></svg>';
-    const svgFamily='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v9.5h14V10"/></svg>';
-    const chipClass=grp.type==='couple'?'pg-couple':'pg-family';
-    const icon=grp.type==='couple'?svgCouple:svgFamily;
-    const chipHtml=grp.members.map(g=>`<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`).join('');
-    return `<div class="pool-group ${chipClass}" draggable="true" ondragstart="dragGroup(event,'${idsJson}')" ondragover="event.preventDefault();this.classList.add('pg-drag-over')" ondragleave="this.classList.remove('pg-drag-over')" ondrop="this.classList.remove('pg-drag-over')">
-      <div class="pool-group-hd">${icon}<span class="pool-group-label">${grp.label||grp.members.map(g=>g.name.split(' ')[0]).join(' & ')}</span><span style="font-size:10px;opacity:.6">${grp.members.length} guests</span></div>
-      <div class="pool-group-chips">${chipHtml}</div>
+    const connector=(typeof _gtConnectorHtml==='function')?_gtConnectorHtml({type:grp.type==='couple'?'couple':'family',key:idsJson},grp.members.length):'';
+    return `<div class="pool-group" draggable="true" ondragstart="dragGroup(event,'${idsJson}')" ondragover="event.preventDefault();this.classList.add('pg-drag-over')" ondragleave="this.classList.remove('pg-drag-over')" ondrop="this.classList.remove('pg-drag-over')">
+      ${connector}
+      <div class="pool-group-rows">${grp.members.map(_poolChipRow).join('')}</div>
     </div>`;
   }).join('');
 }
@@ -1365,6 +1363,7 @@ function confirmDeleteTable(id){
   const _t0=STATE.tables.find(x=>x.id===id);
   const _label=_t0?(_t0.name||_t0.label||'table'):'table';
   closeModalDirect();
+  if(typeof _floorCommitUndo==='function') _floorCommitUndo(_undoSnapshot()); // Ctrl+Z works too, not just the toast
   _undoableDelete(_label, ()=>{
     STATE.tables=STATE.tables.filter(x=>x.id!==id); delete STATE.seating[id];
   }, 'seating');
