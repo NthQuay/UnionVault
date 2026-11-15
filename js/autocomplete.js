@@ -1138,8 +1138,11 @@ function _couplePoolLabel(g,p){
 // ── Pool HTML: one continuous list of rows. Grouped couples/families are shown
 // with the same bracket-and-icon connector as the Guest List / RSVP tracker,
 // instead of their own separate boxed card — same grouping language everywhere.
-function _poolChipRow(g){
-  return `<span class="seat-chip" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`;
+// `divider` marks a row that needs a bottom border — only the gap BETWEEN
+// units (a solo guest, or a whole couple/family) gets one; members inside
+// the same group sit flush together under their connector bracket.
+function _poolChipRow(g,divider){
+  return `<span class="seat-chip${divider?' pool-row-div':''}" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)}${_ageBandBadge(g)||''} ${g.name}</span>`;
 }
 function _poolGroupsHtml(unseated){
   if(!unseated.length) return '<span style="font-size:13px;color:var(--muted);display:block;padding:8px 4px">All guests assigned ✓</span>';
@@ -1148,16 +1151,18 @@ function _poolGroupsHtml(unseated){
   if(!visible.length) return '<span style="font-size:13px;color:var(--muted);display:block;padding:8px 4px">All adult guests assigned ✓</span>';
   const useGroups=!(STATE.settings&&STATE.settings.seatFlatPool);
   if(!useGroups){
-    return visible.map(_poolChipRow).join('');
+    return visible.map((g,i)=>_poolChipRow(g,i<visible.length-1)).join('');
   }
   const groups=_poolGroups(visible);
-  return groups.map(grp=>{
-    if(grp.type==='solo') return _poolChipRow(grp.members[0]);
+  return groups.map((grp,gi)=>{
+    const isLastUnit=gi===groups.length-1;
+    if(grp.type==='solo') return _poolChipRow(grp.members[0],!isLastUnit);
     const idsJson=JSON.stringify(grp.ids).replace(/"/g,'&quot;');
     const connector=(typeof _gtConnectorHtml==='function')?_gtConnectorHtml({type:grp.type==='couple'?'couple':'family',key:idsJson},grp.members.length):'';
+    const rows=grp.members.map((g,mi)=>_poolChipRow(g, mi===grp.members.length-1 ? !isLastUnit : false)).join('');
     return `<div class="pool-group" draggable="true" ondragstart="dragGroup(event,'${idsJson}')" ondragover="event.preventDefault();this.classList.add('pg-drag-over')" ondragleave="this.classList.remove('pg-drag-over')" ondrop="this.classList.remove('pg-drag-over')">
       ${connector}
-      <div class="pool-group-rows">${grp.members.map(_poolChipRow).join('')}</div>
+      <div class="pool-group-rows">${rows}</div>
     </div>`;
   }).join('');
 }
