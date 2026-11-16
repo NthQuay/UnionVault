@@ -25,6 +25,10 @@ function navigate(page){
   // Leaving the checklist page closes the Archived sub-page so returning later
   // lands on the normal checklist, not the archive.
   if(page!=='checklist') _clArchivedView=false;
+  // Always land on the topic grid when reached via the sidebar/elsewhere; a tip's own
+  // "next topic" link changes _tipsOpenCat and re-navigates to the SAME page, which this
+  // leaves alone (only resets when actually leaving/arriving from somewhere else).
+  if(page!=='tips') _tipsOpenCat=null;
   // The NEW-import badges are a transient post-import highlight; clear them once the
   // user leaves the Guests page (re-imports repopulate the set).
   if(page!=='guests' && _newlyImportedIds.size) _newlyImportedIds=new Set();
@@ -51,10 +55,10 @@ function navigate(page){
   }
   const titles={dashboard:'Dashboard',details:'Event Details',timeline:'Timelines',guests:'Guest List','rsvp-mgr':'RSVP & Invites',
     checklist:'Checklist',calendar:'Calendar',budget:'Budget',vendors:'Vendors',seating:'Seating Plan',inspo:'Inspiration',
-    visionboard:'Vision Board',wishingwell:'Wishing Well',invitation:'RSVP & Invites',settings:'Settings',events:'Events',website:'Website',comms:'Communications'};
+    visionboard:'Vision Board',wishingwell:'Wishing Well',invitation:'RSVP & Invites',settings:'Settings',events:'Events',website:'Website',comms:'Communications',tips:'Wedding Tips Library'};
   const eyebrows={dashboard:'Overview',details:'Your Event',timeline:'Schedule',guests:'Guests','rsvp-mgr':'Guests',
     checklist:'Planning',calendar:'Planning',budget:'Finances',vendors:'Suppliers',seating:'Layout',inspo:'Create',
-    visionboard:'Aesthetic',wishingwell:'Gifts',invitation:'Guests',settings:'Preferences',events:'Celebrations',website:'Guests',comms:'Templates'};
+    visionboard:'Aesthetic',wishingwell:'Gifts',invitation:'Guests',settings:'Preferences',events:'Celebrations',website:'Guests',comms:'Templates',tips:'Guides'};
   document.getElementById('topbar-title').textContent=titles[page]||page;
   const eb=document.getElementById('topbar-eyebrow');
   if(eb) eb.textContent=eyebrows[page]||'';
@@ -84,6 +88,7 @@ function navigate(page){
   else if(page==='invitation') renderInvitation(c,actions);
   else if(page==='settings') renderSettings(c,actions);
   else if(page==='comms') renderComms(c,actions);
+  else if(page==='tips') renderTips(c,actions);
   }catch(e){
     console.error('Page "'+page+'" failed to render:',e);
     if(c) c.innerHTML=`<div style="max-width:560px;margin:60px auto;padding:20px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink);margin-bottom:8px">This page couldn't be shown</div>Something in your data tripped this page up. Reloading usually helps. If it keeps happening, please send us this message:<div style="margin-top:10px;font-family:monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:left;word-break:break-word">${String(e&&e.message||e).replace(/[<>&]/g,'')}</div></div>`;

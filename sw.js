@@ -1,4 +1,4 @@
-const CACHE = 'union-vault-v514.6';
+const CACHE = 'union-vault-v514.7';
 const SHELL = [
   '/', '/index.html',
   '/css/fonts.css', '/css/app.css', '/css/landing.css', '/css/setup-wizard.css',
@@ -8,6 +8,7 @@ const SHELL = [
   '/js/budget.js', '/js/seating.js', '/js/supabase.js', '/js/ref.js', '/js/subscription.js', '/js/autocomplete.js',
   '/js/floorplan.js', '/js/inspiration.js', '/js/visionboard.js',
   '/js/wishingwell.js', '/js/website.js', '/js/comms.js', '/js/sent-log.js', '/js/invitations.js', '/js/events.js',
+  '/js/tips.js',
   '/js/settings.js', '/js/import.js', '/js/attachments.js', '/js/export.js',
   '/js/tags.js', '/js/undo.js', '/js/payments.js', '/js/auth.js',
   '/js/storage.js', '/js/media.js', '/js/welcome.js', '/js/dots.js',
