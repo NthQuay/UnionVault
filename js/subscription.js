@@ -200,7 +200,7 @@ const _UV_PLANS = [
   { months:1,  label:'Monthly',     short:'1 mo',  priceId:'price_1UX9tMBK4MlrXpHgcRbeguBi', monthly:1299, discount:0 },
   { months:3,  label:'3 months',    short:'3 mo',  priceId:'price_1UX9tMBK4MlrXpHgTfuW75et', monthly:1039, discount:20 },
   { months:6,  label:'6 months',    short:'6 mo',  priceId:'price_1UX9tMBK4MlrXpHg7WJjW4gm', monthly:909,  discount:30 },
-  { months:12, label:'12 months',   short:'12 mo', priceId:'price_1UX9tMBK4MlrXpHgbx6Kad5c', monthly:650,  discount:50 },
+  { months:12, label:'12 months',   short:'12 mo', priceId:'price_1UX9tMBK4MlrXpHgbx6Kad5c', monthly:650,  discount:50, approxDiscount:true },
 ];
 
 function _uvPlanByPrice(priceId){
@@ -303,7 +303,7 @@ async function _uvOpenSubPage(){
             <div style="font-size:13px;font-weight:600;color:var(--ink)">${_escH(p.label)}</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">${ms||'Price TBC'}${ts?' &middot; '+ts+' total':''}</div>
           </div>
-          ${p.discount?`<div style="font-size:11px;font-weight:700;color:var(--green,#3D9454);flex-shrink:0">Save ${p.discount}%</div>`:''}
+          ${p.discount?`<div style="font-size:11px;font-weight:700;color:var(--green,#3D9454);flex-shrink:0">Save ${p.approxDiscount?'~':''}${p.discount}%</div>`:''}
         </div>
       </div>`;
     };
@@ -348,7 +348,7 @@ async function _uvOpenSubPage(){
     ${plansHtml}
     ${actionsHtml}
     ${!isGranted?`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-      ${isFree||isTrial?'<div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green,#3D9454)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Cancel anytime on month-to-month plans.<br>Save up to 50% on upfront terms.</div>':''}
+      ${isFree||isTrial?'<div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green,#3D9454)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:2px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Cancel anytime on month-to-month plans.<br>Save ~50% on upfront terms.</div>':''}
       <div style="font-size:11px;color:var(--muted)"><a href="#" onclick="event.preventDefault();_openTermsModal()" style="color:var(--gold-deep);text-decoration:none">Terms &amp; Privacy</a></div>
     </div>`:''}
   </div>`;

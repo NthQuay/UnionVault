@@ -358,7 +358,7 @@ Paste your URL and the tool scrapes your page, writes a script and renders a vid
 | 1 month | $12.99 | — | $12.99 |
 | 3 months | $10.39 | 20% off | $31.18 |
 | 6 months | $9.09 | 30% off | $54.56 |
-| 12 months | $6.50 | 50% off | $77.94 |
+| 12 months | $6.50 | ~50% off | $77.94 |
 
 Free to start (no credit card). Paid plans unlock premium features.
 
@@ -471,7 +471,7 @@ No contracts. Cancel anytime. Start free.
 
 3 months — $10.39/mo
 6 months — $9.09/mo
-12 months — $6.50/mo (50% off)
+12 months — $6.50/mo (~50% off)
 
 unionvault.app
 ```
