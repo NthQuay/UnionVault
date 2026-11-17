@@ -1072,7 +1072,9 @@ body.dark .prs-panel,.prs-page{background:var(--cream)!important}
 .pub-tips-page{min-height:100vh;background:var(--cream);display:flex;justify-content:center;padding:32px 16px 60px}
 .pub-tips-inner{width:100%;max-width:1000px}
 .pub-tips-head{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
-.pub-tips-head img{height:30px;width:auto}
+/* This page's background never actually switches to dark (no sign-in boot sequence
+   runs here to apply body.dark), so the crest stays on the dark-ink/light-bg variant. */
+.pub-tips-crest{height:30px;width:auto;display:block}
 .pub-tips-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep)}
 .pub-tips-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--ink);line-height:1.15}
 .pub-tips-sub{font-size:13.5px;color:var(--muted);max-width:480px;line-height:1.6}

@@ -237,11 +237,13 @@ function _pubTipsOpen(i,focusTipIdx){
 }
 function _renderPublicTips(){
   const inner=_pubTipsOpenCat==null?_tipsGridHtml():_tipsDetailHtml(_pubTipsOpenCat);
-  document.body.innerHTML=`
+  _publicPageShell(`
     <div class="pub-tips-page">
       <div class="pub-tips-inner">
         <div class="pub-tips-head">
-          <a href="https://unionvault.app/" style="display:inline-flex"><img src="${WB_CREST_DARK}" alt="Union Vault"></a>
+          <a href="https://unionvault.app/" style="display:inline-flex">
+            <img class="pub-tips-crest" src="${window.location.origin}/logos/Black%20logo%20(Light%20mode).png" alt="Union Vault">
+          </a>
           <div class="pub-tips-eyebrow">Guides</div>
           <div class="pub-tips-title">Wedding Tips Library</div>
           <div class="pub-tips-sub">Short, practical ideas from real weddings — browse by topic, or search for what you need.</div>
@@ -250,7 +252,7 @@ function _renderPublicTips(){
         ${inner}
         <div class="pub-tips-brand"><a href="https://unionvault.app/" target="_blank" rel="noopener">Wedding Tips Library by Union Vault — unionvault.app</a></div>
       </div>
-    </div>`;
+    </div>`);
   if(_pubTipsOpenCat!=null && _pubTipsFocusTip!=null){
     const cat=_pubTipsOpenCat, idx=_pubTipsFocusTip;
     _pubTipsFocusTip=null;
