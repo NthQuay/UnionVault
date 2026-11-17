@@ -825,6 +825,63 @@ function _vendorInitial(name){
   const m=pick.match(/[\p{L}\p{N}]/u);
   return (m?m[0]:raw.charAt(0)).toUpperCase();
 }
+// ── Opening-hours parsing: freeform "Monday 9am–5pm" style text → today's status ──
+const _VEN_DAY_IDX={sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6};
+const _VEN_DAY_RE='(sun(?:day)?|mon(?:day)?|tue(?:s(?:day)?)?|wed(?:nesday)?|thu(?:rs(?:day)?)?|fri(?:day)?|sat(?:urday)?)';
+function _venHoursByDay(text){
+  const byDay={};
+  const rangeRe=new RegExp('^'+_VEN_DAY_RE+'[a-z]*\\s*(?:-|–|—|to)\\s*'+_VEN_DAY_RE+'\\b[:,]?\\s*(.*)$','i');
+  const singleRe=new RegExp('^'+_VEN_DAY_RE+'\\b[:,]?\\s*(.*)$','i');
+  String(text||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean).forEach(line=>{
+    let m=line.match(rangeRe);
+    if(m){
+      const a=_VEN_DAY_IDX[m[1].slice(0,3).toLowerCase()], b=_VEN_DAY_IDX[m[2].slice(0,3).toLowerCase()];
+      if(a!=null&&b!=null){ let i=a; while(true){ byDay[i]=m[3]||''; if(i===b) break; i=(i+1)%7; } return; }
+    }
+    m=line.match(singleRe);
+    if(m){ const idx=_VEN_DAY_IDX[m[1].slice(0,3).toLowerCase()]; if(idx!=null){ byDay[idx]=m[2]||''; return; } }
+    if(/\bdaily\b|\bevery\s*day\b/i.test(line)){
+      const desc=line.replace(/^\s*(open\s+)?(daily|every\s*day)\s*[:,]?\s*/i,'').trim()||line;
+      for(let i=0;i<7;i++) byDay[i]=desc;
+    }
+  });
+  return byDay;
+}
+function _venParseTimeRange(desc){
+  const m=String(desc||'').match(/(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m?\.?\s*(?:-|–|—|to)\s*(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m?\.?/i);
+  if(!m) return null;
+  const toMin=(h,mi,ap)=>{ let hh=parseInt(h,10)%12; if(/p/i.test(ap)) hh+=12; return hh*60+parseInt(mi||'0',10); };
+  return { start:toMin(m[1],m[2],m[3]), end:toMin(m[4],m[5],m[6]) };
+}
+function _venFmtMin(min){
+  let hh=Math.floor(min/60), mm=min%60;
+  const ap=hh>=12?'pm':'am';
+  hh=hh%12; if(hh===0) hh=12;
+  return mm?`${hh}:${String(mm).padStart(2,'0')}${ap}`:`${hh}${ap}`;
+}
+function _venHoursStatus(text){
+  if(!text) return null;
+  const byDay=_venHoursByDay(text);
+  const now=new Date();
+  const desc=byDay[now.getDay()];
+  if(desc==null){
+    const first=String(text).split(/\r?\n/).map(l=>l.trim()).filter(Boolean)[0]||text;
+    return {state:'unknown', text:first};
+  }
+  if(/closed/i.test(desc)) return {state:'closed', text:'Closed today'};
+  if(/24\s*hours|24\/7/i.test(desc)) return {state:'open', text:'Open 24 hours'};
+  const range=_venParseTimeRange(desc);
+  if(!range) return {state:'unknown', text:desc||'Hours vary'};
+  const nowMin=now.getHours()*60+now.getMinutes();
+  if(nowMin>=range.start && nowMin<range.end) return {state:'open', text:`Open · closes ${_venFmtMin(range.end)}`};
+  if(nowMin<range.start) return {state:'closed', text:`Closed · opens ${_venFmtMin(range.start)}`};
+  return {state:'closed', text:'Closed today'};
+}
+let _venHoursOpenSet=new Set();
+function _venToggleHours(id){
+  if(_venHoursOpenSet.has(id)) _venHoursOpenSet.delete(id); else _venHoursOpenSet.add(id);
+  navigate('vendors');
+}
 function _vendorCardHtml(v){
   const sm=_vendorStatusMeta(v.status);
   const esc=_escHtml;
@@ -835,7 +892,20 @@ function _vendorCardHtml(v){
   if(v.email && !st.vcHideEmail) lines.push(`<div style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:6px;word-break:break-all"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg><a href="#" data-vm-email="${esc(v.email)}" data-vm-name="${esc(v.contact||v.business||'')}" data-vm-ping="${_vluPreferredFor(v)?esc(v.lookupId||''):''}" onclick="event.preventDefault();openVendorMessageFrom(this)" style="color:var(--gold-deep);text-decoration:underline">${esc(v.email)}</a></div>`);
   if(v.address && !st.vcHideAddress) lines.push(`<div style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><a href="${esc(_mapsUrl(v.address))}" target="_blank" rel="noopener noreferrer" style="color:var(--gold-deep);text-decoration:underline;word-break:break-word">${esc(v.address)}</a></div>`);
   if(v.website && !st.vcHideWebsite){ const url=esc(_normalizeUrl(v.website)); lines.push(`<div style="display:flex;align-items:center;gap:7px;font-size:12px;margin-top:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><a href="${esc(_vluSavedWebHref(v,_normalizeUrl(v.website)))}" target="_blank" rel="noopener noreferrer" style="color:var(--gold-deep);text-decoration:underline;word-break:break-all">${esc(_urlDomain(v.website))}</a></div>`); }
-  if(v.hours && !st.vcHideHours) lines.push(`<div style="display:flex;align-items:flex-start;gap:7px;font-size:12px;margin-top:6px;color:var(--ink)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span style="white-space:pre-line">${esc(v.hours)}</span></div>`);
+  if(v.hours && !st.vcHideHours){
+    const _hExpanded=_venHoursOpenSet.has(v.id);
+    const _hStatus=_venHoursStatus(v.hours);
+    const _hDot=_hStatus&&_hStatus.state==='open'?'var(--green)':_hStatus&&_hStatus.state==='closed'?'var(--red)':'var(--muted)';
+    lines.push(`<div style="margin-top:6px">
+      <button type="button" onclick="event.stopPropagation();_venToggleHours('${v.id}')" style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink);background:none;border:none;padding:0;cursor:pointer;font-family:inherit;width:100%;text-align:left">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span style="flex-shrink:0;width:6px;height:6px;border-radius:50%;background:${_hDot}"></span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(_hStatus?_hStatus.text:v.hours)}</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;flex-shrink:0;transform:rotate(${_hExpanded?180:0}deg);transition:transform .15s"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      ${_hExpanded?`<div style="margin-left:20px;margin-top:4px;font-size:12px;color:var(--muted);white-space:pre-line">${esc(v.hours)}</div>`:''}
+    </div>`);
+  }
   // Google rating (stars + value + review count).
   const ratingHtml = (v.rating && !st.vcHideReview) ? (()=>{
     const r=parseFloat(v.rating)||0; const full=Math.round(r);
