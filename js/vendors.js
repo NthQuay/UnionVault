@@ -874,8 +874,23 @@ function _venHoursStatus(text){
   if(!range) return {state:'unknown', text:desc||'Hours vary'};
   const nowMin=now.getHours()*60+now.getMinutes();
   if(nowMin>=range.start && nowMin<range.end) return {state:'open', text:`Open · closes ${_venFmtMin(range.end)}`};
-  if(nowMin<range.start) return {state:'closed', text:`Closed · opens ${_venFmtMin(range.start)}`};
-  return {state:'closed', text:'Closed today'};
+  return {state:'closed', text:'Closed'};
+}
+// Rolling week for the expanded view: tomorrow first, today last (today's own status is
+// already shown on the collapsed summary line above it). Falls back to the raw hours text
+// when it doesn't parse into per-day entries at all (e.g. "Call for hours").
+const _VEN_DAY_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function _venRollingWeekHtml(text){
+  const byDay=_venHoursByDay(text);
+  if(!Object.keys(byDay).length) return String(text||'');
+  const todayIdx=new Date().getDay();
+  const lines=[];
+  for(let i=1;i<=7;i++){
+    const idx=(todayIdx+i)%7;
+    const desc=byDay[idx];
+    lines.push(`${_VEN_DAY_NAMES[idx]} ${desc!=null&&desc!==''?desc:'—'}`);
+  }
+  return lines.join('\n');
 }
 let _venHoursOpenSet=new Set();
 function _venToggleHours(id){
@@ -903,7 +918,7 @@ function _vendorCardHtml(v){
         <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(_hStatus?_hStatus.text:v.hours)}</span>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;flex-shrink:0;transform:rotate(${_hExpanded?180:0}deg);transition:transform .15s"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      ${_hExpanded?`<div style="margin-left:20px;margin-top:4px;font-size:12px;color:var(--muted);white-space:pre-line">${esc(v.hours)}</div>`:''}
+      ${_hExpanded?`<div style="margin-left:20px;margin-top:4px;font-size:12px;color:var(--muted);white-space:pre-line">${esc(_venRollingWeekHtml(v.hours))}</div>`:''}
     </div>`);
   }
   // Google rating (stars + value + review count).

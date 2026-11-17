@@ -58,7 +58,7 @@ const TIPS_LIBRARY=[
   {icon:'clock', title:'Stress-Free Day-Of Timeline', tagline:'A run sheet that keeps your wedding day calm, on time and on track.', tips:[
     {lead:'Work backwards from sunset.', body:'Check the exact sunset time for your wedding date with your photographer so you never miss golden hour portraits.'},
     {lead:'Pad hair and makeup by 30 minutes.', body:'Morning prep is the #1 place timelines fall behind — finish getting ready earlier than you think you need to.'},
-    {lead:'Share a master run sheet with everyone.', body:'Build multiple timelines for your bridal party, vendors, and family — and export them cleanly.', link:{page:'timeline', label:'Open Timelines'}},
+    {lead:'Share a master timeline with everyone.', body:'Build multiple timelines for your bridal party, vendors, and family — and export them cleanly.', link:{page:'timeline', label:'Open Timelines'}},
     {lead:'Schedule 10 minutes alone after the ceremony.', body:'Sneak away with your partner for a quiet drink and snack before diving into congratulations and family photos.'},
     {lead:'Keep speeches under 5 minutes each.', body:'Cap toasts and place them between courses so guests stay engaged and hot meals don’t go cold.'}
   ]},
@@ -114,6 +114,10 @@ const TIPS_LIBRARY=[
 ];
 let _tipsOpenCat=null;
 let _tipsFocusTip=null;
+// Set only inside the standalone public page (_showPublicTipsLibrary) — same data and
+// HTML-builders as the signed-in app's Tips page, just routed to a different opener/closer
+// so nothing here ever calls navigate() or touches STATE.
+let _tipsPublicMode=false;
 function renderTips(c,actions){
   actions.innerHTML='';
   if(_tipsOpenCat==null){
@@ -135,9 +139,9 @@ function renderTips(c,actions){
 }
 function _tipsGridHtml(){
   const rows=TIPS_LIBRARY.map((cat,i)=>`
-    <button class="tip-ed-row" onclick="_tipsOpen(${i})">
+    <button class="tip-ed-row" onclick="${_tipsPublicMode?`_pubTipsOpen(${i})`:`_tipsOpen(${i})`}">
       <span class="tip-ed-media">
-        <img src="/assets/tips/${cat.icon}.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+        <img src="/assets/tips/${cat.icon}.jpg" alt="" loading="lazy" onerror="this.style.display='none'" onload="this.nextElementSibling.style.display='none'">
         <span class="tip-ed-icon-fallback"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${TIPS_ICONS[cat.icon]}</svg></span>
       </span>
       <span class="tip-ed-content">
@@ -171,7 +175,7 @@ function _tipsSearch(q){
   resultsEl.style.display='';
   if(!hits.length){ resultsEl.innerHTML=`<div class="tip-search-empty">No tips match "${_escHtml(q)}".</div>`; return; }
   resultsEl.innerHTML=hits.map(h=>`
-    <div class="tip-row tip-search-hit" onclick="_tipsOpen(${h.ci},${h.ti})">
+    <div class="tip-row tip-search-hit" onclick="${_tipsPublicMode?`_pubTipsOpen(${h.ci},${h.ti})`:`_tipsOpen(${h.ci},${h.ti})`}">
       <span class="tip-row-num">${h.ti+1}</span>
       <div class="tip-row-body">
         <span class="tip-search-cat">${_escHtml(h.cat.title)}</span>
@@ -188,11 +192,11 @@ function _tipsDetailHtml(i){
       <div class="tip-row-body">
         <div class="tip-row-lead">${_escHtml(t.lead)}</div>
         <div class="tip-row-text">${_escHtml(t.body)}</div>
-        ${t.link?`<button class="tip-row-link" onclick="navigate('${t.link.page}')">${_escHtml(t.link.label)} <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>`:''}
+        ${t.link?`<button class="tip-row-link" onclick="${_tipsPublicMode?`window.location.href='https://unionvault.app/'`:`navigate('${t.link.page}')`}">${_escHtml(t.link.label)} <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>`:''}
       </div>
     </div>`).join('');
   return `
-  <button class="tip-back" onclick="_tipsOpen(null)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> All topics</button>
+  <button class="tip-back" onclick="${_tipsPublicMode?'_pubTipsOpen(null)':'_tipsOpen(null)'}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> All topics</button>
   <div class="tip-detail-hd">
     <span class="tip-cat-icon tip-cat-icon-lg"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${TIPS_ICONS[cat.icon]}</svg></span>
     <div>
@@ -201,7 +205,7 @@ function _tipsDetailHtml(i){
     </div>
   </div>
   <div class="tip-row-list">${rows}</div>
-  ${i<TIPS_LIBRARY.length-1?`<button class="tip-next" onclick="_tipsOpen(${i+1})">Next: ${_escHtml(TIPS_LIBRARY[i+1].title)} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>`:''}`;
+  ${i<TIPS_LIBRARY.length-1?`<button class="tip-next" onclick="${_tipsPublicMode?`_pubTipsOpen(${i+1})`:`_tipsOpen(${i+1})`}">Next: ${_escHtml(TIPS_LIBRARY[i+1].title)} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>`:''}`;
 }
 function _tipsOpen(i,focusTipIdx){
   _tipsOpenCat=i;
@@ -209,4 +213,53 @@ function _tipsOpen(i,focusTipIdx){
   const c=document.getElementById('main-content');
   if(c){ c.scrollTop=0; }
   navigate('tips');
+}
+
+// ── Standalone public page: no sign-in, no app shell — reuses the exact same
+// TIPS_LIBRARY data and _tipsGridHtml/_tipsDetailHtml builders as the signed-in app's
+// Tips page (one source of truth), just rendered into a minimal page and opened/closed
+// by _pubTipsOpen instead of navigate(). Reached via the #library hash (see js/init.js).
+let _pubTipsOpenCat=null;
+let _pubTipsFocusTip=null;
+function _showPublicTipsLibrary(){
+  document.body.style.visibility='hidden';
+  document.body.style.background='var(--cream,#FBF8F3)';
+  _tipsPublicMode=true;
+  _pubTipsOpenCat=null;
+  _renderPublicTips();
+  document.body.style.visibility='visible';
+}
+function _pubTipsOpen(i,focusTipIdx){
+  _pubTipsOpenCat=i;
+  _pubTipsFocusTip=(typeof focusTipIdx==='number')?focusTipIdx:null;
+  _renderPublicTips();
+  window.scrollTo(0,0);
+}
+function _renderPublicTips(){
+  const inner=_pubTipsOpenCat==null?_tipsGridHtml():_tipsDetailHtml(_pubTipsOpenCat);
+  document.body.innerHTML=`
+    <div class="pub-tips-page">
+      <div class="pub-tips-inner">
+        <div class="pub-tips-head">
+          <a href="https://unionvault.app/" style="display:inline-flex"><img src="${WB_CREST_DARK}" alt="Union Vault"></a>
+          <div class="pub-tips-eyebrow">Guides</div>
+          <div class="pub-tips-title">Wedding Tips Library</div>
+          <div class="pub-tips-sub">Short, practical ideas from real weddings — browse by topic, or search for what you need.</div>
+          <a class="pub-tips-cta" href="https://unionvault.app/">Plan your wedding free with Union Vault <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </div>
+        ${inner}
+        <div class="pub-tips-brand"><a href="https://unionvault.app/" target="_blank" rel="noopener">Wedding Tips Library by Union Vault — unionvault.app</a></div>
+      </div>
+    </div>`;
+  if(_pubTipsOpenCat!=null && _pubTipsFocusTip!=null){
+    const cat=_pubTipsOpenCat, idx=_pubTipsFocusTip;
+    _pubTipsFocusTip=null;
+    setTimeout(()=>{
+      const row=document.getElementById('tip-row-'+cat+'-'+idx);
+      if(!row) return;
+      row.scrollIntoView({behavior:'smooth',block:'center'});
+      row.classList.add('tip-row-hit');
+      setTimeout(()=>row.classList.remove('tip-row-hit'),1800);
+    },50);
+  }
 }

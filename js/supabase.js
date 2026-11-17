@@ -225,6 +225,32 @@ async function _cloudSave(silent,keepalive){
     dashWidgetOrder:STATE.dashWidgetOrder,
     dashLayout:STATE.dashLayout, dashHiddenWidgets:STATE.dashHiddenWidgets
   };
+  // Safety net against slug collisions reaching the server at all: the website builder's
+  // own availability check (_wbSaveSlug) only runs when a session is live at the moment
+  // someone edits the slug — so a slug typed or carried over without a session (e.g. the
+  // ?bypass=uvadmin admin preview, which never has a real session) can reach STATE unchecked
+  // and later ride along on an ordinary, unrelated autosave once a real session exists. This
+  // re-checks right before every save, independent of how the slug got into STATE, and
+  // silently resolves a collision with the same uid-suffix scheme _wbSite() already uses for
+  // auto-generated defaults — never blocks the save, never touches an unrelated account's row.
+  if(pay.website && pay.website.slug){
+    try{
+      const chk=await fetch(`${_SB_URL}/rest/v1/rpc/check_slug_available`,{
+        method:'POST',
+        headers:{'apikey':_SB_KEY,'Authorization':_sbAuthHdr(),'Content-Type':'application/json'},
+        body:JSON.stringify({p_slug:pay.website.slug,p_user_id:uid})
+      });
+      if(chk.ok){
+        const available=await chk.json();
+        if(!available){
+          const suffix=uid.replace(/-/g,'').slice(0,5);
+          const resolved=pay.website.slug+'-'+suffix;
+          pay.website=Object.assign({},pay.website,{slug:resolved});
+          if(STATE.website) STATE.website.slug=resolved;
+        }
+      }
+    }catch(e){ console.warn('Slug availability check failed during save',e); }
+  }
   // Ensure all locally-available images have been uploaded to Storage before
   // persisting the media IDs to the database (runs once per session).
   if(!keepalive) await _mediaEnsureUploaded();

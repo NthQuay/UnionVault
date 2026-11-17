@@ -54,6 +54,7 @@ window.addEventListener('resize',(function(){
     if(isDesktop===wasDesktop) return;
     wasDesktop=isDesktop;
     const sidebar=document.getElementById('sidebar');
+    if(!sidebar) return; // a standalone public page (run sheet, invite, tips library…) has no app shell
     const overlay=document.getElementById('sidebar-overlay');
     if(isDesktop){
       document.body.classList.add('icon-sidebar');
@@ -811,6 +812,13 @@ function _showVendorError(type){
     return; // do NOT boot the planner app
   }
 
+  if(window.location.hash.slice(1)==='library'){
+    // Public Wedding Tips Library — no login, no per-account data at all. Reserved below
+    // too, so no couple's own wedding-site slug can ever collide with it.
+    _showPublicTipsLibrary();
+    return; // do NOT boot the planner app
+  }
+
   // Recovery token from password-reset email: #access_token=...&type=recovery
   const _hashParams=new URLSearchParams(window.location.hash.slice(1));
   if(_hashParams.get('type')==='recovery'){
@@ -828,7 +836,7 @@ function _showVendorError(type){
 
   const _hashSlug=window.location.hash.slice(1);
   // Reserved landing-page anchors that must never be treated as wedding site slugs
-  const _lpAnchors=new Set(['auth','faq','contact','signup','login','register','pricing','features','hero','about']);
+  const _lpAnchors=new Set(['auth','faq','contact','signup','login','register','pricing','features','hero','about','library']);
   if(_hashSlug && !_lpAnchors.has(_hashSlug) && /^[a-z0-9][a-z0-9-]{0,59}$/.test(_hashSlug)){
     // Hash matches a wedding site slug — render the public wedding website
     document.body.style.visibility='hidden';
