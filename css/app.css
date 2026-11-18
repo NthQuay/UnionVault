@@ -1080,7 +1080,7 @@ body.dark .prs-panel,.prs-page{background:var(--cream)!important}
 .pub-hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 25%;opacity:.85}
 .pub-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,16,12,.35) 0%,rgba(20,16,12,.55) 55%,rgba(20,16,12,.9) 100%)}
 .pub-hero-inner{position:relative;z-index:2;text-align:center;color:#fff;padding:44px 20px;max-width:640px;margin:0 auto}
-.pub-hero-crest{height:30px;width:auto;display:block;margin:0 auto 16px;filter:brightness(0) invert(1)}
+.pub-hero-crest{height:42px;width:auto;display:block;margin:0 auto 18px}
 .pub-hero-eyebrow{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#E8D9BE;margin-bottom:12px}
 .pub-hero-title{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:600;line-height:1.1;margin-bottom:14px;text-shadow:0 2px 24px rgba(0,0,0,.25)}
 .pub-hero-sub{font-size:14.5px;color:rgba(255,255,255,.88);max-width:460px;margin:0 auto 22px;line-height:1.6;font-weight:300}

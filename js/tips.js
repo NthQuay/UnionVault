@@ -259,8 +259,7 @@ function _renderLibraryGate(){
     <div class="pub-hero">
       <img class="pub-hero-bg" src="${_pubHeroImage()}" alt=""/>
       <div class="pub-hero-inner">
-        ${_pubLibraryLogoHtml('pub-hero-crest')}
-        <div class="pub-hero-eyebrow">You commented "TIPS" 🎉</div>
+        <img class="pub-hero-crest" src="${window.location.origin}/logos/White%20text%20(Dark%20mode).png" alt="Union Vault">
         <div class="pub-hero-title">Your Free Wedding Tips Library Is Ready</div>
         <div class="pub-hero-sub">65 practical, no-fluff tips from real weddings — budget, guests, vendors, timelines and more. Create a free account to unlock them all.</div>
         <a class="pub-hero-cta" href="#pub-gate-form">Create free account ↓</a>
