@@ -1,7 +1,7 @@
 // STATE
 // ══════════════════════════════════════════════
 const STATE = {
-  event: { partner1:'Alex', partner2:'Jordan', title1:'Partner', title2:'Partner', date:'', venue:'', venueAddress:'', religion:'', officiant:'', ceremonyVenue:'', pronouns1:'', pronouns2:'', timeOfDay:'', ceremonyType:'', setting:'', formality:'', vibe:[], guestCount:0, partyBridesmaids:null, partyGroomsmen:null, partyFlowerGirls:null, partyPageBoys:null },
+  event: { partner1:'', partner2:'', title1:'Partner', title2:'Partner', date:'', venue:'', venueAddress:'', religion:'', officiant:'', ceremonyVenue:'', pronouns1:'', pronouns2:'', timeOfDay:'', ceremonyType:'', setting:'', formality:'', vibe:[], guestCount:0, partyBridesmaids:null, partyGroomsmen:null, partyFlowerGirls:null, partyPageBoys:null },
   events: [],
   vendors: [],
   quotes: [],
