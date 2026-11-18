@@ -48,6 +48,7 @@ async function _authSignIn(){
     try{_amUID=localStorage.getItem('uv_uid');}catch(_){}
     if(_amUID!==r.user.id){
       try{localStorage.removeItem(STORAGE_KEY);}catch(_){}
+      try{localStorage.removeItem('uv_library_user');}catch(_){}
       try{localStorage.setItem('uv_uid',r.user.id);}catch(_){}
       window._uvWipeInProgress = true; // prevent beforeunload saveToStorage() re-writing contaminated STATE
       location.reload();

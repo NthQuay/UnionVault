@@ -81,6 +81,20 @@ src="https://www.facebook.com/tr?id=REPLACE_WITH_META_PIXEL_ID&ev=PageView&noscr
 </head>
 <body>
 <script>(function(){try{var s=localStorage.getItem('uv_sb_session');if(s&&s!=='null')document.documentElement.setAttribute('data-uv-auth','');}catch(_){}}());</script>
+<script>(function(){
+  // Hide the app shell immediately for any load that boot() (js/init.js) will intercept as a
+  // standalone public page, so the signed-in sidebar never flashes before that later script
+  // (which only runs once every script tag below has loaded) gets a chance to replace it.
+  // type=recovery is deliberately left out — that flow overlays a modal on the shell rather
+  // than replacing it, so hiding the shell for it would need a matching reveal added there too.
+  try{
+    var qs=new URLSearchParams(window.location.search);
+    var hp=new URLSearchParams(window.location.hash.slice(1));
+    var isPublicPage = qs.has('rsvp') || qs.has('vendor') || qs.has('invite') || qs.has('runsheet')
+      || window.location.hash.slice(1)==='library' || hp.get('type')==='signup';
+    if(isPublicPage) document.body.style.visibility='hidden';
+  }catch(_){}
+}());</script>
 <div id="undo-toast-wrap"></div>
 <div class="app" id="app">
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>

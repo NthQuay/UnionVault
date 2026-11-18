@@ -503,6 +503,11 @@ function renderSettings(c, actions){
           <button class="btn btn-outline btn-sm" onclick="_openBackupModal()" style="display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>View backups</button>
         </div>
         <div style="padding-top:14px;border-top:1px solid var(--border)">
+          <div style="font-size:13.5px;font-weight:600;margin-bottom:4px">Setup Wizard</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Closed it partway through, or want to run through it again? Open it any time — nothing you've already entered is touched.</div>
+          <button class="btn btn-outline btn-sm" onclick="_showSetupModal()" style="display:inline-flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Open Setup Wizard</button>
+        </div>
+        <div style="padding-top:14px;border-top:1px solid var(--border)">
           <div style="font-size:13.5px;font-weight:600;color:var(--red,#c0392b);margin-bottom:4px">Danger Zone</div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px">These actions are hard to undo. Export a backup first if you're unsure.</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">

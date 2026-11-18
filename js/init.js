@@ -833,25 +833,64 @@ function _showVendorError(type){
     return; // do NOT boot the planner app
   }
 
-  // Signup confirmation token: #access_token=...&type=signup — establish the session
-  // and land straight in the (now unlocked) Wedding Tips Library, since that's the
-  // only place in the app a brand-new account is created without first being on the
-  // normal sign-in page. Covers both the #library gate and the main homepage form.
+  // Signup confirmation token: #access_token=...&type=signup — establish the session.
+  // A signup made via the library gate stamped its email in uv_pending_library_signup
+  // (see _pubLibrarySignUp in js/tips.js) before sending the confirmation email; if this
+  // confirmed email matches, it's a library signup, so it lands in the unlocked library
+  // and is remembered as a library user for the bare-visit redirect below. Otherwise this
+  // was a normal homepage signup, and falls through to the ordinary boot below — which
+  // already shows the dashboard + setup modal for any brand-new, no-data account.
   if(_hashParams.get('type')==='signup'){
     const _confAT=_hashParams.get('access_token'), _confRT=_hashParams.get('refresh_token');
     history.replaceState(null,'',window.location.pathname+window.location.search);
     if(_confAT && _confRT){
       document.body.style.visibility='hidden';
-      await _sbEstablishSessionFromHash(_confAT,_confRT);
-      _pubTipsJustUnlocked=true;
-      _showPublicTipsLibrary();
+      const _confRes=await _sbEstablishSessionFromHash(_confAT,_confRT);
+      let _fromLibrary=false;
+      try{
+        const _pending=(localStorage.getItem('uv_pending_library_signup')||'').toLowerCase();
+        if(_confRes.ok && _pending && _confRes.user.email && _confRes.user.email.toLowerCase()===_pending){
+          _fromLibrary=true;
+          localStorage.setItem('uv_library_user','1');
+        }
+        localStorage.removeItem('uv_pending_library_signup');
+      }catch(_){}
+      if(_fromLibrary){
+        _pubTipsJustUnlocked=true;
+        _showPublicTipsLibrary();
+        document.body.style.visibility='visible';
+        return; // do NOT boot the planner app
+      }
       document.body.style.visibility='visible';
-      return; // do NOT boot the planner app
+      // fall through to the ordinary boot sequence below
     }
   }
 
   // Load session before public site render so the owner can generate signed URLs for their own photos
   _sbLoadSession();
+
+  // A library-origin account that hasn't actually finished the setup wizard yet always
+  // lands back in the (now unlocked) library on a bare visit, rather than the normal
+  // dashboard — the whole point of the library funnel is that the planner is opt-in.
+  // ?setup=1 is the one explicit escape hatch (the wizard-nudge banner's own link), and
+  // once real event data exists this stops firing on its own, so it's self-clearing.
+  if(_sbSession && !window.location.hash && !_bootParams.has('setup')){
+    let _isLibraryUser=false;
+    try{ _isLibraryUser=localStorage.getItem('uv_library_user')==='1'; }catch(_){}
+    if(_isLibraryUser){
+      let _hasRealData=false;
+      try{
+        const _raw=localStorage.getItem(STORAGE_KEY);
+        if(_raw){ const _saved=JSON.parse(_raw); _hasRealData=!!(_saved.event&&(_saved.event.partner1||_saved.event.partner2)); }
+      }catch(_){}
+      if(!_hasRealData){
+        document.body.style.visibility='hidden';
+        _showPublicTipsLibrary();
+        document.body.style.visibility='visible';
+        return; // do NOT boot the planner app
+      }
+    }
+  }
 
   // Load subscription tier now that session exists (must be awaited before dashboard renders)
   if(typeof _uvLoadSubscription==='function') await _uvLoadSubscription();
@@ -882,6 +921,7 @@ function _showVendorError(type){
     if(_bootUID && _bootUID !== _sbSession.user.id){
       // Local data belongs to a different user — wipe it and reload so we fetch our own cloud data.
       try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+      try{ localStorage.removeItem('uv_library_user'); }catch(_){}
       try{ localStorage.setItem('uv_uid', _sbSession.user.id); }catch(_){}
       // Without this, the beforeunload saveToStorage() writes the OTHER account's STATE
       // straight back under the new uv_uid, and the next boot trusts it.

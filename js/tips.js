@@ -296,7 +296,7 @@ function _renderLibraryGate(){
             </div>
           </div>
           <div id="lp-up-err" style="display:none;font-size:12px;color:#c0392b;margin-bottom:8px;padding:8px 10px;background:rgba(192,57,43,0.08);border-radius:6px"></div>
-          <button class="btn-gold" id="lp-up-btn" onclick="_lpSignUp()">Create free account</button>
+          <button class="btn-gold" id="lp-up-btn" onclick="_pubLibrarySignUp()">Create free account</button>
           <div class="trust-row">
             <span>✓ Free to start, no card required</span>
             <span>✓ Private by design</span>
@@ -356,15 +356,29 @@ async function _pubLibrarySignIn(){
     let storedUID=null; try{ storedUID=localStorage.getItem('uv_uid'); }catch(_){}
     if(storedUID!==r.user.id){
       try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+      try{ localStorage.removeItem('uv_library_user'); }catch(_){}
       try{ localStorage.setItem('uv_uid',r.user.id); }catch(_){}
       window._uvWipeInProgress=true;
       location.reload();
       return;
     }
   }
-  try{ localStorage.setItem('uv_uid',r.user.id); }catch(_){}
+  try{ localStorage.setItem('uv_uid',r.user.id); localStorage.setItem('uv_library_user','1'); }catch(_){}
   _pubTipsJustUnlocked=true;
   _renderUnlockedLibrary();
+}
+
+// Stamps which email is mid-signup from the library gate specifically, so the type=signup
+// confirmation-link handler in js/init.js can tell a library signup apart from one made on
+// the normal homepage form (whose confirmation link carries no such marker) and route each
+// to the right place — the library gate itself is otherwise identical to the main app's
+// create-account form, so _lpSignUp() is reused as-is.
+function _pubLibrarySignUp(){
+  try{
+    const email=(document.getElementById('auth-up-email').value||'').trim().toLowerCase();
+    if(email) localStorage.setItem('uv_pending_library_signup',email);
+  }catch(_){}
+  _lpSignUp();
 }
 
 // ── Unlocked: welcome banner + wizard nudge + trust strip + the tip library itself ─────
@@ -388,7 +402,7 @@ function _renderUnlockedLibrary(){
           <div class="pub-wizard-cta-sub">Jump into the Setup Wizard — guest list, budget, vendors and your timeline, tailored to your wedding in under 2 minutes.</div>
         </div>
         <div class="pub-wizard-cta-actions">
-          <a class="pub-wizard-cta-btn" href="/">Start Setup Wizard →</a>
+          <a class="pub-wizard-cta-btn" href="/?setup=1">Start Setup Wizard →</a>
         </div>
       </div>
     </div>

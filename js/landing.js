@@ -92,6 +92,7 @@ async function _lpSignIn() {
       // Different user (or pre-fix data with no uv_uid) — wipe local data and reload.
       // The boot sequence will detect _sbSession + !alreadySetUp and auto-load from cloud.
       try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+      try{ localStorage.removeItem('uv_library_user'); }catch(_){}
       try{ localStorage.setItem('uv_uid', r.user.id); }catch(_){}
       window._uvWipeInProgress = true; // prevent beforeunload saveToStorage() re-writing contaminated STATE
       location.reload();
