@@ -303,6 +303,7 @@ function wzNav(dir){
   if(wzCur === 6){ wzTailorChecklist(); wzRenderCL(); }
   wzRenderBar();
   wzUpdateUI();
+  wzSaveDraft();
 }
 
 // ── UI update ────────────────────────────────────────────────────────
@@ -803,6 +804,7 @@ function wizardFinish(){
   // ── Finalise ───────────────────────────────────────────────────────
   if(typeof applySuggestedChecklistDueDates === 'function') applySuggestedChecklistDueDates();
   saveToStorage();
+  wzClearDraft();
   document.getElementById('setup-modal-overlay').classList.add('hidden');
   if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
   if(typeof navigate !== 'undefined') navigate('dashboard');
@@ -845,6 +847,201 @@ function wzFitStarterTimeline(){
     const m = Math.min(23*60+59, Math.max(0, mins(it.time)+shift));
     it.time = String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
   });
+}
+
+// ── Save mid-wizard progress + resume ──────────────────────────────────
+// The wizard form is static HTML that's never destroyed, so progress only
+// needs to survive a full page reload (closed tab/browser) or an explicit
+// exit — this snapshots everything wizardFinish() itself reads, keyed to
+// the device/account the same way the rest of localStorage already is.
+const WZ_DRAFT_KEY = 'uv_wizard_draft';
+const WZ_BANNER_DISMISS_KEY = 'uv_wizard_banner_dismissed';
+
+function wzHasDraft(){
+  try{ return !!localStorage.getItem(WZ_DRAFT_KEY); }catch(_){ return false; }
+}
+function wzLoadDraft(){
+  try{ const raw = localStorage.getItem(WZ_DRAFT_KEY); return raw ? JSON.parse(raw) : null; }catch(_){ return null; }
+}
+function wzClearDraft(){
+  try{ localStorage.removeItem(WZ_DRAFT_KEY); localStorage.removeItem(WZ_BANNER_DISMISS_KEY); }catch(_){}
+}
+
+function wzDraftSnapshot(){
+  const val = id => { const e = document.getElementById(id); return e ? e.value : ''; };
+  const pillTxt = sel => { const e = document.querySelector(sel); return e ? e.textContent.trim() : ''; };
+  const wz = document.querySelector('.wz-wrap');
+  return {
+    v: 1,
+    step: wzCur,
+    fields: {
+      p1: val('i-p1'), t1: val('i-t1'), t1c: val('i-t1-custom'),
+      p2: val('i-p2'), t2: val('i-t2'), t2c: val('i-t2-custom'),
+      pr1c: val('i-pr1-custom'), pr2c: val('i-pr2-custom'),
+      date: val('i-date'), time: val('i-time'),
+      religion: val('i-religion'), officiant: val('i-officiant'),
+      venue: val('i-venue'), cerVenue: val('i-cer-venue'),
+      guestCount: val('i-guest-count'),
+      budget: val('i-budget-wz'), currency: val('i-currency'),
+    },
+    pills: {
+      pr1: pillTxt('[data-pr="p1"].on'), pr2: pillTxt('[data-pr="p2"].on'),
+      loc: pillTxt('[data-grp="loc"].on'), cer: pillTxt('[data-grp="cer"].on'),
+      cset: pillTxt('[data-grp="cset"].on'), fm: pillTxt('[data-grp="fm"].on'),
+    },
+    vibeTags: [...document.querySelectorAll('#p3 .pill.on:not([data-grp])')].map(p=>p.textContent.trim()),
+    preEvents: [...document.querySelectorAll('#p5 .pill.on')].map(p=>p.textContent.trim()),
+    unplugged: !!(document.getElementById('tog-unplugged')||{classList:{contains:()=>false}}).classList.contains('on'),
+    palette: {
+      set1: wzPalSet, set2: wzPalSet2, idx1: wzSelPalIdx, idx2: wzSelPalIdx2,
+      accent:  wz ? String(wz.style.getPropertyValue('--accent')  || '').trim() : '',
+      accent2: wz ? String(wz.style.getPropertyValue('--accent2') || '').trim() : '',
+    },
+    venueMode: wzVenueMode,
+    spaces: wzSpaces,
+    names: wzNames,
+    stepVals: wzStepVals,
+    unknowns: wzUnknowns,
+    checklist: { ts: wzTs, manual: [...wzClManual] },
+    savedAt: Date.now(),
+  };
+}
+
+function wzSaveDraft(){
+  try{
+    const snap = wzDraftSnapshot();
+    // Nothing worth remembering if the couple hasn't even entered their names yet.
+    if(wzCur === 1 && !snap.fields.p1.trim() && !snap.fields.p2.trim()){ wzClearDraft(); return; }
+    localStorage.setItem(WZ_DRAFT_KEY, JSON.stringify(snap));
+  }catch(_){}
+}
+
+function wzShowPanel(n){
+  for(let i=1; i<=WZ_TOTAL; i++){
+    const p = document.getElementById('p'+i);
+    if(p) p.classList.toggle('visible', i===n);
+  }
+}
+
+function wzRestoreDraft(d){
+  if(!d || !d.fields) return;
+  const set = (id, v) => { const e = document.getElementById(id); if(e && v) e.value = v; };
+
+  set('i-p1', d.fields.p1); set('i-t1', d.fields.t1); set('i-t1-custom', d.fields.t1c);
+  set('i-p2', d.fields.p2); set('i-t2', d.fields.t2); set('i-t2-custom', d.fields.t2c);
+  set('i-pr1-custom', d.fields.pr1c); set('i-pr2-custom', d.fields.pr2c);
+  set('i-date', d.fields.date); set('i-time', d.fields.time);
+  set('i-religion', d.fields.religion); set('i-officiant', d.fields.officiant);
+  set('i-cer-venue', d.fields.cerVenue);
+  set('i-budget-wz', d.fields.budget); set('i-currency', d.fields.currency);
+  wzOnTitleChange('t1'); wzOnTitleChange('t2');
+
+  const pr1Pill = [...document.querySelectorAll('[data-pr="p1"]')].find(p=>p.textContent.trim()===d.pills.pr1);
+  if(pr1Pill) wzPronounPill(pr1Pill, 'p1');
+  const pr2Pill = [...document.querySelectorAll('[data-pr="p2"]')].find(p=>p.textContent.trim()===d.pills.pr2);
+  if(pr2Pill) wzPronounPill(pr2Pill, 'p2');
+  if(d.pills.pr1 || d.pills.pr2 || d.fields.pr1c || d.fields.pr2c){
+    const panel = document.getElementById('pr-panel');
+    if(panel && !panel.classList.contains('open')) wzTogglePronouns();
+  }
+
+  // Spaces + venue mode before the venue field itself, since wzSetVenueMode re-renders them.
+  wzSpaces = Array.isArray(d.spaces) ? d.spaces : [];
+  wzVenueMode = d.venueMode === 'different' ? 'different' : 'same';
+  wzSetVenueMode(wzVenueMode);
+  set('i-venue', d.fields.venue);
+
+  // Ceremony type drives the religion fields + the dynamically-built "setting" pills,
+  // so select it (and run its own change handler) before picking a cset pill.
+  const cerPill = [...document.querySelectorAll('[data-grp="cer"]')].find(p=>p.textContent.trim()===d.pills.cer);
+  if(cerPill){ wzSinglePill(cerPill); wzCerTypeChanged(); }
+  const locPill = [...document.querySelectorAll('[data-grp="loc"]')].find(p=>p.textContent.trim()===d.pills.loc);
+  if(locPill) wzSinglePill(locPill);
+  const csetPill = [...document.querySelectorAll('[data-grp="cset"]')].find(p=>p.textContent.trim()===d.pills.cset);
+  if(csetPill) wzCerSettingPill(csetPill);
+  const fmPill = [...document.querySelectorAll('[data-grp="fm"]')].find(p=>p.textContent.trim()===d.pills.fm);
+  if(fmPill) wzSinglePill(fmPill);
+
+  (d.vibeTags||[]).forEach(t=>{
+    const e = [...document.querySelectorAll('#p3 .pill:not([data-grp])')].find(p=>p.textContent.trim()===t);
+    if(e && !e.classList.contains('on')) wzTogglePill(e);
+  });
+  (d.preEvents||[]).forEach(t=>{
+    const e = [...document.querySelectorAll('#p5 .pill')].find(p=>p.textContent.trim()===t);
+    if(e && !e.classList.contains('on')) wzTogglePill(e);
+  });
+  if(d.unplugged){ const e = document.getElementById('tog-unplugged'); if(e && !e.classList.contains('on')) e.classList.add('on'); }
+
+  if(d.palette){
+    if(d.palette.set1){
+      if(d.palette.idx1 >= 0) wzSelectPalette(d.palette.idx1);
+      else if(d.palette.accent) wzSelectCustomPalette(d.palette.accent);
+      const cp = document.getElementById('pal-custom'); if(cp && d.palette.accent) cp.value = d.palette.accent;
+    }
+    if(d.palette.set2){
+      if(d.palette.idx2 >= 0) wzSelectPalette2(d.palette.idx2);
+      else if(d.palette.accent2) wzSelectCustomPalette2(d.palette.accent2);
+      const cp2 = document.getElementById('pal-custom2'); if(cp2 && d.palette.accent2) cp2.value = d.palette.accent2;
+    }
+  }
+
+  Object.assign(wzStepVals, d.stepVals||{});
+  Object.assign(wzUnknowns, d.unknowns||{});
+  Object.keys(wzStepVals).forEach(k=>{
+    const sv = document.getElementById('sv-'+k); if(sv) sv.textContent = wzUnknowns[k] ? '?' : wzStepVals[k];
+    const ub = document.getElementById('unk-'+k); if(ub) ub.classList.toggle('on', !!wzUnknowns[k]);
+    document.querySelectorAll(`#sr-${k} .step-btn`).forEach(b=>{
+      b.style.opacity = wzUnknowns[k] ? '0.3' : '1';
+      b.style.pointerEvents = wzUnknowns[k] ? 'none' : '';
+    });
+  });
+  if(d.names) Object.keys(wzNames).forEach(k=>{ wzNames[k] = Array.isArray(d.names[k]) ? d.names[k].slice() : []; });
+
+  if(d.fields.guestCount){
+    const gc = document.getElementById('i-guest-count');
+    if(gc){ gc.value = d.fields.guestCount; gc.dispatchEvent(new Event('input')); }
+  }
+
+  if(d.checklist){
+    Object.assign(wzTs, d.checklist.ts||{});
+    (d.checklist.manual||[]).forEach(k=>wzClManual.add(k));
+  }
+
+  wzCur = Math.min(Math.max(1, d.step||1), WZ_TOTAL);
+}
+
+// Called every time the wizard is opened — restores saved progress if any exists,
+// otherwise it's a no-op and the wizard shows its normal blank first step.
+function wzApplyDraftIfAny(){
+  const d = wzLoadDraft();
+  if(!d) return;
+  // Setup was finished some other way (e.g. filled in directly via Settings) while an
+  // old draft never got cleared — don't clobber real data with stale draft fields.
+  if(STATE.event && STATE.event.partner1 && STATE.event.partner2){ wzClearDraft(); return; }
+  wzRestoreDraft(d);
+  wzShowPanel(wzCur);
+  wzRenderBar();
+  wzUpdateUI();
+  wzTailorChecklist();
+  wzRenderCL();
+}
+
+// The wizard's own close (×) button — leaves setup for later rather than
+// abandoning it. Progress is already autosaved on every step change, but
+// save once more first in case they're closing mid-step-1 before advancing.
+function wzCloseToDashboard(){
+  wzSaveDraft();
+  try{ localStorage.removeItem(WZ_BANNER_DISMISS_KEY); }catch(_){}
+  document.getElementById('setup-modal-overlay').classList.add('hidden');
+  if(typeof navigate !== 'undefined') navigate('dashboard');
+}
+
+// The dashboard's "Pick up where you left off" banner dismiss (×) — hides the
+// nudge without touching the saved draft itself, so Settings → Open Setup
+// Wizard still resumes at the same step.
+function _wzDismissResumeBanner(){
+  try{ localStorage.setItem(WZ_BANNER_DISMISS_KEY, '1'); }catch(_){}
+  const el = document.getElementById('uv-wrb'); if(el) el.remove();
 }
 
 // Alias kept for any legacy references

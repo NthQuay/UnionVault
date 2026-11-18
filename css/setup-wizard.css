@@ -29,10 +29,20 @@ body.dark .wz-wrap {
 
 /* ── Header ───────────────────────────────────── */
 .wz-head {
+  position: relative;
   background: var(--band);
   padding: 28px 32px 22px;
   border-bottom: 1px solid var(--border);
 }
+.wz-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: none; background: transparent; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0;
+  transition: background .15s, color .15s;
+}
+.wz-close:hover { background: var(--accent-lo); color: var(--ink); }
 .wz-eyebrow {
   font-size: 9.5px; font-weight: 600; letter-spacing: .17em;
   text-transform: uppercase; color: var(--accent); margin-bottom: 5px;

@@ -357,6 +357,7 @@ async function _pubLibrarySignIn(){
     if(storedUID!==r.user.id){
       try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
       try{ localStorage.removeItem('uv_library_user'); }catch(_){}
+      try{ if(typeof wzClearDraft === 'function') wzClearDraft(); }catch(_){}
       try{ localStorage.setItem('uv_uid',r.user.id); }catch(_){}
       window._uvWipeInProgress=true;
       location.reload();

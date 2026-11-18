@@ -60,6 +60,7 @@ async function _sbSignOut(){
   // Clear app data so a different user signing in on the same device starts clean
   try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
   try{ localStorage.removeItem('uv_library_user'); }catch(_){}
+  try{ if(typeof wzClearDraft === 'function') wzClearDraft(); }catch(_){}
 }
 async function _sbResetPassword(email){
   const r=await _sbAuthPost('/recover',{email});

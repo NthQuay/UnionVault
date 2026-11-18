@@ -93,6 +93,7 @@ async function _lpSignIn() {
       // The boot sequence will detect _sbSession + !alreadySetUp and auto-load from cloud.
       try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
       try{ localStorage.removeItem('uv_library_user'); }catch(_){}
+      try{ if(typeof wzClearDraft === 'function') wzClearDraft(); }catch(_){}
       try{ localStorage.setItem('uv_uid', r.user.id); }catch(_){}
       window._uvWipeInProgress = true; // prevent beforeunload saveToStorage() re-writing contaminated STATE
       location.reload();
@@ -126,7 +127,7 @@ async function _lpSignIn() {
         window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
         if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
         setTimeout(_mediaCloudSync, 800);
-      } else {
+      } else if(!(typeof wzHasDraft === 'function' && wzHasDraft())){
         _showSetupModal();
       }
     } else {
@@ -134,7 +135,9 @@ async function _lpSignIn() {
       // and nothing else on this path would clear the boot-race guard.
       _autoSyncBootPending=false;
       if(typeof navigate !== 'undefined') navigate('dashboard');
-      _showSetupModal();
+      // A saved wizard draft means they left the wizard on purpose — keep them on
+      // the dashboard, where the resume banner offers to pick it back up.
+      if(!(typeof wzHasDraft === 'function' && wzHasDraft())) _showSetupModal();
     }
   } else {
     // alreadySetUp=true and uv_uid matched: same user, local data is valid.
@@ -170,13 +173,15 @@ function _lpContinueOffline() {
   document.getElementById('welcome-overlay').classList.add('hidden');
   if(typeof updateTopbarSub !== 'undefined') updateTopbarSub();
   if(typeof navigate !== 'undefined') navigate('dashboard');
-  // First-time user (no setup data yet) → show setup modal
-  if(!alreadySetUp) _showSetupModal();
+  // First-time user (no setup data yet) → show setup modal, unless they already
+  // left a wizard draft behind on purpose (dashboard's resume banner covers that).
+  if(!alreadySetUp && !(typeof wzHasDraft === 'function' && wzHasDraft())) _showSetupModal();
 }
 
 function _showSetupModal() {
   var m = document.getElementById('setup-modal-overlay');
   if(m) m.classList.remove('hidden');
+  if(typeof wzApplyDraftIfAny === 'function') wzApplyDraftIfAny();
 }
 
 // Enter key submits active form

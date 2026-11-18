@@ -922,6 +922,7 @@ function _showVendorError(type){
       // Local data belongs to a different user — wipe it and reload so we fetch our own cloud data.
       try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
       try{ localStorage.removeItem('uv_library_user'); }catch(_){}
+      try{ if(typeof wzClearDraft === 'function') wzClearDraft(); }catch(_){}
       try{ localStorage.setItem('uv_uid', _sbSession.user.id); }catch(_){}
       // Without this, the beforeunload saveToStorage() writes the OTHER account's STATE
       // straight back under the new uv_uid, and the next boot trusts it.
@@ -961,7 +962,7 @@ function _showVendorError(type){
         window._autoSyncState='saved'; window._autoSyncLastSaved=Date.now();
         if(typeof _syncStatusRefresh !== 'undefined') _syncStatusRefresh();
         setTimeout(_mediaCloudSync, 800);
-      } else {
+      } else if(!(typeof wzHasDraft === 'function' && wzHasDraft())){
         _showSetupModal();
       }
     } else {
@@ -971,7 +972,9 @@ function _showVendorError(type){
       document.getElementById('welcome-overlay').classList.add('hidden');
       updateTopbarSub();
       navigate('dashboard');
-      _showSetupModal();
+      // A saved wizard draft means they left the wizard on purpose — keep them on
+      // the dashboard, where the resume banner offers to pick it back up.
+      if(!(typeof wzHasDraft === 'function' && wzHasDraft())) _showSetupModal();
     }
   } else if(alreadySetUp && !_sbSession){
     // Has local data but not signed in → show landing (auth prompt)

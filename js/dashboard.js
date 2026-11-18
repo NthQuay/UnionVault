@@ -222,6 +222,32 @@ function _termsAccountCreated(){
   }
   return null;
 }
+// Shown on the dashboard for any account that started the Setup Wizard but left before
+// finishing (closed it with ×, or closed the tab/browser mid-step) — every incomplete
+// account gets this, not just ones that came in via the Tips Library.
+function _wzResumeBannerHtml(){
+  if(typeof wzHasDraft !== 'function' || !wzHasDraft()) return '';
+  if(STATE.event && STATE.event.partner1 && STATE.event.partner2) return '';
+  try{ if(localStorage.getItem('uv_wizard_banner_dismissed')==='1') return ''; }catch(_){}
+  const d = typeof wzLoadDraft === 'function' ? wzLoadDraft() : null;
+  if(!d) return '';
+  const step = Math.min(Math.max(1, d.step||1), WZ_TOTAL);
+  const pct  = Math.round((step-1) / (WZ_TOTAL-1) * 100);
+  const lbl  = WZ_LBLS[step-1] || '';
+  return `<div class="uv-wrb" id="uv-wrb">
+    <button class="uv-wrb-x" onclick="_wzDismissResumeBanner()" aria-label="Dismiss">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="uv-wrb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+    <div class="uv-wrb-text">
+      <div class="uv-wrb-title">Pick up where you left off</div>
+      <div class="uv-wrb-sub">Step ${step} of ${WZ_TOTAL} — ${lbl}</div>
+    </div>
+    <div class="uv-wrb-track"><div class="uv-wrb-fill" style="width:${pct}%"></div></div>
+    <button class="uv-wrb-btn" onclick="_showSetupModal()">Continue setup</button>
+  </div>`;
+}
+
 function _termsBannerHtml(){
   if(typeof _sbSession==='undefined' || !_sbSession) return '';
   const made = _termsAccountCreated();
@@ -822,7 +848,7 @@ function renderDashboard(c, actions){
     if(_uvTier==='trial' && _uvTrialDaysLeft>0) _subBanner=`<div class="uv-trial-banner"><span><strong>${_uvTrialDaysLeft} day${_uvTrialDaysLeft===1?'':'s'} left</strong> in your free trial</span><button onclick="_uvOpenSubPage()">Upgrade now</button></div>`;
     else if(_uvTier==='free') _subBanner=`<div class="uv-upgrade-card-dash"><div class="uv-dash-title">Unlock Full Access</div><div class="uv-dash-sub">Get unlimited guests, seating plans, print &amp; export, and more</div><button onclick="_uvOpenSubPage()">Upgrade now</button></div>`;
   }
-  c.innerHTML = _termsBannerHtml() + _subBanner + heroHtml + editBarHtml + `<div id="dash-widgets">` + widgetsHtml + `</div>` + visionHtml;
+  c.innerHTML = _termsBannerHtml() + _wzResumeBannerHtml() + _subBanner + heroHtml + editBarHtml + `<div id="dash-widgets">` + widgetsHtml + `</div>` + visionHtml;
   setTimeout(()=>{ requestAnimationFrame(_fitDashNextUp); _ensureDashNextUpObserver(); }, 0);
 }
 
