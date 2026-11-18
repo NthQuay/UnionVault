@@ -375,7 +375,7 @@ function _renderUnlockedLibrary(){
   const inner=atHome?_pubLibraryGridHtml():_tipsDetailHtml(_pubTipsOpenCat);
   _publicPageShell(`
     <div class="pub-lib-minihead">
-      <a href="#library" onclick="_pubTipsOpen(null);return false;">${_pubLibraryLogoHtml('pub-lib-mini-crest')}</a>
+      <a href="#library" onclick="_pubTipsOpen(null);return false;"><img class="pub-lib-mini-crest" src="${window.location.origin}/logos/Black%20text%20(Light%20mode).png" alt="Union Vault"></a>
       <div class="pub-lib-mini-wordmark">Wedding Tips Library</div>
     </div>
     ${atHome?`
@@ -389,14 +389,13 @@ function _renderUnlockedLibrary(){
         </div>
         <div class="pub-wizard-cta-actions">
           <a class="pub-wizard-cta-btn" href="/">Start Setup Wizard →</a>
-          <button class="pub-wizard-cta-skip" onclick="this.closest('.pub-wizard-cta').remove()">Maybe later — just show me the tips</button>
         </div>
       </div>
     </div>
     <div class="pub-lib-trust-strip">
+      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">By a Bride</div><div class="pub-lib-trust-lbl">For Brides</div></div>
       <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">65+</div><div class="pub-lib-trust-lbl">Wedding Tips</div></div>
       <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">13</div><div class="pub-lib-trust-lbl">Topics Covered</div></div>
-      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">By a Bride</div><div class="pub-lib-trust-lbl">For Brides</div></div>
       <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">Private</div><div class="pub-lib-trust-lbl">By Design</div></div>
     </div>
     <div class="pub-lib-section-head">
