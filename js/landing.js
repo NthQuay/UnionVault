@@ -147,14 +147,14 @@ async function _lpSignUp() {
   var pw = document.getElementById('auth-up-pw').value || '';
   var errEl = document.getElementById('lp-up-err');
   var btn = document.getElementById('lp-up-btn');
-  errEl.style.display = 'none'; errEl.style.color = '#c0392b';
+  errEl.style.display = 'none'; errEl.style.color = '#c0392b'; errEl.style.background = 'rgba(192,57,43,0.08)';
   if(!email || !pw){ errEl.textContent = 'Please fill in all fields.'; errEl.style.display = ''; return; }
   if(pw.length < 8){ errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = ''; return; }
   btn.disabled = true; btn.textContent = 'Creating account…';
   var r = await _sbSignUp(email, pw);
   btn.disabled = false; btn.textContent = 'Create free account';
   if(!r.ok){ errEl.textContent = r.error; errEl.style.display = ''; return; }
-  errEl.style.color = 'var(--gold-deep,#8B6E3A)';
+  errEl.style.color = '#27ae60'; errEl.style.background = 'rgba(39,174,96,0.08)';
   errEl.textContent = '✓ Account created! Check your email to verify, then sign in.';
   errEl.style.display = '';
   btn.disabled = true;
