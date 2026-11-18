@@ -771,6 +771,11 @@ function _showVendorError(type){
    — the planner works, images just show as missing rather than the whole app
    refusing to load. */
 (async function boot(){
+  // Loaded again later (just before the general wedding-slug check) for the comment that
+  // explains it there — but the #library gate, right below, also needs to know this early
+  // whether the visitor already has a session, so it's loaded once upfront too.
+  _sbLoadSession();
+
   // ── Stage 5: intercept public URL params BEFORE the normal app boot ────────
   const _bootParams = new URLSearchParams(window.location.search);
   const _rsvpParam     = _bootParams.get('rsvp');
@@ -828,6 +833,23 @@ function _showVendorError(type){
     return; // do NOT boot the planner app
   }
 
+  // Signup confirmation token: #access_token=...&type=signup — establish the session
+  // and land straight in the (now unlocked) Wedding Tips Library, since that's the
+  // only place in the app a brand-new account is created without first being on the
+  // normal sign-in page. Covers both the #library gate and the main homepage form.
+  if(_hashParams.get('type')==='signup'){
+    const _confAT=_hashParams.get('access_token'), _confRT=_hashParams.get('refresh_token');
+    history.replaceState(null,'',window.location.pathname+window.location.search);
+    if(_confAT && _confRT){
+      document.body.style.visibility='hidden';
+      await _sbEstablishSessionFromHash(_confAT,_confRT);
+      _pubTipsJustUnlocked=true;
+      _showPublicTipsLibrary();
+      document.body.style.visibility='visible';
+      return; // do NOT boot the planner app
+    }
+  }
+
   // Load session before public site render so the owner can generate signed URLs for their own photos
   _sbLoadSession();
 
@@ -836,7 +858,7 @@ function _showVendorError(type){
 
   const _hashSlug=window.location.hash.slice(1);
   // Reserved landing-page anchors that must never be treated as wedding site slugs
-  const _lpAnchors=new Set(['auth','faq','contact','signup','login','register','pricing','features','hero','about','library']);
+  const _lpAnchors=new Set(['auth','faq','contact','signup','login','register','pricing','features','hero','about','library','terms']);
   if(_hashSlug && !_lpAnchors.has(_hashSlug) && /^[a-z0-9][a-z0-9-]{0,59}$/.test(_hashSlug)){
     // Hash matches a wedding site slug — render the public wedding website
     document.body.style.visibility='hidden';
@@ -922,6 +944,11 @@ function _showVendorError(type){
     navigate('dashboard');
     document.getElementById('welcome-overlay').classList.remove('hidden');
   }
+
+  // The #terms link opens straight into the Terms & Privacy modal — used by the Tips
+  // Library gate's "Terms & Privacy" link, since that standalone page has no app shell
+  // (and so no _openTermsModal() target) of its own to open the modal into.
+  if(window.location.hash.slice(1)==='terms' && typeof _openTermsModal==='function') _openTermsModal();
 
   // Live RSVP updates: start/stop the short-interval poll as sign-in state changes,
   // and start it now if already signed in on this boot.

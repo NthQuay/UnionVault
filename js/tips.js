@@ -215,44 +215,198 @@ function _tipsOpen(i,focusTipIdx){
   navigate('tips');
 }
 
-// ── Standalone public page: no sign-in, no app shell — reuses the exact same
-// TIPS_LIBRARY data and _tipsGridHtml/_tipsDetailHtml builders as the signed-in app's
-// Tips page (one source of truth), just rendered into a minimal page and opened/closed
-// by _pubTipsOpen instead of navigate(). Reached via the #library hash (see js/init.js).
+// ── Standalone public page: no app shell, reached via the #library hash (see js/init.js).
+// Content (TIPS_LIBRARY, _tipsDetailHtml) is still single-sourced with the signed-in app's
+// Tips page — only the grid/home view gets its own marketing-page layout (_pubLibraryGridHtml),
+// since the signed-in app's plain utility list (_tipsGridHtml) isn't meant for this funnel.
+// Gated behind a free account: _showPublicTipsLibrary() shows the signup gate when there's
+// no session, or the unlocked library once there is one.
 let _pubTipsOpenCat=null;
 let _pubTipsFocusTip=null;
+let _pubTipsJustUnlocked=false; // one-time "you're in!" banner right after signup/sign-in
+
+// One hero photo per day of the week so the owner can swap tomorrow's photo any time
+// without touching code — see assets/hero/ (hero-01.jpg=Monday … hero-07.jpg=Sunday).
+function _pubHeroImage(){
+  const day=new Date().getDay(); // 0=Sun..6=Sat
+  const idx=((day+6)%7)+1; // Mon=1..Sun=7
+  return `/assets/hero/hero-${String(idx).padStart(2,'0')}.jpg`;
+}
+
 function _showPublicTipsLibrary(){
   document.body.style.visibility='hidden';
   document.body.style.background='var(--cream,#FBF8F3)';
   _tipsPublicMode=true;
   _pubTipsOpenCat=null;
-  _renderPublicTips();
+  if(_sbSession) _renderUnlockedLibrary(); else _renderLibraryGate();
   document.body.style.visibility='visible';
 }
+
 function _pubTipsOpen(i,focusTipIdx){
   _pubTipsOpenCat=i;
   _pubTipsFocusTip=(typeof focusTipIdx==='number')?focusTipIdx:null;
-  _renderPublicTips();
+  _renderUnlockedLibrary();
   window.scrollTo(0,0);
 }
-function _renderPublicTips(){
-  const inner=_pubTipsOpenCat==null?_tipsGridHtml():_tipsDetailHtml(_pubTipsOpenCat);
+
+function _pubLibraryLogoHtml(cls){
+  return `<img class="${cls}" src="${window.location.origin}/logos/Black%20logo%20(Light%20mode).png" alt="Union Vault">`;
+}
+
+// ── Gate: hero + locked preview + founder story + real signup/sign-in form ─────────────
+function _renderLibraryGate(){
   _publicPageShell(`
-    <div class="pub-tips-page">
-      <div class="pub-tips-inner">
-        <div class="pub-tips-head">
-          <a href="https://unionvault.app/" style="display:inline-flex">
-            <img class="pub-tips-crest" src="${window.location.origin}/logos/Black%20logo%20(Light%20mode).png" alt="Union Vault">
-          </a>
-          <div class="pub-tips-eyebrow">Guides</div>
-          <div class="pub-tips-title">Wedding Tips Library</div>
-          <div class="pub-tips-sub">Short, practical ideas from real weddings — browse by topic, or search for what you need.</div>
-          <a class="pub-tips-cta" href="https://unionvault.app/">Plan your wedding free with Union Vault <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
-        </div>
-        ${inner}
-        <div class="pub-tips-brand"><a href="https://unionvault.app/" target="_blank" rel="noopener">Wedding Tips Library by Union Vault — unionvault.app</a></div>
+    <div class="pub-hero">
+      <img class="pub-hero-bg" src="${_pubHeroImage()}" alt=""/>
+      <div class="pub-hero-inner">
+        ${_pubLibraryLogoHtml('pub-hero-crest')}
+        <div class="pub-hero-eyebrow">You commented "TIPS" 🎉</div>
+        <div class="pub-hero-title">Your Free Wedding Tips Library Is Ready</div>
+        <div class="pub-hero-sub">65 practical, no-fluff tips from real weddings — budget, guests, vendors, timelines and more. Create a free account to unlock them all.</div>
+        <a class="pub-hero-cta" href="#pub-gate-form">Create free account ↓</a>
       </div>
-    </div>`);
+    </div>
+    <div class="pub-gate-wrap">
+      <div class="pub-gate-preview">
+        <div class="pub-gate-chip"><img src="/assets/tips/guests.jpg" alt=""/><div class="pub-gate-lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div></div>
+        <div class="pub-gate-chip"><img src="/assets/tips/budget.jpg" alt=""/><div class="pub-gate-lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div></div>
+        <div class="pub-gate-chip"><img src="/assets/tips/moodboard.jpg" alt=""/><div class="pub-gate-lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div></div>
+      </div>
+      <div class="pub-gate-preview-note">13 topics waiting inside →</div>
+
+      <div class="pub-founder-note">
+        <div class="pub-founder-eyebrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${TIPS_ICONS.heart}</svg> Why we built this</div>
+        <div class="pub-founder-line">"Built by a bride, for brides — created from real wedding-planning experience. We built the tool we wished existed, and we've kept improving it since."</div>
+      </div>
+
+      <div class="pub-gate-form-card" id="pub-gate-form">
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab(this,'create')">Create account</button>
+          <button class="tab" onclick="switchTab(this,'sign-in')">Sign in</button>
+        </div>
+        <div id="create">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" type="email" id="auth-up-email" placeholder="you@email.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="pw-wrap">
+              <input class="form-input" type="password" id="auth-up-pw" placeholder="Choose a password" autocomplete="new-password">
+              <button class="pw-toggle" tabindex="-1" onclick="togglePw('auth-up-pw',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+          </div>
+          <div id="lp-up-err" style="display:none;font-size:12px;color:#c0392b;margin-bottom:8px;padding:8px 10px;background:rgba(192,57,43,0.08);border-radius:6px"></div>
+          <button class="btn-gold" id="lp-up-btn" onclick="_lpSignUp()">Create free account</button>
+          <div class="trust-row">
+            <span>✓ Free to start, no card required</span>
+            <span>✓ Private by design</span>
+          </div>
+          <div class="auth-links">
+            <div class="auth-legal">By creating an account you agree to our <a href="https://unionvault.app/#terms" target="_blank" rel="noopener">Terms &amp; Privacy</a></div>
+            <div class="auth-disclosure">You'll also get occasional planning tips and offers by email — unsubscribe anytime.</div>
+          </div>
+        </div>
+        <div id="sign-in" style="display:none">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" type="email" id="auth-in-email" placeholder="you@email.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="pw-wrap">
+              <input class="form-input" type="password" id="auth-in-pw" placeholder="Your password" autocomplete="current-password">
+              <button class="pw-toggle" tabindex="-1" onclick="togglePw('auth-in-pw',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+          </div>
+          <div id="lp-in-err" style="display:none;font-size:12px;color:#c0392b;margin-bottom:8px;padding:8px 10px;background:rgba(192,57,43,0.08);border-radius:6px"></div>
+          <div id="lp-in-ok" style="display:none;font-size:12px;color:#27ae60;margin-bottom:8px;padding:8px 10px;background:rgba(39,174,96,0.08);border-radius:6px"></div>
+          <button class="btn-gold" id="lp-in-btn" onclick="_pubLibrarySignIn()">Sign in</button>
+          <div class="auth-links">
+            <button id="lp-forgot-btn" onclick="_lpForgotPassword()" style="background:none;border:none;font-size:12px;color:var(--gold-deep,#b8923a);cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;margin-top:6px">Forgot password?</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pub-tips-brand"><a href="https://unionvault.app/" target="_blank" rel="noopener">Wedding Tips Library by Union Vault — unionvault.app</a></div>`);
+}
+
+// Minimal sign-in for the gate — can't reuse the main app's _lpSignIn() since that one
+// assumes the full app shell exists (#welcome-overlay, navigate(), etc.), which this
+// standalone page has replaced entirely.
+async function _pubLibrarySignIn(){
+  const email=(document.getElementById('auth-in-email').value||'').trim();
+  const pw=document.getElementById('auth-in-pw').value||'';
+  const errEl=document.getElementById('lp-in-err');
+  const btn=document.getElementById('lp-in-btn');
+  errEl.style.display='none';
+  if(!email||!pw){ errEl.textContent='Please enter your email and password.'; errEl.style.display=''; return; }
+  btn.disabled=true; btn.textContent='Signing in…';
+  let r;
+  try{ r=await _sbSignIn(email,pw); }
+  catch(e){
+    btn.disabled=false; btn.textContent='Sign in';
+    errEl.textContent='Connection error — please check your connection and try again.';
+    errEl.style.display=''; return;
+  }
+  btn.disabled=false; btn.textContent='Sign in';
+  if(!r.ok){ errEl.textContent=r.error; errEl.style.display=''; return; }
+  // Same cross-account guard as the main app's sign-in: don't trust local data left by
+  // a different account on a shared device.
+  if(alreadySetUp){
+    let storedUID=null; try{ storedUID=localStorage.getItem('uv_uid'); }catch(_){}
+    if(storedUID!==r.user.id){
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(_){}
+      try{ localStorage.setItem('uv_uid',r.user.id); }catch(_){}
+      window._uvWipeInProgress=true;
+      location.reload();
+      return;
+    }
+  }
+  try{ localStorage.setItem('uv_uid',r.user.id); }catch(_){}
+  _pubTipsJustUnlocked=true;
+  _renderUnlockedLibrary();
+}
+
+// ── Unlocked: welcome banner + wizard nudge + trust strip + the tip library itself ─────
+function _renderUnlockedLibrary(){
+  const justUnlocked=_pubTipsJustUnlocked;
+  _pubTipsJustUnlocked=false;
+  const atHome=_pubTipsOpenCat==null;
+  const inner=atHome?_pubLibraryGridHtml():_tipsDetailHtml(_pubTipsOpenCat);
+  _publicPageShell(`
+    <div class="pub-lib-minihead">
+      <a href="#library" onclick="_pubTipsOpen(null);return false;">${_pubLibraryLogoHtml('pub-lib-mini-crest')}</a>
+      <div class="pub-lib-mini-wordmark">Wedding Tips Library</div>
+    </div>
+    ${atHome?`
+    ${justUnlocked?`<div class="pub-welcome-banner"><div class="pub-welcome-pill">🎉 You're in — your Wedding Tips Library is fully unlocked.</div></div>`:''}
+    <div class="pub-wizard-cta">
+      <div class="pub-wizard-cta-inner">
+        <div class="pub-wizard-cta-txt">
+          <div class="pub-wizard-cta-eyebrow">Ready for more?</div>
+          <div class="pub-wizard-cta-title">Turn these tips into your actual plan</div>
+          <div class="pub-wizard-cta-sub">Jump into the Setup Wizard — guest list, budget, vendors and your timeline, tailored to your wedding in under 2 minutes.</div>
+        </div>
+        <div class="pub-wizard-cta-actions">
+          <a class="pub-wizard-cta-btn" href="/">Start Setup Wizard →</a>
+          <button class="pub-wizard-cta-skip" onclick="this.closest('.pub-wizard-cta').remove()">Maybe later — just show me the tips</button>
+        </div>
+      </div>
+    </div>
+    <div class="pub-lib-trust-strip">
+      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">65+</div><div class="pub-lib-trust-lbl">Wedding Tips</div></div>
+      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">13</div><div class="pub-lib-trust-lbl">Topics Covered</div></div>
+      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">By a Bride</div><div class="pub-lib-trust-lbl">For Brides</div></div>
+      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">Private</div><div class="pub-lib-trust-lbl">By Design</div></div>
+    </div>
+    <div class="pub-lib-section-head">
+      <div class="pub-lib-section-eyebrow">Browse by topic</div>
+      <div class="pub-lib-section-title">Everything you need, sorted</div>
+      <div class="pub-lib-section-sub">Short, practical ideas from real weddings — tap a topic or search for what you need.</div>
+    </div>`:''}
+    <div class="pub-lib-body">${inner}</div>
+    <div class="pub-tips-brand"><a href="https://unionvault.app/" target="_blank" rel="noopener">Wedding Tips Library by Union Vault — unionvault.app</a></div>`);
   if(_pubTipsOpenCat!=null && _pubTipsFocusTip!=null){
     const cat=_pubTipsOpenCat, idx=_pubTipsFocusTip;
     _pubTipsFocusTip=null;
@@ -264,4 +418,30 @@ function _renderPublicTips(){
       setTimeout(()=>row.classList.remove('tip-row-hit'),1800);
     },50);
   }
+}
+
+// Marketing-page grid for the unlocked home — same TIPS_LIBRARY data as the signed-in
+// app's Tips page, different (photo-card) presentation. The search bar/results reuse the
+// exact ids _tipsSearch() already targets, so that shared function needs no changes.
+function _pubLibraryGridHtml(){
+  const cards=TIPS_LIBRARY.map((cat,i)=>`
+    <button class="pub-lib-card" onclick="_pubTipsOpen(${i})">
+      <span class="pub-lib-card-img-wrap">
+        <img src="/assets/tips/${cat.icon}.jpg" alt="" loading="lazy" onerror="this.style.display='none'" onload="this.nextElementSibling.style.display='none'">
+        <span class="pub-lib-card-icon-fallback"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${TIPS_ICONS[cat.icon]}</svg></span>
+        <span class="pub-lib-card-count">${cat.tips.length} tips</span>
+      </span>
+      <span class="pub-lib-card-body">
+        <span class="pub-lib-card-title">${_escHtml(cat.title)}</span>
+        <span class="pub-lib-card-sub">${_escHtml(cat.tagline)}</span>
+        <span class="pub-lib-card-link">Explore tips <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+      </span>
+    </button>`).join('');
+  return `
+  <div class="tip-search-wrap">
+    <svg class="tip-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="tips-search" placeholder="Search tips — budget, seating, timeline…" oninput="_tipsSearch(this.value)">
+  </div>
+  <div id="tips-search-results"></div>
+  <div id="tips-ed-rows" class="pub-lib-grid">${cards}</div>`;
 }

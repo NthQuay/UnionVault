@@ -1068,21 +1068,104 @@ body.dark .vbm-expiry-row input[type=date]{background:var(--surface);color:var(-
 .prs-page-brand{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);text-align:center}
 body.dark .prs-panel,.prs-page{background:var(--cream)!important}
 
-/* ── Public Wedding Tips Library (no login) ──────────────────────────── */
-.pub-tips-page{min-height:100vh;background:var(--cream);display:flex;justify-content:center;padding:32px 16px 60px}
-.pub-tips-inner{width:100%;max-width:1000px}
-.pub-tips-head{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+/* ── Public Wedding Tips Library (free-account gate) ─────────────────── */
 /* This page's background never actually switches to dark (no sign-in boot sequence
-   runs here to apply body.dark), so the crest stays on the dark-ink/light-bg variant. */
-.pub-tips-crest{height:30px;width:auto;display:block}
-.pub-tips-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep)}
-.pub-tips-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--ink);line-height:1.15}
-.pub-tips-sub{font-size:13.5px;color:var(--muted);max-width:480px;line-height:1.6}
-.pub-tips-cta{display:inline-flex;align-items:center;gap:7px;margin-top:4px;background:var(--gold);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;text-decoration:none}
-.pub-tips-cta:hover{background:var(--gold-deep)}
+   runs here to apply body.dark), so every crest below stays on the dark-ink/light-bg
+   logo variant regardless of the visitor's device theme. */
 .pub-tips-brand{margin-top:44px;padding-top:18px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);text-align:center}
 .pub-tips-brand a{color:inherit;text-decoration:none}
-body.dark .pub-tips-page{background:var(--cream)!important}
+
+/* Gate hero */
+.pub-hero{position:relative;min-height:480px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000}
+.pub-hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 25%;opacity:.85}
+.pub-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,16,12,.35) 0%,rgba(20,16,12,.55) 55%,rgba(20,16,12,.9) 100%)}
+.pub-hero-inner{position:relative;z-index:2;text-align:center;color:#fff;padding:44px 20px;max-width:640px;margin:0 auto}
+.pub-hero-crest{height:30px;width:auto;display:block;margin:0 auto 16px;filter:brightness(0) invert(1)}
+.pub-hero-eyebrow{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#E8D9BE;margin-bottom:12px}
+.pub-hero-title{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:600;line-height:1.1;margin-bottom:14px;text-shadow:0 2px 24px rgba(0,0,0,.25)}
+.pub-hero-sub{font-size:14.5px;color:rgba(255,255,255,.88);max-width:460px;margin:0 auto 22px;line-height:1.6;font-weight:300}
+.pub-hero-cta{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#D8BD8C,#B8976A);color:#2b2318;border:none;border-radius:999px;padding:14px 28px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+
+/* Gate body */
+.pub-gate-wrap{max-width:460px;margin:0 auto;padding:40px 24px 0}
+.pub-gate-preview{display:flex;gap:10px;margin-bottom:12px;justify-content:center}
+.pub-gate-chip{position:relative;width:70px;height:70px;border-radius:12px;overflow:hidden;filter:blur(1.5px)}
+.pub-gate-chip img{width:100%;height:100%;object-fit:cover;opacity:.55}
+.pub-gate-lock{position:absolute;inset:0;background:rgba(20,16,12,.38);display:flex;align-items:center;justify-content:center;color:#fff}
+.pub-gate-preview-note{text-align:center;font-size:11.5px;color:var(--muted);margin-bottom:30px;font-weight:500}
+.pub-founder-note{max-width:460px;margin:0 auto 32px;text-align:center}
+.pub-founder-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+.pub-founder-line{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px;line-height:1.5;color:var(--ink)}
+.pub-gate-form-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:26px 24px;max-width:460px;margin:0 auto}
+
+/* Unlocked: mini header (no repeated hero) */
+.pub-lib-minihead{display:flex;flex-direction:column;align-items:center;gap:8px;padding:30px 20px 24px;text-align:center}
+.pub-lib-mini-crest{height:22px;width:auto;display:block}
+.pub-lib-mini-wordmark{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+.pub-welcome-banner{max-width:1120px;margin:0 auto 16px;padding:0 24px}
+.pub-welcome-pill{background:linear-gradient(135deg,#F4E8D4,var(--parchment));border:1px solid var(--border);border-radius:14px;padding:13px 20px;font-size:13.5px;font-weight:600;color:var(--ink);text-align:center}
+
+.pub-wizard-cta{max-width:1120px;margin:0 auto 16px;padding:0 24px}
+.pub-wizard-cta-inner{display:flex;align-items:center;gap:22px;background:linear-gradient(135deg,#2B2520,#3E342A);border-radius:22px;padding:30px 32px;color:#fff;flex-wrap:wrap}
+.pub-wizard-cta-txt{flex:1;min-width:240px}
+.pub-wizard-cta-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#D8BD8C;margin-bottom:8px}
+.pub-wizard-cta-title{font-family:'Cormorant Garamond',serif;font-size:23px;font-weight:600;margin-bottom:6px}
+.pub-wizard-cta-sub{font-size:13px;color:rgba(255,255,255,.72);max-width:440px}
+.pub-wizard-cta-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.pub-wizard-cta-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#D8BD8C,#B8976A);color:#2b2318;border:none;border-radius:999px;padding:13px 26px;font-size:13.5px;font-weight:700;text-decoration:none;white-space:nowrap}
+.pub-wizard-cta-skip{font-size:11.5px;color:rgba(255,255,255,.55);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:inherit}
+
+.pub-lib-trust-strip{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;padding:24px 20px;background:var(--surface);margin:0 auto 16px;max-width:1120px;border-radius:14px}
+.pub-lib-trust-item{text-align:center}
+.pub-lib-trust-num{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold-deep)}
+.pub-lib-trust-lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+
+.pub-lib-section-head{text-align:center;max-width:600px;margin:36px auto 0;padding:0 24px}
+.pub-lib-section-eyebrow{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:10px}
+.pub-lib-section-title{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;margin-bottom:10px}
+.pub-lib-section-sub{font-size:14px;color:var(--muted)}
+
+.pub-lib-body{max-width:1120px;margin:0 auto;padding:24px 24px 40px}
+
+/* Desktop/tablet photo-card grid */
+.pub-lib-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.pub-lib-card{border-radius:18px;overflow:hidden;background:#fff;border:1px solid var(--border);box-shadow:0 4px 18px rgba(74,63,53,.06);transition:transform .2s,box-shadow .2s;cursor:pointer;text-align:left;font-family:inherit;display:block;padding:0}
+.pub-lib-card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(74,63,53,.14)}
+.pub-lib-card-img-wrap{position:relative;aspect-ratio:4/3;overflow:hidden;display:block;background:linear-gradient(135deg,var(--parchment),var(--cream))}
+.pub-lib-card-img-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.pub-lib-card-icon-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--gold-deep);opacity:.45}
+.pub-lib-card-count{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.55);color:#fff;font-size:10.5px;font-weight:600;padding:4px 10px;border-radius:999px}
+.pub-lib-card-body{padding:18px 20px 20px;display:block}
+.pub-lib-card-title{display:block;font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+.pub-lib-card-sub{display:block;font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px;min-height:38px}
+.pub-lib-card-link{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--gold-deep)}
+
+/* Mobile: the same .pub-lib-card markup re-flows into bigger alternating left/right
+   rows instead of the desktop card grid — see the max-width:640px rules below. */
+@media(max-width:860px){
+  .pub-lib-grid{grid-template-columns:repeat(2,1fr)}
+  .pub-hero-title{font-size:32px}
+  .pub-hero{min-height:420px}
+}
+@media(max-width:640px){
+  .pub-lib-grid{display:flex;flex-direction:column}
+  .pub-lib-card{display:flex;align-items:center;gap:16px;border:none;border-radius:0;box-shadow:none;border-bottom:1px solid var(--border);padding:20px 0}
+  .pub-lib-card:first-child{padding-top:4px}
+  .pub-lib-card:nth-of-type(even){flex-direction:row-reverse}
+  .pub-lib-card:hover{transform:none;box-shadow:none}
+  .pub-lib-card-img-wrap{width:132px;height:132px;flex-shrink:0;border-radius:16px;aspect-ratio:auto;box-shadow:0 4px 14px rgba(74,63,53,.12)}
+  .pub-lib-card-body{flex:1;min-width:0;padding:0}
+  .pub-lib-card-sub{min-height:0}
+  .pub-wizard-cta-inner{flex-direction:column;align-items:flex-start}
+  .pub-wizard-cta-actions{align-items:flex-start;width:100%}
+  .pub-wizard-cta-btn{width:100%;justify-content:center;text-align:center}
+  .pub-lib-trust-strip{gap:26px;border-radius:0}
+}
+@media(max-width:380px){
+  .pub-lib-card-img-wrap{width:96px;height:96px}
+  .pub-lib-card-title{font-size:16.5px}
+}
 .edit-layout-btn{color:#A8A29A;border-color:#EBE4DA}
 .edit-layout-btn:hover{color:var(--gold-deep);border-color:var(--gold)}
 body.dark .edit-layout-btn{color:#74727A;border-color:#2A2A30}

@@ -306,7 +306,7 @@ async function _wbSaveSlug(val){
   // Reserved — init.js's boot-time hash router checks these before it ever looks for a
   // matching wedding-site slug, so a couple claiming one of these would make their own
   // site permanently unreachable at that link with no error shown to them.
-  const RESERVED_SLUGS=new Set(['auth','faq','contact','signup','login','register','pricing','features','hero','about','library']);
+  const RESERVED_SLUGS=new Set(['auth','faq','contact','signup','login','register','pricing','features','hero','about','library','terms']);
   if(RESERVED_SLUGS.has(slug)){
     _setMsg('That link is reserved. Please try a different one.','var(--red)');
     if(inp) inp.value = _wbSite().slug;

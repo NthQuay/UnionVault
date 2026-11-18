@@ -75,6 +75,20 @@ async function _sbUpdatePassword(accessToken, newPassword){
   if(!r.ok) return {error:b.msg||b.error_description||b.message||b.error||'Update failed'};
   return {ok:true};
 }
+// Establishes a real session from the access/refresh tokens Supabase appends to an email
+// confirmation link (#access_token=...&type=signup). GoTrue doesn't include the user's
+// id/email in that hash, so one extra call fetches them — same pattern already used
+// elsewhere (see js/dashboard.js's _termsAccountCreated).
+async function _sbEstablishSessionFromHash(accessToken,refreshToken){
+  try{
+    const r=await fetch(_SB_URL+'/auth/v1/user',{headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+accessToken}});
+    if(!r.ok) return {error:'Could not verify session'};
+    const u=await r.json();
+    const s={access_token:accessToken,refresh_token:refreshToken,user:{id:u.id,email:u.email}};
+    _sbPersist(s);
+    return {ok:true,user:s.user};
+  }catch(e){ return {error:'Could not verify session'}; }
+}
 function _showResetPasswordModal(token){
   const overlay=document.createElement('div');
   overlay.id='pw-reset-overlay';
