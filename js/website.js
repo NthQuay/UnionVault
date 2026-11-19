@@ -467,15 +467,27 @@ function _wbWebsiteItems(){
 // has picked, IN the order of w.gallery (so a future reorder is honoured). Each resolves to
 // an object carrying `image`. A stock photo's "id" is just its own path — there's no record
 // of it anywhere else to look up, so it resolves to itself.
+//
+// Two identifier schemes can show up for an INSPO photo specifically: Gallery's own picker
+// has always stored the Inspiration item's own id (i.id); the generic "Add an image"
+// chooser other sections use (now shared with Gallery's own "Add photos", so the same
+// multi-select grid serves both) pushes the photo's media id (i.image) instead — a scheme
+// mismatch, not a bug in either path on its own. Resolve by whichever one is actually
+// stored, and normalise the result's own id to that same value, or removing/reordering
+// this entry would look up a value w.gallery never held.
 function _wbGalleryItems(){
   const picked = _wbSite().gallery;
-  const inspo = (STATE.inspo&&STATE.inspo.items?STATE.inspo.items:[]);
-  const ups   = _wbSite().galleryUploads||[];
-  const byId={};
-  inspo.forEach(i=>{ if(i.image) byId[i.id]=i; });
-  ups.forEach(u=>{ if(u.image) byId[u.id]=u; });
-  WB_STOCK_HEROES.forEach(path=>{ byId[path]={id:path, image:path}; });
-  return picked.map(id=>byId[id]).filter(Boolean);
+  const byId={}, byImage={};
+  // Carries src ('inspo'/'upload'/'stock') and, for uploads, inInspo — the gallery editor's
+  // own display grid needs those to show the right badge on each photo it's already picked.
+  _wbGalleryPickable().forEach(it=>{
+    byId[it.id]=it;
+    if(it.src==='inspo' && it.image) byImage[it.image]=it;
+  });
+  return picked.map(id=>{
+    const it = byId[id] || byImage[id];
+    return it ? Object.assign({}, it, {id}) : null;
+  }).filter(Boolean);
 }
 // All photos available to pick in the Gallery editor: inspiration photos, gallery uploads,
 // and the stock library. Uploads first so a freshly-added photo is easy to find at the top;
@@ -954,10 +966,15 @@ function _wbDragEnd(e){
 }
 
 // ── Theme panel: live specimen on top, role assignment below ──
-let _wbThemeSnapshot = null;
-let _wbHomeSnapshot  = null;
 let _wbLiveViewMode = 'desktop';
-let _wbPanelSaved = false;    // true after explicit Save click since panel open
+let _wbPanelSaved = false;      // true after explicit Save click since panel open (drives the "✓ Saved" indicator)
+// The whole website-builder object as it was the moment the current panel opened. Almost
+// every control in this editor already writes to storage the instant it's clicked — Save
+// is mostly a confidence ritual, not a real commit gate — so this snapshot, not a per-field
+// dirty flag, is what answers "would closing now actually lose something": diff it against
+// the live object. It also doubles as the one real "undo": reverting to it is exactly what
+// "Close without saving" does.
+let _wbPanelSnapshot = null;
 let _wbConfirmCbs = null;     // callbacks for the confirm overlay
 function _wbViewSet(mode){
   _wbLiveViewMode=mode;
@@ -982,24 +999,11 @@ function openWbTheme(){
   _wbLiveFocusOff();
   document.querySelectorAll('.wb-row.wb-selected,.wb-theme-row.wb-selected').forEach(r=>r.classList.remove('wb-selected'));
   document.querySelector('.wb-theme-row')?.classList.add('wb-selected');
-  _wbThemeSnapshot = JSON.stringify(_wbSite().theme);
   _wbPanel('Theme', _wbThemeBody(),
     `<div style="display:flex;gap:8px">
-       <button class="btn btn-outline btn-sm" style="flex:1" onclick="_wbThemeCancel()">Cancel</button>
+       <button class="btn btn-outline btn-sm" style="flex:1" onclick="_wbPanelClose()">Close</button>
        <button class="btn btn-primary btn-sm" style="flex:1" onclick="_wbSectionSave()">Save</button>
      </div>`);
-}
-function _wbThemeCancel(){
-  if(_wbThemeSnapshot){
-    try{
-      const w=_wbSite();
-      w.theme=JSON.parse(_wbThemeSnapshot);
-      saveToStorage();
-      _wbLivePaint();
-    }catch(e){}
-    _wbThemeSnapshot=null;
-  }
-  _wbClosePanel();
 }
 let _wbThemeTab = 'colour';
 function _wbSetThemeTab(t){ _wbThemeTab=t; _wbRepaintTheme(); }
@@ -1729,13 +1733,14 @@ function _wbRepaintTheme(){
 // ── Section editors ──
 function _wbPanel(title, body, footer){
   _wbPanelSaved = false;
+  try{ _wbPanelSnapshot = JSON.stringify(_wbSite()); }catch(e){ _wbPanelSnapshot = null; }
   if(window.innerWidth >= 1100){
     const col=document.getElementById('wb-editor-col');
     if(!col){ openModal(title, body, footer); return; }
     col.className='wb-editor-col';
     const _hasSave=footer&&footer.includes('_wbSectionSave');
     const _footerHtml=_hasSave?footer.replace(/<button[^>]*btn-primary[^>]*>\s*Save\s*<\/button>/,''):footer;
-    col.innerHTML=`<div class="wb-ec-header" style="display:flex;align-items:center;gap:6px"><span class="wb-ec-title" style="flex:none">${title}</span><span id="wb-ec-saved" style="flex:1;font-size:11.5px;font-weight:500;color:#3d9e57;opacity:0;transition:opacity .4s;white-space:nowrap">✓ Saved</span>${_hasSave?'<button type="button" class="btn btn-primary" style="font-size:12px;padding:5px 14px;flex-shrink:0" onclick="_wbSectionSave()">Save</button>':''}<button type="button" class="wb-ec-close" onclick="_wbClosePanel()">×</button></div><div class="wb-ec-body" id="wb-ec-body">${body}</div>${_footerHtml.trim()?'<div class="wb-ec-footer">'+_footerHtml+'</div>':''}`;
+    col.innerHTML=`<div class="wb-ec-header" style="display:flex;align-items:center;gap:6px"><span class="wb-ec-title" style="flex:none">${title}</span><span id="wb-ec-saved" style="flex:1;font-size:11.5px;font-weight:500;color:#3d9e57;opacity:0;transition:opacity .4s;white-space:nowrap">✓ Saved</span>${_hasSave?'<button type="button" class="btn btn-primary" style="font-size:12px;padding:5px 14px;flex-shrink:0" onclick="_wbSectionSave()">Save</button>':''}<button type="button" class="wb-ec-close" onclick="_wbPanelClose()">×</button></div><div class="wb-ec-body" id="wb-ec-body">${body}</div>${_footerHtml.trim()?'<div class="wb-ec-footer">'+_footerHtml+'</div>':''}`;
     // If the body included a tab bar (e.g. the Theme panel), hoist it out of the
     // scrollable body into a dedicated non-scrolling row so it can never scroll off screen.
     const _thTabs=document.getElementById('wb-theme-tabs');
@@ -1770,6 +1775,9 @@ function _wbClosePanel(){
 function _wbSectionSave(){
   saveToStorage();
   _wbPanelSaved = true;
+  // Move the snapshot's baseline forward to what was just saved — otherwise the panel
+  // would still look "dirty" against its original, pre-save snapshot.
+  try{ _wbPanelSnapshot = JSON.stringify(_wbSite()); }catch(e){}
   const el = document.getElementById('wb-ec-saved');
   if(el){
     el.textContent = '✓ Saved';
@@ -1779,22 +1787,52 @@ function _wbSectionSave(){
     _showInfoToast('Saved');
   }
 }
+// Purely cosmetic — fades the "✓ Saved" tick back out once something's been typed since
+// the last save. _wbPanelIsDirty() below is what actually gates closing; this isn't it.
 function _wbMarkChanged(){
   if(!_wbPanelSaved) return;
   _wbPanelSaved = false;
   const el = document.getElementById('wb-ec-saved');
   if(el) el.style.opacity = '0';
 }
-function _wbSectionCancel(){
-  _wbConfirm('Close the editor?', null, 'Close', ()=>_wbClosePanel(), 'Keep editing', null);
+// Would closing right now actually lose something? Diff the live object against the
+// snapshot taken when the panel opened (or last saved) rather than tracking a per-field
+// dirty flag — almost every control here already writes to storage the instant it's
+// clicked, so a flag set only by typed fields would miss a colour pick or a format switch
+// just as easily as it would correctly ignore an action that was never actually at risk.
+function _wbPanelIsDirty(){
+  if(_wbPanelSnapshot==null) return false;
+  try{ return JSON.stringify(_wbSite()) !== _wbPanelSnapshot; }catch(e){ return true; }
+}
+// The ONE exit path every panel's Close button and its × now go through. Nothing to lose
+// → close immediately, no ceremony. Something unsaved → ask, rather than silently
+// discarding it. "Close without saving" reverts the whole panel back to how it was when
+// opened — the snapshot is also this editor's one real "undo".
+function _wbPanelClose(){
+  if(!_wbPanelIsDirty()){ _wbClosePanel(); return; }
+  _wbConfirm(
+    'Save before closing?',
+    'This section hasn\'t been explicitly saved yet.',
+    'Save & close', ()=>{ _wbSectionSave(); setTimeout(_wbClosePanel, 400); },
+    'Close without saving', ()=>{ _wbPanelRevert(); _wbClosePanel(); }
+  );
+}
+function _wbPanelRevert(){
+  if(_wbPanelSnapshot==null) return;
+  try{
+    const snap=JSON.parse(_wbPanelSnapshot);
+    Object.assign(_wbSite(), snap);
+    saveToStorage();
+    _wbLivePaint();
+  }catch(e){}
 }
 function _wbNavGuard(dest){
-  if(!_wbPanelSaved){
+  if(_wbPanelIsDirty()){
     _wbConfirm(
       'Save before leaving?',
       'This section hasn\'t been explicitly saved yet.',
       'Save & go', ()=>{ _wbSectionSave(); setTimeout(()=>{ _wbClosePanel(); navigate(dest); }, 400); },
-      'Go without saving', ()=>{ _wbClosePanel(); navigate(dest); }
+      'Go without saving', ()=>{ _wbPanelRevert(); _wbClosePanel(); navigate(dest); }
     );
   } else {
     _wbClosePanel(); navigate(dest);
@@ -1866,14 +1904,13 @@ function openWbSection(key){
       ${_wbBlocksHtml(key)}
     </div>`,
     `<button class="btn btn-outline" onclick="_wbNavGuard('${dest}')" style="margin-right:auto">Go to ${destLabel}</button>
-     <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+     <button class="btn btn-outline" onclick="_wbPanelClose()">Close</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 
 function openWbHome(){
   const h=_wbSite().home;
   const ctaMode=h.ctaMode||'ics';
-  _wbHomeSnapshot=JSON.stringify({home:h});
   _wbPanel('Home', `<div style="display:flex;flex-direction:column;gap:14px">
       ${_wbHeroBody()}
       <div class="form-group"><label class="form-label">Headline <span style="color:var(--muted);font-weight:400">(optional)</span></label>
@@ -1892,15 +1929,8 @@ function openWbHome(){
       </div>
       <div id="wb-cta-hint" style="font-size:12px;color:var(--muted);margin-top:-6px">${ctaMode==='ics'?'Adds a Save the date calendar download.':ctaMode==='rsvp'?'Links guests to your RSVP form.':''}</div>
     </div>`,
-    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbHomeCancel()">Cancel</button>
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbPanelClose()">Close</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
-}
-function _wbSaveHome(){
-  const h=_wbSite().home;
-  h.headline=(document.getElementById('wb-h-head')||{}).value||'';
-  h.sub=(document.getElementById('wb-h-sub')||{}).value||'';
-  _wbHomeSnapshot=null;
-  saveToStorage();
 }
 function _wbToggleBrand(showBadge){
   if(!showBadge && _sbSession && typeof _uvRequirePaid==='function' && !_uvRequirePaid('brandOff')){
@@ -1909,18 +1939,6 @@ function _wbToggleBrand(showBadge){
   }
   _wbSite().brandOff=!showBadge;
   saveToStorage(); _wbLivePaint();
-}
-function _wbHomeCancel(){
-  if(_wbHomeSnapshot){
-    try{
-      const snap=JSON.parse(_wbHomeSnapshot);
-      const w=_wbSite();
-      Object.assign(w.home, snap.home);
-      saveToStorage(); _wbLivePaint();
-    }catch(e){}
-    _wbHomeSnapshot=null;
-  }
-  _wbClosePanel();
 }
 function _wbLiveHomeUpdate(){
   const h=_wbSite().home;
@@ -2016,7 +2034,7 @@ function openWbRsvp(){
     ${_wbBlocksHtml('rsvp')}
   </div>`,
   `<button class="btn btn-outline" onclick="_wbNavGuard('guests')" style="margin-right:auto">View responses</button>
-   <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+   <button class="btn btn-outline" onclick="_wbPanelClose()">Close</button>
    <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 // Shared "RSVP design" settings — Appearance (header/page style, colour scheme), Form
@@ -2256,7 +2274,7 @@ function openWbDetails(){
     ${_wbBlocksHtml('details')}
   </div>`,
   `<button class="btn btn-outline" onclick="_wbNavGuard('details')" style="margin-right:auto">Go to Event Details</button>
-   <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+   <button class="btn btn-outline" onclick="_wbPanelClose()">Close</button>
    <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbDetailHide(field, hide){
@@ -2266,7 +2284,7 @@ function _wbDetailHide(field, hide){
 }
 function openWbGallery(){
   _wbPanel('Gallery', _wbLayoutHtml('gallery')+`<div id="wb-gallery-shell">${_wbGalleryBody()}</div>`,
-    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbPanelClose()">Close</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 // Redraw ONLY the picker shell (grid + intro copy). The Layout box is a sibling node and is
@@ -2278,18 +2296,15 @@ function _wbGalleryRefresh(){
   _wbLiveSoon();
 }
 function _wbGalleryBody(){
-  const picked=_wbSite().gallery;
-  const items=_wbGalleryPickable();
-  const uploadTile=`<button type="button" onclick="_wbGalleryUpload()" title="Upload a photo"
+  const items=_wbGalleryItems();
+  const addTile=`<button type="button" onclick="_wbGalleryAddOpen()" title="Add photos"
       style="aspect-ratio:1;border-radius:8px;border:2px dashed var(--sw-border,#E3D7C4);background:var(--sw-bg,#FBF8F3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#A89066;cursor:pointer;font-size:10.5px;font-weight:600;padding:0">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload</button>`;
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add photos</button>`;
   const intro = items.length
-    ? `<div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:12px">Tap the photos you'd like your guests to see. ${_wbGalleryItems().length} of ${items.length} chosen.</div>`
-    : `<div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:12px">Upload photos for your gallery, or add some to Inspiration and they'll appear here to choose from.</div>`;
+    ? `<div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:12px">${items.length} photo${items.length===1?'':'s'} in your gallery. Drag a tile to reorder.</div>`
+    : `<div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:12px">No photos yet — add some below.</div>`;
   const grid=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px">
-      ${uploadTile}
       ${items.map(it=>{
-        const on=picked.indexOf(it.id)>=0;
         const url=_mediaUrl(it.image);
         const gone=_mediaMissing(it.image);
         if(gone){const _goneAct=it.src==='upload'?`_wbGalleryDeleteUpload('${it.id}')`:`_wbGalleryPick('${it.id}')`;return `<div style="position:relative;aspect-ratio:1;border-radius:8px;border:1px dashed var(--red);display:flex;align-items:center;justify-content:center;text-align:center;font-size:10.5px;color:var(--red);padding:6px;cursor:pointer" onclick="${_goneAct}">Image not saved<button onclick="event.stopPropagation();${_goneAct}" style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0">×</button></div>`;}
@@ -2301,41 +2316,60 @@ function _wbGalleryBody(){
           : (it.src==='upload' && it.inInspo)
             ? `<span title="In your Inspiration gallery" style="position:absolute;bottom:0;left:0;right:0;background:rgba(74,124,89,.82);color:#fff;font-size:9.5px;font-weight:600;padding:3px 0;text-align:center">✓ In Inspiration</span>`
             : '';
-        // Uploads carry a small delete ✕ (top-left) so a mistaken upload can be removed.
-        const delX=(it.src==='upload')
-          ? `<span onclick="event.stopPropagation();_wbGalleryDeleteUpload('${it.id}')" title="Remove this uploaded photo"
-               style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer">✕</span>`
-          : '';
+        // Every tile gets a remove ✕ now (top-left) — previously only uploads had one,
+        // because inspo/stock photos could be tapped off in the old pick-from-everything
+        // grid. That grid is gone (see _wbGalleryAddOpen()), so this is now the only way
+        // to remove ANY photo. Uploads delete the upload record outright (nothing else can
+        // reference it); inspo/stock just unpick — the source photo/asset is untouched.
+        const removeAct=(it.src==='upload') ? `_wbGalleryDeleteUpload('${it.id}')` : `_wbGalleryPick('${it.id}')`;
+        const delX=`<span onclick="event.stopPropagation();${removeAct}" title="Remove from gallery"
+               style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer">✕</span>`;
         // Stock items carry the same bottom-banner slot as inspoTag (never both — mutually
         // exclusive on it.src), labelling where a generic photo came from.
         const stockTag=(it.src==='stock')
           ? `<span style="position:absolute;bottom:0;left:0;right:0;background:rgba(92,61,46,.72);color:#fff;font-size:9.5px;font-weight:600;letter-spacing:.02em;padding:3px 0;text-align:center">Library</span>`
           : '';
-        // _wbGalleryPickable() lists every stock slot up to the ceiling, not just the ones
-        // actually uploaded (see WB_STOCK_HEROES) — a slot with no real file just removes
-        // its own tile rather than showing a broken image.
-        const onErr=(it.src==='stock') ? `onerror="this.closest('button').remove()"` : '';
         // v149: picked tiles reorder within w.gallery via pointer events (mouse AND touch —
         // HTML5 drag-and-drop never fires drop on a touch device, so a phone drag just
-        // floated with nowhere to land). A real drag suppresses the tap-to-toggle click that
-        // follows pointerup, so dragging and tapping don't collide. A small grip badge
-        // (bottom-left on picked, non-upload tiles; uploads already use bottom-left for tags —
-        // there the grip goes top-right beside nothing, so we place it top-left-ish safely).
-        const dragAttrs = on ? `onpointerdown="_wbGalPD(event,'${it.id}')"` : '';
-        const grip = on ? `<span class="wb-gal-grip" title="Drag to reorder" style="position:absolute;bottom:4px;right:4px;width:19px;height:19px;border-radius:5px;background:rgba(0,0,0,.42);color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></span>` : '';
-        return `<button type="button" class="wb-tile" data-galid="${it.id}" onclick="_wbGalleryPick('${it.id}')" ${dragAttrs} style="position:relative;padding:0;border:3px solid ${on?'var(--gold)':'transparent'};border-radius:8px;overflow:hidden;cursor:${on?'grab':'pointer'};aspect-ratio:1;background:var(--surface);touch-action:${on?'none':'auto'}">
-          <img src="${url}" alt="${_escHtml(it.title||'')}" ${onErr} style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none"/>
-          ${on?`<span style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px">✓</span>`:''}
+        // floated with nowhere to land). A real drag suppresses the tap-on-release that
+        // follows pointerup via _wbGalSuppressClick, so dragging and the ✕/tag taps above
+        // don't collide — only fires past a real movement threshold, so a plain tap on any
+        // of them still reaches its own onclick normally.
+        return `<button type="button" class="wb-tile" data-galid="${it.id}" onpointerdown="_wbGalPD(event,'${it.id}')" style="position:relative;padding:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:grab;aspect-ratio:1;background:var(--surface);touch-action:none">
+          <img src="${url}" alt="${_escHtml(it.title||'')}" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none"/>
           ${delX}
           ${inspoTag}
           ${stockTag}
-          ${grip}
+          <span class="wb-gal-grip" title="Drag to reorder" style="position:absolute;bottom:4px;right:4px;width:19px;height:19px;border-radius:5px;background:rgba(0,0,0,.42);color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></span>
         </button>`;
       }).join('')}
+      ${addTile}
     </div>
     <div style="font-size:10.5px;color:var(--muted);margin-top:9px;line-height:1.5">Uploaded photos are website-only. Tap <b style="color:var(--gold-deep)">＋ Inspiration</b> on one to add it to your Inspiration gallery too.</div>`;
   return intro+grid;
+}
+// The same 3-option chooser every other section's "Add an image" uses — Library,
+// Inspiration or Upload — just targeting the gallery's own array instead of a block's
+// ids[]. _wbImgFromStock/_wbImgFromInspo take '__gallery__' as a sentinel key (see
+// _wbInspoAdd()) so the exact same multi-select pickers and commit path serve both.
+function _wbGalleryAddOpen(){
+  openConfirm2('Add to gallery',
+    `<div style="display:flex;flex-direction:column;gap:8px">
+      <button type="button" class="btn btn-outline" onclick="_closeConfirm2Direct();_wbImgFromStock('__gallery__', null)" style="display:flex;align-items:center;justify-content:flex-start;gap:9px;padding:12px 14px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span style="text-align:left"><span style="display:block">Choose from our library</span><span style="display:block;font-size:11px;color:var(--muted);font-weight:400">Generic wedding photos, free to use</span></span>
+      </button>
+      <button type="button" class="btn btn-outline" onclick="_closeConfirm2Direct();_wbImgFromInspo('__gallery__', null)" style="display:flex;align-items:center;justify-content:flex-start;gap:9px;padding:12px 14px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span style="text-align:left"><span style="display:block">From Inspiration</span><span style="display:block;font-size:11px;color:var(--muted);font-weight:400">Choose from your mood board</span></span>
+      </button>
+      <button type="button" class="btn btn-outline" onclick="_closeConfirm2Direct();_wbGalleryUpload()" style="display:flex;align-items:center;justify-content:flex-start;gap:9px;padding:12px 14px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span style="text-align:left"><span style="display:block">Upload</span><span style="display:block;font-size:11px;color:var(--muted);font-weight:400">A new photo from this device</span></span>
+      </button>
+    </div>`,
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>`);
 }
 let _wbGalSuppressClick=false;
 function _wbGalleryPick(id){
@@ -2505,7 +2539,7 @@ function _wbGalleryDeleteUpload(upId){
 
 function openWbSchedule(){
   _wbPanel('Timeline', _wbLayoutHtml('schedule')+_wbScheduleBody()+_wbBlocksHtml('schedule'),
-    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbPanelClose()">Close</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbScheduleBody(){
@@ -2554,7 +2588,7 @@ function _wbScheduleAll(on){
 
 function openWbFaq(){
   _wbPanel('FAQ', _wbLayoutHtml('faq')+_wbFaqBody()+_wbBlocksHtml('faq'),
-    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbPanelClose()">Close</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbFaqBody(){
@@ -2617,7 +2651,7 @@ function _wbFaqRemove(id){
 
 function openWbStays(){
   _wbPanel('Accommodation', _wbLayoutHtml('accommodation')+_wbStaysBody()+_wbBlocksHtml('accommodation'),
-    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
+    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbPanelClose()">Close</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbStaysBody(){
@@ -2794,7 +2828,7 @@ function openWbAddSection(){
         <span><span style="display:block">Blank section</span><span style="display:block;font-size:10.5px;color:var(--muted)">Your own heading, text and images</span></span>
       </button>
     </div>`,
-    `<button class="btn btn-outline" onclick="_wbClosePanel()">Cancel</button>`);
+    `<button class="btn btn-outline" onclick="_wbClosePanel()">Close</button>`);
 }
 function _wbAddSection(presetKey){
   const w=_wbSite();
@@ -3039,7 +3073,7 @@ function openWbCustom(id){
       ${_wbBlocksHtml(id)}
     </div>`,
     `<button class="btn btn-danger" onclick="_wbDeleteSection('${id}')" style="margin-right:auto">Delete</button>
-     <button class="btn btn-outline" onclick="_wbSectionCancel()">Cancel</button>
+     <button class="btn btn-outline" onclick="_wbPanelClose()">Close</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 
@@ -3053,6 +3087,7 @@ function _wbHeroBody(){
         onmousedown="_wbHeroPickStart(event)" ontouchstart="_wbHeroPickStart(event)">
         <img id="wb-hero-img" src="${_mediaUrl(h.mediaId)}" alt=""
              style="${_wbHeroImgCss(h)}"/>
+        <span id="wb-hero-scrim-prev" class="wb-hero-scrim-prev" style="${_wbHeroScrimCss(h)}"></span>
         <span id="wb-hero-pin" class="wb-hero-pin" style="left:${_wbHeroPct(h.pos,0)}%;top:${_wbHeroPct(h.pos,1)}%"></span>
         <button type="button" class="wb-tile-x" style="top:6px;right:6px;width:20px;height:20px;z-index:5"
                 onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
@@ -3187,6 +3222,14 @@ function _wbHeroImgCss(h){
   return `width:100%;height:130px;display:block;object-fit:contain;object-position:${pos};`
        + `transform:scale(${zoom/100});transform-origin:${pos}`;
 }
+// Darken only ever shows, and only ever applies on the guest site, for `over` and the fx
+// formats (see _wbHeroBody()'s own gating on the same condition) — everywhere else it's
+// invisible here too, rather than previewing a darken the photo will never actually show.
+function _wbHeroScrimCss(h){
+  const on = _wbIsFxFormat()||h.style==='over';
+  const scrim = on ? Math.max(0,Math.min(100,Number(h.scrim)||0))/100 : 0;
+  return `background:rgba(0,0,0,${scrim})`;
+}
 // Pull the x or y percentage out of an object-position string. Returns 50 for anything it
 // cannot read, rather than NaN — a NaN here would put the pin at `leftNaN%` and CSS would
 // silently drop the rule, leaving the pin stuck in the corner with no error anywhere.
@@ -3294,13 +3337,16 @@ function _wbHeroSet(field, val){
 // The slider fires continuously — update state + preview live, but don't rebuild the
 // modal on every pixel of drag (it would kill the slider mid-drag).
 function _wbHeroScrim(v){
-  _wbSite().hero.scrim=Number(v)||0;
+  const h=_wbSite().hero;
+  h.scrim=Number(v)||0;
   saveToStorage();
   // By id, not by counting .wb-slot-lbl siblings — v121 added a third label ("Names") and
   // the old heads[1] index would have quietly started pointing at the wrong element the
   // next time anything was inserted above it.
   const lbl=document.getElementById('wb-hero-scrim-lbl');
-  if(lbl) lbl.textContent='Darken · '+_wbSite().hero.scrim+'%';
+  if(lbl) lbl.textContent='Darken · '+h.scrim+'%';
+  const prev=document.getElementById('wb-hero-scrim-prev');
+  if(prev) prev.setAttribute('style', _wbHeroScrimCss(h));
   _wbLiveSoon();
 }
 function _wbHeroAdd(){
@@ -3320,7 +3366,7 @@ function _wbHeroAdd(){
       </button>
       <input type="file" accept="image/*" id="wb-hero-up" style="display:none" onchange="_wbHeroUpload(event)"/>
     </div>`,
-    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>`);
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>`);
 }
 function _wbHeroFromStock(){
   openConfirm2('Choose from our library',
@@ -3329,7 +3375,7 @@ function _wbHeroFromStock(){
         <img src="${src}" alt="" onerror="this.closest('button').remove()" style="width:100%;height:100%;object-fit:cover;display:block"/>
       </button>`).join('')}
     </div>`,
-    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>`);
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>`);
 }
 function _wbHeroUpload(e){
   const file=e.target.files[0]; if(!file) return;
@@ -3357,7 +3403,7 @@ function _wbHeroFromInspo(){
         <img src="${_mediaUrl(i.image)}" alt="${_escHtml(i.title||'')}" style="width:100%;height:100%;object-fit:cover;display:block"/>
       </button>`).join('')}
     </div>`,
-    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>`);
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>`);
 }
 function _wbHeroPick(mediaId){
   _wbSite().hero.mediaId=mediaId;
@@ -3731,7 +3777,7 @@ function _wbVideoPoster(key,bid){
       </button>
       <input type="file" accept="image/*" id="wb-vp-${bid}" style="display:none" onchange="_wbVidPosterUpload(event,'${key}','${bid}')"/>
     </div>`,
-    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>`);
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>`);
 }
 function _wbVidPosterUpload(e,key,bid){
   const file=e.target.files[0]; if(!file) return;
@@ -3762,7 +3808,7 @@ function _wbVidFromInspo(key,bid){
         <img src="${_mediaUrl(i.image)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"/>
       </button>`).join('')}
     </div>`,
-    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>`);
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>`);
 }
 function _wbVidPosterPick(key,bid,mediaId){
   const b=_wbBlock(key,bid);
@@ -4375,7 +4421,7 @@ function _wbImgAdd(key,bid){
       </button>
       <input type="file" accept="image/*" id="wb-up-${bid}" style="display:none" onchange="_wbImgUpload(event,'${key}','${bid}')"/>
     </div>`,
-    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>`);
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>`);
 }
 
 // Upload. Same chain as Inspiration: compress -> _mediaPut -> store the ID.
@@ -4400,7 +4446,7 @@ let _wbInspoPick = null;
 function _wbImgFromInspo(key,bid){
   _wbInspoPick={key, bid, chosen:[]};
   openConfirm2('From Inspiration', _wbInspoBody(),
-    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>
      <button class="btn btn-primary" onclick="_wbInspoAdd()">Add</button>`);
 }
 function _wbInspoBody(){
@@ -4430,12 +4476,21 @@ function _wbInspoToggle(mediaId){
 function _wbInspoAdd(){
   const p=_wbInspoPick;
   if(p && p.chosen.length){
-    const b=_wbBlock(p.key, p.bid);
-    // The same inspo image can legitimately appear in two sections, but not twice in the
-    // same block.
-    if(b) p.chosen.forEach(id=>{ if(b.ids.indexOf(id)<0) b.ids.push(id); });
-    saveToStorage();
-    _wbBlocksRepaint(p.key);
+    if(p.key==='__gallery__'){
+      // The same inspo/stock photo can legitimately appear in two sections, but not twice
+      // in the gallery itself.
+      const g=_wbSite().gallery;
+      p.chosen.forEach(id=>{ if(g.indexOf(id)<0) g.push(id); });
+      saveToStorage();
+      _wbGalleryRefresh();
+    } else {
+      const b=_wbBlock(p.key, p.bid);
+      // The same inspo image can legitimately appear in two sections, but not twice in the
+      // same block.
+      if(b) p.chosen.forEach(id=>{ if(b.ids.indexOf(id)<0) b.ids.push(id); });
+      saveToStorage();
+      _wbBlocksRepaint(p.key);
+    }
   }
   _wbInspoPick=null;
   _closeConfirm2Direct();
@@ -4447,7 +4502,7 @@ function _wbInspoAdd(){
 function _wbImgFromStock(key,bid){
   _wbInspoPick={key, bid, chosen:[]};
   openConfirm2('Choose from our library', _wbStockPickBody(),
-    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>
      <button class="btn btn-primary" onclick="_wbInspoAdd()">Add</button>`);
 }
 function _wbStockPickBody(){

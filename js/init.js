@@ -982,7 +982,7 @@ function _showVendorError(type){
     navigate('dashboard');
     document.getElementById('welcome-overlay').classList.remove('hidden');
   } else {
-    // First-time visitor → show landing first; after auth/_lpContinueOffline the setup modal appears
+    // First-time visitor → show landing first; after auth the setup modal appears
     updateTopbarSub();
     navigate('dashboard');
     document.getElementById('welcome-overlay').classList.remove('hidden');

@@ -669,6 +669,9 @@ body.dark .wb-src{background:rgba(196,168,130,.15);color:#C3B69E}
   border:2px solid #fff;background:rgba(255,255,255,.22);
   box-shadow:0 0 0 1px rgba(0,0,0,.4), 0 1px 4px rgba(0,0,0,.3);
   transform:translate(-50%,-50%);pointer-events:none;z-index:4}
+/* Mirrors the guest site's .hero-scrim — the Darken slider previews here too, not just
+   on the live pane and the published site. */
+.wb-hero-scrim-prev{position:absolute;inset:0;pointer-events:none;z-index:2}
 /* ── The Section Composer block list (v126) ── */
 .wb-blocks{margin-top:4px}
 .wb-blk{border:1px solid var(--border);border-radius:9px;background:var(--cream);margin-bottom:7px;transition:opacity .15s,border-color .15s}
