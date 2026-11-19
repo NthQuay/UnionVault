@@ -63,7 +63,7 @@ const TIPS_LIBRARY=[
     {lead:'Keep speeches under 5 minutes each.', body:'Cap toasts and place them between courses so guests stay engaged and hot meals don’t go cold.'}
   ]},
   {icon:'website', title:'Website & Guest Communication', tagline:'Make sure guests know exactly what to expect, long before the day.', tips:[
-    {lead:'Launch your website before sending invites.', body:'Give out-of-town guests plenty of notice to book flights, accommodation, and time off work.', link:{page:'website', label:'Open your Website'}},
+    {lead:'Launch your website to keep guests informed', body:'Provide guests all the information you couldn’t fit on the invite by creating your free customised wedding website with unionvault.app', link:{page:'website', label:'Open your Website'}},
     {lead:'Include clear dress code examples.', body:'Avoid vague terms — spell out what "smart casual" or "cocktail" means for footwear on grass or sand.'},
     {lead:'Password-protect your event details.', body:'Keep your venue address, schedule, and RSVP form private for invited guests only.'},
     {lead:'Add local transport and parking tips.', body:'Mention rideshare availability, shuttle bus pickup times, and overnight parking rules upfront.'},

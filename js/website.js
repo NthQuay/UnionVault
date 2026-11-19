@@ -1856,24 +1856,10 @@ function openWbSection(key){
 
 function openWbHome(){
   const h=_wbSite().home;
-  const hero=_wbSite().hero;
   const ctaMode=h.ctaMode||'ics';
-  _wbHomeSnapshot=JSON.stringify({home:h, hero:{showNames:hero.showNames, showDate:hero.showDate}});
-  const tog=(id,label,checked,fn)=>`<label class="tl-pub-row" for="${id}" style="padding:9px 10px">
-      <span class="tl-pub-title">${label}</span>
-      <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
-        <input type="checkbox" id="${id}" ${checked?'checked':''} onchange="${fn}(this.checked)"/>
-        <span class="toggle-track"></span>
-      </span>
-    </label>`;
+  _wbHomeSnapshot=JSON.stringify({home:h});
   _wbPanel('Home', `<div style="display:flex;flex-direction:column;gap:14px">
-      <button type="button" class="btn btn-outline btn-sm" onclick="closeModalDirect();openWbHero()" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Hero image${hero.mediaId?' · set':''}</button>
-      <div style="display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
-        ${tog('wb-h-snames','Names',hero.showNames!==false,'_wbHomeHeroSet.bind(null,\'showNames\')')}
-        ${tog('wb-h-sdate','Date',hero.showDate!==false,'_wbHomeHeroSet.bind(null,\'showDate\')')}
-      </div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:-8px;line-height:1.5">Turn these off if your hero image already has them, or to use a different layout.</div>
+      ${_wbHeroBody()}
       <div class="form-group"><label class="form-label">Headline <span style="color:var(--muted);font-weight:400">(optional)</span></label>
         <input class="form-input" id="wb-h-head" placeholder="e.g. We're getting married" value="${_escHtml(h.headline||'')}"
                oninput="_wbLiveHomeUpdate()"/></div>
@@ -1914,7 +1900,6 @@ function _wbHomeCancel(){
       const snap=JSON.parse(_wbHomeSnapshot);
       const w=_wbSite();
       Object.assign(w.home, snap.home);
-      Object.assign(w.hero, snap.hero);
       saveToStorage(); _wbLivePaint();
     }catch(e){}
     _wbHomeSnapshot=null;
@@ -1925,11 +1910,6 @@ function _wbLiveHomeUpdate(){
   const h=_wbSite().home;
   h.headline=(document.getElementById('wb-h-head')||{}).value||'';
   h.sub=(document.getElementById('wb-h-sub')||{}).value||'';
-  saveToStorage(); _wbLiveSoon();
-}
-function _wbHomeHeroSet(field, val){
-  const hero=_wbSite().hero;
-  hero[field]=val;
   saveToStorage(); _wbLiveSoon();
 }
 function _wbSetCtaMode(mode){
@@ -3037,17 +3017,12 @@ function openWbCustom(id){
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 
-// ── Hero ──
-function openWbHero(){
-  _wbPanel('Hero image', _wbHeroBody(),
-    `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbSectionCancel()">Cancel</button>
-     <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
-}
+// ── Hero ── (shown inline inside the Home panel — see openWbHome())
 function _wbHeroBody(){
   const h=_wbSite().hero;
   const has=h.mediaId && !_mediaMissing(h.mediaId);
   return `<div id="wb-hero-body">
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:13px">A photo behind your names on the Home section.</div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:13px">A photo for your Home section.</div>
     ${has?`<div id="wb-hero-frame" class="wb-hero-frame"
         onmousedown="_wbHeroPickStart(event)" ontouchstart="_wbHeroPickStart(event)">
         <img id="wb-hero-img" src="${_mediaUrl(h.mediaId)}" alt=""
@@ -3072,9 +3047,22 @@ function _wbHeroBody(){
       <span class="inv-seg" style="margin-bottom:13px">
         <button type="button" class="${h.style==='over'?'active':''}" onclick="_wbHeroSet('style','over')">Names over photo</button>
         <button type="button" class="${h.style==='below'?'active':''}" onclick="_wbHeroSet('style','below')">Photo below names</button>
+        <button type="button" class="${h.style==='above'?'active':''}" onclick="_wbHeroSet('style','above')">Photo above names</button>
       </span>
       `}
-      ${(_wbIsFxFormat()||h.style==='over')?`
+      ${h.style==='below'?`
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Size</div>
+        <span class="inv-seg" style="margin-bottom:13px">
+          <button type="button" class="${h.belowSize==='short'?'active':''}" onclick="_wbHeroSet('belowSize','short')">Short</button>
+          <button type="button" class="${h.belowSize==='tall'?'active':''}" onclick="_wbHeroSet('belowSize','tall')">Tall</button>
+          <button type="button" class="${(!h.belowSize||h.belowSize==='full')?'active':''}" onclick="_wbHeroSet('belowSize','full')">Full</button>
+        </span>
+        <div class="wb-slot-lbl" id="wb-hero-zoom-lbl" style="margin-bottom:6px">Zoom · ${h.zoom}%</div>
+        <input type="range" min="50" max="250" step="1" value="${h.zoom}" oninput="_wbHeroZoom(this.value)"
+               style="width:100%;accent-color:var(--gold)"/>
+        <div id="wb-hero-zoom-note" class="wb-blk-hint" style="margin:6px 0 13px">${_wbHeroZoomNote(h.zoom)}</div>
+      `:''}
+      ${(_wbIsFxFormat()||h.style==='over'||h.style==='above')?`
         <div class="wb-slot-lbl" style="margin-bottom:6px">Height</div>
         <span class="inv-seg" style="margin-bottom:13px">
           <button type="button" class="${h.height==='short'?'active':''}" onclick="_wbHeroSet('height','short')">Short</button>
@@ -3086,6 +3074,7 @@ function _wbHeroBody(){
                style="width:100%;accent-color:var(--gold)"/>
         <div id="wb-hero-zoom-note" class="wb-blk-hint" style="margin:6px 0 13px">${_wbHeroZoomNote(h.zoom)}</div>
 
+        ${(_wbIsFxFormat()||h.style==='over')?`
         <div class="wb-slot-lbl" id="wb-hero-scrim-lbl" style="margin-bottom:6px">Darken · ${h.scrim}%</div>
         <input type="range" min="0" max="100" value="${h.scrim}" oninput="_wbHeroScrim(this.value)"
                style="width:100%;accent-color:var(--gold)"/>
@@ -3123,6 +3112,7 @@ function _wbHeroBody(){
           </label>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">Turn these off if your photo already has them — no need to print them twice.</div>
+        `:''}
       `:''}
     `:''}
   </div>`;
@@ -3136,13 +3126,12 @@ function _wbHeroRepaint(){
 // preview of a different photo. Both call this. One function, one truth — and when the
 // hero's rendering changes, there is one place to change it, not two that drift.
 function _wbHeroImgCss(h){
-  // Zoom only applies to `over` (or an Editorial/Atelier format, which always renders the
-  // photo as a full cover image regardless of the Style setting) — a photo BELOW the names
-  // in a classic/modern format has no frame to be zoomed within, and the guest site renders
-  // it as a plain 3/2 cover crop. Applying the zoom here would preview a photo the guest
-  // will never see. The focal point applies to all of these: .hero-below is object-fit:cover
-  // in a fixed box, so object-position genuinely chooses its crop.
-  const zoom = (_wbIsFxFormat()||h.style==='over') ? Math.max(50,Math.min(250,Number(h.zoom)||100)) : 100;
+  // Zoom applies everywhere EXCEPT the plain "names only, no photo yet" case: `over`/`above`,
+  // `below` (its own sized box, but still a cover crop that zoom and the focal point both
+  // act on), and Editorial/Atelier (which always render a full cover photo regardless of
+  // the Style setting). The focal point applies to all of these: .hero-below is
+  // object-fit:cover in a fixed box, so object-position genuinely chooses its crop.
+  const zoom = (_wbIsFxFormat()||h.style==='over'||h.style==='above'||h.style==='below') ? Math.max(50,Math.min(250,Number(h.zoom)||100)) : 100;
   const pos=h.pos||'50% 50%';
 
   // ⚠️ THE ZOOM IS ANCHORED TO `contain`. 100% = THE WHOLE PHOTO, nothing cropped.
@@ -4888,12 +4877,35 @@ function _wbBuildSite(forDownload){
       </header>`;
       }
 
+      // "Photo above names" — a full-width photo (edge to edge, no overlay text to protect)
+      // with the couple's names in a plain band underneath. Distinct from `below`, where the
+      // photo sits boxed and rounded underneath names that come first.
+      if(heroOk && hero.style==='above'){
+        const bandInner = [
+          wantName ? `<h1>${_escHtml(_wbCouple())}</h1>` : '',
+          `<p class="hero-above-sub">Our Wedding</p>`,
+          `<div class="hero-above-rule"><span></span><i></i><span></span></div>`,
+          (wantDate && e.date) ? `<p class="eyebrow">${_escHtml(fmtDate(e.date))}</p>` : '',
+          icsBtn,
+          homeSlot('top'),
+          h.headline ? `<p class="lead">${_escHtml(h.headline)}</p>` : '',
+          h.sub ? `<p class="sub">${_escHtml(h.sub)}</p>` : '',
+          homeSlot('bottom')
+        ].filter(Boolean).join('\n          ');
+        return `<header id="home" class="hero-above-wrap">
+        <img class="hero-above" src="${_mediaUrl(hero.mediaId)}" alt="" style="height:${WB_HERO_H[hero.height]||WB_HERO_H.tall};object-position:${pos};transform:scale(${zoom/100});transform-origin:${pos}"/>
+        <div class="hero-above-band">
+          ${bandInner}
+        </div>
+      </header>`;
+      }
+
       const inner = [
         wantName ? `<h1>${_escHtml(_wbCouple())}</h1>` : '',
         (wantDate && e.date) ? `<p class="eyebrow">${_escHtml(fmtDate(e.date))}</p>` : '',
         icsBtn,
         (heroOk && hero.style==='below')
-          ? `<img class="hero-below" src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${_escHtml(hero.pos||'50% 50%')}"/>` : '',
+          ? `<div class="hero-below${hero.belowSize==='short'?' bsz-short':hero.belowSize==='tall'?' bsz-tall':''}"><img src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${pos};transform:scale(${zoom/100});transform-origin:${pos}"/></div>` : '',
         homeSlot('top'),
         h.headline ? `<p class="lead">${_escHtml(h.headline)}</p>` : '',
         h.sub ? `<p class="sub">${_escHtml(h.sub)}</p>` : '',
@@ -6340,7 +6352,25 @@ header.hero>.hero-bg{position:absolute;z-index:0}
 header.hero>.hero-scrim{position:absolute;z-index:1}
 /* object-position needs a box to position within, which needs a fixed aspect. Without it,
    the img is its own natural height and there is nothing to shift. */
-.hero-below{display:block;width:100%;max-width:820px;margin:${sp(28)}px auto 0;border-radius:${imgRad};aspect-ratio:3/2;object-fit:cover}
+/* .hero-below is the CLIPPING FRAME, not the photo — the photo is a plain <img> inside it.
+   A zoomed photo (transform:scale) renders past its own box with nothing to clip it; the
+   frame's overflow:hidden is what crops the zoomed-in excess at its rounded edges. */
+.hero-below{display:block;width:100%;max-width:820px;margin:${sp(28)}px auto 0;border-radius:${imgRad};aspect-ratio:3/2;overflow:hidden}
+.hero-below>img{display:block;width:100%;height:100%;object-fit:cover}
+/* Size options for "Photo below names" — unset/"full" keeps the original 3/2 crop so no
+   existing site changes shape just because this got options. */
+.hero-below.bsz-short{aspect-ratio:16/9}
+.hero-below.bsz-tall{aspect-ratio:4/5}
+/* "Photo above names" — edge-to-edge photo, then a plain band underneath. header{padding}
+   would inset the photo on every side, so this wrapper cancels it and the band supplies
+   its own padding instead. */
+header.hero-above-wrap{padding:0}
+.hero-above{display:block;width:100%;object-fit:cover}
+.hero-above-band{padding:${sp(44)}px 24px ${sp(56)}px}
+.hero-above-sub{font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:${t2.heading}99;margin:0 0 16px}
+.hero-above-rule{display:flex;align-items:center;justify-content:center;gap:9px;width:130px;margin:0 auto 18px}
+.hero-above-rule span{flex:1;height:1px;background:${t2.heading}40}
+.hero-above-rule i{width:4px;height:4px;border-radius:50%;background:${t2.heading}70;flex-shrink:0}
 /* The hero ink applies to the NAMES. It does NOT apply to the button — the button has its
    own colour, and being swept into this selector is what made it hardcoded white on every
    hero, invisible on a pale photo, and unfixable from the theme editor. .ics is NOT listed
