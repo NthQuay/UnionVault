@@ -253,7 +253,9 @@ async function _mediaLoadAll(){
 function _mediaUrl(ref){
   if(!ref) return '';
   const s = String(ref);
-  if(s.startsWith('http://')||s.startsWith('https://')||s.startsWith('data:')||s.startsWith('blob:')) return s;
+  // '/' = a site-relative path to a static asset shipped with the app (e.g. a stock hero
+  // photo in assets/) — not an uploaded photo at all, so it's already a resolvable URL.
+  if(s.startsWith('http://')||s.startsWith('https://')||s.startsWith('data:')||s.startsWith('blob:')||s.startsWith('/')) return s;
   if(MEDIA[s]) return MEDIA[s];
   // Stage 4: if blob isn't local, return cached signed URL if available
   // (async fetch is triggered separately by _mediaCloudSync after cloud load)
@@ -376,7 +378,10 @@ async function _mediaCloudSync(){
   // Collect all media IDs referenced in STATE
   const refs = new Set();
   _mediaRefs(STATE,'id').forEach(h=>{ const v=h.get(); if(v) refs.add(v); });
-  const missing = [...refs].filter(id => !MEDIA[id]);
+  // '/'-prefixed refs are static app assets (e.g. a stock hero photo), not something the
+  // couple uploaded — there's nothing in Storage to fetch, and trying would just be a
+  // guaranteed-404 signed-URL request on every sync.
+  const missing = [...refs].filter(id => !MEDIA[id] && !String(id).startsWith('/'));
   if(!missing.length) return;
   console.log(`[Stage4] Fetching ${missing.length} missing photo(s) from cloud…`);
   for(const id of missing){
@@ -391,7 +396,7 @@ async function _mediaCloudSync(){
 function _mediaMissing(ref){
   if(!ref) return false;
   const s = String(ref);
-  if(s.startsWith('http')||s.startsWith('data:')||s.startsWith('blob:')) return false;
+  if(s.startsWith('http')||s.startsWith('data:')||s.startsWith('blob:')||s.startsWith('/')) return false;
   // On the public wedding site images are served from Supabase Storage directly — not from local IDB
   if(_wbPublicOwnerUid) return false;
   return !MEDIA[s];

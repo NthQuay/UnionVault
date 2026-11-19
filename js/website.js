@@ -79,6 +79,12 @@ const WB_HERO_H = {
   full:  'max(100vh, 560px)'
 };
 
+// Generic stock hero photos a couple can use instead of uploading their own — plain static
+// files shipped with the app, not media the couple owns. Referenced by their site-relative
+// path (handled as an already-resolved URL by _mediaUrl()/_mediaMissing() in media.js), so
+// every existing crop/zoom/position/style control on the hero just works on them for free.
+const WB_STOCK_HEROES = Array.from({length:11}, (_,i)=>`/assets/wedding-heros/hero-${String(i+1).padStart(2,'0')}.jpg`);
+
 
 // Starting points for a new custom section. These are NOT special types — each just
 // pre-fills the name and body of an ordinary custom section.
@@ -3028,7 +3034,9 @@ function _wbHeroBody(){
         <img id="wb-hero-img" src="${_mediaUrl(h.mediaId)}" alt=""
              style="${_wbHeroImgCss(h)}"/>
         <span id="wb-hero-pin" class="wb-hero-pin" style="left:${_wbHeroPct(h.pos,0)}%;top:${_wbHeroPct(h.pos,1)}%"></span>
-        <button type="button" class="wb-tile-x" style="top:6px;right:6px;width:20px;height:20px;z-index:5" onclick="event.stopPropagation();_wbHeroSet('mediaId','')">✕</button>
+        <button type="button" class="wb-tile-x" style="top:6px;right:6px;width:20px;height:20px;z-index:5"
+                onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
+                onclick="event.stopPropagation();_wbHeroSet('mediaId','')">✕</button>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin:-4px 0 12px">
         <div class="wb-blk-hint" style="flex:1">Drag the photo to choose which part stays in view.</div>
@@ -3278,6 +3286,10 @@ function _wbHeroScrim(v){
 function _wbHeroAdd(){
   openConfirm2('Choose a photo',
     `<div style="display:flex;flex-direction:column;gap:8px">
+      <button type="button" class="btn btn-outline" onclick="_closeConfirm2Direct();_wbHeroFromStock()" style="display:flex;align-items:center;justify-content:flex-start;gap:9px;padding:12px 14px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span style="text-align:left">Choose from our library</span>
+      </button>
       <button type="button" class="btn btn-outline" onclick="_closeConfirm2Direct();_wbHeroFromInspo()" style="display:flex;align-items:center;justify-content:flex-start;gap:9px;padding:12px 14px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span style="text-align:left">From Inspiration</span>
@@ -3287,6 +3299,15 @@ function _wbHeroAdd(){
         <span style="text-align:left">Upload</span>
       </button>
       <input type="file" accept="image/*" id="wb-hero-up" style="display:none" onchange="_wbHeroUpload(event)"/>
+    </div>`,
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>`);
+}
+function _wbHeroFromStock(){
+  openConfirm2('Choose from our library',
+    `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:7px;max-height:340px;overflow-y:auto">
+      ${WB_STOCK_HEROES.map(src=>`<button type="button" onclick="_wbHeroPick('${src}')" style="padding:0;border:3px solid transparent;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1;background:var(--surface)">
+        <img src="${src}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block"/>
+      </button>`).join('')}
     </div>`,
     `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>`);
 }
