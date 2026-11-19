@@ -3051,6 +3051,11 @@ function _wbHeroBody(){
       </span>
       `}
       ${h.style==='below'?`
+        <div class="wb-slot-lbl" style="margin-bottom:6px">Width</div>
+        <span class="inv-seg" style="margin-bottom:13px">
+          <button type="button" class="${(!h.belowWidth||h.belowWidth==='boxed')?'active':''}" onclick="_wbHeroSet('belowWidth','boxed')">Boxed</button>
+          <button type="button" class="${h.belowWidth==='full'?'active':''}" onclick="_wbHeroSet('belowWidth','full')">Full width</button>
+        </span>
         <div class="wb-slot-lbl" style="margin-bottom:6px">Size</div>
         <span class="inv-seg" style="margin-bottom:13px">
           <button type="button" class="${h.belowSize==='short'?'active':''}" onclick="_wbHeroSet('belowSize','short')">Short</button>
@@ -4905,7 +4910,7 @@ function _wbBuildSite(forDownload){
         (wantDate && e.date) ? `<p class="eyebrow">${_escHtml(fmtDate(e.date))}</p>` : '',
         icsBtn,
         (heroOk && hero.style==='below')
-          ? `<div class="hero-below${hero.belowSize==='short'?' bsz-short':hero.belowSize==='tall'?' bsz-tall':''}"><img src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${pos};transform:scale(${zoom/100});transform-origin:${pos}"/></div>` : '',
+          ? `<div class="hero-below${hero.belowSize==='short'?' bsz-short':hero.belowSize==='tall'?' bsz-tall':''}${hero.belowWidth==='full'?' bw-full':''}"><img src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${pos};transform:scale(${zoom/100});transform-origin:${pos}"/></div>` : '',
         homeSlot('top'),
         h.headline ? `<p class="lead">${_escHtml(h.headline)}</p>` : '',
         h.sub ? `<p class="sub">${_escHtml(h.sub)}</p>` : '',
@@ -6361,6 +6366,10 @@ header.hero>.hero-scrim{position:absolute;z-index:1}
    existing site changes shape just because this got options. */
 .hero-below.bsz-short{aspect-ratio:16/9}
 .hero-below.bsz-tall{aspect-ratio:4/5}
+/* Width option: "Full width" breaks the photo out of the header's own side padding to the
+   viewport edge, however wide or narrow that padding is — the standard full-bleed-breakout
+   trick, not a hardcoded 100vw (which can overshoot by a scrollbar's width on some browsers). */
+.hero-below.bw-full{max-width:none;width:auto;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);border-radius:0}
 /* "Photo above names" — edge-to-edge photo, then a plain band underneath. header{padding}
    would inset the photo on every side, so this wrapper cancels it and the band supplies
    its own padding instead. */
