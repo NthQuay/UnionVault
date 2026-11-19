@@ -83,7 +83,12 @@ const WB_HERO_H = {
 // files shipped with the app, not media the couple owns. Referenced by their site-relative
 // path (handled as an already-resolved URL by _mediaUrl()/_mediaMissing() in media.js), so
 // every existing crop/zoom/position/style control on the hero just works on them for free.
-const WB_STOCK_HEROES = Array.from({length:11}, (_,i)=>`/assets/wedding-heros/hero-${String(i+1).padStart(2,'0')}.jpg`);
+//
+// This list is a CEILING, not a count: it covers hero-01.jpg through hero-60.jpg, and
+// _wbHeroFromStock() below hides any slot whose file 404s. So adding another photo to
+// assets/wedding-heros/ (named the next number in sequence) needs a file upload only —
+// no code change — as long as the total stays under 60. Past that, raise the number here.
+const WB_STOCK_HEROES = Array.from({length:60}, (_,i)=>`/assets/wedding-heros/hero-${String(i+1).padStart(2,'0')}.jpg`);
 
 
 // Starting points for a new custom section. These are NOT special types — each just
@@ -458,8 +463,10 @@ function _wbWebsiteItems(){
   tls.forEach(t=>items.push(...(t.items||[])));
   return items;
 }
-// Gallery images: inspo items OR gallery-uploaded photos the user has picked, IN the order
-// of w.gallery (so a future reorder is honoured). Each resolves to an object carrying `image`.
+// Gallery images: inspo items, gallery-uploaded photos, or stock library photos the user
+// has picked, IN the order of w.gallery (so a future reorder is honoured). Each resolves to
+// an object carrying `image`. A stock photo's "id" is just its own path — there's no record
+// of it anywhere else to look up, so it resolves to itself.
 function _wbGalleryItems(){
   const picked = _wbSite().gallery;
   const inspo = (STATE.inspo&&STATE.inspo.items?STATE.inspo.items:[]);
@@ -467,16 +474,19 @@ function _wbGalleryItems(){
   const byId={};
   inspo.forEach(i=>{ if(i.image) byId[i.id]=i; });
   ups.forEach(u=>{ if(u.image) byId[u.id]=u; });
+  WB_STOCK_HEROES.forEach(path=>{ byId[path]={id:path, image:path}; });
   return picked.map(id=>byId[id]).filter(Boolean);
 }
-// All photos available to pick in the Gallery editor: inspiration photos + gallery uploads.
-// Uploads first so a freshly-added photo is easy to find at the top.
+// All photos available to pick in the Gallery editor: inspiration photos, gallery uploads,
+// and the stock library. Uploads first so a freshly-added photo is easy to find at the top;
+// stock last, since the couple's own photos are the ones they're most likely looking for.
 function _wbGalleryPickable(){
   const inspo = (STATE.inspo&&STATE.inspo.items?STATE.inspo.items:[]).filter(i=>i.image)
                  .map(i=>({id:i.id, image:i.image, title:i.title||'', src:'inspo'}));
   const ups   = (_wbSite().galleryUploads||[]).filter(u=>u.image)
                  .map(u=>({id:u.id, image:u.image, title:'', src:'upload', inInspo:_wbUploadInInspo(u)}));
-  return ups.concat(inspo);
+  const stock = WB_STOCK_HEROES.map(path=>({id:path, image:path, title:'', src:'stock'}));
+  return ups.concat(inspo, stock);
 }
 // Has this uploaded photo already been promoted into Inspiration? (matched by mediaId)
 function _wbUploadInInspo(u){
@@ -2296,6 +2306,15 @@ function _wbGalleryBody(){
           ? `<span onclick="event.stopPropagation();_wbGalleryDeleteUpload('${it.id}')" title="Remove this uploaded photo"
                style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer">✕</span>`
           : '';
+        // Stock items carry the same bottom-banner slot as inspoTag (never both — mutually
+        // exclusive on it.src), labelling where a generic photo came from.
+        const stockTag=(it.src==='stock')
+          ? `<span style="position:absolute;bottom:0;left:0;right:0;background:rgba(92,61,46,.72);color:#fff;font-size:9.5px;font-weight:600;letter-spacing:.02em;padding:3px 0;text-align:center">Library</span>`
+          : '';
+        // _wbGalleryPickable() lists every stock slot up to the ceiling, not just the ones
+        // actually uploaded (see WB_STOCK_HEROES) — a slot with no real file just removes
+        // its own tile rather than showing a broken image.
+        const onErr=(it.src==='stock') ? `onerror="this.closest('button').remove()"` : '';
         // v149: picked tiles reorder within w.gallery via pointer events (mouse AND touch —
         // HTML5 drag-and-drop never fires drop on a touch device, so a phone drag just
         // floated with nowhere to land). A real drag suppresses the tap-to-toggle click that
@@ -2306,10 +2325,11 @@ function _wbGalleryBody(){
         const grip = on ? `<span class="wb-gal-grip" title="Drag to reorder" style="position:absolute;bottom:4px;right:4px;width:19px;height:19px;border-radius:5px;background:rgba(0,0,0,.42);color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></span>` : '';
         return `<button type="button" class="wb-tile" data-galid="${it.id}" onclick="_wbGalleryPick('${it.id}')" ${dragAttrs} style="position:relative;padding:0;border:3px solid ${on?'var(--gold)':'transparent'};border-radius:8px;overflow:hidden;cursor:${on?'grab':'pointer'};aspect-ratio:1;background:var(--surface);touch-action:${on?'none':'auto'}">
-          <img src="${url}" alt="${_escHtml(it.title||'')}" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none"/>
+          <img src="${url}" alt="${_escHtml(it.title||'')}" ${onErr} style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none"/>
           ${on?`<span style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px">✓</span>`:''}
           ${delX}
           ${inspoTag}
+          ${stockTag}
           ${grip}
         </button>`;
       }).join('')}
@@ -3058,7 +3078,7 @@ function _wbHeroBody(){
         <button type="button" class="${h.style==='above'?'active':''}" onclick="_wbHeroSet('style','above')">Photo above names</button>
       </span>
       `}
-      ${h.style==='below'?`
+      ${(!_wbIsFxFormat() && h.style==='below')?`
         <div class="wb-slot-lbl" style="margin-bottom:6px">Width</div>
         <span class="inv-seg" style="margin-bottom:13px">
           <button type="button" class="${(!h.belowWidth||h.belowWidth==='boxed')?'active':''}" onclick="_wbHeroSet('belowWidth','boxed')">Boxed</button>
@@ -3306,7 +3326,7 @@ function _wbHeroFromStock(){
   openConfirm2('Choose from our library',
     `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:7px;max-height:340px;overflow-y:auto">
       ${WB_STOCK_HEROES.map(src=>`<button type="button" onclick="_wbHeroPick('${src}')" style="padding:0;border:3px solid transparent;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1;background:var(--surface)">
-        <img src="${src}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block"/>
+        <img src="${src}" alt="" onerror="this.closest('button').remove()" style="width:100%;height:100%;object-fit:cover;display:block"/>
       </button>`).join('')}
     </div>`,
     `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>`);
@@ -4341,6 +4361,10 @@ function _wbTilePDEnd(){
 function _wbImgAdd(key,bid){
   openConfirm2('Add an image',
     `<div style="display:flex;flex-direction:column;gap:8px">
+      <button type="button" class="btn btn-outline" onclick="_closeConfirm2Direct();_wbImgFromStock('${key}','${bid}')" style="display:flex;align-items:center;justify-content:flex-start;gap:9px;padding:12px 14px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span style="text-align:left"><span style="display:block">Choose from our library</span><span style="display:block;font-size:11px;color:var(--muted);font-weight:400">Generic wedding photos, free to use</span></span>
+      </button>
       <button type="button" class="btn btn-outline" onclick="_closeConfirm2Direct();_wbImgFromInspo('${key}','${bid}')" style="display:flex;align-items:center;justify-content:flex-start;gap:9px;padding:12px 14px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span style="text-align:left"><span style="display:block">From Inspiration</span><span style="display:block;font-size:11px;color:var(--muted);font-weight:400">Choose from your mood board</span></span>
@@ -4415,6 +4439,36 @@ function _wbInspoAdd(){
   }
   _wbInspoPick=null;
   _closeConfirm2Direct();
+}
+
+// Pick from the stock hero library — same multi-select + commit mechanism as Inspiration
+// (_wbInspoPick/_wbInspoAdd), just a different source grid, so a chosen photo lands in the
+// block's ids[] exactly the way an Inspiration or uploaded one would.
+function _wbImgFromStock(key,bid){
+  _wbInspoPick={key, bid, chosen:[]};
+  openConfirm2('Choose from our library', _wbStockPickBody(),
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Cancel</button>
+     <button class="btn btn-primary" onclick="_wbInspoAdd()">Add</button>`);
+}
+function _wbStockPickBody(){
+  const p=_wbInspoPick||{chosen:[]};
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:7px;max-height:340px;overflow-y:auto">
+    ${WB_STOCK_HEROES.map(src=>{
+      const on=p.chosen.indexOf(src)>=0;
+      return `<button type="button" onclick="_wbStockPickToggle('${src}')" style="position:relative;padding:0;border:3px solid ${on?'var(--gold)':'transparent'};border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1;background:var(--surface)">
+        <img src="${src}" alt="" onerror="this.closest('button').remove()" style="width:100%;height:100%;object-fit:cover;display:block"/>
+        ${on?`<span style="position:absolute;top:4px;right:4px;width:17px;height:17px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px">✓</span>`:''}
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+function _wbStockPickToggle(src){
+  if(!_wbInspoPick) return;
+  const c=_wbInspoPick.chosen;
+  const i=c.indexOf(src);
+  if(i>=0) c.splice(i,1); else c.push(src);
+  const box=document.getElementById('confirm2-body');
+  if(box) box.innerHTML=_wbStockPickBody();
 }
 
 // ── Preview ──
