@@ -1913,12 +1913,6 @@ function openWbHome(){
   const ctaMode=h.ctaMode||'ics';
   _wbPanel('Home', `<div style="display:flex;flex-direction:column;gap:14px">
       ${_wbHeroBody()}
-      <div class="form-group"><label class="form-label">Headline <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-        <input class="form-input" id="wb-h-head" placeholder="e.g. We're getting married" value="${_escHtml(h.headline||'')}"
-               oninput="_wbLiveHomeUpdate()"/></div>
-      <div class="form-group"><label class="form-label">Welcome message <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-        <textarea class="form-input" id="wb-h-sub" rows="3" placeholder="A line or two for your guests…" style="resize:vertical"
-                  oninput="_wbLiveHomeUpdate()">${_escHtml(h.sub||'')}</textarea></div>
       <div class="wb-blk-ctl">
         <span class="wb-slot-lbl">Button</span>
         <span class="inv-seg">
@@ -1928,6 +1922,12 @@ function openWbHome(){
         </span>
       </div>
       <div id="wb-cta-hint" style="font-size:12px;color:var(--muted);margin-top:-6px">${ctaMode==='ics'?'Adds a Save the date calendar download.':ctaMode==='rsvp'?'Links guests to your RSVP form.':''}</div>
+      <div class="form-group"><label class="form-label">Headline <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <input class="form-input" id="wb-h-head" placeholder="e.g. We're getting married" value="${_escHtml(h.headline||'')}"
+               oninput="_wbLiveHomeUpdate()"/></div>
+      <div class="form-group"><label class="form-label">Welcome message <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <textarea class="form-input" id="wb-h-sub" rows="3" placeholder="A line or two for your guests…" style="resize:vertical"
+                  oninput="_wbLiveHomeUpdate()">${_escHtml(h.sub||'')}</textarea></div>
     </div>`,
     `<button class="btn btn-outline" style="margin-right:auto" onclick="_wbPanelClose()">Close</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
@@ -3172,7 +3172,7 @@ function _wbHeroBody(){
             </span>
           </label>
           <label class="tl-pub-row" for="wb-hero-ics" style="padding:9px 10px">
-            <span><span class="tl-pub-title">Save the date button</span></span>
+            <span><span class="tl-pub-title">Button</span></span>
             <span class="toggle-switch" style="transform:scale(.72);transform-origin:right center">
               <input type="checkbox" id="wb-hero-ics" ${h.showIcs!==false?'checked':''} onchange="_wbHeroSet('showIcs',this.checked)"/>
               <span class="toggle-track"></span>
