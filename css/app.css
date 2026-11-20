@@ -904,12 +904,20 @@ body.dark .nav-seat-count{background:var(--gold);color:#1B1A1E}
     padding-right: max(28px, calc(28px + (100% - 1800px) / 2));
   }
 }
-/* Event Details: stack to single column below 960px */
+/* Event Details: staggered image/content rows, alternating sides, image falls back to a
+   plain full-width card if its file 404s (onerror adds .det-img-missing) or the user has
+   turned images off in the page's own options menu (then .det-row-plain is used instead). */
+.det-row-wrap{margin-bottom:28px}
+.det-row{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:stretch}
+.det-row>div{min-width:0}
+.det-img-box{border-radius:14px;overflow:hidden;background:var(--surface);min-height:220px;position:relative}
+.det-img-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.det-row-wrap.det-img-missing .det-row{grid-template-columns:1fr}
+.det-row-wrap.det-img-missing .det-img-box{display:none}
+.det-row-plain{margin-bottom:28px}
 @media(max-width:959px){
-  .details-two-col{grid-template-columns:1fr !important}
-  /* The hidden eyebrow spacer only exists to align the two headings on desktop; remove it
-     when stacked so there's no empty gap above "Ceremony details". */
-  .cer-eyebrow-spacer{display:none !important}
+  .det-row{grid-template-columns:1fr !important}
+  .det-img-box{aspect-ratio:16/9;min-height:0}
 }
 /* RSVP cards per row: forced counts (3/4) collapse to auto-fit on narrow screens */
 .rsvp-card-grid{align-items:stretch}
@@ -3344,7 +3352,6 @@ body.dark .vendor-lookup-soon .vls-mark{color:rgba(195,182,158,.7);border-color:
   .det-main-card .det-rsvp-count{min-height:36px;padding:0;align-items:center}
   .det-main-card .det-rsvp-count b{font-size:20px}
 }
-.details-two-col>div{min-width:0}
 /* Event Details → Guest count (Estimated / RSVP count) */
 .det-guests-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px}
 .uv-seg-sm button{padding:3px 10px;font-size:11px}

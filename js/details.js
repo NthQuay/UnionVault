@@ -1,5 +1,26 @@
 // EVENT DETAILS
 // ══════════════════════════════════════════════
+// Decorative section images (optional — missing files fall back to a plain card via
+// the onerror handler in _detRowHtml). Drop a JPEG at each path to light it up; no code
+// change needed. See _detRowHtml for size/format expectations.
+const _DET_IMG = {
+  wedding: '/assets/details-images/wedding-details.jpg',
+  ceremony: '/assets/details-images/ceremony-details.jpg',
+  venues: '/assets/details-images/venues.jpg'
+};
+
+function _detRowHtml({eyebrow, title, headHide, img, imgAlt, imageLeft, cardHtml}){
+  const head=`${eyebrow?`<div class="section-eyebrow${headHide?' det-head-hide':''}" style="margin-bottom:8px">${_esc(eyebrow)}</div>`:''}<div class="section-title${headHide?' det-head-hide':''}" style="margin-bottom:24px">${_esc(title)}</div>`;
+  if(STATE.settings.detailsImagesOff){
+    return `<div class="det-row-plain">${head}${cardHtml}</div>`;
+  }
+  // The heading sits above the image/card pair (not inside one column) so the image only
+  // has to stretch to match the CARD's height, not the card plus its heading.
+  const imgBox=`<div class="det-img-box"><img src="${img}" alt="${_escHtml(imgAlt||title)}" loading="lazy" onerror="this.closest('.det-row-wrap').classList.add('det-img-missing')"/></div>`;
+  const contentBox=`<div class="det-row-content">${cardHtml}</div>`;
+  return `<div class="det-row-wrap">${head}<div class="det-row">${imageLeft?imgBox+contentBox:contentBox+imgBox}</div></div>`;
+}
+
 function renderDetails(c, actions){
   const e=STATE.event; const s=STATE.settings;
   actions.innerHTML=`<div id="det-opts-wrap" style="position:relative;display:inline-flex"><button class="btn-icon" id="det-opts-btn" onclick="_openDetOptsMenu(event)" title="Event options" aria-label="Event options" aria-haspopup="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>${_detOptsMenuHtml()}</div>`;
@@ -17,31 +38,8 @@ function renderDetails(c, actions){
   if(!hideVen) cerFields.push(`<div><label class="form-label">Ceremony setting</label>${_otherSelectHtml('ven-cersetting', CEREMONY_VENUE_OPTIONS, ev.ceremonySetting||'')}<div style="font-size:11.5px;color:var(--muted);margin-top:5px">The kind of setting you imagine — for planning and your vendor brief.</div></div>`);
   const anyCer = !hideRel || !hideOff || !hideVen;
 
-  const EVENT_PRESETS = ['Bachelor Party','Bachelorette Party','Engagement Party','Bridal Shower','Rehearsal Dinner','Other…'];
-
-  const eventsHtml = STATE.events.length ? STATE.events.map(ev=>`
-    <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:500;color:var(--ink)">${_esc(ev.name||ev.title||'Untitled event')}</div>
-        ${ev.date?`<div style="font-size:12px;color:var(--muted);margin-top:3px">${fmtDate(ev.date)}${_fmtEventTime(ev.time)?(' · '+_fmtEventTime(ev.time)):''}</div>`:''}
-        ${(ev.venueName||ev.venue)?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${_esc(ev.venueName||ev.venue)}${(ev.venueAddress)?(' · '+_esc(ev.venueAddress)):''}</div>`:''}
-        ${ev.notes?`<div style="font-size:12px;color:var(--muted);margin-top:3px;font-style:italic">${_esc(ev.notes)}</div>`:''}
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="openEventDetail('${ev.id}')" style="flex-shrink:0;color:var(--gold-deep);font-size:11px">Open</button>
-    </div>`).join('') : '<div style="font-size:13px;color:var(--muted);padding:16px 0;text-align:center">No additional events yet</div>';
-
-  c.innerHTML=`
-  <div class="det-back-row" style="margin-bottom:20px">
-    <button class="btn btn-ghost btn-sm" onclick="navigate('dashboard')" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);padding-left:0">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-      Back to Dashboard
-    </button>
-  </div>
-  <div class="details-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;align-items:start">
-    <div>
-      <div class="section-eyebrow det-head-hide" style="margin-bottom:8px">Your Event</div>
-      <div class="section-title det-head-hide" style="margin-bottom:24px">Wedding Details</div>
-      <div class="card det-main-card" style="">
+  const weddingCard = `
+      <div class="card det-main-card">
         <div class="det-main-stack" style="display:flex;flex-direction:column;gap:18px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div class="form-group">
@@ -81,33 +79,33 @@ function renderDetails(c, actions){
           <span id="details-saved-msg" style="font-size:12.5px;color:var(--green);opacity:0;transition:opacity .3s"></span>
         </div>
       </div>
-    </div>
-    </div>
-    <div>
-      <div class="section-eyebrow cer-eyebrow-spacer" style="margin-bottom:8px;visibility:hidden" aria-hidden="true">Your Event</div>
-    ${anyCer ? `
-      <div class="section-title" style="margin-bottom:24px">Ceremony details</div>
+      </div>`;
+
+  const cerCard = anyCer ? `
       <div class="card">
         <div style="display:flex;flex-direction:column;gap:12px">
           ${cerFields.join('')}
         </div>
         <button class="btn btn-outline btn-sm" onclick="_saveCeremonyDetails()" style="margin-top:12px;display:inline-flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save ceremony details</button>
         <span id="ven-cer-saved" style="font-size:11.5px;color:var(--green);margin-left:10px;display:none">Saved.</span>
-      </div>` : ''}
-      <div class="section-title" style="margin:${anyCer?'28px':'0'} 0 24px">Venues</div>
-      <div class="card"><div id="det-venues">${_detVenuesInner()}</div></div>
-    </div>
-  </div>
+      </div>` : '';
 
-  <div class="section-eyebrow" style="margin-bottom:8px;margin-top:8px">Additional</div>
-  <div class="section-title" style="margin-bottom:16px">Events</div>
-  <div class="card" style="max-width:640px">
-    <div onclick="navigate('events')" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:.5px solid #E3D7C4;border-radius:10px;padding:12px 14px;cursor:pointer;margin-bottom:6px">
-      <div><div style="font-size:13px;font-weight:600;color:var(--ink)">Manage events</div><div style="font-size:11.5px;color:var(--muted);margin-top:1px">Add or edit events, each with their own guest list &amp; RSVPs</div></div>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    ${eventsHtml}
-  </div>`;
+  const venuesCard = `<div class="card"><div id="det-venues">${_detVenuesInner()}</div></div>`;
+
+  const rows = [
+    _detRowHtml({eyebrow:'Your Event', title:'Wedding Details', headHide:true, img:_DET_IMG.wedding, imageLeft:true, cardHtml:weddingCard}),
+    anyCer ? _detRowHtml({title:'Ceremony details', img:_DET_IMG.ceremony, imageLeft:false, cardHtml:cerCard}) : '',
+    _detRowHtml({title:'Venues', img:_DET_IMG.venues, imageLeft:true, cardHtml:venuesCard})
+  ].join('');
+
+  c.innerHTML=`
+  <div class="det-back-row" style="margin-bottom:20px">
+    <button class="btn btn-ghost btn-sm" onclick="navigate('dashboard')" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);padding-left:0">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to Dashboard
+    </button>
+  </div>
+  ${rows}`;
   // Live-update the "+ Add" button while typing a custom (Other) officiant/venue.
   const oOff=document.getElementById('ven-officiant-other'); if(oOff) oOff.addEventListener('input',()=>_cerRefreshLink('officiant','ven-officiant'));
 
@@ -115,7 +113,8 @@ function renderDetails(c, actions){
 
 function _detOptsMenuHtml(){
   const checked=!STATE.settings.hideCeremonyDetails;
-  return `<div id="det-opts-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:220px;box-shadow:0 4px 18px rgba(0,0,0,.13)"><button type="button" onclick="_closeDetOptsMenu();openPartnerTitles()" style="display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;background:none;border:none;border-bottom:1px solid var(--border);padding:2px 0 10px;margin-bottom:10px;font:inherit;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;text-align:left">Partner titles…<span style="color:var(--muted)">›</span></button><div class="dark-toggle-row" style="gap:14px;margin:0"><div style="font-size:13px;font-weight:500">Ceremony Details</div><label class="toggle-switch"><input type="checkbox" ${checked?'checked':''} onchange="STATE.settings.hideCeremonyDetails=!this.checked;saveToStorage();navigate('details')"/><div class="toggle-track"></div></label></div></div>`;
+  const imgChecked=!STATE.settings.detailsImagesOff;
+  return `<div id="det-opts-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:220px;box-shadow:0 4px 18px rgba(0,0,0,.13)"><button type="button" onclick="_closeDetOptsMenu();openPartnerTitles()" style="display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;background:none;border:none;border-bottom:1px solid var(--border);padding:2px 0 10px;margin-bottom:10px;font:inherit;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;text-align:left">Partner titles…<span style="color:var(--muted)">›</span></button><div class="dark-toggle-row" style="gap:14px;margin:0 0 10px;padding-bottom:10px;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:500">Ceremony Details</div><label class="toggle-switch"><input type="checkbox" ${checked?'checked':''} onchange="STATE.settings.hideCeremonyDetails=!this.checked;saveToStorage();navigate('details')"/><div class="toggle-track"></div></label></div><div class="dark-toggle-row" style="gap:14px;margin:0"><div style="font-size:13px;font-weight:500">Page images</div><label class="toggle-switch"><input type="checkbox" ${imgChecked?'checked':''} onchange="STATE.settings.detailsImagesOff=!this.checked;saveToStorage();navigate('details')"/><div class="toggle-track"></div></label></div></div>`;
 }
 let _detOptOpen=false;
 function _openDetOptsMenu(e){
