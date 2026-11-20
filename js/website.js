@@ -1064,6 +1064,7 @@ function _wbThemeBody(){
         </div>
         <div style="background:${_escHtml(t.band)};padding:12px 16px;text-align:${_specHeadAlign}">
           <div style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)}">A banded section</div>
+          <div id="wb-spec-item" style="font-family:${t.headFont};font-weight:500;font-size:${Math.round(13*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.item)};margin-top:8px">An item title</div>
           <div style="font-family:${t.bodyFont};font-size:11px;color:${_escHtml(t.text)};margin-top:${Math.round(5*t.space/100)}px;text-align:${_specBodyAlign}">Body text sits here.</div>
         </div>
       </div>
@@ -1857,6 +1858,8 @@ function _wbRepaintTheme(){
         _band.style.textAlign=_specHeadAlign;
         const _bh=_band.firstElementChild;
         if(_bh){ _bh.style.color=t.heading; _bh.style.fontFamily=t.headFont; _bh.style.fontSize=Math.round(15*(t.headScale||t.scale||100)/100)+'px'; }
+        const _bi=document.getElementById('wb-spec-item');
+        if(_bi){ _bi.style.color=t.item; _bi.style.fontFamily=t.headFont; _bi.style.fontSize=Math.round(13*(t.headScale||t.scale||100)/100)+'px'; }
         const _bb=_band.lastElementChild;
         if(_bb){ _bb.style.color=t.text; _bb.style.textAlign=_specBodyAlign; }
       }
@@ -6702,7 +6705,7 @@ body.sidenav.collapsed .site-content{padding-right:48px}
   body.sidenav.mnav-open .navtoggle svg{transform:rotate(180deg)}
   body.sidenav.mnav-open::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:39}
 }
-header{text-align:center;padding:${sp(72)}px 24px ${sp(60)}px}
+header{text-align:${secAlign};padding:${sp(72)}px 24px ${sp(60)}px}
 /* v125: min-height is set INLINE (it depends on hero.height), so the padding here is only
    breathing room, not the thing that sizes the box. Before, padding WAS the height — and
    cover cropped the photo to whatever accidental shape the text made. */
