@@ -1075,15 +1075,11 @@ function _wbThemeBody(){
       </div>
       <div class="form-group" style="margin-bottom:11px">
         <label class="form-label">Heading font</label>
-        <select class="form-input" onchange="_wbFont('headFont',this.value)" style="font-family:${t.headFont}">
-          ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.headFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
-        </select>
+        ${_wbFontPickerHtml('headFont')}
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label class="form-label">Body font</label>
-        <select class="form-input" onchange="_wbFont('bodyFont',this.value)" style="font-family:${t.bodyFont}">
-          ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.bodyFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
-        </select>
+        ${_wbFontPickerHtml('bodyFont')}
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
@@ -1485,6 +1481,87 @@ function _wbFont(which, val){
   saveToStorage();
   _wbRepaintTheme();
 }
+// Only Cormorant Garamond, Cinzel and Inter ship as embedded @font-face in css/fonts.css
+// (for the app's own chrome) — the rest of WB_FONTS are Google Fonts the public site loads
+// itself and the planner never otherwise touches. To show each option in its real face in
+// the picker below, load the exact same stylesheet the public site uses, once, on demand
+// (only once the couple actually opens a font picker, not on every app load).
+function _wbEnsureGoogleFontsLoaded(){
+  if(document.getElementById('wb-google-fonts')) return;
+  const l=document.createElement('link');
+  l.id='wb-google-fonts';
+  l.rel='stylesheet';
+  l.href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&display=swap";
+  document.head.appendChild(l);
+}
+// Custom font picker — a native <select> can't render each <option> in its own font on
+// mobile (Android/iOS both flatten them to one system font), which defeats the entire
+// point of previewing a font before picking it. This is a button + anchored dropdown
+// instead, mirroring the "+ Add" popup menu's open/close/position idiom.
+function _wbFontPickerHtml(which){
+  const t=_wbSite().theme;
+  const cur=t[which];
+  const curLabel=(WB_FONTS.find(f=>f[0]===cur)||[])[1] || cur;
+  return `<div class="wb-font-wrap">
+    <button type="button" class="form-input wb-font-trig" aria-haspopup="true" aria-expanded="false" style="font-family:${_escHtml(cur)}" onclick="_wbFontMenuToggle('${which}',event)">
+      <span>${_escHtml(curLabel)}</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="wb-font-menu" id="wb-font-menu-${which}" role="menu" hidden>
+      ${WB_FONTS.map((f,i)=>`<button type="button" role="menuitem" class="wb-font-item ${cur===f[0]?'sel':''}" style="font-family:${_escHtml(f[0])}" onclick="_wbFontPick('${which}',${i})">
+        <span>${_escHtml(f[1])}</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>`).join('')}
+    </div>
+  </div>`;
+}
+function _wbFontMenuToggle(which,ev){
+  if(ev) ev.stopPropagation();
+  _wbEnsureGoogleFontsLoaded();
+  const menu=document.getElementById('wb-font-menu-'+which);
+  if(!menu) return;
+  const trig=menu.previousElementSibling;
+  const open=!menu.hasAttribute('hidden');
+  _wbFontMenuCloseAll();
+  if(open) return;                       // it was open → toggle shut
+  if(trig){
+    const r=trig.getBoundingClientRect();
+    const MENU_H=Math.min(260, window.innerHeight-20);
+    const topBelow=r.bottom+5;
+    const topAbove=r.top-MENU_H-5;
+    menu.style.top=(topBelow+MENU_H>window.innerHeight&&topAbove>0?topAbove:topBelow)+'px';
+    menu.style.width=r.width+'px';
+    const leftEdge=Math.min(r.left, window.innerWidth-r.width-8);
+    menu.style.left=Math.max(8,leftEdge)+'px';
+  }
+  menu.removeAttribute('hidden');
+  if(trig) trig.setAttribute('aria-expanded','true');
+  setTimeout(()=>{
+    document.addEventListener('click', _wbFontMenuOutside, {once:true});
+    document.addEventListener('keydown', _wbFontMenuEsc);
+  },0);
+}
+function _wbFontMenuCloseAll(){
+  document.querySelectorAll('.wb-font-menu:not([hidden])').forEach(m=>{
+    m.setAttribute('hidden','');
+    m.style.top=''; m.style.left=''; m.style.width='';
+    const t=m.previousElementSibling; if(t) t.setAttribute('aria-expanded','false');
+  });
+  document.removeEventListener('keydown', _wbFontMenuEsc);
+}
+function _wbFontMenuOutside(ev){
+  if(ev.target.closest && ev.target.closest('.wb-font-wrap')){
+    document.addEventListener('click', _wbFontMenuOutside, {once:true});
+    return;
+  }
+  _wbFontMenuCloseAll();
+}
+function _wbFontMenuEsc(ev){ if(ev.key==='Escape') _wbFontMenuCloseAll(); }
+function _wbFontPick(which,i){
+  _wbFontMenuCloseAll();
+  const f=WB_FONTS[i]; if(!f) return;
+  _wbFont(which,f[0]);
+}
 // Redraw the modal body in place so the specimen updates live without closing.
 function _wbRepaintTheme(){
   const tbody = document.getElementById('wb-theme-body');
@@ -1525,15 +1602,11 @@ function _wbRepaintTheme(){
       </div>
       <div class="form-group" style="margin-bottom:11px">
         <label class="form-label">Heading font</label>
-        <select class="form-input" onchange="_wbFont('headFont',this.value)" style="font-family:${t.headFont}">
-          ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.headFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
-        </select>
+        ${_wbFontPickerHtml('headFont')}
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label class="form-label">Body font</label>
-        <select class="form-input" onchange="_wbFont('bodyFont',this.value)" style="font-family:${t.bodyFont}">
-          ${WB_FONTS.map(f=>`<option value="${_escHtml(f[0])}" ${t.bodyFont===f[0]?'selected':''}>${f[1]}</option>`).join('')}
-        </select>
+        ${_wbFontPickerHtml('bodyFont')}
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
