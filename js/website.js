@@ -3154,9 +3154,10 @@ function _wbHeroBody(){
         <div id="wb-hero-zoom-note" class="wb-blk-hint" style="margin:6px 0 13px">${_wbHeroZoomNote(h.zoom)}</div>
 
         ${(_wbIsFxFormat()||h.style==='over')?`
-        <div class="wb-slot-lbl" id="wb-hero-scrim-lbl" style="margin-bottom:6px">Darken · ${h.scrim}%</div>
-        <input type="range" min="0" max="100" value="${h.scrim}" oninput="_wbHeroScrim(this.value)"
+        <div class="wb-slot-lbl" id="wb-hero-scrim-lbl" style="margin-bottom:6px">${_wbScrimLabel(h.scrim)}</div>
+        <input type="range" min="-100" max="100" value="${h.scrim}" oninput="_wbHeroScrim(this.value)"
                style="width:100%;accent-color:var(--gold)"/>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Lighten</span><span>Darken</span></div>
         ${(!_wbIsFxFormat()||(_wbSite().theme||{}).format==='magazine')?`
         <div class="wb-slot-lbl" style="margin:13px 0 6px">Names</div>
         <span class="inv-seg">
@@ -3236,10 +3237,17 @@ function _wbHeroImgCss(h){
 // Darken only ever shows, and only ever applies on the guest site, for `over` and the fx
 // formats (see _wbHeroBody()'s own gating on the same condition) — everywhere else it's
 // invisible here too, rather than previewing a darken the photo will never actually show.
+// Scrim can lighten (negative, white overlay) as well as darken (positive, black
+// overlay) — frac is -1..1, shared by the editor preview and both public-render paths
+// below so the three don't drift.
+function _wbScrimRgba(frac){
+  const a = Math.min(1, Math.abs(frac));
+  return `rgba(${frac<0?'255,255,255':'0,0,0'},${a})`;
+}
 function _wbHeroScrimCss(h){
   const on = _wbIsFxFormat()||h.style==='over';
-  const scrim = on ? Math.max(0,Math.min(100,Number(h.scrim)||0))/100 : 0;
-  return `background:rgba(0,0,0,${scrim})`;
+  const scrim = on ? Math.max(-100,Math.min(100,Number(h.scrim)||0))/100 : 0;
+  return `background:${_wbScrimRgba(scrim)}`;
 }
 // Pull the x or y percentage out of an object-position string. Returns 50 for anything it
 // cannot read, rather than NaN — a NaN here would put the pin at `leftNaN%` and CSS would
@@ -3345,6 +3353,10 @@ function _wbHeroSet(field, val){
   saveToStorage();
   _wbHeroRepaint();
 }
+function _wbScrimLabel(v){
+  const n=Number(v)||0;
+  return n===0 ? 'No adjustment' : (n>0 ? ('Darken · '+n+'%') : ('Lighten · '+Math.abs(n)+'%'));
+}
 // The slider fires continuously — update state + preview live, but don't rebuild the
 // modal on every pixel of drag (it would kill the slider mid-drag).
 function _wbHeroScrim(v){
@@ -3355,7 +3367,7 @@ function _wbHeroScrim(v){
   // the old heads[1] index would have quietly started pointing at the wrong element the
   // next time anything was inserted above it.
   const lbl=document.getElementById('wb-hero-scrim-lbl');
-  if(lbl) lbl.textContent='Darken · '+h.scrim+'%';
+  if(lbl) lbl.textContent=_wbScrimLabel(h.scrim);
   const prev=document.getElementById('wb-hero-scrim-prev');
   if(prev) prev.setAttribute('style', _wbHeroScrimCss(h));
   _wbLiveSoon();
@@ -4960,7 +4972,7 @@ function _wbBuildSite(forDownload){
       const heroImg = over
         ? `<img class="hero-bg" src="${_mediaUrl(hero.mediaId)}" alt="" aria-hidden="true"
               style="object-fit:contain;object-position:${pos};transform:scale(${zoom/100});transform-origin:${pos}"/>`
-          + (scrim>0 ? `<span class="hero-scrim" style="background:rgba(0,0,0,${scrim})"></span>` : '')
+          + (scrim!==0 ? `<span class="hero-scrim" style="background:${_wbScrimRgba(scrim)}"></span>` : '')
         : '';
 
       // The frame's own colour shows through wherever the photo doesn't reach — which is
@@ -4991,7 +5003,7 @@ function _wbBuildSite(forDownload){
         // Same zoom/darken the non-fx "over" header applies — a cover photo is a cover
         // photo whatever the surrounding layout, and both formats always show one.
         const img = heroOk ? `<img src="${_mediaUrl(hero.mediaId)}" alt="" style="object-position:${pos};transform:scale(${zoom/100});transform-origin:${pos}"/>` : '';
-        const scrimSpan = (heroOk && scrim>0) ? `<span class="hero-scrim" style="background:rgba(0,0,0,${scrim})"></span>` : '';
+        const scrimSpan = (heroOk && scrim!==0) ? `<span class="hero-scrim" style="background:${_wbScrimRgba(scrim)}"></span>` : '';
         const extra = [homeSlot('top'), h.sub?`<p class="sub">${_escHtml(h.sub)}</p>`:'', homeSlot('bottom')].filter(Boolean).join('');
         if(t.format==='magazine'){
           return `<header id="home" class="fx-cover${heroOk?'':' fx-noimg'}${hero.ink==='dark'?' fx-ink-dark':''}">
@@ -6799,11 +6811,16 @@ footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-
    take the couple's. A mark that renders in their heading colour and their heading font is
    not a mark; it is a label, and it is a different label on every site. Only the LABEL
    above it ("Website made with") is theirs, because that is their sentence, not our name. */
-.madewith{margin-top:${sp(22)}px;display:flex;flex-direction:column;align-items:center;gap:8px;text-transform:none;letter-spacing:0}
+.madewith{margin-top:${sp(22)}px;display:flex;flex-direction:column;align-items:center;gap:4px;text-transform:none;letter-spacing:0}
 /* opacity:.7 here (not on <footer>) reproduces the fixed badge's old inherited fade without
    the trap above. Scoped to top-nav only: the side-nav badge lives in <nav>, not <footer> —
    it was never faded, and shouldn't newly become so. */
-body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;margin-top:0;padding:34px 18px 16px;opacity:.7;background:linear-gradient(to top, ${t2.background||t2.page} 0, ${t2.background||t2.page} calc(100% - 34px), transparent 100%)}
+/* transform:translateZ(0) promotes the badge to its own compositing layer — on mobile
+   Safari/Chrome, a plain position:fixed;bottom:0 element can visibly duck behind the
+   address bar for a frame while it slides back in on an upward scroll (the browser
+   chrome's reveal and the fixed element's repaint aren't synced otherwise). A fixed
+   element on its own layer tracks the real viewport through that transition instead. */
+body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;margin-top:0;padding:34px 18px 16px;opacity:.7;background:linear-gradient(to top, ${t2.background||t2.page} 0, ${t2.background||t2.page} calc(100% - 34px), transparent 100%);transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
 @media(max-height:400px){body:not(.sidenav) .madewith{position:static;background:none;padding:0;margin-top:${sp(22)}px}}
 .mw-lbl{font-family:${t2.bodyFont};font-size:${scb(10)}px;letter-spacing:.08em;color:${t2.text};opacity:.75}
 .mw-lock{display:inline-flex;align-items:center;gap:7px}
