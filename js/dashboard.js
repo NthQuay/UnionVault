@@ -410,6 +410,14 @@ function renderDashboard(c, actions){
 
   // ── Hero style variants (Style 1 current / 2 crest / 3 ring) ──
   const heroStyle = STATE.settings.heroStyle || 1;
+  // A hero background photo, once darkened enough, needs light text in place of the
+  // normal ink/muted/gold tones — those read as near-invisible on a dark photo.
+  const _dh = _dashHeroCfg();
+  const _dhOk = _dh.mediaId && !_mediaMissing(_dh.mediaId);
+  const _hDark = _dhOk && _dh.tone > 10;
+  const _hInk = _hDark ? '#fff' : 'var(--ink)';
+  const _hMuted = _hDark ? 'rgba(255,255,255,.75)' : 'var(--muted)';
+  const _hGold = _hDark ? '#F2DFB0' : 'var(--gold-deep)';
   const _mono = `${initials(p1)}${initials(p2)}`;
   const _dateLine = STATE.event.date ? `${fmtDate(STATE.event.date)}${STATE.event.venue?' · '+STATE.event.venue:''}` : '';
   // Months & remaining days for the compact crest countdown line
@@ -419,9 +427,9 @@ function renderDashboard(c, actions){
   let _cdLine='';
   if(totalDays!==null){
     if(_cdMonths>0&&_cdDays>0){
-      _cdLine=`<span style="font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:500;color:var(--gold-deep);line-height:1">${_cdMonths}</span><span style="font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase">${_cdMonths===1?'month':'months'}</span><span style="font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:500;color:var(--gold-deep);line-height:1">${_cdDays}</span><span style="font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase">${_cdDays===1?'day':'days'} to go</span>`;
+      _cdLine=`<span style="font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:500;color:${_hGold};line-height:1">${_cdMonths}</span><span style="font-size:11px;color:${_hMuted};letter-spacing:.12em;text-transform:uppercase">${_cdMonths===1?'month':'months'}</span><span style="font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:500;color:${_hGold};line-height:1">${_cdDays}</span><span style="font-size:11px;color:${_hMuted};letter-spacing:.12em;text-transform:uppercase">${_cdDays===1?'day':'days'} to go</span>`;
     }else{
-      _cdLine=`<span style="font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:500;color:var(--gold-deep);line-height:1">${totalDays}</span><span style="font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase">${totalDays===1?'day':'days'} to go</span>`;
+      _cdLine=`<span style="font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:500;color:${_hGold};line-height:1">${totalDays}</span><span style="font-size:11px;color:${_hMuted};letter-spacing:.12em;text-transform:uppercase">${totalDays===1?'day':'days'} to go</span>`;
     }
   }
   // Ring progress for Style 3: fraction through a 365-day runway (fills as the day nears)
@@ -670,58 +678,77 @@ function renderDashboard(c, actions){
   W.vendorlookup = ()=> `<div id="db-w-vendorlookup" class="db-widget" style="background:var(--cream);border:1px solid var(--border);border-radius:16px;padding:20px">${buildDashVendorLookupHtml()}</div>`;
 
   // Switcher control (deep-beige 4-box icon, no label, no checks) — shared across styles
-  const heroSwitcher = !dashEditMode ? '' : `<div class="hero-style-switch">
-      <button class="hero-style-btn" onclick="toggleHeroStyleMenu(event)" title="Change layout" aria-label="Change hero layout" aria-haspopup="true">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      </button>
-      <div class="hero-style-menu" id="hero-style-menu" style="display:none">
-        ${[1,2,3].map(n=>`<div class="hero-style-item ${heroStyle===n?'active':''}" onclick="setHeroStyle(${n})">Style ${n}</div>`).join('')}
+  const heroSwitcher = !dashEditMode ? '' : `<div class="hero-style-switch" style="display:flex;gap:6px">
+      <div style="position:relative">
+        <button class="hero-style-btn" onclick="toggleHeroStyleMenu(event)" title="Change layout" aria-label="Change hero layout" aria-haspopup="true">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </button>
+        <div class="hero-style-menu" id="hero-style-menu" style="display:none">
+          ${[1,2,3].map(n=>`<div class="hero-style-item ${heroStyle===n?'active':''}" onclick="setHeroStyle(${n})">Style ${n}</div>`).join('')}
+        </div>
       </div>
+      <div style="position:relative">
+        <button class="hero-style-btn" onclick="toggleHeroImgMenu(event)" title="Change hero image" aria-label="Change hero image" aria-haspopup="true">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </button>
+        <div class="hero-style-menu" id="hero-img-menu" style="display:none;min-width:200px">
+          ${_dashHeroMenuHtml(_dh, _dhOk)}
+        </div>
+      </div>
+      <input type="file" accept="image/*" id="dash-hero-up" style="display:none" onchange="_dashHeroUpload(event)"/>
     </div>`;
+  const heroImgHtml = _dhOk ? `<img id="dash-hero-img" src="${_mediaUrl(_dh.mediaId)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:${_dh.pos||'50% 50%'};z-index:-1;display:block;${dashEditMode?'cursor:move;touch-action:none':''}" onerror="this.style.display='none'"${dashEditMode?' onmousedown="_dashHeroPosStart(event)" ontouchstart="_dashHeroPosStart(event)"':''}/>
+      <div id="dash-hero-tone-overlay" style="position:absolute;inset:0;background:${_dh.tone>=0?'#000':'#fff'};opacity:${Math.min(100,Math.abs(_dh.tone))/100};z-index:-1;pointer-events:none"></div>
+      ${dashEditMode?`<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:0;background:rgba(0,0,0,.55);color:#fff;font-size:10.5px;padding:4px 10px;border-radius:20px;pointer-events:none;white-space:nowrap">Drag photo to reposition</div>`:''}` : '';
 
   let heroHtml;
   if(heroStyle===2){
     // Style 2 — centered crest (compact)
-    heroHtml = `<div class="db-hero db-hero-s2" style="position:relative;border-radius:20px;padding:30px 46px;margin-bottom:24px;overflow:hidden;text-align:center">
+    heroHtml = `<div class="db-hero db-hero-s2" style="position:relative;z-index:0;border-radius:20px;padding:30px 46px;margin-bottom:24px;overflow:hidden;text-align:center">
+      ${heroImgHtml}
       ${heroSwitcher}
-      <div style="width:52px;height:52px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold-deep)">${_mono}</div>
-      <div style="font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted)">The Wedding of</div>
-      <div style="font-family:Cormorant Garamond,serif;font-size:clamp(26px,4vw,44px);font-weight:300;color:var(--ink);line-height:1.1;margin-top:12px">${p1} <span style="font-style:italic;color:var(--gold-deep)">&amp;</span> ${p2}</div>
-      ${_dateLine?`<div style="font-size:13px;color:var(--muted);margin-top:10px;letter-spacing:.05em">${_dateLine}</div>`:''}
+      <div style="position:relative;pointer-events:none">
+      <div style="width:52px;height:52px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:'Cormorant Garamond',serif;font-size:20px;color:${_hGold}">${_mono}</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:${_hMuted}">The Wedding of</div>
+      <div style="font-family:Cormorant Garamond,serif;font-size:clamp(26px,4vw,44px);font-weight:300;color:${_hInk};line-height:1.1;margin-top:12px">${p1} <span style="font-style:italic;color:${_hGold}">&amp;</span> ${p2}</div>
+      ${_dateLine?`<div style="font-size:13px;color:${_hMuted};margin-top:10px;letter-spacing:.05em">${_dateLine}</div>`:''}
       ${totalDays!==null?`<div style="width:50px;height:1px;background:var(--gold);margin:13px auto"></div><div style="display:inline-flex;align-items:baseline;gap:8px">${_cdLine}</div>`:''}
+      </div>
     </div>`;
   } else if(heroStyle===3){
     // Style 3 — progress ring
-    heroHtml = `<div class="db-hero db-hero-s3" style="position:relative;border-radius:20px;padding:40px 46px;margin-bottom:24px;overflow:hidden;display:flex;align-items:center;gap:38px;flex-wrap:wrap">
+    heroHtml = `<div class="db-hero db-hero-s3" style="position:relative;z-index:0;border-radius:20px;padding:40px 46px;margin-bottom:24px;overflow:hidden;display:flex;align-items:center;gap:38px;flex-wrap:wrap">
+      ${heroImgHtml}
       ${heroSwitcher}
-      ${totalDays!==null?`<div class="db-s3-ring" style="position:relative;width:128px;height:128px;flex-shrink:0">
+      ${totalDays!==null?`<div class="db-s3-ring" style="position:relative;width:128px;height:128px;flex-shrink:0;pointer-events:none">
         <svg width="128" height="128" viewBox="0 0 128 128">
           <circle cx="64" cy="64" r="58" fill="none" stroke="var(--border)" stroke-width="5"/>
           <circle class="gold-prog-stroke" cx="64" cy="64" r="58" fill="none" stroke="var(--gold)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${_ringCirc.toFixed(1)}" stroke-dashoffset="${_ringOffset.toFixed(1)}" transform="rotate(-90 64 64)"/>
         </svg>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-          <div style="font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:500;color:var(--gold-deep);line-height:1">${totalDays}</div>
-          <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:3px">${totalDays===1?'day':'days'} to go</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:500;color:${_hGold};line-height:1">${totalDays}</div>
+          <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:${_hMuted};margin-top:3px">${totalDays===1?'day':'days'} to go</div>
         </div>
       </div>`:''}
-      <div style="min-width:0">
-        <div style="font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted)">The Wedding of</div>
-        <div style="font-family:Cormorant Garamond,serif;font-size:clamp(26px,4vw,44px);font-weight:300;color:var(--ink);line-height:1.1;margin-top:12px">${p1} <span style="font-style:italic;color:var(--gold-deep)">&amp;</span> ${p2}</div>
-        ${_dateLine?`<div style="font-size:13px;color:var(--muted);margin-top:10px;letter-spacing:.05em">${_dateLine}</div>`:''}
+      <div style="min-width:0;pointer-events:none">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:${_hMuted}">The Wedding of</div>
+        <div style="font-family:Cormorant Garamond,serif;font-size:clamp(26px,4vw,44px);font-weight:300;color:${_hInk};line-height:1.1;margin-top:12px">${p1} <span style="font-style:italic;color:${_hGold}">&amp;</span> ${p2}</div>
+        ${_dateLine?`<div style="font-size:13px;color:${_hMuted};margin-top:10px;letter-spacing:.05em">${_dateLine}</div>`:''}
       </div>
     </div>`;
   } else {
     // Style 1 — current (default)
-    heroHtml = `<div class="db-hero db-hero-s1" style="position:relative;border-radius:20px;padding:44px 48px;margin-bottom:24px;overflow:hidden">
+    heroHtml = `<div class="db-hero db-hero-s1" style="position:relative;z-index:0;border-radius:20px;padding:44px 48px;margin-bottom:24px;overflow:hidden">
+      ${heroImgHtml}
       ${heroSwitcher}
       <div class="db-hero-deco" style="position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;border:1px solid var(--border);pointer-events:none;opacity:.6"></div>
       <div class="db-hero-deco" style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;border-radius:50%;border:1px solid var(--border);pointer-events:none;opacity:.4"></div>
       <div class="db-hero-deco" style="position:absolute;bottom:-80px;left:-40px;width:200px;height:200px;border-radius:50%;border:1px solid var(--border);pointer-events:none;opacity:.3"></div>
       <div class="db-hero-deco" style="position:absolute;right:48px;top:50%;transform:translateY(-50%);opacity:.04;font-family:Cormorant Garamond,serif;font-size:120px;font-weight:600;color:var(--ink);line-height:1;pointer-events:none;user-select:none">${_mono}</div>
-      <div style="position:relative">
-        <div style="font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">The Wedding of</div>
-        <div style="font-family:Cormorant Garamond,serif;font-size:clamp(26px,4vw,44px);font-weight:300;color:var(--ink);line-height:1.1;margin-bottom:6px">${p1} <span style="font-style:italic;color:var(--gold-deep)">&amp;</span> ${p2}</div>
-        ${_dateLine?`<div style="font-size:13px;color:var(--muted);margin-top:10px;letter-spacing:.05em">${_dateLine}</div>`:''}
+      <div style="position:relative;pointer-events:none">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:${_hMuted};margin-bottom:14px">The Wedding of</div>
+        <div style="font-family:Cormorant Garamond,serif;font-size:clamp(26px,4vw,44px);font-weight:300;color:${_hInk};line-height:1.1;margin-bottom:6px">${p1} <span style="font-style:italic;color:${_hGold}">&amp;</span> ${p2}</div>
+        ${_dateLine?`<div style="font-size:13px;color:${_hMuted};margin-top:10px;letter-spacing:.05em">${_dateLine}</div>`:''}
         ${countdownHtml}
       </div>
     </div>`;
@@ -1107,6 +1134,123 @@ function dashLineDrop(e, idx){
   layout.splice(insertAt, 0, [dragDashId]);
   _dashCommitLayout(layout);
   dragDashId=null; saveToStorage(); navigate('dashboard');
+}
+
+// ── Dashboard hero background image ──────────────────────────────────────
+// STATE.settings.dashHero = { mediaId, tone }. mediaId is either a stock path
+// (same WB_STOCK_HEROES library the website builder uses) or an uploaded
+// media id — both resolved the same way via _mediaUrl()/_mediaMissing().
+// tone is -100..100: negative lightens (white scrim), positive darkens
+// (black scrim), 0 is no overlay.
+function _dashHeroCfg(){
+  if(!STATE.settings.dashHero || typeof STATE.settings.dashHero!=='object') STATE.settings.dashHero={mediaId:null,tone:0,pos:'50% 50%'};
+  if(!STATE.settings.dashHero.pos) STATE.settings.dashHero.pos='50% 50%';
+  return STATE.settings.dashHero;
+}
+function _dashHeroToneLabel(tone){
+  return tone===0 ? 'No adjustment' : (tone>0 ? ('Darken · '+tone+'%') : ('Lighten · '+Math.abs(tone)+'%'));
+}
+function _dashHeroMenuHtml(dh, hasImg){
+  return `
+    <div class="hero-style-item" onclick="_dashHeroPickOpen()">Choose from library</div>
+    <div class="hero-style-item" onclick="document.getElementById('dash-hero-up').click()">Upload photo</div>
+    ${hasImg?`<div class="hero-style-item" onclick="_dashHeroRemove()" style="color:var(--red)">Remove image</div>
+    <div style="padding:9px 9px 2px">
+      <div id="dash-hero-tone-lbl" style="font-size:11px;color:var(--muted);margin-bottom:6px">${_dashHeroToneLabel(dh.tone)}</div>
+      <input type="range" min="-100" max="100" value="${dh.tone}" oninput="_dashHeroTone(this.value)" onchange="navigate('dashboard')" style="width:100%"/>
+      <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--muted);margin-top:2px"><span>Lighten</span><span>Darken</span></div>
+    </div>`:''}
+  `;
+}
+function toggleHeroImgMenu(e){
+  e.stopPropagation();
+  const menu=document.getElementById('hero-img-menu');
+  if(!menu) return;
+  const showing=menu.style.display!=='none';
+  menu.style.display=showing?'none':'block';
+  if(!showing){
+    const close=(ev)=>{ if(!menu.contains(ev.target)){ menu.style.display='none'; document.removeEventListener('click',close); } };
+    setTimeout(()=>document.addEventListener('click',close),0);
+  }
+}
+function _dashHeroPickOpen(){
+  const menu=document.getElementById('hero-img-menu'); if(menu) menu.style.display='none';
+  openConfirm2('Choose from our library',
+    `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:7px;max-height:340px;overflow-y:auto">
+      ${WB_STOCK_HEROES.map(src=>`<button type="button" onclick="_dashHeroPick('${src}')" style="padding:0;border:3px solid transparent;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1;background:var(--surface)">
+        <img src="${src}" alt="" onerror="this.closest('button').remove()" style="width:100%;height:100%;object-fit:cover;display:block"/>
+      </button>`).join('')}
+    </div>`,
+    `<button class="btn btn-outline" onclick="_confirm2CloseX()">Close</button>`);
+}
+function _dashHeroPick(mediaId){
+  const dh=_dashHeroCfg();
+  dh.mediaId=mediaId; dh.pos='50% 50%';
+  saveToStorage();
+  _closeConfirm2Direct();
+  navigate('dashboard');
+}
+function _dashHeroUpload(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const compressed=await compressImage(ev.target.result);
+    const id=await _mediaPut(compressed, file.name, 'image/jpeg');
+    const dh=_dashHeroCfg();
+    dh.mediaId=id; dh.pos='50% 50%';
+    saveToStorage();
+    navigate('dashboard');
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+function _dashHeroRemove(){
+  const dh=_dashHeroCfg();
+  dh.mediaId=null; dh.tone=0; dh.pos='50% 50%';
+  saveToStorage();
+  navigate('dashboard');
+}
+// Drag-to-reposition focal point, directly on the live hero photo (edit mode only) —
+// same mousedown/move/up + touch pattern as the website builder's hero picker, but
+// against the photo's own box instead of a separate preview frame.
+let _dashHeroPosDrag=false;
+function _dashHeroPosStart(e){
+  _dashHeroPosDrag=true;
+  _dashHeroPosMove(e);
+  if(e.cancelable) e.preventDefault();
+}
+function _dashHeroPosMove(e){
+  if(!_dashHeroPosDrag) return;
+  const img=document.getElementById('dash-hero-img');
+  if(!img) return;
+  const r=img.getBoundingClientRect();
+  const t=(e.touches&&e.touches[0])?e.touches[0]:e;
+  const x=Math.max(0,Math.min(100, Math.round((t.clientX-r.left)/r.width*100)));
+  const y=Math.max(0,Math.min(100, Math.round((t.clientY-r.top)/r.height*100)));
+  _dashHeroCfg().pos=x+'% '+y+'%';
+  img.style.objectPosition=x+'% '+y+'%';
+  if(e.cancelable) e.preventDefault();
+}
+function _dashHeroPosEnd(){
+  if(!_dashHeroPosDrag) return;
+  _dashHeroPosDrag=false;
+  saveToStorage();
+}
+window.addEventListener('mousemove', _dashHeroPosMove);
+window.addEventListener('mouseup',   _dashHeroPosEnd);
+window.addEventListener('touchmove', _dashHeroPosMove, {passive:false});
+window.addEventListener('touchend',  _dashHeroPosEnd);
+function _dashHeroTone(v){
+  const dh=_dashHeroCfg();
+  dh.tone=Number(v)||0;
+  saveToStorage();
+  const lbl=document.getElementById('dash-hero-tone-lbl');
+  if(lbl) lbl.textContent=_dashHeroToneLabel(dh.tone);
+  const overlay=document.getElementById('dash-hero-tone-overlay');
+  if(overlay){
+    overlay.style.background = dh.tone>=0 ? '#000' : '#fff';
+    overlay.style.opacity = Math.min(100,Math.abs(dh.tone))/100;
+  }
 }
 
 
