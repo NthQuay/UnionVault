@@ -8903,10 +8903,14 @@ function renderVisionboard(c,actions){
       </div>`).join('')}
     </div>
   </div>` : '';
+  // Same brush-stroke swatches as Inspiration's "Your palette" (brushSwatchHtml), not the
+  // plain graduated circles this used to draw — one visual language for a palette
+  // wherever it's shown. Read-only here (removable:false, no × — the board isn't an
+  // editor) and smaller (board real estate is tighter than Inspiration's own page).
   const colPaletteHtml = colors.length ? `<div style="margin-bottom:32px">
     <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;color:${mutedInk};margin-bottom:12px;letter-spacing:.04em">colour palette</div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
-      ${colors.map((hex,i)=>{const col=allCols.find(x=>x.hex===hex);const size=28+((i%3)*5);return`<div title="${col?col.name:hex}" style="width:${size}px;height:${size}px;border-radius:50%;background:${hex};box-shadow:inset 0 -2px 6px rgba(0,0,0,.15),0 1px 4px rgba(0,0,0,.1);transform:translateY(${(i%2)*3}px)"></div>`;}).join('')}
+    <div class="brush-strokes" style="gap:14px 10px">
+      ${colors.map((hex,i)=>{const col=allCols.find(x=>x.hex===hex);return brushSwatchHtml(hex, col?col.name:hex, i, false, 64);}).join('')}
     </div>
   </div>` : '';
 

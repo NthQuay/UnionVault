@@ -731,6 +731,21 @@ body.dark .wb-font-menu{box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .wb-font-item svg{flex-shrink:0;color:var(--gold-deep);visibility:hidden}
 body.dark .wb-font-item svg{color:var(--gold)}
 .wb-font-item.sel svg{visibility:visible}
+/* Inspiration's "Jump to" row — was a wrapping multi-row block of pills; now a single
+   horizontally-scrolling strip that stays stuck to the top of the page while scrolling,
+   so a section is always one tap away. Opaque background on the OUTER wrapper (matching
+   the page, not the pill-row's own --surface) so scrolled content doesn't show through
+   around its rounded corners once it's stuck. */
+.insp-jump-sticky{position:sticky;top:0;z-index:5;background:var(--cream);margin-bottom:14px;padding-bottom:4px}
+.insp-jump-scroll{display:flex;align-items:center;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:12px 14px;background:var(--surface);border-radius:12px;border:1px solid var(--border)}
+.insp-jump-scroll::-webkit-scrollbar{display:none}
+/* On a phone, .card/.palette-section's generous 24-28px top padding reads as a big dead
+   gap before a heading that's already visually distinct on its own (serif, larger size).
+   Only the top is tightened — left/right/bottom stay as they are everywhere else. */
+@media(max-width:600px){
+  #main-content[data-page="inspo"] .card{padding-top:14px}
+  #main-content[data-page="inspo"] .palette-section{padding-top:14px}
+}
 .wb-font-divider{font-family:'Inter',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:7px 14px;border-bottom:1px solid var(--border)}
 /* Preview pin — the Theme panel's Preview card can stick to the top of the scrollable
    panel so it stays visible while adjusting settings further down. Default background
@@ -2327,6 +2342,9 @@ body.dark .gt-mp-av{background:rgba(196,168,130,.16);color:var(--gold)}
   #topbar-actions{flex-shrink:0}
   /* The title block reserves 150px, which pushed the cog off a 360px screen once the buttons stopped shrinking; the Budget title only needs ~80px. */
   .topbar:has(#bg-add-btn) > div[style*="min-width:150px"]{min-width:80px!important}
+  /* Same fix, same cause: "Inspiration" + its two actions (Board, Add) don't fit the
+     150px-reserved title block on a 360px phone, so Add gets pushed off-screen. */
+  .topbar:has(#inspo-add-btn) > div[style*="min-width:150px"]{min-width:80px!important}
   #bg-reports-btn,#bg-inv-btn,#bg-add-btn{flex-shrink:0;height:38px;min-width:40px}
   #bg-reports-btn.bg-icon-only,#bg-inv-btn.bg-icon-only,#bg-add-btn.bg-icon-only{width:40px!important;min-width:40px}
 }

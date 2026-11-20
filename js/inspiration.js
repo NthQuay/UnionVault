@@ -136,11 +136,11 @@ const BRUSH_VARIANTS=[
   'scaleX(1) rotate(-1deg) scale(1.03)',
   'scaleX(1) rotate(.5deg) scale(1.02)'
 ];
-function brushSwatchHtml(hex, name, idx){
+function brushSwatchHtml(hex, name, idx, removable, width){
   const v=BRUSH_VARIANTS[idx % BRUSH_VARIANTS.length];
-  const w=118, h=Math.round(w*189/393);
+  const w=width||118, h=Math.round(w*189/393);
   return `<div class="brush-swatch" title="${name}">
-    <button class="brush-x" onclick="toggleColor('${hex}')" title="Remove">\u00d7</button>
+    ${removable!==false?`<button class="brush-x" onclick="toggleColor('${hex}')" title="Remove">\u00d7</button>`:''}
     <svg class="brush-stroke-svg" width="${w}" height="${h}" viewBox="0 0 393 189" preserveAspectRatio="xMidYMid meet" style="transform:${v}">
       <g transform="${BRUSH_TF}" fill="${hex}" stroke="none"><path d="${BRUSH_PATH}"/></g>
     </svg>
@@ -149,7 +149,7 @@ function brushSwatchHtml(hex, name, idx){
 }
 
 function renderInspo(c,actions){
-  actions.innerHTML=`<button class="btn btn-outline btn-sm inspo-vb-btn" onclick="navigate('visionboard')" style="display:inline-flex;align-items:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span class="inspo-btn-long">Vision Board</span><span class="inspo-btn-short">Board</span></button><button class="btn btn-primary btn-sm inspo-add-btn" onclick="openAddInspo()" style="display:inline-flex;align-items:center;gap:5px">${_plusIcon()}<span class="inspo-btn-long">Add Idea</span><span class="inspo-btn-short">Add</span></button>`;
+  actions.innerHTML=`<button class="btn btn-outline btn-sm inspo-vb-btn" onclick="navigate('visionboard')" style="display:inline-flex;align-items:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span class="inspo-btn-long">Vision Board</span><span class="inspo-btn-short">Board</span></button><button class="btn btn-primary btn-sm inspo-add-btn" id="inspo-add-btn" onclick="openAddInspo()" style="display:inline-flex;align-items:center;gap:5px">${_plusIcon()}<span class="inspo-btn-long">Add Idea</span><span class="inspo-btn-short">Add</span></button>`;
 
   const _inspoCollapsed=(()=>{try{return new Set(JSON.parse(localStorage.getItem('uv_inspo_collapsed')||'[]'));}catch(_){return new Set();}})();
 
@@ -162,12 +162,13 @@ function renderInspo(c,actions){
   const jumpItems=[{id:'inspo-style',label:'Style'},{id:'inspo-palette',label:'Colours'},...inspoCats().map(cat=>({id:'inspo-'+cat.replace(/[^a-zA-Z0-9]/g,'-'),label:cat}))];
 
   let html=`
-  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px;padding:12px 14px;background:var(--surface);border-radius:12px;border:1px solid var(--border);align-items:center">
-    <span style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:4px">Jump to</span>
-    ${jumpItems.map(j=>`<button onclick="document.getElementById('${j.id}')?.scrollIntoView({behavior:'smooth',block:'start'})" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold-deep)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--ink)'">${j.label}</button>`).join('')}
+  <div class="insp-jump-sticky">
+    <div class="insp-jump-scroll">
+      ${jumpItems.map(j=>`<button onclick="document.getElementById('${j.id}')?.scrollIntoView({behavior:'smooth',block:'start'})" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold-deep)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--ink)'">${j.label}</button>`).join('')}
+    </div>
   </div>`;
 
-  html+=`<div id="inspo-style" class="card inspo-style-card" style="scroll-margin-top:20px;margin-bottom:22px">${_inspoStyleInner()}</div>`;
+  html+=`<div id="inspo-style" class="card inspo-style-card" style="scroll-margin-top:20px;margin-bottom:14px">${_inspoStyleInner()}</div>`;
 
   html+=`<div id="inspo-palette" style="scroll-margin-top:20px"><div class="palette-section">
     <button type="button" class="toggle-section-btn${_inspoCollapsed.has('inspo-palette')?'':' open'}" onclick="_toggleInspoSection(this,'inspo-palette')" style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500">
@@ -810,18 +811,49 @@ function toggleVisionboard(id){
 // ── Our style (vibe / formality / setting) ───────────────────────────────────
 // Set in the setup wizard; the same STATE.event fields as Event Details (formality) and
 // the vendor brief. Vibe is multi-select; formality and setting are one each (tap again to clear).
+// Collapsed state reuses the same Set/localStorage key as every other collapsible
+// section on this page (_toggleInspoSection) — 'inspo-style' just joins that Set, even
+// though it also happens to be this card's own DOM id for jump-to scrolling.
+function _inspoStyleCollapsed(){
+  try{ return new Set(JSON.parse(localStorage.getItem('uv_inspo_collapsed')||'[]')).has('inspo-style'); }catch(_){ return false; }
+}
+function _inspoStyleSummary(){
+  const ev=STATE.event||{};
+  const vibe=Array.isArray(ev.vibe)?ev.vibe:[];
+  const setting = ev.setting==='Both' ? 'Indoor/Outdoor' : (ev.setting||'');
+  const parts=[vibe.length?vibe.join(', '):'', ev.formality||'', setting].filter(Boolean);
+  return parts.length ? parts.join(' · ') : 'Tap to set your style';
+}
 function _inspoStyleInner(){
   const ev=STATE.event||{};
   const vibe=Array.isArray(ev.vibe)?ev.vibe:[];
   const pills=(kind, list, isOn)=>list.map(v=>`<button type="button" class="inspo-style-pill${isOn(v)?' on':''}" onclick="_inspoStyleTap('${kind}',this.dataset.v)" data-v="${_escHtml(v)}">${_escHtml(v)}</button>`).join('');
   const lbl=t=>`<div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 7px">${t}</div>`;
-  return `<div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--ink)">Our style</div>
-    <div style="font-size:13px;color:var(--muted);margin-top:2px">From your setup — tap to change. Shared with vendors in your brief.</div>
+  const collapsed=_inspoStyleCollapsed();
+  const header=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;cursor:pointer" onclick="_toggleInspoStyle()">
+      <div style="min-width:0">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--ink)">Our style</div>
+        ${collapsed
+          ? `<div style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.4">${_escHtml(_inspoStyleSummary())}</div>`
+          : `<div style="font-size:13px;color:var(--muted);margin-top:2px">From your setup — tap to change. Shared with vendors in your brief.</div>`}
+      </div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:5px;color:var(--muted);transition:transform .2s;transform:rotate(${collapsed?'-90':'0'}deg)"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>`;
+  if(collapsed) return header;
+  return header + `
     ${lbl('Vibe')}<div class="inspo-style-pills">${pills('vibe', EV_VIBES, v=>vibe.includes(v))}</div>
     <div class="inspo-style-two">
       <div>${lbl('Formality')}<div class="inspo-style-pills">${pills('formality', EV_FORMALITY, v=>ev.formality===v)}</div></div>
       <div>${lbl('Setting')}<div class="inspo-style-pills">${pills('setting', EV_SETTINGS, v=>ev.setting===v)}</div></div>
     </div>`;
+}
+function _toggleInspoStyle(){
+  try{
+    const s=new Set(JSON.parse(localStorage.getItem('uv_inspo_collapsed')||'[]'));
+    if(s.has('inspo-style')) s.delete('inspo-style'); else s.add('inspo-style');
+    localStorage.setItem('uv_inspo_collapsed',JSON.stringify([...s]));
+  }catch(_){}
+  const host=document.getElementById('inspo-style'); if(host) host.innerHTML=_inspoStyleInner();
 }
 function _inspoStyleTap(kind, v){
   if(!STATE.event) STATE.event={};
