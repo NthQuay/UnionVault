@@ -580,7 +580,7 @@ function _evPickRebuildFilterBadge(){
 function _evPickFilterPanelHtml(){
   const all=STATE.guests||[];
   const allTags=[...new Set(all.flatMap(g=>g.tags||[]))].sort();
-  const chip=(label,active,onclick)=>`<button onclick="${onclick}" style="background:${active?'var(--gold-deep)':'var(--surface)'};color:${active?'#fff':'var(--ink)'};border:.5px solid ${active?'var(--gold-deep)':'var(--border)'};border-radius:12px;padding:4px 10px;font-size:11.5px;cursor:pointer">${_esc(label)}</button>`;
+  const chip=(label,active,onclick)=>`<button onclick="${_esc(onclick)}" style="background:${active?'var(--gold-deep)':'var(--surface)'};color:${active?'#fff':'var(--ink)'};border:.5px solid ${active?'var(--gold-deep)':'var(--border)'};border-radius:12px;padding:4px 10px;font-size:11.5px;cursor:pointer">${_esc(label)}</button>`;
   const AGE=[['adult','Adults'],['child','Children'],['infant','Infants']];
   const GRP=[['single','Singles'],['couple','Couples'],['plusone','Plus ones'],['family','Families'],['household','Households']];
   const ageChips=AGE.map(([v,l])=>chip(l,_evPickFilters.ages.has(v),`_evPickToggleAgeFilter(${JSON.stringify(v)})`)).join('');
