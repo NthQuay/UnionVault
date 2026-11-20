@@ -1861,7 +1861,7 @@ function _wbRepaintTheme(){
         const _bi=document.getElementById('wb-spec-item');
         if(_bi){ _bi.style.color=t.item; _bi.style.fontFamily=t.headFont; _bi.style.fontSize=Math.round(13*(t.headScale||t.scale||100)/100)+'px'; }
         const _bb=_band.lastElementChild;
-        if(_bb){ _bb.style.color=t.text; _bb.style.textAlign=_specBodyAlign; }
+        if(_bb){ _bb.style.color=t.text; _bb.style.fontFamily=t.bodyFont; _bb.style.textAlign=_specBodyAlign; }
       }
       const _btn=_hero.querySelector('span[style*="background"]');
       if(_btn){ _btn.style.background=t.button; _btn.style.color=_wbInk(t.button); _btn.style.fontFamily=t.bodyFont; _btn.style.borderRadius=WB_CORNERS[t.corners]||WB_CORNERS.round; }
@@ -6646,7 +6646,11 @@ function _wbBuildSite(forDownload){
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:${(()=>{const c=String(t2.background||t2.page||'#ffffff').trim();const m=c.match(/^#([0-9a-f]{6})$/i);if(!m) return 'light';const n=parseInt(m[1],16);return(((n>>16)&255)*299+((n>>8)&255)*587+(n&255)*114)/1000<128?'dark':'light';})()}}
 body{background:${t2.background||t2.page};color:${t2.text};font-family:${t2.bodyFont};font-size:${scb(16)}px;line-height:1.7}
-nav{position:sticky;top:0;z-index:100;background:${t2.background||t2.page};padding:${sp(16)}px;border-bottom:1px solid ${t2.heading}1A}
+/* transform:translateZ(0) promotes the nav to its own compositing layer — same mobile
+   address-bar reveal/hide glitch as the footer badge below: without it, a sticky element
+   can repaint transparent (showing the hero photo through it) for a frame or two while
+   the browser's dynamic toolbar animates during a scroll. */
+nav{position:sticky;top:0;z-index:100;background:${t2.background||t2.page};padding:${sp(16)}px;border-bottom:1px solid ${t2.heading}1A;transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
 main{background:${t2.background||t2.page}}
 .navlinks{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 22px}
 nav a{color:${t2.heading};text-decoration:none;font-size:${scb(12)}px;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
@@ -6672,7 +6676,10 @@ body.sidenav .sb-collapsed-crest{display:none}
 body.sidenav.collapsed .sb-collapsed-crest{display:block;margin-top:auto;padding-top:${sp(12)}px}
 body.sidenav.collapsed .sb-collapsed-crest img{width:20px;height:auto;display:block}
 body.sidenav .sidebar-names{margin-top:auto;padding-top:${sp(16)}px}
-body.sidenav .sidebar-brand{text-align:center;padding-top:${sp(12)}px}
+/* .madewith's own margin-top (22px, sized for sitting under a full page of sections)
+   was still landing here on top of this padding — nearly 35px before "Website made
+   with" even starts, for a lockup that's otherwise this compact. Reset it. */
+body.sidenav .sidebar-brand{text-align:center;margin-top:0;padding-top:${sp(6)}px}
 body.sidenav nav:not(:has(.sidebar-names)) .sidebar-brand{margin-top:auto}
 /* The content column is only ever centred in whatever's left beside the
    sidebar, so it visually drifts off-centre by half the sidebar's width.
@@ -6698,7 +6705,12 @@ body.sidenav.collapsed .site-content{padding-right:48px}
   body.sidenav.mnav-open nav{position:fixed;top:0;left:0;bottom:0;height:100dvh;width:${scb(220)}px;min-width:0;align-items:stretch;padding:${sp(24)}px ${sp(16)}px;box-shadow:0 0 28px rgba(0,0,0,.28);z-index:40;background:${t2.background||t2.page}}
   body.sidenav.mnav-open .navlinks{display:flex;flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;gap:0;margin-top:${sp(8)}px}
   body.sidenav.mnav-open nav a{display:block;padding:${sp(9)}px ${sp(6)}px}
-  body.sidenav.mnav-open .sidebar-brand{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:${sp(12)}px}
+  /* nav a{display:block} above is meant for the .navlinks rows, but .mw-lock is ALSO an
+     <a> inside <nav>, and this selector is more specific than .mw-lock's own
+     display:inline-flex — so the crest ends up stacked above "UNION VAULT" instead of
+     beside it. Give it back its row layout, specifically, in this one state. */
+  body.sidenav.mnav-open .mw-lock{display:flex;align-items:center;justify-content:center;padding:0}
+  body.sidenav.mnav-open .sidebar-brand{display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:0;padding-top:${sp(6)}px}
   body.sidenav.mnav-open .sidebar-names{display:block;margin-top:auto;padding-top:${sp(16)}px}
   body.sidenav.mnav-open .sb-collapsed-crest{display:none}
   body.sidenav.mnav-open .site-content{padding-right:0px}
@@ -7025,7 +7037,8 @@ body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;m
 .mw-txt b{font-size:${scb(13)}px;letter-spacing:.1em;font-weight:400;color:${brand.main}}
 .mw-txt i{font-size:${scb(9)}px;letter-spacing:.18em;font-style:normal;color:${brand.sub}}
 .sidebar-names{font-family:${t2.nameFont};font-size:${scb(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em}
-body.sidenav .mw-lock{display:flex;align-items:center;justify-content:center;gap:7px}
+body.sidenav .mw-lock{display:flex;align-items:center;justify-content:center;gap:4px}
+body.sidenav .mw-txt{margin-top:2px}
 @media(max-width:520px){
   dl div{flex-direction:column;gap:2px}
   dt{width:auto;padding-top:0}
