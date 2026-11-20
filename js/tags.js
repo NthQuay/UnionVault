@@ -371,7 +371,7 @@ function openModal(title,body,footer){
   if(!_escapeRevertArm) _escapeRevert=null;
   const _rha=document.getElementById('budget-report-header-actions'); if(_rha) _rha.remove();
   document.getElementById('modal-title').textContent=title;
-  const mb=document.getElementById('modal-box'); if(mb){ mb.classList.remove('modal-fit'); mb.classList.remove('seat-mgr-compact'); mb.classList.remove('modal-wide'); }
+  const mb=document.getElementById('modal-box'); if(mb){ mb.classList.remove('modal-fit'); mb.classList.remove('seat-mgr-compact'); mb.classList.remove('modal-wide'); mb.classList.remove('wb-panel-modal'); }
   const _mo=document.getElementById('modal-overlay'); if(_mo){ _mo.classList.remove('budget-summary-overlay'); _mo.classList.remove('print-hub-overlay'); _mo.classList.remove('seating-preview-overlay'); _mo.classList.remove('export-prev-guests','export-prev-timeline','export-prev-budget','export-prev-seating'); }
   document.getElementById('modal-body').innerHTML=body;
   document.getElementById('modal-footer').innerHTML=footer||'';

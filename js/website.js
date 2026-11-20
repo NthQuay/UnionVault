@@ -1878,7 +1878,7 @@ function _wbPanel(title, body, footer){
   try{ _wbPanelSnapshot = JSON.stringify(_wbSite()); }catch(e){ _wbPanelSnapshot = null; }
   if(window.innerWidth >= 1100){
     const col=document.getElementById('wb-editor-col');
-    if(!col){ openModal(title, body, footer); return; }
+    if(!col){ openModal(title, body, footer); document.getElementById('modal-box')?.classList.add('wb-panel-modal'); return; }
     col.className='wb-editor-col';
     const _hasSave=footer&&footer.includes('_wbSectionSave');
     const _footerHtml=_hasSave?footer.replace(/<button[^>]*btn-primary[^>]*>\s*Save\s*<\/button>/,''):footer;
@@ -1898,6 +1898,7 @@ function _wbPanel(title, body, footer){
     const _b=document.getElementById('wb-ec-body'); if(_b) _b.scrollTop=0;
   } else {
     openModal(title, body, footer);
+    document.getElementById('modal-box')?.classList.add('wb-panel-modal');
   }
 }
 function _wbClosePanel(){
@@ -2044,9 +2045,11 @@ function openWbSection(key){
       <div style="font-size:12.5px;color:var(--muted);line-height:1.55">${what}</div>
       ${_wbLayoutHtml(key)}
       ${_wbBlocksHtml(key)}
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <button type="button" class="btn btn-outline" onclick="_wbNavGuard('${dest}')" style="width:100%">Go to ${destLabel}</button>
+      </div>
     </div>`,
-    `<button class="btn btn-outline" onclick="_wbNavGuard('${dest}')" style="margin-right:auto">Go to ${destLabel}</button>
-     <button class="btn btn-outline" onclick="_wbPanelClose()">Close</button>
+    `<button class="btn btn-outline" onclick="_wbPanelClose()">Close</button>
      <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 
@@ -2414,9 +2417,11 @@ function openWbDetails(){
              oninput="STATE.event.time=this.value;saveToStorage();_wbLiveSoon()"/></div>
     <div style="font-size:12px;color:var(--muted);margin-top:-8px;line-height:1.5">Other details (venue, date…) are set in <b>Event Details</b> in your planner.</div>
     ${_wbBlocksHtml('details')}
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+      <button type="button" class="btn btn-outline" onclick="_wbNavGuard('details')" style="width:100%">Go to Event Details</button>
+    </div>
   </div>`,
-  `<button class="btn btn-outline" onclick="_wbNavGuard('details')" style="margin-right:auto">Go to Event Details</button>
-   <button class="btn btn-outline" onclick="_wbPanelClose()">Close</button>
+  `<button class="btn btn-outline" onclick="_wbPanelClose()">Close</button>
    <button class="btn btn-primary" onclick="_wbSectionSave()">Save</button>`);
 }
 function _wbDetailHide(field, hide){
