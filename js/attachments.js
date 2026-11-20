@@ -542,6 +542,31 @@ function _confirmDeleteDialog(opts){
     <button class="btn btn-sm" onclick="${o.onConfirmJs||''}" style="background:var(--red);color:#fff;border:1px solid var(--red)">${verb}</button>`;
   openModal(o.title||'Confirm', body, footer);
 }
+// Same dialog, but stacked via openConfirm2 instead of replacing the current modal's
+// content — for a delete confirmed from inside a panel that is itself the mobile modal
+// (e.g. the website builder's section editor). Using openModal there would overwrite the
+// panel's own body/footer, so confirming would look like it did nothing: the block is
+// gone from STATE, but the (now-orphaned) confirm dialog just sits there unclosed.
+function _confirmDeleteDialog2(opts){
+  const o=opts||{};
+  const question=o.question||'Delete this item?';
+  const name=o.name||'';
+  const verb=o.verb||'Delete';
+  const noteVerb=o.noteVerb||'permanently removed';
+  const detail = name
+    ? `"${_escHtml(name)}" will be ${noteVerb}. This can't be undone.`
+    : `This will be ${noteVerb} and can't be undone.`;
+  const body=`<div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;align-items:center;gap:9px">
+      <span style="width:26px;height:26px;border-radius:50%;background:rgba(192,57,43,.14);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+      <div style="font-size:13.5px;color:var(--ink);font-weight:500">${question}</div>
+    </div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">${detail}</div>
+  </div>`;
+  const footer=`<button class="btn btn-outline btn-sm" onclick="_closeConfirm2Direct()">Cancel</button>
+    <button class="btn btn-sm" onclick="${o.onConfirmJs||''}" style="background:var(--red);color:#fff;border:1px solid var(--red)">${verb}</button>`;
+  openConfirm2(o.title||'Confirm', body, footer);
+}
 // Step 1: warn before deleting. Stacks a confirm dialog ON TOP of the
 // attachments pop-up (which stays open underneath).
 function _confirmDeleteAttach(attId){

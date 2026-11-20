@@ -1012,17 +1012,23 @@ function _wbThemeBody(){
   const w=_wbSite(), t=w.theme;
   const pal = (STATE.inspo && Array.isArray(STATE.inspo.colors)) ? STATE.inspo.colors : [];
 
+  // Heading alignment (t.align) governs the hero block and the banded heading, the same
+  // way it governs a real section's h2/eyebrow on the public site. Body alignment
+  // (t.bodyAlign) only ever overrides the actual body copy — here, the one paragraph —
+  // exactly like .para overrides its section's inherited text-align on the real site.
+  const _specHeadAlign = t.align==='left'?'left':(t.align==='right'?'right':'center');
+  const _specBodyAlign = ['left','center','right','justify'].includes(t.bodyAlign) ? t.bodyAlign : 'left';
   const specimen = `<div style="margin-bottom:14px">
       <div style="font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px">Preview</div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 2px 14px rgba(0,0,0,.1)">
-        <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:24px 16px;text-align:center">
+        <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:24px 16px;text-align:${_specHeadAlign}">
           <div id="wb-spec-name" style="font-family:${t.headFont};font-size:${Math.round(26*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:3px">${_escHtml(_wbCouple())}</div>
-          <div style="font-family:${t.bodyFont};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:12px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
+          <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:12px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
           <span style="display:inline-block;font-family:${t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)}">Our story</span>
         </div>
-        <div style="background:${_escHtml(t.band)};padding:12px 16px;text-align:center">
+        <div style="background:${_escHtml(t.band)};padding:12px 16px;text-align:${_specHeadAlign}">
           <div style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)}">A banded section</div>
-          <div style="font-family:${t.bodyFont};font-size:11px;color:${_escHtml(t.text)};margin-top:${Math.round(5*t.space/100)}px">Body text sits here.</div>
+          <div style="font-family:${t.bodyFont};font-size:11px;color:${_escHtml(t.text)};margin-top:${Math.round(5*t.space/100)}px;text-align:${_specBodyAlign}">Body text sits here.</div>
         </div>
       </div>
     </div>`;
@@ -1082,8 +1088,8 @@ function _wbThemeBody(){
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
         <span class="inv-seg">
-          <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
           <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
+          <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
           <button type="button" class="${t.align==='right'?'active':''}" onclick="_wbSet('align','right')">Right</button>
         </span>
       </div>
@@ -1532,8 +1538,8 @@ function _wbRepaintTheme(){
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
         <span class="inv-seg">
-          <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
           <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
+          <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
           <button type="button" class="${t.align==='right'?'active':''}" onclick="_wbSet('align','right')">Right</button>
         </span>
       </div>
@@ -1708,15 +1714,21 @@ function _wbRepaintTheme(){
     const _hero=document.getElementById('wb-spec-hero');
     if(_hero){
       _hero.style.background=t.page;
+      const _specHeadAlign = t.align==='left'?'left':(t.align==='right'?'right':'center');
+      const _specBodyAlign = ['left','center','right','justify'].includes(t.bodyAlign) ? t.bodyAlign : 'left';
+      _hero.style.textAlign=_specHeadAlign;
       const _nm=document.getElementById('wb-spec-name');
       if(_nm){ _nm.style.color=t.heading; _nm.style.fontFamily=t.headFont; _nm.style.fontSize=Math.round(26*(t.headScale||t.scale||100)/100)+'px'; }
+      const _dt=document.getElementById('wb-spec-date');
+      if(_dt){ _dt.style.color=t.accent; _dt.style.fontFamily=t.bodyFont; }
       const _band=_hero.nextElementSibling;
       if(_band){
         _band.style.background=t.band;
+        _band.style.textAlign=_specHeadAlign;
         const _bh=_band.firstElementChild;
         if(_bh){ _bh.style.color=t.heading; _bh.style.fontFamily=t.headFont; _bh.style.fontSize=Math.round(15*(t.headScale||t.scale||100)/100)+'px'; }
         const _bb=_band.lastElementChild;
-        if(_bb){ _bb.style.color=t.text; }
+        if(_bb){ _bb.style.color=t.text; _bb.style.textAlign=_specBodyAlign; }
       }
       const _btn=_hero.querySelector('span[style*="background"]');
       if(_btn){ _btn.style.background=t.button; _btn.style.color=_wbInk(t.button); _btn.style.fontFamily=t.bodyFont; _btn.style.borderRadius=WB_CORNERS[t.corners]||WB_CORNERS.round; }
@@ -3735,13 +3747,13 @@ function _wbBlockDel(key,id){
   // is invisible from the two icons alone — so it is said out loud, but only when there
   // is actually something to lose.
   if(b.type==='img' && b.ids.length){
-    _confirmDeleteDialog({ title:'Remove this images block?',
+    _confirmDeleteDialog2({ title:'Remove this images block?',
       question:'The '+b.ids.length+' image'+(b.ids.length>1?'s':'')+' in it will be removed from this section. Hiding it instead keeps them.',
       name:'', verb:'Remove', onConfirmJs:"_wbBlockDelGo('"+key+"','"+id+"')" });
     return;
   }
   if(b.type==='text' && String(b.body||'').trim()){
-    _confirmDeleteDialog({ title:'Remove this text block?',
+    _confirmDeleteDialog2({ title:'Remove this text block?',
       question:'The words in it will be deleted. Hiding it instead keeps them.',
       name:'', verb:'Remove', onConfirmJs:"_wbBlockDelGo('"+key+"','"+id+"')" });
     return;
@@ -3749,13 +3761,13 @@ function _wbBlockDel(key,id){
   if((b.type==='links'||b.type==='btns') && b.items.some(x=>String(x.label||'').trim()||String(x.url||'').trim())){
     const what = b.type==='btns' ? 'button' : 'link';
     const n = b.items.filter(x=>String(x.label||'').trim()||String(x.url||'').trim()).length;
-    _confirmDeleteDialog({ title:'Remove this block?',
+    _confirmDeleteDialog2({ title:'Remove this block?',
       question:'The '+n+' '+what+(n>1?'s':'')+' in it will be deleted. Hiding it instead keeps them.',
       name:'', verb:'Remove', onConfirmJs:"_wbBlockDelGo('"+key+"','"+id+"')" });
     return;
   }
   if(b.type==='video' && String(b.url||'').trim()){
-    _confirmDeleteDialog({ title:'Remove this video?',
+    _confirmDeleteDialog2({ title:'Remove this video?',
       question:'The address and its poster will be deleted. Hiding it instead keeps them.',
       name:'', verb:'Remove', onConfirmJs:"_wbBlockDelGo('"+key+"','"+id+"')" });
     return;
@@ -3763,6 +3775,7 @@ function _wbBlockDel(key,id){
   _wbBlockDelGo(key,id);
 }
 function _wbBlockDelGo(key,id){
+  _closeConfirm2Direct();
   const arr=_wbBlocks(key);
   const i=arr.findIndex(x=>x.id===id);
   if(i>=0) arr.splice(i,1);
