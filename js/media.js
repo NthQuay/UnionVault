@@ -981,10 +981,18 @@ function toggleDarkMode(on){
   } else {
     document.documentElement.setAttribute('data-theme','light');
   }
+  // Dashboard hero photo: flip the lighten/darken tone's sign (same magnitude) so
+  // "50% dark" in dark mode becomes "50% light" in light mode, and back again —
+  // the slider direction always matches whichever theme is now active. Only on an
+  // actual toggle, not on boot (which sets the class directly, not via this function),
+  // so a restored preference never silently re-flips a tone the user already set.
+  const dh=STATE.settings && STATE.settings.dashHero;
+  if(dh && typeof dh.tone==='number' && dh.tone!==0) dh.tone=-dh.tone;
   saveToStorage();
   if(typeof _updateBudgetNavBadge==='function') _updateBudgetNavBadge();
   if(typeof _updateChecklistNavBadge==='function') _updateChecklistNavBadge();
   if(typeof _updateSeatingNavBadge==='function') _updateSeatingNavBadge();
+  if(typeof _currentPage!=='undefined' && _currentPage==='dashboard' && typeof navigate==='function') navigate('dashboard');
 }
 
 // ══════════════════════════════════════════════
