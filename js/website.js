@@ -2445,6 +2445,7 @@ function _wbGalPMove(e){
   }
   e.preventDefault();
   _wbGalPPlace(e.clientX,e.clientY);
+  _wbTileAutoScroll(e.clientY);
 }
 function _wbGalPUp(e){
   const t=_wbGP; if(!t||e.pointerId!==t.pid) return;
@@ -2481,7 +2482,49 @@ function _wbGalPDEnd(){
   document.removeEventListener('pointercancel',_wbGalPCancel);
   if(t){ if(t.timer) clearTimeout(t.timer); if(t.ghost) t.ghost.remove(); t.tile&&t.tile.classList.remove('wb-tile-drag'); }
   document.querySelectorAll('.wb-tile-over').forEach(n=>n.classList.remove('wb-tile-over'));
+  _wbTileStopAutoScroll();
 }
+// Auto-scroll the section-editor panel while dragging a tile near its top/bottom edge —
+// same edge-band + rAF approach as the dashboard's widget-drag auto-scroll, targeting
+// whichever body is actually on screen: the desktop inline panel column, or the generic
+// modal this same panel becomes on mobile. Shared by both tile-drag systems below
+// (_wbTilePD for section photo blocks, _wbGalPD for the Gallery section's own grid).
+let _wbTileScrollRAF=null, _wbTileScrollV=0;
+function _wbTileScrollEl(){
+  // Desktop inline panel scrolls its own body (.wb-ec-body); the mobile modal's actual
+  // scroller is #modal-box itself (max-height:90vh;overflow-y:auto) — #modal-body inside
+  // it is just padding/flex layout with no overflow of its own.
+  return document.getElementById('wb-ec-body') || document.getElementById('modal-box') || document.scrollingElement || document.documentElement;
+}
+function _wbTileAutoScroll(y){
+  const el=_wbTileScrollEl();
+  let top, H;
+  if(el && el.getBoundingClientRect){
+    const r=el.getBoundingClientRect();
+    top=Math.max(r.top, 0);
+    const bottom=Math.min(r.bottom, window.innerHeight||document.documentElement.clientHeight);
+    H=bottom-top;
+  } else {
+    top=0; H=window.innerHeight||document.documentElement.clientHeight;
+  }
+  const zone=Math.min(90, H*0.18); // edge band
+  const maxV=18;                   // px per frame
+  const dTop=y-top;                // distance from the panel's top edge
+  const dBot=(top+H)-y;            // distance from the panel's bottom edge
+  let v=0;
+  if(dTop < zone)      v = -maxV * (1 - Math.max(dTop,0)/zone);
+  else if(dBot < zone) v =  maxV * (1 - Math.max(dBot,0)/zone);
+  _wbTileScrollV=v;
+  if(v!==0 && _wbTileScrollRAF===null){
+    const step=()=>{
+      const sel=_wbTileScrollEl();
+      if(_wbTileScrollV!==0 && sel){ sel.scrollTop += _wbTileScrollV; _wbTileScrollRAF=requestAnimationFrame(step); }
+      else { _wbTileScrollRAF=null; }
+    };
+    _wbTileScrollRAF=requestAnimationFrame(step);
+  }
+}
+function _wbTileStopAutoScroll(){ _wbTileScrollV=0; if(_wbTileScrollRAF!==null){ cancelAnimationFrame(_wbTileScrollRAF); _wbTileScrollRAF=null; } }
 // Upload a new photo straight into the gallery (website-only). Reuses the shared
 // compressImage + _mediaPut pipeline, so it's stored and walked like every other image.
 function _wbGalleryUpload(){
@@ -4404,6 +4447,7 @@ function _wbTPMove(e){
   }
   e.preventDefault();
   _wbTPPlace(e.clientX,e.clientY);
+  _wbTileAutoScroll(e.clientY);
 }
 function _wbTPUp(e){
   const t=_wbTP; if(!t||e.pointerId!==t.id) return;
@@ -4424,6 +4468,7 @@ function _wbTilePDEnd(){
   document.removeEventListener('pointercancel',_wbTPCancel);
   if(t){ if(t.timer) clearTimeout(t.timer); if(t.ghost) t.ghost.remove(); t.tile&&t.tile.classList.remove('wb-tile-drag'); }
   document.querySelectorAll('.wb-tile-over').forEach(n=>n.classList.remove('wb-tile-over'));
+  _wbTileStopAutoScroll();
 }
 
 // The + tile. Two sources, one destination: an id in this block.
@@ -6566,15 +6611,15 @@ header.hero .ics{box-shadow:0 2px 14px rgba(0,0,0,.22)}
 .navtoggle{display:none}
 h1{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,${sch(60)}px);line-height:1.1;margin-bottom:10px;color:${t2.heading}}
 .eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
-.lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading}}
-.sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scs(15)}px}
+.lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading};white-space:pre-wrap}
+.sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scs(15)}px;white-space:pre-wrap}
 section{max-width:${t2.maxWidth||720}px;margin:0 auto;padding:${secPad}px ${secPadH}px;background:${t2.page};border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
 section+section{margin-top:${secGap}px}
 section.lft{text-align:left}
 section.band{max-width:none;background:${t2.band};border-top:none}
 section.band>*{max-width:${t2.maxWidth||720}px;margin-left:auto;margin-right:auto}
 h2{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(24)}px,4vw,${sch(32)}px);margin-bottom:${sp(12)}px;color:${t2.heading}}
-.intro{max-width:52ch;margin:0 auto ${sp(24)}px;color:${t2.text};font-size:${scs(15)}px}
+.intro{max-width:52ch;margin:0 auto ${sp(24)}px;color:${t2.text};font-size:${scs(15)}px;white-space:pre-wrap}
 section.lft .intro{margin-left:0}
 h2+.imgs-grid,h2+.imgs-rows,.intro+.imgs-grid,.intro+.imgs-rows{margin-top:${sp(18)}px}
 .para{max-width:60ch;margin:0 auto ${sp(16)}px;font-size:${scs(16)}px;text-align:${(['left','center','right','justify'].includes(t2.bodyAlign)?t2.bodyAlign:'left')};${t2.bodyAlign==='justify'?'hyphens:auto;-webkit-hyphens:auto;':''}color:${t2.text}}
@@ -6791,7 +6836,7 @@ section.b-center .faq summary{justify-content:center}
 section.b-center .faq summary::after{position:absolute;right:0}
 section.b-center .faq details{position:relative}
 .faq b{font-family:${t2.headFont};font-size:${sch(19)}px;font-weight:500;display:block;color:${t2.item}}
-.faq p{color:${t2.text};opacity:.85;font-size:${scs(15)}px;margin:0 0 ${sp(14)}px}
+.faq p{color:${t2.text};opacity:.85;font-size:${scs(15)}px;margin:0 0 ${sp(14)}px;white-space:pre-wrap}
 .faq-static .faq-i{border-bottom:1px solid ${t2.heading}12;padding:${sp(14)}px 0}
 .faq-static .faq-i:last-child{border-bottom:none}
 .faq-static .faq-i b{font-family:${t2.headFont};font-size:${sch(19)}px;font-weight:500;display:block;color:${t2.item};margin-bottom:4px}
