@@ -917,7 +917,7 @@ body.dark .nav-seat-count{background:var(--gold);color:#1B1A1E}
 .det-row-plain{margin-bottom:28px}
 @media(max-width:959px){
   .det-row{grid-template-columns:1fr !important}
-  .det-img-box{aspect-ratio:16/9;min-height:0}
+  .det-img-box{aspect-ratio:21/9;min-height:0;order:-1}
 }
 /* RSVP cards per row: forced counts (3/4) collapse to auto-fit on narrow screens */
 .rsvp-card-grid{align-items:stretch}
