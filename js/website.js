@@ -200,6 +200,11 @@ function _wbSite(){
   if(!t.item || String(t.item).indexOf('#')!==0) t.item = t.heading;
   if(!t.headFont) t.headFont="'Cormorant Garamond',serif";
   if(!t.bodyFont) t.bodyFont="'Inter',sans-serif";
+  // The couple's names (h1 / the magazine masthead / the sidebar name) used to share
+  // headFont with every section heading. Same split as item titles above: nameFont gets
+  // its own field, defaulting to whatever headFont already is, so nobody's site changes
+  // on upgrade — only picking a different one for the names, deliberately, diverges them.
+  if(!t.nameFont) t.nameFont=t.headFont;
   if(typeof t.scale!=='number') t.scale=100;
   // v129: one Text size slider became TWO — headings and body scale independently.
   // BOTH inherit the old single value, so a v128 site renders identically on upgrade.
@@ -1016,6 +1021,23 @@ function openWbTheme(){
 }
 let _wbThemeTab = 'colour';
 function _wbSetThemeTab(t){ _wbThemeTab=t; _wbRepaintTheme(); }
+// Preview pin — in-memory only (like _wbThemeTab above), not saved: it's a convenience for
+// this editing session, not a property of the site. A straight class toggle + icon swap
+// in place, same as the rest of this panel's small live patches — no need to rebuild the
+// specimen, which _wbRepaintTheme() already leaves untouched on every other change.
+let _wbPreviewPinned = false;
+function _wbTogglePreviewPin(){
+  _wbPreviewPinned = !_wbPreviewPinned;
+  const wrap=document.getElementById('wb-spec-pinwrap');
+  if(wrap) wrap.classList.toggle('pinned', _wbPreviewPinned);
+  const btn=document.getElementById('wb-spec-pin-btn');
+  if(btn){
+    btn.classList.toggle('on', _wbPreviewPinned);
+    btn.title = _wbPreviewPinned ? 'Unpin preview' : 'Keep preview visible while scrolling';
+    const svg=btn.querySelector('svg');
+    if(svg) svg.setAttribute('fill', _wbPreviewPinned ? 'currentColor' : 'none');
+  }
+}
 
 function _wbThemeBody(){
   const w=_wbSite(), t=w.theme;
@@ -1027,11 +1049,16 @@ function _wbThemeBody(){
   // exactly like .para overrides its section's inherited text-align on the real site.
   const _specHeadAlign = t.align==='left'?'left':(t.align==='right'?'right':'center');
   const _specBodyAlign = ['left','center','right','justify'].includes(t.bodyAlign) ? t.bodyAlign : 'left';
-  const specimen = `<div style="margin-bottom:14px">
-      <div style="font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px">Preview</div>
+  const specimen = `<div class="wb-spec-pin-wrap${_wbPreviewPinned?' pinned':''}" id="wb-spec-pinwrap">
+      <div style="font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;display:flex;align-items:center;justify-content:space-between">
+        <span>Preview</span>
+        <button type="button" id="wb-spec-pin-btn" class="wb-spec-pin-btn${_wbPreviewPinned?' on':''}" title="${_wbPreviewPinned?'Unpin preview':'Keep preview visible while scrolling'}" onclick="_wbTogglePreviewPin()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="${_wbPreviewPinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.4-1.4c-.4-.4-.6-.9-.6-1.4V9c0-2.8-2.2-5-5-5s-5 2.2-5 5v5.2c0 .5-.2 1-.6 1.4L5 17z"/></svg>
+        </button>
+      </div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 2px 14px rgba(0,0,0,.1)">
         <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:24px 16px;text-align:${_specHeadAlign}">
-          <div id="wb-spec-name" style="font-family:${t.headFont};font-size:${Math.round(26*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:3px">${_escHtml(_wbCouple())}</div>
+          <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:3px">${_escHtml(_wbCouple())}</div>
           <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:12px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
           <span style="display:inline-block;font-family:${t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)}">Our story</span>
         </div>
@@ -1083,7 +1110,11 @@ function _wbThemeBody(){
         <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:4px;text-align:center">FONT</div>
       </div>
       <div class="form-group" style="margin-bottom:11px">
-        <label class="form-label">Heading font</label>
+        <label class="form-label">Couple's names font</label>
+        ${_wbFontPickerHtml('nameFont')}
+      </div>
+      <div class="form-group" style="margin-bottom:11px">
+        <label class="form-label">Section heading font</label>
         ${_wbFontPickerHtml('headFont')}
       </div>
       <div class="form-group" style="margin-bottom:14px">
@@ -1410,15 +1441,20 @@ const WB_FORMAT_FONT = {magazine:"'Bodoni Moda',serif", atelier:"'Playfair Displ
 function _wbSetFormat(k){
   const t=_wbSite().theme;
   if(t.format===k) return;
-  const autoNow = t.fmtFontAuto && WB_FORMAT_FONT[t.format] && t.headFont===WB_FORMAT_FONT[t.format];
-  if(autoNow){ t.headFont=t.fmtFontPrev||t.headFont; delete t.fmtFontAuto; delete t.fmtFontPrev; }
-  // Only when the heading font is still the default (or was set by a format) — a font the
-  // couple picked themselves is never overridden.
-  const isDefault = t.fmtFontAuto || !t.headFont || t.headFont==="'Cormorant Garamond',serif";
-  if(WB_FORMAT_FONT[k] && isDefault){
-    if(!t.fmtFontAuto){ t.fmtFontPrev=t.headFont; }
-    t.headFont=WB_FORMAT_FONT[k]; t.fmtFontAuto=true;
-  }
+  // Names and section headings now pick independently, but a format switch still offers
+  // its partner display font to whichever of the two the couple never customised — same
+  // auto/prev tracking as before, just run once per field with its own pair of flags.
+  [['headFont','fmtFontAuto','fmtFontPrev'],['nameFont','fmtNameFontAuto','fmtNameFontPrev']].forEach(([field,autoFlag,prevFlag])=>{
+    const autoNow = t[autoFlag] && WB_FORMAT_FONT[t.format] && t[field]===WB_FORMAT_FONT[t.format];
+    if(autoNow){ t[field]=t[prevFlag]||t[field]; delete t[autoFlag]; delete t[prevFlag]; }
+    // Only when it's still the default (or was set by a format) — a font the couple
+    // picked themselves is never overridden.
+    const isDefault = t[autoFlag] || !t[field] || t[field]==="'Cormorant Garamond',serif";
+    if(WB_FORMAT_FONT[k] && isDefault){
+      if(!t[autoFlag]){ t[prevFlag]=t[field]; }
+      t[field]=WB_FORMAT_FONT[k]; t[autoFlag]=true;
+    }
+  });
   t.format=k;
   saveToStorage();
   _wbRepaintTheme();
@@ -1485,7 +1521,9 @@ function _wbRole(role, hex){
 }
 function _wbFont(which, val){
   const _t=_wbSite().theme;
-  if(which==='headFont'){ delete _t.fmtFontAuto; delete _t.fmtFontPrev; } // their own choice now
+  // their own choice now — stop tracking it against the Format Style's auto-font
+  if(which==='headFont'){ delete _t.fmtFontAuto; delete _t.fmtFontPrev; }
+  if(which==='nameFont'){ delete _t.fmtNameFontAuto; delete _t.fmtNameFontPrev; }
   _t[which]=val;
   saveToStorage();
   _wbRepaintTheme();
@@ -1508,8 +1546,9 @@ function _wbEnsureGoogleFontsLoaded(){
 // point of previewing a font before picking it. This is a button + anchored dropdown
 // instead, mirroring the "+ Add" popup menu's open/close/position idiom.
 function _wbFontList(which){
-  // Script faces are offered for headings only — see WB_FONTS_CURSIVE above.
-  return which==='headFont' ? WB_FONTS.concat(WB_FONTS_CURSIVE) : WB_FONTS;
+  // Script faces are offered on both display fonts (names, section headings) — never
+  // on body copy. See WB_FONTS_CURSIVE above.
+  return which==='bodyFont' ? WB_FONTS : WB_FONTS.concat(WB_FONTS_CURSIVE);
 }
 function _wbFontPickerHtml(which){
   const t=_wbSite().theme;
@@ -1522,7 +1561,7 @@ function _wbFontPickerHtml(which){
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
     <div class="wb-font-menu" id="wb-font-menu-${which}" role="menu" hidden>
-      ${list.map((f,i)=>`${which==='headFont'&&i===WB_FONTS.length?'<div class="wb-font-divider">Cursive</div>':''}<button type="button" role="menuitem" class="wb-font-item ${cur===f[0]?'sel':''}" style="font-family:${_escHtml(f[0])}" onclick="_wbFontPick('${which}',${i})">
+      ${list.map((f,i)=>`${which!=='bodyFont'&&i===WB_FONTS.length?'<div class="wb-font-divider">Cursive</div>':''}<button type="button" role="menuitem" class="wb-font-item ${cur===f[0]?'sel':''}" style="font-family:${_escHtml(f[0])}" onclick="_wbFontPick('${which}',${i})">
         <span>${_escHtml(f[1])}</span>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </button>`).join('')}
@@ -1615,7 +1654,11 @@ function _wbRepaintTheme(){
         <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:4px;text-align:center">FONT</div>
       </div>
       <div class="form-group" style="margin-bottom:11px">
-        <label class="form-label">Heading font</label>
+        <label class="form-label">Couple's names font</label>
+        ${_wbFontPickerHtml('nameFont')}
+      </div>
+      <div class="form-group" style="margin-bottom:11px">
+        <label class="form-label">Section heading font</label>
         ${_wbFontPickerHtml('headFont')}
       </div>
       <div class="form-group" style="margin-bottom:14px">
@@ -1805,7 +1848,7 @@ function _wbRepaintTheme(){
       const _specBodyAlign = ['left','center','right','justify'].includes(t.bodyAlign) ? t.bodyAlign : 'left';
       _hero.style.textAlign=_specHeadAlign;
       const _nm=document.getElementById('wb-spec-name');
-      if(_nm){ _nm.style.color=t.heading; _nm.style.fontFamily=t.headFont; _nm.style.fontSize=Math.round(26*(t.headScale||t.scale||100)/100)+'px'; }
+      if(_nm){ _nm.style.color=t.heading; _nm.style.fontFamily=t.nameFont; _nm.style.fontSize=Math.round(26*(t.headScale||t.scale||100)/100)+'px'; }
       const _dt=document.getElementById('wb-spec-date');
       if(_dt){ _dt.style.color=t.accent; _dt.style.fontFamily=t.bodyFont; }
       const _band=_hero.nextElementSibling;
@@ -6709,7 +6752,7 @@ header.hero .ics{box-shadow:0 2px 14px rgba(0,0,0,.22)}
 .ics svg{width:${scb(14)}px;height:${scb(14)}px;flex-shrink:0}
 .maplink{white-space:nowrap;margin-left:8px;color:${t2.accent};text-decoration:none;font-size:${scb(13)}px;border-bottom:1px solid ${t2.accent}66}
 .navtoggle{display:none}
-h1{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,${sch(60)}px);line-height:1.1;margin-bottom:10px;color:${t2.heading}}
+h1{font-family:${t2.nameFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,${sch(60)}px);line-height:1.1;margin-bottom:10px;color:${t2.heading}}
 .eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading};white-space:pre-wrap}
 .sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scs(15)}px;white-space:pre-wrap}
@@ -6973,7 +7016,7 @@ body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;m
 .mw-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;font-family:'Cinzel',serif;font-weight:400}
 .mw-txt b{font-size:${scb(13)}px;letter-spacing:.1em;font-weight:400;color:${brand.main}}
 .mw-txt i{font-size:${scb(9)}px;letter-spacing:.18em;font-style:normal;color:${brand.sub}}
-.sidebar-names{font-family:${t2.headFont};font-size:${scb(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em}
+.sidebar-names{font-family:${t2.nameFont};font-size:${scb(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em}
 body.sidenav .mw-lock{display:flex;align-items:center;justify-content:center;gap:7px}
 @media(max-width:520px){
   dl div{flex-direction:column;gap:2px}
@@ -7028,7 +7071,7 @@ ${t2.format==='magazine'?`
 .fx-coverimg>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
 header.fx-cover:not(.fx-noimg) .fx-coverimg::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.3) 0%,rgba(0,0,0,0) 34%,rgba(0,0,0,0) 58%,rgba(0,0,0,.5) 100%)}
 .fx-mast,.fx-lines,.fx-issue{position:relative;z-index:2;color:#fff}
-.fx-mast{text-align:center;padding:${sp(26)}px ${sp(20)}px 0;font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(48)}px,10vw,${sch(138)}px);line-height:.88;letter-spacing:-.02em;text-transform:uppercase}
+.fx-mast{text-align:center;padding:${sp(26)}px ${sp(20)}px 0;font-family:${t2.nameFont};font-weight:400;font-size:clamp(${sch(48)}px,10vw,${sch(138)}px);line-height:.88;letter-spacing:-.02em;text-transform:uppercase}
 .fx-mast i{font-style:italic;text-transform:none;font-size:.5em;vertical-align:.3em;letter-spacing:0}
 .fx-lines{max-width:440px;padding:0 0 ${sp(40)}px ${sp(40)}px;margin-top:auto}
 .fx-big{font-family:${t2.headFont};font-size:clamp(${sch(26)}px,3.4vw,${sch(40)}px);line-height:1.08;margin:${sp(6)}px 0 ${sp(12)}px}
