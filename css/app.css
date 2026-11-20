@@ -3456,3 +3456,5 @@ body.dark .tip-search-cat{background:rgba(196,168,130,.14)}
   .tip-ed-media{flex:none;width:100%;aspect-ratio:16/10}
   .tip-ed-title{font-size:23px}
 }
+/* Vendor detail view: hover hint on the photo tile (upload/change). */
+.vdet-photo-hover:hover{opacity:1!important}

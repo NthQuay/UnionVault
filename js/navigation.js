@@ -25,6 +25,8 @@ function navigate(page){
   // Leaving the checklist page closes the Archived sub-page so returning later
   // lands on the normal checklist, not the archive.
   if(page!=='checklist') _clArchivedView=false;
+  // Leaving Vendors drops any open vendor detail page so coming back later lands on the list.
+  if(page!=='vendors' && typeof _vendorDetailId!=='undefined') _vendorDetailId=null;
   // Always land on the topic grid when reached via the sidebar/elsewhere; a tip's own
   // "next topic" link changes _tipsOpenCat and re-navigates to the SAME page, which this
   // leaves alone (only resets when actually leaving/arriving from somewhere else).

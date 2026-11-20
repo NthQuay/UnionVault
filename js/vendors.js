@@ -288,6 +288,16 @@ function renderVendors(c, actions){
     c.innerHTML=_vendorLookupHtml();
     return;
   }
+  if(_vendorDetailId){
+    const v=(STATE.vendors||[]).find(x=>x.id===_vendorDetailId);
+    if(!v){ _vendorDetailId=null; }
+    else {
+      if(!v.attachments) v.attachments=[];
+      actions.innerHTML='';
+      c.innerHTML=_vendorDetailPageHtml(v);
+      return;
+    }
+  }
     actions.innerHTML=`<div id="vendor-btn-group" class="gbtn-group" style="display:inline-flex;align-items:center;gap:5px;justify-content:flex-end;min-width:0"><button class="btn btn-sm btn-primary gbtn vendor-tb-btn" onclick="_vendorOpenForm()" title="New vendor" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;height:30px;box-sizing:border-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="gbtn-label vendor-tb-label">New vendor</span></button>
     <button class="btn btn-sm gbtn vendor-tb-btn" onclick="openVendorPaymentTimeline()" title="Payment timeline — what's owed, when" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;height:30px;box-sizing:border-box"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="gbtn-label vendor-tb-label">Payments</span></button>
     <button class="btn btn-sm gbtn vendor-tb-btn" onclick="_vluOpenMessages(null)" title="Messages — coming soon" style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;height:30px;box-sizing:border-box"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg><span class="gbtn-label vendor-tb-label">Messages</span></button>
@@ -928,9 +938,14 @@ function _vendorCardHtml(v){
     const rc=v.reviewCount?` · ${esc(String(v.reviewCount))} review${String(v.reviewCount)==='1'?'':'s'}`:'';
     return `<div style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);margin-top:5px"><span style="display:inline-flex;gap:1px">${stars}</span><span style="color:var(--ink);font-weight:500">${esc(String(v.rating))}</span>${rc}</div>`;
   })() : '';
+  const cardPhotoOk = v.photo && !_mediaMissing(v.photo);
+  const cardPhotoHtml = cardPhotoOk
+    ? `<div onclick="openVendorDetailPage('${v.id}')" style="margin:-13px -14px 10px;height:130px;overflow:hidden;cursor:pointer" title="Open vendor details"><img src="${_mediaUrl(v.photo)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"/></div>`
+    : '';
   return `<div data-vendor-id="${v.id}" class="vendor-card" style="border-width:2px;border-style:solid;border-radius:12px;padding:13px 14px;background:var(--panel);min-width:0;overflow:hidden">
+    ${cardPhotoHtml}
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-      <div style="min-width:0"><div style="font-size:14px;font-weight:600;color:var(--ink);word-break:break-word">${esc(v.business||'Untitled vendor')}</div>${v.category?`<div style="font-size:10.5px;color:var(--gold-deep);text-transform:uppercase;letter-spacing:.05em;margin-top:1px">${esc(v.category)}</div>`:''}${ratingHtml}</div>
+      <div onclick="openVendorDetailPage('${v.id}')" style="min-width:0;cursor:pointer" title="Open vendor details"><div style="font-size:14px;font-weight:600;color:var(--ink);word-break:break-word">${esc(v.business||'Untitled vendor')}</div>${v.category?`<div style="font-size:10.5px;color:var(--gold-deep);text-transform:uppercase;letter-spacing:.05em;margin-top:1px">${esc(v.category)}</div>`:''}${ratingHtml}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
         <button onclick="_vendorCycleStatus('${v.id}')" title="Tap to change status" style="cursor:pointer;border:none;font-size:10px;font-weight:600;border-radius:6px;padding:2px 8px;text-transform:uppercase;letter-spacing:.04em;background:${sm.bg};color:${sm.fg}">${sm.label}</button>
         <div class="dots-menu">
@@ -948,7 +963,7 @@ function _vendorCardHtml(v){
     ${_vendorInspoRow(v)}
     ${(()=>{ const _op=_vendorOwedPillHtml(v.id); return _op?`<div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">${_op}</div>`:''; })()}
     <div style="display:flex;gap:6px;margin-top:11px;flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px;display:inline-flex;align-items:center;gap:4px" onclick="_vendorOpenHub('${v.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>Hub</button>
+      <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px;display:inline-flex;align-items:center;gap:4px" onclick="openVendorDetailPage('${v.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>Details</button>
       <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px;display:inline-flex;align-items:center;gap:4px" onclick="_vendorApplyToAppt('${v.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>Appointments</button>
       <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px;display:inline-flex;align-items:center;gap:4px" onclick="_vendorLinkTaskPicker('${v.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Link task</button>
       <button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 9px;display:inline-flex;align-items:center;gap:4px" onclick="_vluOpenMessages('${v.id}','saved')" title="Message this vendor — coming soon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>Message</button>
@@ -992,7 +1007,7 @@ function _vendorRowHtml(v){
   if(tCount) bits.push(`${tCount} task${tCount===1?'':'s'}`);
   const sub=bits.join(' · ');
   return `<div data-vendor-id="${v.id}" class="vrow">
-    <div class="vrow-main" onclick="_vendorOpenHub('${v.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_vendorOpenHub('${v.id}')}" title="Open vendor hub">
+    <div class="vrow-main" onclick="openVendorDetailPage('${v.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openVendorDetailPage('${v.id}')}" title="Open vendor details">
       <div class="vrow-top">
         <span class="vrow-name">${esc(v.business||'Untitled vendor')}</span>
         ${v.category?`<span class="vrow-cat">${esc(v.category)}</span>`:''}
@@ -1006,7 +1021,7 @@ function _vendorRowHtml(v){
         ? `<button class="vrow-hub vbtn-brief" onclick="event.stopPropagation();_copyVendorLink('${at.token}',this)" title="Copy active brief link" aria-label="Copy brief link" style="padding:0 8px;width:auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`
         : `<button class="vrow-hub vbtn-brief" onclick="event.stopPropagation();_openVendorBriefModal('${_escHtml(v.business||'')}')" title="Share vendor brief" aria-label="Share vendor brief" style="padding:0 8px;width:auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`; })()}
       <button class="vrow-hub" onclick="event.stopPropagation();_vluOpenMessages('${v.id}','saved')" title="Message this vendor — coming soon" aria-label="Message this vendor"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg></button>
-      <button class="vrow-hub" onclick="event.stopPropagation();_vendorOpenHub('${v.id}')" title="Open vendor hub" aria-label="Open vendor hub"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></button>
+      <button class="vrow-hub" onclick="event.stopPropagation();openVendorDetailPage('${v.id}')" title="Open vendor details" aria-label="Open vendor details"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></button>
       <div class="dots-menu">
         <button class="dots-btn" title="More" aria-label="More" onclick="event.stopPropagation();toggleDots(event,'vrowdots-${v.id}')">···</button>
         <div class="dots-dropdown hidden" id="vrowdots-${v.id}">
@@ -1713,49 +1728,8 @@ function _vendorApplyEdit(vendorId, taskId, apptId){
 }
 // ── Vendor hub: appointments, documents, linked Payment ─────────────────
 let _vendorHubId='';
-function _vendorOpenHub(vendorId){
-  const v=(STATE.vendors||[]).find(x=>x.id===vendorId); if(!v) return;
-  _vendorHubId=vendorId;
-  if(!v.attachments) v.attachments=[];
-  openModal((v.business||'Vendor'), _vendorHubBody(v), '');
-}
-function _vendorHubBody(v){
-  const esc=_escHtml;
-  // Appointments
-  const appts=_vendorAppointments(v);
-  const apptHtml = appts.length ? appts.map(({appt,taskId,reason})=>{
-    const t=STATE.checklist.find(x=>x.id===taskId);
-    const when=[appt.date?fmtBudgetDate(appt.date):'', appt.time?_fmtApptTime(appt.time):''].filter(Boolean).join(', ');
-    const head=[appt.type||'Appointment', when].filter(Boolean).join(' · ');
-    const sub=[t?t.text:'', reason].filter(Boolean).join(' — ');
-    return `<button type="button" onclick="_vendorHubOpenAppt('${taskId||''}','${appt.id}')" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:.5px solid var(--border);border-radius:9px;padding:9px 11px;margin-bottom:7px;cursor:pointer">
-      <span style="width:28px;height:28px;border-radius:7px;background:rgba(196,168,130,.18);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;pointer-events:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
-      <span style="flex:1;min-width:0;pointer-events:none"><span style="display:block;font-size:12.5px;font-weight:500;color:var(--ink)">${esc(head)}</span>${sub?`<span style="display:block;font-size:10.5px;color:var(--muted)">${esc(sub)}</span>`:''}</span>
-      <span style="color:var(--muted);flex-shrink:0;pointer-events:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
-    </button>`;
-  }).join('') : `<div style="font-size:12px;color:var(--muted);padding:10px 2px">No matching appointments yet.</div>`;
-  // Documents
-  const docHtml = _vendorHubDocsHtml(v);
-  // Quotes for this vendor
-  const quoteHtml = _vendorHubQuotesHtml(v);
-  // Payment
-  const budHtml = _vendorHubBudgetHtml(v);
-  const sec=t=>`<div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--gold-deep);font-weight:600;margin:16px 0 8px">${t}</div>`;
-  return `<div style="display:flex;flex-direction:column">
-    ${sec('Appointments with this vendor')}${apptHtml}
-    ${sec('Documents')}<div id="vhub-docs">${docHtml}</div>
-    <div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm" style="font-size:11.5px;display:inline-flex;align-items:center;gap:5px" onclick="_vendorHubAttachNew()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Attach new</button>
-      <button class="btn btn-outline btn-sm" style="font-size:11.5px;display:inline-flex;align-items:center;gap:5px" onclick="_vendorHubPullExisting()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Pull existing</button>
-    </div>
-    <input type="file" id="vhub-file-input" accept="image/*,application/pdf" style="display:none" onchange="_vendorHubHandleFile(event)"/>
-    ${sec('Quotes')}<div id="vhub-quotes">${quoteHtml}</div>
-    <div style="margin-top:9px">
-      <button class="btn btn-outline btn-sm" style="font-size:11.5px;display:inline-flex;align-items:center;gap:5px" onclick="_vendorHubAddQuote()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add quote for this vendor</button>
-    </div>
-    ${sec('Payment')}<div id="vhub-budget">${budHtml}</div>
-  </div>`;
-}
+// (Old plain-hub modal retired — superseded by the tabbed vendor detail PAGE below,
+//  which reuses all the _vendorHub* utility functions that follow.)
 function _vendorHubRefresh(){
   const v=(STATE.vendors||[]).find(x=>x.id===_vendorHubId); if(!v) return;
   const d=document.getElementById('vhub-docs'); if(d) d.innerHTML=_vendorHubDocsHtml(v);
@@ -1916,8 +1890,136 @@ function _vendorHubViewLink(attId){
   else alert('The original file was removed from the budget.');
 }
 function _vendorReopenHub(){
-  const v=(STATE.vendors||[]).find(x=>x.id===_vendorHubId); if(!v){ closeModalDirect(); return; }
-  openModal((v.business||'Vendor'), _vendorHubBody(v), '');
+  // Pull existing / Pull a Payment are modal pickers opened ON TOP of the vendor detail
+  // page; "Back" (or a successful pick) just closes the picker and re-renders the page
+  // underneath, which is still there and now shows the updated Documents/Payments tab.
+  closeModalDirect();
+  navigate('vendors');
+}
+
+// ── Vendor detail PAGE (Details / Notes / Documents / Payments / Tasks) ──
+// Reuses the hub's documents/payments/quotes logic verbatim (same _vendorHubId-keyed
+// functions and #vhub-* element ids) — only the surrounding layout (hero photo, header,
+// tabs) is new.
+let _vendorDetailId=null;
+let _vendorDetailTab='details';
+function openVendorDetailPage(vendorId){
+  _vendorDetailId=vendorId; _vendorHubId=vendorId; _vendorDetailTab='details';
+  navigate('vendors');
+}
+function closeVendorDetailPage(){ _vendorDetailId=null; navigate('vendors'); }
+function _vendorDetailSetTab(tab){ _vendorDetailTab=tab; navigate('vendors'); }
+function _vendorDetailPageHtml(v){
+  const esc=_escHtml;
+  const sm=_vendorStatusMeta(v.status);
+  const photoOk = v.photo && !_mediaMissing(v.photo);
+  const hero = photoOk
+    ? `<img src="${_mediaUrl(v.photo)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"/>`
+    : `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:${sm.bg};color:${sm.fg}">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span style="font-size:12.5px">Add a cover photo</span>
+      </div>`;
+  const header=`<div style="position:relative;width:100%;height:260px;border-radius:16px;overflow:hidden;background:var(--surface);cursor:pointer" onclick="document.getElementById('vdet-photo-input').click()" title="${photoOk?'Change photo':'Add a photo'}">
+    ${hero}
+    <div class="vdet-photo-hover" style="position:absolute;inset:0;background:rgba(0,0,0,.38);opacity:0;transition:opacity .15s;display:flex;align-items:center;justify-content:center;color:#fff;gap:7px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span style="font-size:13px;font-weight:500">${photoOk?'Change photo':'Add a photo'}</span></div>
+  </div>
+  <input type="file" id="vdet-photo-input" accept="image/*" style="display:none" onchange="_vendorDetailPhotoUpload(event)"/>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-top:16px">
+    <div style="min-width:0">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--ink);word-break:break-word">${esc(v.business||'Vendor')}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:2px">${esc(v.category||'')}</div>
+    </div>
+    <span style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:6px 13px;border-radius:20px;background:${sm.bg};color:${sm.fg};flex-shrink:0;white-space:nowrap;margin-top:4px">${esc(sm.label)}</span>
+  </div>`;
+  const tabs=[['details','Details'],['notes','Notes'],['documents','Documents'],['payments','Payments'],['tasks','Tasks']];
+  const tabRow=`<div style="display:flex;gap:22px;border-bottom:1px solid var(--border);margin:18px 0 20px;overflow-x:auto">
+    ${tabs.map(([k,l])=>{
+      const on=_vendorDetailTab===k;
+      return `<button type="button" onclick="_vendorDetailSetTab('${k}')" style="background:none;border:none;padding:9px 1px;font-size:13.5px;font-family:inherit;white-space:nowrap;cursor:pointer;color:${on?'var(--gold-deep)':'var(--muted)'};font-weight:${on?'600':'400'};border-bottom:2px solid ${on?'var(--gold-deep)':'transparent'};margin-bottom:-1px;flex-shrink:0">${l}</button>`;
+    }).join('')}
+  </div>`;
+  return `<div style="max-width:720px">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="closeVendorDetailPage()" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);padding-left:0;margin-bottom:16px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to Vendors
+    </button>
+    ${header}${tabRow}<div id="vdet-tabpane">${_vendorDetailTabHtml(v)}</div>
+  </div>`;
+}
+function _vendorDetailPhotoUpload(e){
+  const file=e.target.files&&e.target.files[0]; if(!file) return;
+  const v=(STATE.vendors||[]).find(x=>x.id===_vendorDetailId); if(!v) return;
+  const reader=new FileReader();
+  reader.onload=async function(ev){
+    const data=await _prepMedia(ev.target.result, file.type);
+    v.photo=await _mediaPut(data, file.name, file.type);
+    saveToStorage();
+    navigate('vendors');
+  };
+  reader.readAsDataURL(file);
+}
+function _vendorDetailTabHtml(v){
+  const esc=_escHtml;
+  if(_vendorDetailTab==='notes'){
+    return `<div style="display:flex;flex-direction:column;gap:8px">
+      <label class="form-label">Private notes</label>
+      <textarea class="form-input" rows="8" placeholder="Anything worth remembering about this vendor…" oninput="_vendorDetailNotesInput(this.value)" style="resize:vertical;font-family:inherit">${esc(v.notes||'')}</textarea>
+      <div style="font-size:11px;color:var(--muted)">Only you and your partner see this.</div>
+    </div>`;
+  }
+  if(_vendorDetailTab==='documents'){
+    return `<div>
+      <div id="vhub-docs">${_vendorHubDocsHtml(v)}</div>
+      <div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" style="font-size:11.5px;display:inline-flex;align-items:center;gap:5px" onclick="_vendorHubAttachNew()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Attach new</button>
+        <button class="btn btn-outline btn-sm" style="font-size:11.5px;display:inline-flex;align-items:center;gap:5px" onclick="_vendorHubPullExisting()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Pull existing</button>
+      </div>
+      <input type="file" id="vhub-file-input" accept="image/*,application/pdf" style="display:none" onchange="_vendorHubHandleFile(event)"/>
+    </div>`;
+  }
+  if(_vendorDetailTab==='payments'){
+    return `<div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--gold-deep);font-weight:600;margin-bottom:8px">Quotes</div>
+      <div id="vhub-quotes">${_vendorHubQuotesHtml(v)}</div>
+      <div style="margin:9px 0 18px"><button class="btn btn-outline btn-sm" style="font-size:11.5px;display:inline-flex;align-items:center;gap:5px" onclick="_vendorHubAddQuote()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add quote</button></div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--gold-deep);font-weight:600;margin-bottom:8px">Linked Payments</div>
+      <div id="vhub-budget">${_vendorHubBudgetHtml(v)}</div>
+    </div>`;
+  }
+  if(_vendorDetailTab==='tasks'){
+    const appts=_vendorAppointments(v);
+    if(!appts.length) return `<div style="font-size:12px;color:var(--muted);padding:10px 2px">No checklist tasks or appointments linked to this vendor yet.</div>`;
+    return appts.map(({appt,taskId,reason})=>{
+      const t=STATE.checklist.find(x=>x.id===taskId);
+      const when=[appt.date?fmtBudgetDate(appt.date):'', appt.time?_fmtApptTime(appt.time):''].filter(Boolean).join(', ');
+      const head=[appt.type||'Appointment', when].filter(Boolean).join(' · ');
+      const sub=[t?t.text:'', reason].filter(Boolean).join(' — ');
+      return `<button type="button" onclick="_vendorHubOpenAppt('${taskId||''}','${appt.id}')" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:.5px solid var(--border);border-radius:9px;padding:9px 11px;margin-bottom:7px;cursor:pointer">
+        <span style="width:28px;height:28px;border-radius:7px;background:rgba(196,168,130,.18);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;pointer-events:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        <span style="flex:1;min-width:0;pointer-events:none"><span style="display:block;font-size:12.5px;font-weight:500;color:var(--ink)">${esc(head)}</span>${sub?`<span style="display:block;font-size:10.5px;color:var(--muted)">${esc(sub)}</span>`:''}</span>
+        <span style="color:var(--muted);flex-shrink:0;pointer-events:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </button>`;
+    }).join('');
+  }
+  // details (default)
+  const phoneIcon='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+  const pinIcon='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+  const mailIcon='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>';
+  const webIcon='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+  const personIcon='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  const line=(icon,val,href)=>val?`<div style="font-size:13px;color:var(--ink);display:flex;align-items:center;gap:9px;margin-top:10px">${icon}${href&&href.startsWith('mailto:')?`<a href="#" data-vm-email="${esc(val)}" data-vm-name="${esc(v.contact||v.business||'')}" onclick="event.preventDefault();openVendorMessageFrom(this)" style="color:var(--gold-deep);text-decoration:underline;word-break:break-word">${esc(val)}</a>`:href?`<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:var(--gold-deep);text-decoration:underline;word-break:break-word">${esc(val)}</a>`:`<span style="word-break:break-word">${esc(val)}</span>`}</div>`:'';
+  return `<div>
+    ${line(personIcon, v.contact, '')}
+    ${line(phoneIcon, v.phone, v.phone?('tel:'+String(v.phone).replace(/[^+\d]/g,'')):'')}
+    ${line(mailIcon, v.email, v.email?('mailto:'+v.email):'')}
+    ${line(pinIcon, v.address, v.address?_mapsUrl(v.address):'')}
+    ${line(webIcon, v.website?_urlDomain(v.website):'', v.website?_normalizeUrl(v.website):'')}
+    <div style="margin-top:18px"><button class="btn btn-outline btn-sm" onclick="_vendorOpenForm('${v.id}')">Edit details</button></div>
+  </div>`;
+}
+function _vendorDetailNotesInput(val){
+  const v=(STATE.vendors||[]).find(x=>x.id===_vendorDetailId); if(!v) return;
+  v.notes=val; saveToStorage();
 }
 // Payment link + live summary
 function _vendorHubBudgetHtml(v){
