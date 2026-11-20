@@ -53,6 +53,15 @@ const WB_FONTS = [
   ["'Raleway',sans-serif",       'Raleway'],
   ["'Josefin Sans',sans-serif",  'Josefin Sans']
 ];
+// Script/cursive stacks — heading-only. A script face reads fine for a couple's name or a
+// section title, but falls apart as paragraph copy, so these never show up in the Body
+// font picker; _wbFontPickerHtml() only appends them to the Heading list.
+const WB_FONTS_CURSIVE = [
+  ["'Great Vibes',cursive",  'Great Vibes'],
+  ["'Alex Brush',cursive",   'Alex Brush'],
+  ["'Parisienne',cursive",   'Parisienne'],
+  ["'Pinyon Script',cursive",'Pinyon Script']
+];
 const WB_CORNERS = { sharp:'0px', round:'10px', pill:'999px' };
 
 // Per-block IMAGE SHAPE — distinct from WB_CORNERS above, which is the site-wide corner
@@ -1491,24 +1500,29 @@ function _wbEnsureGoogleFontsLoaded(){
   const l=document.createElement('link');
   l.id='wb-google-fonts';
   l.rel='stylesheet';
-  l.href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&display=swap";
+  l.href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&family=Great+Vibes&family=Alex+Brush&family=Parisienne&family=Pinyon+Script&display=swap";
   document.head.appendChild(l);
 }
 // Custom font picker — a native <select> can't render each <option> in its own font on
 // mobile (Android/iOS both flatten them to one system font), which defeats the entire
 // point of previewing a font before picking it. This is a button + anchored dropdown
 // instead, mirroring the "+ Add" popup menu's open/close/position idiom.
+function _wbFontList(which){
+  // Script faces are offered for headings only — see WB_FONTS_CURSIVE above.
+  return which==='headFont' ? WB_FONTS.concat(WB_FONTS_CURSIVE) : WB_FONTS;
+}
 function _wbFontPickerHtml(which){
   const t=_wbSite().theme;
   const cur=t[which];
-  const curLabel=(WB_FONTS.find(f=>f[0]===cur)||[])[1] || cur;
+  const list=_wbFontList(which);
+  const curLabel=(list.find(f=>f[0]===cur)||[])[1] || cur;
   return `<div class="wb-font-wrap">
     <button type="button" class="form-input wb-font-trig" aria-haspopup="true" aria-expanded="false" style="font-family:${_escHtml(cur)}" onclick="_wbFontMenuToggle('${which}',event)">
       <span>${_escHtml(curLabel)}</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
     <div class="wb-font-menu" id="wb-font-menu-${which}" role="menu" hidden>
-      ${WB_FONTS.map((f,i)=>`<button type="button" role="menuitem" class="wb-font-item ${cur===f[0]?'sel':''}" style="font-family:${_escHtml(f[0])}" onclick="_wbFontPick('${which}',${i})">
+      ${list.map((f,i)=>`${which==='headFont'&&i===WB_FONTS.length?'<div class="wb-font-divider">Cursive</div>':''}<button type="button" role="menuitem" class="wb-font-item ${cur===f[0]?'sel':''}" style="font-family:${_escHtml(f[0])}" onclick="_wbFontPick('${which}',${i})">
         <span>${_escHtml(f[1])}</span>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </button>`).join('')}
@@ -1559,7 +1573,7 @@ function _wbFontMenuOutside(ev){
 function _wbFontMenuEsc(ev){ if(ev.key==='Escape') _wbFontMenuCloseAll(); }
 function _wbFontPick(which,i){
   _wbFontMenuCloseAll();
-  const f=WB_FONTS[i]; if(!f) return;
+  const f=_wbFontList(which)[i]; if(!f) return;
   _wbFont(which,f[0]);
 }
 // Redraw the modal body in place so the specimen updates live without closing.
@@ -6576,7 +6590,7 @@ function _wbBuildSite(forDownload){
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${_escHtml(_wbCouple())}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&family=Great+Vibes&family=Alex+Brush&family=Parisienne&family=Pinyon+Script&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:${(()=>{const c=String(t2.background||t2.page||'#ffffff').trim();const m=c.match(/^#([0-9a-f]{6})$/i);if(!m) return 'light';const n=parseInt(m[1],16);return(((n>>16)&255)*299+((n>>8)&255)*587+(n&255)*114)/1000<128?'dark':'light';})()}}

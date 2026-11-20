@@ -731,6 +731,7 @@ body.dark .wb-font-menu{box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .wb-font-item svg{flex-shrink:0;color:var(--gold-deep);visibility:hidden}
 body.dark .wb-font-item svg{color:var(--gold)}
 .wb-font-item.sel svg{visibility:visible}
+.wb-font-divider{font-family:'Inter',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:var(--surface);padding:7px 14px;border-bottom:1px solid var(--border)}
 .wb-slot-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
 .wb-slot-lbl{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .wb-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:5px}
