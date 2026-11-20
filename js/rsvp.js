@@ -934,7 +934,10 @@ function _rsvpArrangeBodyHtml(){
   // State icons for the Grid / Dock / Hide selector.
   const icoGrid='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>';
   const icoDock='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
-  const icoHide='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  // Hide button shows an open eye (visible, click to hide) or a crossed-out eye
+  // (hidden, click Grid/Dock to show) — the icon itself tracks current status.
+  const icoEyeOpen='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const icoEyeOff='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
   // One state button. `enabled` false => dimmed + inert (used for Dock past the cap).
   const stateBtn=(key,state,cur,ico,enabled)=>{
     const on=cur===state;
@@ -944,7 +947,7 @@ function _rsvpArrangeBodyHtml(){
     else if(!enabled) style=base+'background:#FBF8F3;border:.5px solid #E3D7C4;color:var(--muted);opacity:.4;cursor:not-allowed';
     else style=base+'background:#FBF8F3;border:.5px solid #E3D7C4;color:var(--gold-deep);cursor:pointer';
     const onclick = (enabled&&!on) ? `_rsvpSetPlacement('${key}','${state}')` : (on?'':'');
-    const title = state==='grid'?'Show in card grid' : state==='dock'?(enabled?'Dock beside tracker':'Dock full — raise tracker height'):'Hide';
+    const title = state==='grid'?'Show in card grid' : state==='dock'?(enabled?'Dock beside tracker':'Dock full — raise tracker height'):(on?'Hidden':'Hide');
     return `<button type="button" ${onclick?`onclick="event.stopPropagation();${onclick}"`:'disabled'} title="${title}" style="${style}">${ico}</button>`;
   };
   // Build the unified section list, inserting draggable "— new row —" dividers before any
@@ -995,9 +998,10 @@ function _rsvpArrangeBodyHtml(){
       ${grip}
       <span style="flex:1;font-size:12.5px;color:${nameColor}">${s[1]}${newTag}</span>
       ${(()=>{
-        if(_isMobile) return `<span style="display:flex;gap:4px">${stateBtn(key,'hide',place,icoHide,true)}</span>`;
+        const _hideIco=place==='hide'?icoEyeOff:icoEyeOpen;
+        if(_isMobile) return `<span style="display:flex;gap:4px">${stateBtn(key,'hide',place,_hideIco,true)}</span>`;
         const _dockBtn=dockable?stateBtn(key,'dock',place,icoDock,dockEnabled):'<span style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.25;color:var(--muted);border:.5px dashed var(--border)" title="Not dockable">'+icoDock+'</span>';
-        return `<span style="display:flex;gap:4px">${stateBtn(key,'grid',place,icoGrid,true)}${_dockBtn}${stateBtn(key,'hide',place,icoHide,true)}</span>`;
+        return `<span style="display:flex;gap:4px">${stateBtn(key,'grid',place,icoGrid,true)}${_dockBtn}${stateBtn(key,'hide',place,_hideIco,true)}</span>`;
       })()}
       ${(!_isMobile && isGrid)?(()=>{
         return prevGridSeen?`<button type="button" onclick="event.stopPropagation();_rsvpToggleRowBreak('${key}')" title="${rowBreaks.has(key)?'Row starts here — click to merge up':'Start a new row here'}" style="background:none;border:none;cursor:pointer;padding:0 0 0 2px;color:${rowBreaks.has(key)?'var(--gold-deep)':'var(--muted)'};flex-shrink:0" aria-label="Toggle row break">
