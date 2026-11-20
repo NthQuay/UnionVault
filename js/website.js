@@ -243,6 +243,11 @@ function _wbSite(){
   if(t.shadow==='soft') t.shadow=33; else if(t.shadow==='lifted') t.shadow=66; else if(typeof t.shadow!=='number') t.shadow=0; else t.shadow=Math.max(0,Math.min(100,t.shadow));
   if(t.cardStyle==='bordered') t.cardStyle=33; else if(t.cardStyle==='bevel') t.cardStyle=66; else if(typeof t.cardStyle!=='number') t.cardStyle=0; else t.cardStyle=Math.max(0,Math.min(100,t.cardStyle));
   if(!['modern','editorial','magazine','atelier'].includes(t.format)) t.format='modern';
+  // Capitalising the couple's names used to be baked into the magazine format's masthead
+  // only, with no way to turn it off there or on anywhere else. Now it's one toggle that
+  // works the same for every format; existing sites default to whatever they already
+  // looked like (on for magazine, off everywhere else) so nobody's site changes on upgrade.
+  if(typeof t.nameCaps!=='boolean') t.nameCaps = (t.format==='magazine');
   t.rsvpMode='modal';
   if(!['thin','medium','bold'].includes(t.btnBorder)) t.btnBorder='medium';
   if(!['center','left','right'].includes(t.align)) t.align='center';
@@ -1114,6 +1119,13 @@ function _wbThemeBody(){
         <label class="form-label">Couple's names font</label>
         ${_wbFontPickerHtml('nameFont')}
       </div>
+      <div class="dark-toggle-row" style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:0">Capitalise couple's names</div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${t.nameCaps?'checked':''} onchange="_wbSet('nameCaps',this.checked)"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
       <div class="form-group" style="margin-bottom:11px">
         <label class="form-label">Section heading font</label>
         ${_wbFontPickerHtml('headFont')}
@@ -1657,6 +1669,13 @@ function _wbRepaintTheme(){
       <div class="form-group" style="margin-bottom:11px">
         <label class="form-label">Couple's names font</label>
         ${_wbFontPickerHtml('nameFont')}
+      </div>
+      <div class="dark-toggle-row" style="margin-bottom:14px">
+        <div class="wb-slot-lbl" style="margin-bottom:0">Capitalise couple's names</div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${t.nameCaps?'checked':''} onchange="_wbSet('nameCaps',this.checked)"/>
+          <div class="toggle-track"></div>
+        </label>
       </div>
       <div class="form-group" style="margin-bottom:11px">
         <label class="form-label">Section heading font</label>
@@ -5663,6 +5682,10 @@ function _wbBuildSite(forDownload){
   const secShadow=_allSh?`box-shadow:${_allSh}`:'';
   const secBorder=_cv>0?`;border:1px solid rgba(0,0,0,${(_cv/100*0.12).toFixed(3)});border-radius:${Math.round(_cv/100*14)}px;padding-left:28px;padding-right:28px`:'';
   const secAlign = t2.align==='left'?'left':(t2.align==='right'?'right':'center');
+  // One toggle for every format — the magazine masthead used to force this on with no way
+  // to turn it off, and no other format could turn it on. h1 covers the couple's names in
+  // the classic/modern/above/below hero styles AND the atelier format's .fx-names h1.
+  const nameCapsCss = t2.nameCaps ? 'uppercase' : 'none';
   // The mark's colourway, resolved once from the PAGE colour — that is what the footer sits
   // on. Not the accent, and not the app's own theme (which is Mandy's, not her guests').
   const brand = _wbBrand(t2.page);
@@ -6772,7 +6795,7 @@ header.hero .ics{box-shadow:0 2px 14px rgba(0,0,0,.22)}
 .ics svg{width:${scb(14)}px;height:${scb(14)}px;flex-shrink:0}
 .maplink{white-space:nowrap;margin-left:8px;color:${t2.accent};text-decoration:none;font-size:${scb(13)}px;border-bottom:1px solid ${t2.accent}66}
 .navtoggle{display:none}
-h1{font-family:${t2.nameFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,${sch(60)}px);line-height:1.1;margin-bottom:10px;color:${t2.heading}}
+h1{font-family:${t2.nameFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,${sch(60)}px);line-height:1.1;margin-bottom:10px;color:${t2.heading};text-transform:${nameCapsCss}}
 .eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading};white-space:pre-wrap}
 .sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scs(15)}px;white-space:pre-wrap}
@@ -7036,7 +7059,7 @@ body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;m
 .mw-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;font-family:'Cinzel',serif;font-weight:400}
 .mw-txt b{font-size:${scb(13)}px;letter-spacing:.1em;font-weight:400;color:${brand.main}}
 .mw-txt i{font-size:${scb(9)}px;letter-spacing:.18em;font-style:normal;color:${brand.sub}}
-.sidebar-names{font-family:${t2.nameFont};font-size:${scb(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em}
+.sidebar-names{font-family:${t2.nameFont};font-size:${scb(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em;text-transform:${nameCapsCss}}
 body.sidenav .mw-lock{display:flex;align-items:center;justify-content:center;gap:4px}
 body.sidenav .mw-txt{margin-top:2px}
 @media(max-width:520px){
@@ -7092,7 +7115,7 @@ ${t2.format==='magazine'?`
 .fx-coverimg>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
 header.fx-cover:not(.fx-noimg) .fx-coverimg::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.3) 0%,rgba(0,0,0,0) 34%,rgba(0,0,0,0) 58%,rgba(0,0,0,.5) 100%)}
 .fx-mast,.fx-lines,.fx-issue{position:relative;z-index:2;color:#fff}
-.fx-mast{text-align:center;padding:${sp(26)}px ${sp(20)}px 0;font-family:${t2.nameFont};font-weight:400;font-size:clamp(${sch(48)}px,10vw,${sch(138)}px);line-height:.88;letter-spacing:-.02em;text-transform:uppercase}
+.fx-mast{text-align:center;padding:${sp(26)}px ${sp(20)}px 0;font-family:${t2.nameFont};font-weight:400;font-size:clamp(${sch(48)}px,10vw,${sch(138)}px);line-height:.88;letter-spacing:-.02em;text-transform:${nameCapsCss}}
 .fx-mast i{font-style:italic;text-transform:none;font-size:.5em;vertical-align:.3em;letter-spacing:0}
 .fx-lines{max-width:440px;padding:0 0 ${sp(40)}px ${sp(40)}px;margin-top:auto}
 .fx-big{font-family:${t2.headFont};font-size:clamp(${sch(26)}px,3.4vw,${sch(40)}px);line-height:1.08;margin:${sp(6)}px 0 ${sp(12)}px}
