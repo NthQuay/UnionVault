@@ -338,11 +338,16 @@ function _cloudAccountHtml(){
     +`<button class="btn btn-primary btn-sm" onclick="openAuthModal('in')" style="display:inline-flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>Sign in</button>`
     +`<button class="btn btn-outline btn-sm" onclick="openAuthModal('up')" style="display:inline-flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Create account</button></div>`;
 
-  const _tierLabel=typeof _uvTier!=='undefined'&&_uvTier==='full'?'Full Access':typeof _uvTier!=='undefined'&&_uvTier==='trial'?'Free Trial':'Free Tier';
-  const _tierBadgeBg=_uvTier==='full'?'rgba(61,148,84,.12)':_uvTier==='trial'?'rgba(196,168,130,.15)':'rgba(196,168,130,.15)';
-  const _tierBadgeColor=_uvTier==='full'?'var(--green,#3D9454)':'var(--gold-deep)';
+  // A granted-access (beta) account has _uvTier==='full' but no real Stripe plan, so the
+  // 'full' branches below (which assume a plan label or at least a paid status) fell
+  // through all the way to the free-tier "Upgrade available" default — same bug class as
+  // the Subscription section in settings.js, which already checks grantedAccess first.
+  const _isGranted=typeof _uvSubDetails!=='undefined'&&_uvSubDetails&&_uvSubDetails.grantedAccess;
+  const _tierLabel=_isGranted?'Beta Access':typeof _uvTier!=='undefined'&&_uvTier==='full'?'Full Access':typeof _uvTier!=='undefined'&&_uvTier==='trial'?'Free Trial':'Free Tier';
+  const _tierBadgeBg=(_isGranted||_uvTier==='full')?'rgba(61,148,84,.12)':_uvTier==='trial'?'rgba(196,168,130,.15)':'rgba(196,168,130,.15)';
+  const _tierBadgeColor=(_isGranted||_uvTier==='full')?'var(--green,#3D9454)':'var(--gold-deep)';
   const _planShort=typeof _uvCurrentPlan==='function'&&_uvCurrentPlan()?_uvCurrentPlan().label:'';
-  const _tierSub=_uvTier==='full'&&_planShort?_planShort:_uvTier==='trial'?(typeof _uvTrialDaysLeft!=='undefined'&&_uvTrialDaysLeft?_uvTrialDaysLeft+' days left':'Trial'):'Upgrade available';
+  const _tierSub=_isGranted?'All features unlocked':_uvTier==='full'&&_planShort?_planShort:_uvTier==='trial'?(typeof _uvTrialDaysLeft!=='undefined'&&_uvTrialDaysLeft?_uvTrialDaysLeft+' days left':'Trial'):'Upgrade available';
 
   return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:12px 14px;background:var(--surface);border:.5px solid var(--border);border-radius:10px">`
     +`<div style="width:36px;height:36px;border-radius:50%;background:var(--parchment);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-deep,#7d5c1b)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>`
