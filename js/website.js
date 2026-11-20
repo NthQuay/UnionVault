@@ -2963,15 +2963,26 @@ function _wbLayoutHtml(key){
           <button type="button" class="${l.body==='right'?'active':''}" onclick="_wbLaySet('${key}','body','right')">Right</button>
           ${_wbIsProse(key)?`<button type="button" class="${l.body==='justify'?'active':''}" onclick="_wbLaySet('${key}','body','justify')">Justify</button>`:''}
         </span>
-      </div>`:''}
+      </div>`:''}`}
       ${key==='gallery'?`<div>
         <div class="wb-slot-lbl" style="margin-bottom:5px">Photo grid</div>
-        <span class="inv-seg">
+        <span class="inv-seg" style="flex-wrap:wrap">
           <button type="button" class="${(!l.grid||l.grid==='left')?'active':''}" onclick="_wbLaySet('gallery','grid','left')">Left</button>
           <button type="button" class="${l.grid==='center'?'active':''}" onclick="_wbLaySet('gallery','grid','center')">Centre</button>
           <button type="button" class="${l.grid==='rows'?'active':''}" onclick="_wbLaySet('gallery','grid','rows')">Rows</button>
+          <button type="button" class="${l.grid==='masonry'?'active':''}" onclick="_wbLaySet('gallery','grid','masonry')">Masonry</button>
+          <button type="button" class="${l.grid==='carousel'?'active':''}" onclick="_wbLaySet('gallery','grid','carousel')">Carousel</button>
+          <button type="button" class="${l.grid==='featured'?'active':''}" onclick="_wbLaySet('gallery','grid','featured')">Featured</button>
         </span>
-      </div>`:''}`}
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4">${
+          l.grid==='masonry' ? 'Photos keep their own shape instead of being cropped square — good for a mixed batch of portrait and landscape shots.' :
+          l.grid==='carousel' ? 'One row guests scroll through sideways — keeps a big gallery from stretching the page, especially on a phone.' :
+          l.grid==='featured' ? 'Your first photo runs large, the rest sit in a grid below.' :
+          l.grid==='rows' ? 'One photo per row, full width — immersive, best for a curated few.' :
+          l.grid==='center' ? 'Fixed-size tiles centred in the row.' :
+          'Tiles stretch to fill each row.'
+        }</div>
+      </div>`:''}
       ${t.globalWidth!==false?'':`<div>
         ${(()=>{const bv=(!l.bg||l.bg==='page')?0:(l.bg==='band'?100:Math.min(100,Math.max(0,Number(l.bg)||0)));const lbl=bv>=100?'Band':bv>0?'Wide page':'Page';return `<div id="wb-bg-lbl-${key}" class="wb-slot-lbl" style="margin-bottom:5px">Width · ${lbl}</div>
         <input type="range" min="0" max="100" step="10" value="${bv}" oninput="_wbBg('${key}',this.value)" style="width:100%;accent-color:var(--gold)"/>
@@ -5137,11 +5148,27 @@ function _wbBuildSite(forDownload){
     }
     if(k==='gallery'){
       const gs=_wbGalleryItems();
-      // v148: gallery grid layout. l.grid in {left(default), center, rows}. `left` is the
-      // pre-v148 look (auto-fill stretch), so an existing site is unchanged on upgrade.
+      // v148: gallery grid layout. l.grid in {left(default), center, rows, masonry,
+      // carousel, featured}. `left` is the pre-v148 look (auto-fill stretch), so an
+      // existing site is unchanged on upgrade. masonry/carousel/featured each have their
+      // own self-contained CSS class (not combined with the base .grid rule) since their
+      // layout model — columns, a scrolling row, or a split hero+grid — isn't a variant of
+      // the plain CSS-grid tile layout the other three share.
       const gl=((w.layout||{}).gallery||{}).grid;
+      if(!gs.length) return wrap(k,'');
+      const img=i=>`<img src="${_mediaUrl(i.image)}" alt="${_escHtml(i.title||'')}" loading="lazy"/>`;
+      if(gl==='masonry'){
+        const cols=[[],[]];
+        gs.forEach((it,i)=>cols[i%2].push(it));
+        return wrap(k, `<div class="grid-masonry">${cols.map(c=>`<div class="gm-col">${c.map(img).join('')}</div>`).join('')}</div>`);
+      }
+      if(gl==='carousel') return wrap(k, `<div class="grid-carousel">${gs.map(img).join('')}</div>`);
+      if(gl==='featured'){
+        const [first,...rest]=gs;
+        return wrap(k, `<div class="grid-featured"><img class="gf-main" src="${_mediaUrl(first.image)}" alt="${_escHtml(first.title||'')}" loading="lazy"/>${rest.length?`<div class="gf-rest">${rest.map(img).join('')}</div>`:''}</div>`);
+      }
       const gcls = gl==='center' ? 'grid grid-center' : gl==='rows' ? 'grid grid-rows' : 'grid';
-      return wrap(k, gs.length?`<div class="${gcls}">${gs.map(i=>`<img src="${_mediaUrl(i.image)}" alt="${_escHtml(i.title||'')}" loading="lazy"/>`).join('')}</div>`:'');
+      return wrap(k, `<div class="${gcls}">${gs.map(img).join('')}</div>`);
     }
     if(k==='wishingwell'){
       const ww=STATE.wishingwell||{};
@@ -6609,6 +6636,30 @@ section.b-center .sched-label{text-align:center}
 /* Stretch (auto-fill + 1fr): tiles grow to fill the row. Two photos become two half-width
    tiles. Centre (auto-fit at a fixed 160px + justify-content): tiles keep their size and
    sit in the middle. The 1fr must go — a fractional unit IS the instruction to fill. */
+/* Masonry: two flex columns (photos pre-split left/right at build time, not CSS
+   column-count — multicol's height-of-container-vs-intrinsic-image-height interaction
+   turned out unreliable in testing, collapsing the whole gallery to a sliver). Each
+   column stacks independently, so a tall photo in one column doesn't force its neighbour
+   to match — photos keep their own aspect ratio instead of being cropped square, good for
+   a mixed batch of portrait and landscape shots. Two columns at every width, phone
+   included — simple and predictable rather than trying to rebalance at a breakpoint.*/
+.grid-masonry{display:flex;gap:${sp(10)}px;align-items:flex-start}
+.grid-masonry .gm-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:${sp(10)}px}
+.grid-masonry img{width:100%;height:auto;display:block;border-radius:${imgRad}}
+/* Carousel: one horizontal row that scrolls on touch/trackpad instead of stacking forever —
+   the mobile-friendliest option for a large batch, since it never pushes the rest of the
+   page down. Cards are sized so the next one peeks in at the edge (a deliberate affordance
+   that there's more to scroll), narrower still on phones so two-plus peek in. */
+.grid-carousel{display:flex;gap:${sp(10)}px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.grid-carousel img{flex:0 0 auto;width:200px;aspect-ratio:1;object-fit:cover;border-radius:${imgRad};scroll-snap-align:start}
+@media(max-width:600px){.grid-carousel img{width:60vw}}
+/* Featured: first photo runs large and full-width (the "hero shot"), the rest sit in a
+   normal stretch grid underneath — a quick way to lead with a couple's favourite image
+   without a separate hero section. */
+.grid-featured{display:flex;flex-direction:column;gap:${sp(10)}px}
+.grid-featured .gf-main{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:${imgRad};display:block}
+.grid-featured .gf-rest{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:${sp(10)}px}
+.grid-featured .gf-rest img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:${imgRad};display:block;margin:0}
 /* ── v133 blocks. NO BACKTICKS IN THESE COMMENTS: this is inside _wbBuildSite()'s template
    literal, where a backtick is live syntax even in a comment. It has bitten three times. */
 .lks{display:flex;flex-direction:column;align-items:center;gap:2px;margin:${sp(18)}px 0}
