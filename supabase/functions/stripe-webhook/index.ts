@@ -31,7 +31,7 @@ serve(async (req) => {
     if (type === 'checkout.session.completed') {
       await handleCheckoutCompleted(event.data.object, SB_URL, SB_SERVICE, STRIPE_KEY)
     } else if (type === 'customer.subscription.updated') {
-      await handleSubUpdated(event.data.object, SB_URL, SB_SERVICE)
+      await handleSubUpdated(event.data.object, event.data.previous_attributes ?? {}, SB_URL, SB_SERVICE, STRIPE_KEY)
     } else if (type === 'customer.subscription.deleted') {
       await handleSubDeleted(event.data.object, SB_URL, SB_SERVICE)
     } else if (type === 'invoice.payment_failed') {
@@ -85,7 +85,9 @@ async function handleCheckoutCompleted(
   })
 }
 
-async function handleSubUpdated(sub: Record<string, unknown>, sbUrl: string, sbKey: string) {
+async function handleSubUpdated(
+  sub: Record<string, unknown>, prevAttrs: Record<string, unknown>, sbUrl: string, sbKey: string, stripeKey: string
+) {
   const subId = sub.id as string
   const status = sub.status as string
 
@@ -112,9 +114,56 @@ async function handleSubUpdated(sub: Record<string, unknown>, sbUrl: string, sbK
     { headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` } }
   )
   const rows = await lookupRes.json()
-  if (rows?.[0]?.user_id) {
-    await sbPatch(sbUrl, sbKey, 'user_profiles', 'user_id', rows[0].user_id, { tier })
+  const userId = rows?.[0]?.user_id as string | undefined
+  if (userId) {
+    await sbPatch(sbUrl, sbKey, 'user_profiles', 'user_id', userId, { tier })
   }
+
+  // A coupon/discount added directly on an existing subscription (an admin applying one by
+  // hand in the Stripe Dashboard, after the original checkout) doesn't necessarily change
+  // `status` — Beth's $0 "Full Access" coupon left her subscription sitting at `trialing`,
+  // so the tier-from-status line above never granted her anything, and her normal trial_end
+  // kept counting down underneath the coupon as if it had never been applied. Same signal
+  // the vendor portal's account log already watches for this (vendor-log.ts: 'discount' in
+  // prev || 'discounts' in prev) — grant real access here too, for however long the coupon
+  // itself says it lasts, via granted_access_until (get_my_subscription already treats that
+  // as the top-priority override, ahead of whatever Stripe's subscription status says).
+  // Best-effort: a failure here must never take down the billing sync above.
+  if (('discount' in prevAttrs || 'discounts' in prevAttrs) && userId) {
+    try { await grantAccessForCoupon(subId, userId, sbUrl, sbKey, stripeKey) }
+    catch (e) { console.error('coupon grant failed', e) }
+  }
+}
+
+// Reads the coupon(s) currently on a subscription and, if any remain, grants the user access
+// for however long that coupon itself lasts — not the subscription's own billing interval
+// (account_events' plan_months, logged by vendor-log.ts, is the latter and is NOT a coupon
+// duration; don't confuse the two). 'forever' coupons get a long-but-finite grant rather than
+// a sentinel, so there's no special-case date floating around for "never expires".
+async function grantAccessForCoupon(subId: string, userId: string, sbUrl: string, sbKey: string, stripeKey: string) {
+  const s = await stripeGet(
+    `subscriptions/${encodeURIComponent(subId)}?expand[]=discounts.source.coupon`,
+    stripeKey
+  )
+  const discounts: Record<string, any>[] = [
+    ...(Array.isArray(s?.discounts) ? s.discounts : []),
+    ...(s?.discount ? [s.discount] : []),
+  ].filter((d) => d && typeof d === 'object')
+  const coupon = discounts.map((d) => d.coupon ?? d.source?.coupon).find((c) => c && typeof c === 'object')
+  if (!coupon) return // no discount currently on the subscription (e.g. it was removed) — nothing to grant
+
+  const months =
+    coupon.duration === 'forever' ? 1200 :
+    coupon.duration === 'repeating' ? Math.max(1, Number(coupon.duration_in_months) || 1) :
+    1 // 'once' — covers one billing cycle
+
+  const until = new Date()
+  until.setMonth(until.getMonth() + months)
+
+  await sbPatch(sbUrl, sbKey, 'user_profiles', 'user_id', userId, {
+    tier: 'full',
+    granted_access_until: until.toISOString(),
+  })
 }
 
 async function handleSubDeleted(sub: Record<string, unknown>, sbUrl: string, sbKey: string) {
