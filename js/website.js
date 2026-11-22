@@ -212,8 +212,64 @@ function _wbSite(){
   // legacy `images`: a migration writes the new shape and leaves the old one alone.
   if(typeof t.headScale!=='number') t.headScale=t.scale;
   if(typeof t.bodyScale!=='number') t.bodyScale=t.scale;
+  // Couple's names size became its own slider, separate from Heading size — previously
+  // the names (h1 / magazine masthead / atelier h1) scaled together with every other
+  // heading. Inherits headScale so nobody's site changes on upgrade.
+  if(typeof t.nameScale!=='number') t.nameScale=t.headScale;
   t.headScale=Math.max(20,Math.min(200,t.headScale));
   t.bodyScale=Math.max(20,Math.min(200,t.bodyScale));
+  t.nameScale=Math.max(20,Math.min(200,t.nameScale));
+  // The Type tab's reorganisation (Theme panel redesign) split "Menu text size" (bodyScale)
+  // into four named sliders — nav/sidebar, small uppercase labels, inline links, the
+  // footer line — because bodyScale secretly drove all of them plus a dozen other things
+  // at once. Each inherits bodyScale's CURRENT value so nobody's site changes on upgrade;
+  // bodyScale itself lives on as the catch-all "Base text size" for everything not given
+  // its own slider.
+  if(typeof t.navScale!=='number') t.navScale=t.bodyScale;
+  if(typeof t.labelScale!=='number') t.labelScale=t.bodyScale;
+  if(typeof t.linkScale!=='number') t.linkScale=t.bodyScale;
+  if(typeof t.footerScale!=='number') t.footerScale=t.bodyScale;
+  t.navScale=Math.max(20,Math.min(200,t.navScale));
+  t.labelScale=Math.max(20,Math.min(200,t.labelScale));
+  t.linkScale=Math.max(20,Math.min(200,t.linkScale));
+  t.footerScale=Math.max(20,Math.min(200,t.footerScale));
+  // Couple's names: alignment used to just follow the section-heading alignment (t.align).
+  // nameAlign splits it out, same inherit-then-diverge rule as nameFont/nameScale above.
+  if(!['left','center','right'].includes(t.nameAlign)) t.nameAlign=t.align;
+  // NOT a falsy check — '' is a legitimate mid-edit state for a custom separator (the
+  // Couple's Names panel's Custom option starts blank), and treating it as "unset" would
+  // silently snap it back to '&' on the very next _wbSite() call, same as the clamp that
+  // once undid the text-size sliders. Only a value that was never a string gets the default.
+  if(typeof t.nameSep!=='string') t.nameSep='&';
+  if(typeof t.nameLetterSpacing!=='number') t.nameLetterSpacing=0;
+  t.nameLetterSpacing=Math.max(-5,Math.min(20,t.nameLetterSpacing));
+  // Section headings: weight/capitalise/letter-spacing never had controls — h2 was always
+  // regular weight, never capitalised, at each format's own hardcoded tracking. Defaults
+  // match that exactly, so nobody's site changes on upgrade.
+  if(!['regular','bold'].includes(t.headWeight)) t.headWeight='regular';
+  if(typeof t.headCaps!=='boolean') t.headCaps=false;
+  if(typeof t.headLetterSpacing!=='number') t.headLetterSpacing=0;
+  t.headLetterSpacing=Math.max(-5,Math.min(20,t.headLetterSpacing));
+  // Body text: line spacing, paragraph spacing and measure were hardcoded (1.7, 16px, 60ch).
+  if(typeof t.lineHeight!=='number') t.lineHeight=170;
+  t.lineHeight=Math.max(120,Math.min(220,t.lineHeight));
+  if(typeof t.paraSpacing!=='number') t.paraSpacing=16;
+  t.paraSpacing=Math.max(0,Math.min(48,t.paraSpacing));
+  if(typeof t.measure!=='number') t.measure=60;
+  t.measure=Math.max(24,Math.min(90,t.measure));
+  // Spacing & Layout: an optional, separate set of values for phone screens. Off by default
+  // — the same gap/padding apply everywhere until a couple turns this on.
+  if(typeof t.mobileCustom!=='boolean') t.mobileCustom=false;
+  if(typeof t.mobileGap!=='number') t.mobileGap=t.gap;
+  if(typeof t.mobilePadding!=='number') t.mobilePadding=t.secpad;
+  // Buttons: font used to silently inherit bodyFont with no override; text case didn't
+  // exist as a setting, but the CTA button has always been rendered uppercase — default
+  // true so nobody's button changes case on upgrade.
+  if(!t.btnFont) t.btnFont=t.bodyFont;
+  if(typeof t.btnUppercase!=='boolean') t.btnUppercase=true;
+  // Section Style: divider and border between/around sections didn't exist.
+  if(!['none','line','ornamental'].includes(t.sectionDivider)) t.sectionDivider='none';
+  if(typeof t.sectionBorder!=='boolean') t.sectionBorder=false;
   // v129: the Save-the-date button. `btnStyle` is how it is drawn; `button` is its colour —
   // a colour that has existed in every preset since v120 and was rendered by NOTHING.
   if(WB_BTN_STYLES.indexOf(t.btnStyle)<0) t.btnStyle='outline';
@@ -425,6 +481,17 @@ function _wbLayout(key){
   // is somehow now structured (or a stale STATE carries justify on Details), fall back
   // rather than writing a CSS class that means nothing.
   if(l.body==='justify' && !_wbIsProse(key)) l.body='left';
+  // Per-section "use global theme settings" replaces the old theme-wide alignGlobal/
+  // globalWidth toggles. Those only ever hid the per-section editor controls — the stored
+  // per-section values kept being applied to the live site underneath regardless of
+  // whether the toggle was on. A section that was never actually customised (still sitting
+  // at the plain defaults set above) starts on global; one with a real divergence (a
+  // Left/Right heading align, a non-left body align, or a width moved off Page) keeps its
+  // own setting, so nobody's site changes on upgrade.
+  if(typeof l.useGlobal!=='boolean'){
+    const customized = l.align==='left' || l.align==='right' || ['center','right','justify'].includes(l.body) || (l.bg && l.bg!=='page');
+    l.useGlobal = !customized;
+  }
   return l;
 }
 
@@ -456,7 +523,8 @@ function _wbHasBody(key){ return WB_NO_BODY.indexOf(key)<0; }
 function _wbCouple(){
   const e = STATE.event||{};
   const a = (e.partner1||'').trim(), b = (e.partner2||'').trim();
-  return (a&&b) ? (a+' & '+b) : (a||b||'Our Wedding');
+  const sep = ((_wbSite()||{}).theme||{}).nameSep || '&';
+  return (a&&b) ? (a+' '+sep+' '+b) : (a||b||'Our Wedding');
 }
 // Days until the wedding. Null when no date is set.
 function _wbDaysLeft(){
@@ -1026,6 +1094,298 @@ function openWbTheme(){
 }
 let _wbThemeTab = 'colour';
 function _wbSetThemeTab(t){ _wbThemeTab=t; _wbRepaintTheme(); }
+// Which Type-tab groups are expanded — session-local UI state, not saved with the site.
+// Couple's Names starts open; everything else starts collapsed.
+let _wbTypeOpen = {names:true};
+function _wbToggleTypeGroup(id){ _wbTypeOpen[id]=!_wbTypeOpen[id]; _wbRepaintTheme(); }
+function _wbTypeGroup(id, label, iconSvg, innerHtml){
+  const open = !!_wbTypeOpen[id];
+  return `<div style="border:1px solid var(--border);border-radius:11px;margin-bottom:9px;overflow:hidden">
+    <button type="button" onclick="_wbToggleTypeGroup('${id}')" style="width:100%;display:flex;align-items:center;gap:11px;padding:12px 13px;background:var(--surface);border:none;cursor:pointer;text-align:left;font-family:inherit">
+      <span style="flex-shrink:0;color:var(--gold-deep);display:flex">${iconSvg}</span>
+      <span style="flex:1;min-width:0;font-size:13.5px;font-weight:600;color:var(--ink)">${label}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--muted);transform:rotate(${open?180:0}deg)"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    ${open?`<div style="padding:15px 14px 16px;display:flex;flex-direction:column;gap:14px">${innerHtml}</div>`:''}
+  </div>`;
+}
+// Couple's names: a custom separator reveals a text input. Bypasses _wbSet()'s full
+// _wbRepaintTheme() on every keystroke — same reason _wbCss() does — a repaint mid-type
+// would steal focus.
+function _wbNameSepCustom(){
+  const t=_wbSite().theme;
+  if(t.nameSep==='&'||t.nameSep==='and') _wbSet('nameSep','');
+}
+function _wbNameSepInput(v){
+  _wbSite().theme.nameSep=v;
+  saveToStorage();
+  _wbLiveSoon();
+  const sp=document.getElementById('wb-spec-name');
+  if(sp) sp.textContent=_wbCouple();
+}
+function _wbTypeTabHtml(t){
+  const sepCustom = !['&','and'].includes(t.nameSep);
+  return _wbTypeGroup('names', "Couple's Names",
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"/></svg>',
+    `<div class="form-group" style="margin-bottom:0">
+      <label class="form-label">Couple's names font</label>
+      ${_wbFontPickerHtml('nameFont')}
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:7px">Alignment</div>
+      <span class="inv-seg">
+        <button type="button" class="${t.nameAlign==='left'?'active':''}" onclick="_wbSet('nameAlign','left')">Left</button>
+        <button type="button" class="${(t.nameAlign||'center')==='center'?'active':''}" onclick="_wbSet('nameAlign','center')">Centre</button>
+        <button type="button" class="${t.nameAlign==='right'?'active':''}" onclick="_wbSet('nameAlign','right')">Right</button>
+      </span>
+    </div>
+    <div class="dark-toggle-row">
+      <div class="wb-slot-lbl" style="margin-bottom:0">Capitalise couple's names</div>
+      <label class="toggle-switch">
+        <input type="checkbox" ${t.nameCaps?'checked':''} onchange="_wbSet('nameCaps',this.checked)"/>
+        <div class="toggle-track"></div>
+      </label>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:7px">Separator between names</div>
+      <span class="inv-seg">
+        <button type="button" class="${t.nameSep==='&'?'active':''}" onclick="_wbSet('nameSep','&')">&amp;</button>
+        <button type="button" class="${t.nameSep==='and'?'active':''}" onclick="_wbSet('nameSep','and')">and</button>
+        <button type="button" class="${sepCustom?'active':''}" onclick="_wbNameSepCustom()">Custom</button>
+      </span>
+      ${sepCustom?`<input class="form-input" value="${_escHtml(t.nameSep||'')}" oninput="_wbNameSepInput(this.value)" placeholder="e.g. +" style="margin-top:8px;font-size:12.5px"/>`:''}
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Couple's names size · ${t.nameScale}%</div>
+      <input type="range" min="20" max="200" step="5" value="${t.nameScale}" oninput="_wbNum('nameScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Name letter-spacing · ${t.nameLetterSpacing>0?'+':''}${t.nameLetterSpacing}</div>
+      <input type="range" min="-5" max="20" step="1" value="${t.nameLetterSpacing}" oninput="_wbNum('nameLetterSpacing',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>`
+  ) + _wbTypeGroup('headings', 'Headings',
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>',
+    `<div class="form-group" style="margin-bottom:0">
+      <label class="form-label">Section heading font</label>
+      ${_wbFontPickerHtml('headFont')}
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
+      <input type="range" min="20" max="200" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:7px">Alignment</div>
+      <span class="inv-seg">
+        <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
+        <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
+        <button type="button" class="${t.align==='right'?'active':''}" onclick="_wbSet('align','right')">Right</button>
+      </span>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:7px">Weight</div>
+      <span class="inv-seg">
+        <button type="button" class="${(t.headWeight||'regular')==='regular'?'active':''}" onclick="_wbSet('headWeight','regular')">Regular</button>
+        <button type="button" class="${t.headWeight==='bold'?'active':''}" onclick="_wbSet('headWeight','bold')">Bold</button>
+      </span>
+    </div>
+    <div class="dark-toggle-row">
+      <div class="wb-slot-lbl" style="margin-bottom:0">Capitalise section headings</div>
+      <label class="toggle-switch">
+        <input type="checkbox" ${t.headCaps?'checked':''} onchange="_wbSet('headCaps',this.checked)"/>
+        <div class="toggle-track"></div>
+      </label>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Heading letter-spacing · ${t.headLetterSpacing>0?'+':''}${t.headLetterSpacing}</div>
+      <input type="range" min="-5" max="20" step="1" value="${t.headLetterSpacing}" oninput="_wbNum('headLetterSpacing',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>`
+  ) + _wbTypeGroup('body', 'Body Text',
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/></svg>',
+    `<div class="form-group" style="margin-bottom:0">
+      <label class="form-label">Body font</label>
+      ${_wbFontPickerHtml('bodyFont')}
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Section text size · ${t.secBodyScale}%</div>
+      <input type="range" min="20" max="200" step="5" value="${t.secBodyScale}" oninput="_wbNum('secBodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:7px">Alignment</div>
+      <span class="inv-seg">
+        <button type="button" class="${(t.bodyAlign||'left')==='left'?'active':''}" onclick="_wbSet('bodyAlign','left')">Left</button>
+        <button type="button" class="${t.bodyAlign==='center'?'active':''}" onclick="_wbSet('bodyAlign','center')">Centre</button>
+        <button type="button" class="${t.bodyAlign==='right'?'active':''}" onclick="_wbSet('bodyAlign','right')">Right</button>
+        <button type="button" class="${t.bodyAlign==='justify'?'active':''}" onclick="_wbSet('bodyAlign','justify')">Justify</button>
+      </span>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Line spacing · ${(t.lineHeight/100).toFixed(2)}</div>
+      <input type="range" min="120" max="220" step="5" value="${t.lineHeight}" oninput="_wbNum('lineHeight',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Paragraph spacing · ${t.paraSpacing} px</div>
+      <input type="range" min="0" max="48" step="2" value="${t.paraSpacing}" oninput="_wbNum('paraSpacing',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Measure (line width) · ${t.measure} ch</div>
+      <input type="range" min="24" max="90" step="2" value="${t.measure}" oninput="_wbNum('measure',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>`
+  ) + _wbTypeGroup('other', 'Other Text',
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>',
+    `<div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Base text size · ${t.bodyScale}%</div>
+      <input type="range" min="20" max="200" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4">The site's default — anything below that isn't given its own value inherits this.</div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Navigation text size · ${t.navScale}%</div>
+      <input type="range" min="20" max="200" step="5" value="${t.navScale}" oninput="_wbNum('navScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4">Nav links, the nav icon, and your names in the sidebar menu.</div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Labels &amp; eyebrows · ${t.labelScale}%</div>
+      <input type="range" min="20" max="200" step="5" value="${t.labelScale}" oninput="_wbNum('labelScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4">Small uppercase labels above headings, date and time labels, wishing well pay labels.</div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Links text size · ${t.linkScale}%</div>
+      <input type="range" min="20" max="200" step="5" value="${t.linkScale}" oninput="_wbNum('linkScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4">Map link, accommodation links, video caption link, external store link.</div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Footer text size · ${t.footerScale}%</div>
+      <input type="range" min="20" max="200" step="5" value="${t.footerScale}" oninput="_wbNum('footerScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4">The footer line only — the "Made with Union Vault" badge keeps its own fixed size.</div>
+    </div>`
+  ) + _wbTypeGroup('spacing', 'Spacing &amp; Layout',
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+    `<div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
+      <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap} px</div>
+      <input type="range" min="0" max="100" step="4" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - vertical · ${t.secpad!=null?t.secpad:52} px</div>
+      <input type="range" min="0" max="200" step="4" value="${t.secpad!=null?t.secpad:52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - horizontal · ${t.secpadH!=null?t.secpadH:24} px</div>
+      <input type="range" min="0" max="100" step="4" value="${t.secpadH!=null?t.secpadH:24}" oninput="_wbNum('secpadH',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>100 px</span></div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Section width · ${t.maxWidth||720} px</div>
+      <input type="range" min="600" max="1400" step="50" value="${t.maxWidth||720}" oninput="_wbNum('maxWidth',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Narrow · 600</span><span>1400 · Wide</span></div>
+    </div>
+    <div class="dark-toggle-row" style="padding-top:12px;border-top:1px dashed var(--border)">
+      <div class="wb-slot-lbl" style="margin-bottom:0">Customise for mobile</div>
+      <label class="toggle-switch">
+        <input type="checkbox" ${t.mobileCustom?'checked':''} onchange="_wbSet('mobileCustom',this.checked)"/>
+        <div class="toggle-track"></div>
+      </label>
+    </div>
+    ${t.mobileCustom?`<div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Mobile section gap · ${t.mobileGap} px</div>
+      <input type="range" min="0" max="100" step="4" value="${t.mobileGap}" oninput="_wbNum('mobileGap',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Mobile section padding · ${t.mobilePadding} px</div>
+      <input type="range" min="0" max="200" step="4" value="${t.mobilePadding}" oninput="_wbNum('mobilePadding',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>`:''}`
+  ) + _wbTypeGroup('buttons', 'Buttons',
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="4"/></svg>',
+    `<div class="form-group" style="margin-bottom:0">
+      <label class="form-label">Button font</label>
+      ${_wbFontPickerHtml('btnFont')}
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Button shape</div>
+      <span class="inv-seg">
+        ${Object.keys(WB_CORNERS).map(c=>`<button type="button" class="${t.corners===c?'active':''}" onclick="_wbCorners('${c}')">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join('')}
+      </span>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Button style</div>
+      <span class="inv-seg" style="margin-bottom:8px">
+        <button type="button" class="${t.btnStyle==='outline'?'active':''}" onclick="_wbBtnStyle('outline')">Outline</button>
+        <button type="button" class="${t.btnStyle==='filled'?'active':''}" onclick="_wbBtnStyle('filled')">Filled</button>
+        <button type="button" class="${t.btnStyle==='soft'?'active':''}" onclick="_wbBtnStyle('soft')">Soft</button>
+      </span>
+      <div class="wb-blk-hint">Its colour is the <b>Button</b> swatch on the Colours tab.</div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Button size</div>
+      <span class="inv-seg">
+        <button type="button" class="${t.btnSize==='sm'?'active':''}" onclick="_wbSet('btnSize','sm')">S</button>
+        <button type="button" class="${t.btnSize==='md'?'active':''}" onclick="_wbSet('btnSize','md')">M</button>
+        <button type="button" class="${t.btnSize==='lg'?'active':''}" onclick="_wbSet('btnSize','lg')">L</button>
+      </span>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Button weight</div>
+      <span class="inv-seg">
+        <button type="button" class="${t.btnBorder==='thin'?'active':''}" onclick="_wbSet('btnBorder','thin')">Thin</button>
+        <button type="button" class="${t.btnBorder==='medium'?'active':''}" onclick="_wbSet('btnBorder','medium')">Medium</button>
+        <button type="button" class="${t.btnBorder==='bold'?'active':''}" onclick="_wbSet('btnBorder','bold')">Bold</button>
+      </span>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Text case</div>
+      <span class="inv-seg">
+        <button type="button" class="${t.btnUppercase===false?'active':''}" onclick="_wbSet('btnUppercase',false)">Normal</button>
+        <button type="button" class="${t.btnUppercase!==false?'active':''}" onclick="_wbSet('btnUppercase',true)">Uppercase</button>
+      </span>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Button shadow</div>
+      <span class="inv-seg">
+        <button type="button" class="${t.btnShadow==='none'?'active':''}" onclick="_wbSet('btnShadow','none')">None</button>
+        <button type="button" class="${t.btnShadow==='soft'?'active':''}" onclick="_wbSet('btnShadow','soft')">Soft</button>
+        <button type="button" class="${t.btnShadow==='strong'?'active':''}" onclick="_wbSet('btnShadow','strong')">Strong</button>
+      </span>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Button bevel</div>
+      <span class="inv-seg">
+        <button type="button" class="${!t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',false)">Off</button>
+        <button type="button" class="${t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',true)">On</button>
+      </span>
+    </div>`
+  ) + _wbTypeGroup('section', 'Section Style',
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>',
+    `<div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow · ${t.shadow||0}</div>
+      <input type="range" min="0" max="100" step="1" value="${t.shadow||0}" oninput="_wbNum('shadow',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>None</span><span>Soft</span><span>Lifted</span><span>Deep</span></div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge · ${t.cardStyle||0}</div>
+      <input type="range" min="0" max="100" step="1" value="${t.cardStyle||0}" oninput="_wbNum('cardStyle',this.value)" style="width:100%;accent-color:var(--gold)"/>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Flat</span><span>Soft</span><span>Round</span><span>Curved</span></div>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:7px">Divider between sections</div>
+      <span class="inv-seg">
+        <button type="button" class="${(t.sectionDivider||'none')==='none'?'active':''}" onclick="_wbSet('sectionDivider','none')">None</button>
+        <button type="button" class="${t.sectionDivider==='line'?'active':''}" onclick="_wbSet('sectionDivider','line')">Line</button>
+        <button type="button" class="${t.sectionDivider==='ornamental'?'active':''}" onclick="_wbSet('sectionDivider','ornamental')">Ornamental</button>
+      </span>
+    </div>
+    <div class="dark-toggle-row">
+      <div class="wb-slot-lbl" style="margin-bottom:0">Section border</div>
+      <label class="toggle-switch">
+        <input type="checkbox" ${t.sectionBorder?'checked':''} onchange="_wbSet('sectionBorder',this.checked)"/>
+        <div class="toggle-track"></div>
+      </label>
+    </div>`
+  );
+}
 // Preview pin — in-memory only (like _wbThemeTab above), not saved: it's a convenience for
 // this editing session, not a property of the site. A straight class toggle + icon swap
 // in place, same as the rest of this panel's small live patches — no need to rebuild the
@@ -1068,12 +1428,12 @@ function _wbThemeBody(){
       </div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 2px 14px rgba(0,0,0,.1)">
         <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:${_wbSpecSp(24,t)}px ${_wbSpecSp(16,t)}px;text-align:${_specHeadAlign}">
-          <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:${_wbSpecSp(3,t)}px">${_escHtml(_wbCouple())}</div>
-          <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:${Math.round(10*(t.bodyScale||100)/100)}px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:${_wbSpecSp(12,t)}px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
-          <span style="display:inline-block;font-family:${t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)}">Our story</span>
+          <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.nameScale||t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:${_wbSpecSp(3,t)}px;text-align:${['left','center','right'].includes(t.nameAlign)?t.nameAlign:'center'};letter-spacing:${(t.nameLetterSpacing||0)/100}em">${_escHtml(_wbCouple())}</div>
+          <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:${Math.round(10*(t.labelScale||100)/100)}px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:${_wbSpecSp(12,t)}px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
+          <span style="display:inline-block;font-family:${t.btnFont||t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)};text-transform:${t.btnUppercase===false?'none':'uppercase'}">Our story</span>
         </div>
         <div id="wb-spec-band" style="background:${_escHtml(t.band)};padding:${_wbSpecSp(12,t)}px ${_wbSpecSp(16,t)}px;text-align:${_specHeadAlign}">
-          <div id="wb-spec-bandhead" style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)}">A banded section</div>
+          <div id="wb-spec-bandhead" style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};font-weight:${t.headWeight==='bold'?700:400};text-transform:${t.headCaps?'uppercase':'none'};letter-spacing:${(t.headLetterSpacing||0)/100}em">A banded section</div>
           <div id="wb-spec-item" style="font-family:${t.headFont};font-weight:500;font-size:${Math.round(13*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.item)};margin-top:${_wbSpecSp(8,t)}px">An item title</div>
           <div id="wb-spec-body" style="font-family:${t.bodyFont};font-size:${Math.round(11*(t.secBodyScale||100)/100)}px;color:${_escHtml(t.text)};margin-top:${_wbSpecSp(5,t)}px;text-align:${_specBodyAlign}">Body text sits here.</div>
         </div>
@@ -1117,160 +1477,7 @@ function _wbThemeBody(){
   }
 
   if(_wbThemeTab==='type'){
-    body = `<div style="margin-bottom:6px">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:4px;text-align:center">FONT</div>
-      </div>
-      <div class="form-group" style="margin-bottom:11px">
-        <label class="form-label">Couple's names font</label>
-        ${_wbFontPickerHtml('nameFont')}
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:0">Capitalise couple's names</div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${t.nameCaps?'checked':''} onchange="_wbSet('nameCaps',this.checked)"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div class="form-group" style="margin-bottom:11px">
-        <label class="form-label">Section heading font</label>
-        ${_wbFontPickerHtml('headFont')}
-      </div>
-      <div class="form-group" style="margin-bottom:14px">
-        <label class="form-label">Body font</label>
-        ${_wbFontPickerHtml('bodyFont')}
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
-        <span class="inv-seg">
-          <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
-          <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
-          <button type="button" class="${t.align==='right'?'active':''}" onclick="_wbSet('align','right')">Right</button>
-        </span>
-      </div>
-      <div style="margin-bottom:20px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Body text alignment</div>
-        <span class="inv-seg">
-          <button type="button" class="${(t.bodyAlign||'left')==='left'?'active':''}" onclick="_wbSet('bodyAlign','left')">Left</button>
-          <button type="button" class="${t.bodyAlign==='center'?'active':''}" onclick="_wbSet('bodyAlign','center')">Centre</button>
-          <button type="button" class="${t.bodyAlign==='right'?'active':''}" onclick="_wbSet('bodyAlign','right')">Right</button>
-          <button type="button" class="${t.bodyAlign==='justify'?'active':''}" onclick="_wbSet('bodyAlign','justify')">Justify</button>
-        </span>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:0">Apply alignment globally</div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${t.alignGlobal!==false?'checked':''} onchange="_wbSetGlobal('alignGlobal')"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
-        <input type="range" min="20" max="200" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Menu text size · ${t.bodyScale}%</div>
-        <input type="range" min="20" max="200" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section text size · ${t.secBodyScale}%</div>
-        <input type="range" min="20" max="200" step="5" value="${t.secBodyScale}" oninput="_wbNum('secBodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
-        <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px;text-align:center">SECTION FORMATTING</div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap} px</div>
-        <input type="range" min="0" max="100" step="4" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - vertical · ${t.secpad!=null?t.secpad:52} px</div>
-        <input type="range" min="0" max="200" step="4" value="${t.secpad!=null?t.secpad:52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - horizontal · ${t.secpadH!=null?t.secpadH:24} px</div>
-        <input type="range" min="0" max="100" step="4" value="${t.secpadH!=null?t.secpadH:24}" oninput="_wbNum('secpadH',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>100 px</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section width · ${t.maxWidth||720} px</div>
-        <input type="range" min="600" max="1400" step="50" value="${t.maxWidth||720}" oninput="_wbNum('maxWidth',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Narrow · 600</span><span>1400 · Wide</span></div>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${t.globalWidth!==false?'checked':''} onchange="_wbSetGlobal('globalWidth')"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px;text-align:center">BUTTONS</div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button shape</div>
-          <span class="inv-seg">
-            ${Object.keys(WB_CORNERS).map(c=>`<button type="button" class="${t.corners===c?'active':''}" onclick="_wbCorners('${c}')">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join('')}
-          </span>
-        </div>
-        <div style="margin-bottom:4px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button style</div>
-          <span class="inv-seg" style="margin-bottom:8px">
-            <button type="button" class="${t.btnStyle==='outline'?'active':''}" onclick="_wbBtnStyle('outline')">Outline</button>
-            <button type="button" class="${t.btnStyle==='filled'?'active':''}" onclick="_wbBtnStyle('filled')">Filled</button>
-            <button type="button" class="${t.btnStyle==='soft'?'active':''}" onclick="_wbBtnStyle('soft')">Soft</button>
-          </span>
-          <div class="wb-blk-hint" style="margin-bottom:10px">Its colour is the <b>Button</b> swatch on the Colours tab.</div>
-        </div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button size</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.btnSize==='sm'?'active':''}" onclick="_wbSet('btnSize','sm')">S</button>
-            <button type="button" class="${t.btnSize==='md'?'active':''}" onclick="_wbSet('btnSize','md')">M</button>
-            <button type="button" class="${t.btnSize==='lg'?'active':''}" onclick="_wbSet('btnSize','lg')">L</button>
-          </span>
-        </div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button weight</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.btnBorder==='thin'?'active':''}" onclick="_wbSet('btnBorder','thin')">Thin</button>
-            <button type="button" class="${t.btnBorder==='medium'?'active':''}" onclick="_wbSet('btnBorder','medium')">Medium</button>
-            <button type="button" class="${t.btnBorder==='bold'?'active':''}" onclick="_wbSet('btnBorder','bold')">Bold</button>
-          </span>
-        </div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button shadow</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.btnShadow==='none'?'active':''}" onclick="_wbSet('btnShadow','none')">None</button>
-            <button type="button" class="${t.btnShadow==='soft'?'active':''}" onclick="_wbSet('btnShadow','soft')">Soft</button>
-            <button type="button" class="${t.btnShadow==='strong'?'active':''}" onclick="_wbSet('btnShadow','strong')">Strong</button>
-          </span>
-        </div>
-        <div>
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button bevel</div>
-          <span class="inv-seg">
-            <button type="button" class="${!t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',false)">Off</button>
-            <button type="button" class="${t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',true)">On</button>
-          </span>
-        </div>
-      </div>
-      <div style="margin-bottom:14px;padding-top:4px;border-top:1px solid var(--border)">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">SECTIONS</div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow · ${t.shadow||0}</div>
-          <input type="range" min="0" max="100" step="1" value="${t.shadow||0}" oninput="_wbNum('shadow',this.value)" style="width:100%;accent-color:var(--gold)"/>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>None</span><span>Soft</span><span>Lifted</span><span>Deep</span></div>
-        </div>
-        <div>
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge · ${t.cardStyle||0}</div>
-          <input type="range" min="0" max="100" step="1" value="${t.cardStyle||0}" oninput="_wbNum('cardStyle',this.value)" style="width:100%;accent-color:var(--gold)"/>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Flat</span><span>Soft</span><span>Round</span><span>Curved</span></div>
-        </div>
-      </div>`;
+    body = _wbTypeTabHtml(t);
   }
 
   if(_wbThemeTab==='advanced'){
@@ -1390,11 +1597,11 @@ function _wbBtnStyle(v){
 }
 function _wbNum(field, v){
   const n=(v===''||v===null||v===undefined||isNaN(+v))?100:+v;
-  // The three text scales have a real range (20–200). Clamp INTO it rather than resetting
-  // to 100 on anything unexpected — a slider that jumps to the middle when it disagrees
-  // with you is worse than one that stops at its own edge.
-  _wbSite().theme[field] = (field==='headScale'||field==='bodyScale'||field==='secBodyScale')
-    ? Math.max(20, Math.min(200, n)) : n;
+  // The text scales have a real range (20–200). Clamp INTO it rather than resetting to
+  // 100 on anything unexpected — a slider that jumps to the middle when it disagrees with
+  // you is worse than one that stops at its own edge.
+  const SCALE_FIELDS=['headScale','bodyScale','secBodyScale','nameScale','navScale','labelScale','linkScale','footerScale'];
+  _wbSite().theme[field] = SCALE_FIELDS.includes(field) ? Math.max(20, Math.min(200, n)) : n;
   saveToStorage();
   _wbLiveSoon();
   // Update the readout in place — a full repaint would kill the slider mid-drag.
@@ -1402,29 +1609,46 @@ function _wbNum(field, v){
   const labs=document.querySelectorAll('#modal-body .wb-slot-lbl, #wb-ec-body .wb-slot-lbl');
   labs.forEach(l=>{
     if(l.textContent.indexOf('Heading size')===0) l.textContent='Heading size · '+t.headScale+'%';
-    if(l.textContent.indexOf('Menu text size')===0) l.textContent='Menu text size · '+t.bodyScale+'%';
+    if(l.textContent.indexOf("Couple's names size")===0) l.textContent="Couple's names size · "+t.nameScale+'%';
+    if(l.textContent.indexOf('Name letter-spacing')===0) l.textContent='Name letter-spacing · '+(t.nameLetterSpacing>0?'+':'')+t.nameLetterSpacing;
+    if(l.textContent.indexOf('Heading letter-spacing')===0) l.textContent='Heading letter-spacing · '+(t.headLetterSpacing>0?'+':'')+t.headLetterSpacing;
     if(l.textContent.indexOf('Section text size')===0) l.textContent='Section text size · '+t.secBodyScale+'%';
+    if(l.textContent.indexOf('Line spacing')===0) l.textContent='Line spacing · '+(t.lineHeight/100).toFixed(2);
+    if(l.textContent.indexOf('Paragraph spacing')===0) l.textContent='Paragraph spacing · '+t.paraSpacing+' px';
+    if(l.textContent.indexOf('Measure (line width)')===0) l.textContent='Measure (line width) · '+t.measure+' ch';
+    if(l.textContent.indexOf('Base text size')===0) l.textContent='Base text size · '+t.bodyScale+'%';
+    if(l.textContent.indexOf('Navigation text size')===0) l.textContent='Navigation text size · '+t.navScale+'%';
+    if(l.textContent.indexOf('Labels &amp; eyebrows')===0 || l.textContent.indexOf('Labels & eyebrows')===0) l.textContent='Labels & eyebrows · '+t.labelScale+'%';
+    if(l.textContent.indexOf('Links text size')===0) l.textContent='Links text size · '+t.linkScale+'%';
+    if(l.textContent.indexOf('Footer text size')===0) l.textContent='Footer text size · '+t.footerScale+'%';
     if(l.textContent.indexOf('Spacing')===0)      l.textContent='Spacing · '+(t.space<95?'Snug':(t.space>105?'Airy':'Normal'));
     if(l.textContent.indexOf('Section gap')===0)  l.textContent='Section gap · '+t.gap+' px';
     if(l.textContent.indexOf('Section padding - vertical')===0) l.textContent='Section padding - vertical · '+(t.secpad!=null?t.secpad:52)+' px';
     if(l.textContent.indexOf('Section padding - horizontal')===0) l.textContent='Section padding - horizontal · '+(t.secpadH!=null?t.secpadH:24)+' px';
     if(l.textContent.indexOf('Section width')===0) l.textContent='Section width · '+(t.maxWidth||720)+' px';
+    if(l.textContent.indexOf('Mobile section gap')===0) l.textContent='Mobile section gap · '+t.mobileGap+' px';
+    if(l.textContent.indexOf('Mobile section padding')===0) l.textContent='Mobile section padding · '+t.mobilePadding+' px';
     if(l.textContent.indexOf('Section shadow')===0) l.textContent='Section shadow · '+(t.shadow||0);
     if(l.textContent.indexOf('Card edge')===0) l.textContent='Card edge · '+(t.cardStyle||0);
   });
-  // Heading size affects every heading-level specimen line (name, band heading, item
-  // title); Menu text size affects the date (it's "furniture", same role as nav links);
-  // Section text size affects the body paragraph. Previously only the name's size was
-  // ever patched here, so Menu/Section text size looked like they did nothing at all —
-  // the specimen just never had anything wired to them, even on first render.
+  // Heading size affects the band heading and item title; Couple's names size affects
+  // the name line on its own (split out so the names can be sized independently of
+  // section headings); the date follows Labels & eyebrows (same role as the real site's
+  // date/time labels); Section text size affects the body paragraph.
   const sp=document.getElementById('wb-spec-name');
-  if(sp) sp.style.fontSize=Math.round(26*t.headScale/100)+'px';
+  if(sp){
+    sp.style.fontSize=Math.round(26*(t.nameScale||t.headScale)/100)+'px';
+    sp.style.letterSpacing=((t.nameLetterSpacing||0)/100)+'em';
+  }
   const bh=document.getElementById('wb-spec-bandhead');
-  if(bh) bh.style.fontSize=Math.round(15*t.headScale/100)+'px';
+  if(bh){
+    bh.style.fontSize=Math.round(15*t.headScale/100)+'px';
+    bh.style.letterSpacing=((t.headLetterSpacing||0)/100)+'em';
+  }
   const bi=document.getElementById('wb-spec-item');
   if(bi) bi.style.fontSize=Math.round(13*t.headScale/100)+'px';
   const dt=document.getElementById('wb-spec-date');
-  if(dt) dt.style.fontSize=Math.round(10*t.bodyScale/100)+'px';
+  if(dt) dt.style.fontSize=Math.round(10*(t.labelScale||100)/100)+'px';
   const bb=document.getElementById('wb-spec-body');
   if(bb) bb.style.fontSize=Math.round(11*t.secBodyScale/100)+'px';
   // Spacing: same multiplier as the real site's sp() helper, applied to the card's own
@@ -1505,17 +1729,6 @@ function _wbSet(field, val){
   t[field]=val;
   saveToStorage();
   _wbRepaintTheme();
-}
-function _wbSetGlobal(field){
-  const t=_wbSite().theme;
-  t[field] = t[field]===false ? true : false;
-  saveToStorage();
-  _wbRepaintTheme();
-  document.querySelectorAll('[id^="wb-lay-"]').forEach(box=>{
-    const key=box.id.slice(7);
-    box.outerHTML=_wbLayoutHtml(key);
-  });
-  _wbLivePaint();
 }
 // The custom CSS lands raw inside the guest site's <style> block. A stray "</style>" in
 // the box would close that block early and drop the rest of the CSS into the document as
@@ -1690,160 +1903,7 @@ function _wbRepaintTheme(){
       <div>${ROLES.map(r=>roleRow(r[0],r[1])).join('')}</div>`;
     }
     if(_wbThemeTab==='type'){
-      body=`<div style="margin-bottom:6px">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:4px;text-align:center">FONT</div>
-      </div>
-      <div class="form-group" style="margin-bottom:11px">
-        <label class="form-label">Couple's names font</label>
-        ${_wbFontPickerHtml('nameFont')}
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:0">Capitalise couple's names</div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${t.nameCaps?'checked':''} onchange="_wbSet('nameCaps',this.checked)"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div class="form-group" style="margin-bottom:11px">
-        <label class="form-label">Section heading font</label>
-        ${_wbFontPickerHtml('headFont')}
-      </div>
-      <div class="form-group" style="margin-bottom:14px">
-        <label class="form-label">Body font</label>
-        ${_wbFontPickerHtml('bodyFont')}
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading text alignment</div>
-        <span class="inv-seg">
-          <button type="button" class="${t.align==='left'?'active':''}" onclick="_wbSet('align','left')">Left</button>
-          <button type="button" class="${t.align==='center'?'active':''}" onclick="_wbSet('align','center')">Centre</button>
-          <button type="button" class="${t.align==='right'?'active':''}" onclick="_wbSet('align','right')">Right</button>
-        </span>
-      </div>
-      <div style="margin-bottom:20px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Body text alignment</div>
-        <span class="inv-seg">
-          <button type="button" class="${(t.bodyAlign||'left')==='left'?'active':''}" onclick="_wbSet('bodyAlign','left')">Left</button>
-          <button type="button" class="${t.bodyAlign==='center'?'active':''}" onclick="_wbSet('bodyAlign','center')">Centre</button>
-          <button type="button" class="${t.bodyAlign==='right'?'active':''}" onclick="_wbSet('bodyAlign','right')">Right</button>
-          <button type="button" class="${t.bodyAlign==='justify'?'active':''}" onclick="_wbSet('bodyAlign','justify')">Justify</button>
-        </span>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:0">Apply alignment globally</div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${t.alignGlobal!==false?'checked':''} onchange="_wbSetGlobal('alignGlobal')"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
-        <input type="range" min="20" max="200" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Menu text size · ${t.bodyScale}%</div>
-        <input type="range" min="20" max="200" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section text size · ${t.secBodyScale}%</div>
-        <input type="range" min="20" max="200" step="5" value="${t.secBodyScale}" oninput="_wbNum('secBodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
-        <input type="range" min="70" max="140" step="10" value="${t.space}" oninput="_wbNum('space',this.value)" style="width:100%;accent-color:var(--gold)"/>
-      </div>
-      <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px;text-align:center">SECTION FORMATTING</div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section gap · ${t.gap} px</div>
-        <input type="range" min="0" max="100" step="4" value="${t.gap}" oninput="_wbNum('gap',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Touching</span><span>100 px apart</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - vertical · ${t.secpad!=null?t.secpad:52} px</div>
-        <input type="range" min="0" max="200" step="4" value="${t.secpad!=null?t.secpad:52}" oninput="_wbNum('secpad',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>200 px</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section padding - horizontal · ${t.secpadH!=null?t.secpadH:24} px</div>
-        <input type="range" min="0" max="100" step="4" value="${t.secpadH!=null?t.secpadH:24}" oninput="_wbNum('secpadH',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>No padding</span><span>100 px</span></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:6px">Section width · ${t.maxWidth||720} px</div>
-        <input type="range" min="600" max="1400" step="50" value="${t.maxWidth||720}" oninput="_wbNum('maxWidth',this.value)" style="width:100%;accent-color:var(--gold)"/>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Narrow · 600</span><span>1400 · Wide</span></div>
-      </div>
-      <div class="dark-toggle-row" style="margin-bottom:14px">
-        <div class="wb-slot-lbl" style="margin-bottom:0">Apply section width globally</div>
-        <label class="toggle-switch">
-          <input type="checkbox" ${t.globalWidth!==false?'checked':''} onchange="_wbSetGlobal('globalWidth')"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-      <div style="margin-bottom:10px;padding-top:4px;border-top:1px solid var(--border)">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px;text-align:center">BUTTONS</div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button shape</div>
-          <span class="inv-seg">
-            ${Object.keys(WB_CORNERS).map(c=>`<button type="button" class="${t.corners===c?'active':''}" onclick="_wbCorners('${c}')">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join('')}
-          </span>
-        </div>
-        <div style="margin-bottom:4px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button style</div>
-          <span class="inv-seg" style="margin-bottom:8px">
-            <button type="button" class="${t.btnStyle==='outline'?'active':''}" onclick="_wbBtnStyle('outline')">Outline</button>
-            <button type="button" class="${t.btnStyle==='filled'?'active':''}" onclick="_wbBtnStyle('filled')">Filled</button>
-            <button type="button" class="${t.btnStyle==='soft'?'active':''}" onclick="_wbBtnStyle('soft')">Soft</button>
-          </span>
-          <div class="wb-blk-hint" style="margin-bottom:10px">Its colour is the <b>Button</b> swatch on the Colours tab.</div>
-        </div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button size</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.btnSize==='sm'?'active':''}" onclick="_wbSet('btnSize','sm')">S</button>
-            <button type="button" class="${t.btnSize==='md'?'active':''}" onclick="_wbSet('btnSize','md')">M</button>
-            <button type="button" class="${t.btnSize==='lg'?'active':''}" onclick="_wbSet('btnSize','lg')">L</button>
-          </span>
-        </div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button weight</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.btnBorder==='thin'?'active':''}" onclick="_wbSet('btnBorder','thin')">Thin</button>
-            <button type="button" class="${t.btnBorder==='medium'?'active':''}" onclick="_wbSet('btnBorder','medium')">Medium</button>
-            <button type="button" class="${t.btnBorder==='bold'?'active':''}" onclick="_wbSet('btnBorder','bold')">Bold</button>
-          </span>
-        </div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button shadow</div>
-          <span class="inv-seg">
-            <button type="button" class="${t.btnShadow==='none'?'active':''}" onclick="_wbSet('btnShadow','none')">None</button>
-            <button type="button" class="${t.btnShadow==='soft'?'active':''}" onclick="_wbSet('btnShadow','soft')">Soft</button>
-            <button type="button" class="${t.btnShadow==='strong'?'active':''}" onclick="_wbSet('btnShadow','strong')">Strong</button>
-          </span>
-        </div>
-        <div>
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Button bevel</div>
-          <span class="inv-seg">
-            <button type="button" class="${!t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',false)">Off</button>
-            <button type="button" class="${t.btnBevel?'active':''}" onclick="_wbSet('btnBevel',true)">On</button>
-          </span>
-        </div>
-      </div>
-      <div style="margin-bottom:14px;padding-top:4px;border-top:1px solid var(--border)">
-        <div class="wb-slot-lbl" style="font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;margin-top:10px">SECTIONS</div>
-        <div style="margin-bottom:14px">
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Section shadow · ${t.shadow||0}</div>
-          <input type="range" min="0" max="100" step="1" value="${t.shadow||0}" oninput="_wbNum('shadow',this.value)" style="width:100%;accent-color:var(--gold)"/>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>None</span><span>Soft</span><span>Lifted</span><span>Deep</span></div>
-        </div>
-        <div>
-          <div class="wb-slot-lbl" style="margin-bottom:6px">Card edge · ${t.cardStyle||0}</div>
-          <input type="range" min="0" max="100" step="1" value="${t.cardStyle||0}" oninput="_wbNum('cardStyle',this.value)" style="width:100%;accent-color:var(--gold)"/>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Flat</span><span>Soft</span><span>Round</span><span>Curved</span></div>
-        </div>
-      </div>`;
+      body=_wbTypeTabHtml(t);
     }
     if(_wbThemeTab==='advanced'){
       body=`<div style="margin-bottom:14px">
@@ -1895,22 +1955,39 @@ function _wbRepaintTheme(){
       const _specBodyAlign = ['left','center','right','justify'].includes(t.bodyAlign) ? t.bodyAlign : 'left';
       _hero.style.textAlign=_specHeadAlign;
       const _nm=document.getElementById('wb-spec-name');
-      if(_nm){ _nm.style.color=t.heading; _nm.style.fontFamily=t.nameFont; _nm.style.fontSize=Math.round(26*(t.headScale||t.scale||100)/100)+'px'; }
+      if(_nm){
+        _nm.textContent=_wbCouple();
+        _nm.style.color=t.heading; _nm.style.fontFamily=t.nameFont;
+        _nm.style.fontSize=Math.round(26*(t.nameScale||t.headScale||t.scale||100)/100)+'px';
+        _nm.style.textAlign=['left','center','right'].includes(t.nameAlign)?t.nameAlign:'center';
+        _nm.style.letterSpacing=((t.nameLetterSpacing||0)/100)+'em';
+      }
       const _dt=document.getElementById('wb-spec-date');
-      if(_dt){ _dt.style.color=t.accent; _dt.style.fontFamily=t.bodyFont; _dt.style.fontSize=Math.round(10*(t.bodyScale||100)/100)+'px'; }
+      if(_dt){ _dt.style.color=t.accent; _dt.style.fontFamily=t.bodyFont; _dt.style.fontSize=Math.round(10*(t.labelScale||100)/100)+'px'; }
       const _band=_hero.nextElementSibling;
       if(_band){
         _band.style.background=t.band;
         _band.style.textAlign=_specHeadAlign;
         const _bh=_band.firstElementChild;
-        if(_bh){ _bh.style.color=t.heading; _bh.style.fontFamily=t.headFont; _bh.style.fontSize=Math.round(15*(t.headScale||t.scale||100)/100)+'px'; }
+        if(_bh){
+          _bh.style.color=t.heading; _bh.style.fontFamily=t.headFont;
+          _bh.style.fontSize=Math.round(15*(t.headScale||t.scale||100)/100)+'px';
+          _bh.style.fontWeight=t.headWeight==='bold'?'700':'400';
+          _bh.style.textTransform=t.headCaps?'uppercase':'none';
+          _bh.style.letterSpacing=((t.headLetterSpacing||0)/100)+'em';
+        }
         const _bi=document.getElementById('wb-spec-item');
         if(_bi){ _bi.style.color=t.item; _bi.style.fontFamily=t.headFont; _bi.style.fontSize=Math.round(13*(t.headScale||t.scale||100)/100)+'px'; }
         const _bb=_band.lastElementChild;
         if(_bb){ _bb.style.color=t.text; _bb.style.fontFamily=t.bodyFont; _bb.style.fontSize=Math.round(11*(t.secBodyScale||100)/100)+'px'; _bb.style.textAlign=_specBodyAlign; }
       }
       const _btn=_hero.querySelector('span[style*="background"]');
-      if(_btn){ _btn.style.background=t.button; _btn.style.color=_wbInk(t.button); _btn.style.fontFamily=t.bodyFont; _btn.style.borderRadius=WB_CORNERS[t.corners]||WB_CORNERS.round; }
+      if(_btn){
+        _btn.style.background=t.button; _btn.style.color=_wbInk(t.button);
+        _btn.style.fontFamily=t.btnFont||t.bodyFont;
+        _btn.style.textTransform=t.btnUppercase===false?'none':'uppercase';
+        _btn.style.borderRadius=WB_CORNERS[t.corners]||WB_CORNERS.round;
+      }
     }
     _wbLiveSoon();
     return;
@@ -3177,7 +3254,7 @@ function _wbLayoutHtml(key){
   if(WB_NO_LAYOUT.indexOf(key)>=0) return '';
   const l=_wbLayout(key);
   const m=_wbMeta(key)||{};
-  const t=_wbSite().theme;
+  const useGlobal = l.useGlobal!==false;
   return `<div id="wb-lay-${key}" class="wb-lay" style="margin-top:10px">
     <div class="wb-slot-lbl" style="margin-bottom:9px">Layout</div>
     <div class="form-group" style="margin-bottom:9px">
@@ -3185,8 +3262,15 @@ function _wbLayoutHtml(key){
       <input class="form-input" value="${_escHtml(l.heading||'')}" placeholder="${_escHtml(m.name||'')}"
              oninput="_wbLaySet('${key}','heading',this.value)" style="font-size:12.5px"/>
     </div>
+    <div class="dark-toggle-row" style="margin-bottom:9px">
+      <div class="wb-slot-lbl" style="margin-bottom:0">Use global theme settings</div>
+      <label class="toggle-switch">
+        <input type="checkbox" ${useGlobal?'checked':''} onchange="_wbLaySetGlobal('${key}',this.checked)"/>
+        <div class="toggle-track"></div>
+      </label>
+    </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:9px">
-      ${t.alignGlobal!==false?'':`<div>
+      ${useGlobal?'':`<div>
         <div class="wb-slot-lbl" style="margin-bottom:5px">Heading and intro</div>
         <span class="inv-seg">
           <button type="button" class="${l.align==='left'?'active':''}" onclick="_wbLaySet('${key}','align','left')">Left</button>
@@ -3222,13 +3306,21 @@ function _wbLayoutHtml(key){
           'Tiles stretch to fill each row.'
         }</div>
       </div>`:''}
-      ${t.globalWidth!==false?'':`<div>
+      ${useGlobal?'':`<div>
         ${(()=>{const bv=(!l.bg||l.bg==='page')?0:(l.bg==='band'?100:Math.min(100,Math.max(0,Number(l.bg)||0)));const lbl=bv>=100?'Band':bv>0?'Wide page':'Page';return `<div id="wb-bg-lbl-${key}" class="wb-slot-lbl" style="margin-bottom:5px">Width · ${lbl}</div>
         <input type="range" min="0" max="100" step="10" value="${bv}" oninput="_wbBg('${key}',this.value)" style="width:100%;accent-color:var(--gold)"/>
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Page</span><span>Band</span></div>`;})()}
       </div>`}
     </div>
   </div>`;
+}
+function _wbLaySetGlobal(key, val){
+  const l=_wbLayout(key);
+  l.useGlobal = !!val;
+  saveToStorage();
+  const box=document.getElementById('wb-lay-'+key);
+  if(box) box.outerHTML=_wbLayoutHtml(key);
+  _wbLivePaint();
 }
 function _wbLaySet(key, field, val){
   // v126: `noHead` is GONE. The heading is hidden by its block's eye, like every other
@@ -4940,18 +5032,24 @@ function _wbBuildSite(forDownload){
   const _fxLabel={details:'The Big Day',timeline:'The Day',rsvp:'Kindly Reply',gallery:'Moments',accommodation:'Stay',wishingwell:'With Gratitude',wishing:'With Gratitude',countdown:'Save the Date',schedule:'Order of the Day',faq:'Questions',registry:'Registry',story:'Our Story'};
   const wrap=(k, content, extra)=>{
     const l=(w.layout||{})[k]||{};
+    // A section whose own "use global theme settings" is on (true, or never set — see
+    // _wbLayout()'s matching default) ignores whatever is stored in l.align/l.body/l.bg
+    // entirely, exactly as if the section had never been touched. Only once a section
+    // turns global OFF does its own stored alignment/width take over.
+    const useGlobal = typeof l.useGlobal==='boolean' ? l.useGlobal
+      : !(l.align==='left' || l.align==='right' || ['center','right','justify'].includes(l.body) || (l.bg && l.bg!=='page'));
     // bg is 0–100 (px max-width scale); legacy 'page'/'band' strings also handled.
-    const bgV = (!l.bg||l.bg==='page')?0:(l.bg==='band'?100:Math.min(100,Math.max(0,Number(l.bg)||0)));
+    const bgV = useGlobal ? 0 : ((!l.bg||l.bg==='page')?0:(l.bg==='band'?100:Math.min(100,Math.max(0,Number(l.bg)||0))));
     const band = bgV >= 100;
     // Wide page (1 ≤ bgV < 100): section keeps page bg but gets a wider max-width.
     // max-width grows from 720px (bgV=0) toward no cap at bgV=100.
     const _mw=t.maxWidth||720; const secWideMaxW = (!band && bgV > 0) ? Math.round(_mw + bgV / 100 * Math.max(0,1400-_mw)) : null;
-    const left = l.align==='left';
+    const left = !useGlobal && l.align==='left';
     // Two independent aligns. `lft` = the heading and intro; `b-*` = the section's own
     // content. v121 and earlier had only `lft`, and the body was hardcoded left in the
     // CSS — so choosing Centre centred the heading and silently did nothing below it.
-    const right = l.align==='right';
-    const body = (l.body==='center'||l.body==='justify'||l.body==='right') ? l.body : 'left';
+    const right = !useGlobal && l.align==='right';
+    const body = useGlobal ? 'left' : ((l.body==='center'||l.body==='justify'||l.body==='right') ? l.body : 'left');
     const cls = [extra||'', band?'band':'', left?'lft':'', right?'rgt':'', 'b-'+body].filter(Boolean).join(' ');
 
     const blocks=_wbBlocks(k).filter(b=>!b.off);
@@ -5234,7 +5332,8 @@ function _wbBuildSite(forDownload){
       // names / date toggles still apply when there is a photo to carry them.
       if(_fx){
         const a=(e.partner1||'').trim(), b2=(e.partner2||'').trim();
-        const namesHtml = (a&&b2) ? `${_escHtml(a)} <i>&amp;</i> ${_escHtml(b2)}` : _escHtml(_wbCouple());
+        const nameSep = t.nameSep||'&';
+        const namesHtml = (a&&b2) ? `${_escHtml(a)} <i>${_escHtml(nameSep)}</i> ${_escHtml(b2)}` : _escHtml(_wbCouple());
         const showN = !heroOk || wantName, showD = !heroOk || wantDate;
         const d = e.date ? new Date(e.date+'T00:00:00') : null;
         const okD = d && !isNaN(d);
@@ -5267,7 +5366,7 @@ function _wbBuildSite(forDownload){
         return `<header id="home" class="fx-atelier-head${heroOk?'':' fx-noimg'}">
         <div class="fx-names">
           <span class="fx-sc fx-acc">The wedding of</span>
-          ${showN?`<h1>${(a&&b2)?`${_escHtml(a)}<i>&amp;</i>${_escHtml(b2)}`:_escHtml(_wbCouple())}</h1>`:''}
+          ${showN?`<h1>${(a&&b2)?`${_escHtml(a)}<i>${_escHtml(nameSep)}</i>${_escHtml(b2)}`:_escHtml(_wbCouple())}</h1>`:''}
           ${h.headline?`<p class="lead">${_escHtml(h.headline)}</p>`:''}
           <div class="fx-meta">${(showD&&okD)?`<div><span class="fx-sc">Date</span><b>${_escHtml(d.getDate()+' '+mos[d.getMonth()]+' '+d.getFullYear())}</b></div>`:''}${place?`<div><span class="fx-sc">Place</span><b>${_escHtml(place)}</b></div>`:''}</div>
           ${icsBtn}
@@ -5653,11 +5752,11 @@ function _wbBuildSite(forDownload){
       const btnC = t.button||'#8B7355';
       const btnI = _wbInk(btnC);
       const bw = t.btnBorder==='thin'?'1px':t.btnBorder==='bold'?'3px':'2px';
-      const btnSty = t.btnStyle==='filled'
+      const btnSty = (t.btnStyle==='filled'
         ? `background:${btnC};border:${bw} solid ${btnC};color:${btnI}`
         : t.btnStyle==='soft'
         ? `background:${btnC}1A;border:${bw} solid ${btnC};color:${btnC}`
-        : `background:transparent;border:${bw} solid ${btnC};color:${btnC}`;
+        : `background:transparent;border:${bw} solid ${btnC};color:${btnC}`) + `;font-family:${t.btnFont||t.bodyFont}`;
       const corners = WB_CORNERS[t.corners]||'10px';
       const rPad = t.btnSize==='sm'?'7px 16px':t.btnSize==='lg'?'14px 36px':'10px 24px';
       const rShad = t.btnShadow==='soft'?'0 2px 12px rgba(0,0,0,.14)':t.btnShadow==='strong'?'0 4px 22px rgba(0,0,0,.28)':'none';
@@ -5674,7 +5773,12 @@ function _wbBuildSite(forDownload){
   // anything set in `headFont` is a heading. Everything else — prose, labels, small caps,
   // nav, footer — is body, which is what it all scaled with before, so nothing moves.
   const sch = (n)=>Math.round(n*(Number(t2.headScale)||100)/100);   // headings
-  const scb = (n)=>Math.round(n*(Number(t2.bodyScale)||100)/100);   // body + furniture
+  const scn = (n)=>Math.round(n*(Number(t2.nameScale)||100)/100);   // couple's names
+  const scb = (n)=>Math.round(n*(Number(t2.bodyScale)||100)/100);   // base text + anything below with no scale of its own
+  const scnav = (n)=>Math.round(n*(Number(t2.navScale)||100)/100);  // navigation: nav links, nav icon, sidebar names
+  const sclabel = (n)=>Math.round(n*(Number(t2.labelScale)||100)/100); // small uppercase labels, date/time labels, icons beside them
+  const sclink = (n)=>Math.round(n*(Number(t2.linkScale)||100)/100);   // inline links: map, accommodation, video caption, store
+  const scfoot = (n)=>Math.round(n*(Number(t2.footerScale)||100)/100); // the footer line (not the made-with badge, which is fixed)
   const scs = (n)=>Math.round(n*(Number(t2.secBodyScale)||100)/100); // section body text
   const sc  = scb;   // legacy alias — every call site below is re-pointed explicitly
   const sp = (n)=>Math.round(n*(Number(t2.space)||100)/100);
@@ -5690,15 +5794,17 @@ function _wbBuildSite(forDownload){
   const btnInk = _wbInk(t2.button);
   const btnBW = t2.btnBorder==='thin'?'1px':t2.btnBorder==='bold'?'3px':'2px';
   const btnPad = t2.btnSize==='sm'?'7px 16px':t2.btnSize==='lg'?'14px 36px':'10px 24px';
-  const btnFs  = t2.btnSize==='sm'?scb(11):t2.btnSize==='lg'?scb(14):scb(12);
+  // Independent of every text-size slider now — Size (S/M/L) picks the final px value
+  // outright instead of being multiplied again by the base text scale underneath it.
+  const btnFs  = t2.btnSize==='sm'?11:t2.btnSize==='lg'?14:12;
   const btnShad= t2.btnShadow==='soft'?'0 2px 12px rgba(0,0,0,.14)':t2.btnShadow==='strong'?'0 4px 22px rgba(0,0,0,.28)':'none';
   const btnBevInset = t2.btnBevel?'inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.12)':'none';
   const btnShadFull = [btnShad, btnBevInset].filter(x=>x!=='none').join(',') || 'none';
   const BTN = (()=>{
     const c=t2.button;
-    if(t2.btnStyle==='filled') return `background:${c};border:${btnBW} solid ${c};color:${btnInk}`;
-    if(t2.btnStyle==='soft')   return `background:${c}1A;border:${btnBW} solid ${c};color:${c}`;
-    return `background:transparent;border:${btnBW} solid ${c};color:${c}`;   // outline
+    if(t2.btnStyle==='filled') return `background:${c};border:${btnBW} solid ${c};color:${btnInk};font-family:${t2.btnFont||t2.bodyFont}`;
+    if(t2.btnStyle==='soft')   return `background:${c}1A;border:${btnBW} solid ${c};color:${c};font-family:${t2.btnFont||t2.bodyFont}`;
+    return `background:transparent;border:${btnBW} solid ${c};color:${c};font-family:${t2.btnFont||t2.bodyFont}`;   // outline
   })();
   const _sv=typeof t2.shadow==='number'?Math.max(0,Math.min(100,t2.shadow)):0;
   const _cv=typeof t2.cardStyle==='number'?Math.max(0,Math.min(100,t2.cardStyle)):0;
@@ -6695,7 +6801,7 @@ function _wbBuildSite(forDownload){
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:${(()=>{const c=String(t2.background||t2.page||'#ffffff').trim();const m=c.match(/^#([0-9a-f]{6})$/i);if(!m) return 'light';const n=parseInt(m[1],16);return(((n>>16)&255)*299+((n>>8)&255)*587+(n&255)*114)/1000<128?'dark':'light';})()}}
-body{background:${t2.background||t2.page};color:${t2.text};font-family:${t2.bodyFont};font-size:${scb(16)}px;line-height:1.7}
+body{background:${t2.background||t2.page};color:${t2.text};font-family:${t2.bodyFont};font-size:${scb(16)}px;line-height:${(t2.lineHeight||170)/100}}
 /* transform:translateZ(0) promotes the nav to its own compositing layer — same mobile
    address-bar reveal/hide glitch as the footer badge below: without it, a sticky element
    can repaint transparent (showing the hero photo through it) for a frame or two while
@@ -6703,13 +6809,13 @@ body{background:${t2.background||t2.page};color:${t2.text};font-family:${t2.body
 nav{position:sticky;top:0;z-index:100;background:${t2.background||t2.page};padding:${sp(16)}px;border-bottom:1px solid ${t2.heading}1A;transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
 main{background:${t2.background||t2.page}}
 .navlinks{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 22px}
-nav a{color:${t2.heading};text-decoration:none;font-size:${scb(12)}px;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
+nav a{color:${t2.heading};text-decoration:none;font-size:${scnav(12)}px;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
 nav a:hover{opacity:1;color:${t2.accent}}
 body.sidenav{display:flex;align-items:flex-start}
-body.sidenav nav{position:sticky;top:0;height:100dvh;overflow-y:auto;width:${scb(200)}px;flex-shrink:0;border-bottom:none;border-right:1px solid ${t2.heading}1A;padding:${sp(24)}px ${sp(16)}px;display:flex;flex-direction:column}
+body.sidenav nav{position:sticky;top:0;height:100dvh;overflow-y:auto;width:${scnav(200)}px;flex-shrink:0;border-bottom:none;border-right:1px solid ${t2.heading}1A;padding:${sp(24)}px ${sp(16)}px;display:flex;flex-direction:column}
 body.sidenav .navlinks{flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;gap:0;margin-top:${sp(8)}px}
 body.sidenav nav a{display:block;padding:${sp(9)}px ${sp(6)}px;opacity:.7}
-body.sidenav .navtoggle{display:flex;align-items:center;gap:6px;background:none;border:0;padding:${sp(6)}px ${sp(4)}px;cursor:pointer;color:${t2.heading};font-family:inherit;font-size:${scb(10)}px;letter-spacing:.1em;text-transform:uppercase;opacity:.65;margin-bottom:${sp(4)}px;width:100%}
+body.sidenav .navtoggle{display:flex;align-items:center;gap:6px;background:none;border:0;padding:${sp(6)}px ${sp(4)}px;cursor:pointer;color:${t2.heading};font-family:inherit;font-size:${scnav(10)}px;letter-spacing:.1em;text-transform:uppercase;opacity:.65;margin-bottom:${sp(4)}px;width:100%}
 body.sidenav .navtoggle svg{width:14px;height:14px;flex-shrink:0;transition:transform .2s}
 body.sidenav.collapsed .navtoggle svg{transform:rotate(180deg)}
 body.sidenav.collapsed .navlinks,body.sidenav.collapsed .sidebar-brand,body.sidenav.collapsed .sidebar-names{display:none}
@@ -6736,9 +6842,9 @@ body.sidenav nav:not(:has(.sidebar-names)) .sidebar-brand{margin-top:auto}
    Mirroring the sidebar's own current width as right padding here makes the
    centred content inside (section{max-width;margin:0 auto}) symmetric
    around the page's true centre instead, in every width/collapsed state. */
-.site-content{flex:1;min-width:0;padding-right:${scb(200)}px}
+.site-content{flex:1;min-width:0;padding-right:${scnav(200)}px}
 body.sidenav.collapsed .site-content{padding-right:48px}
-@media(max-width:620px) and (min-width:481px){body.sidenav nav{width:${scb(160)}px;padding:${sp(16)}px ${sp(10)}px}body.sidenav nav a{font-size:${scb(11)}px;padding:${sp(7)}px ${sp(4)}px}.sidebar-names{font-size:${scb(13)}px}.site-content{padding-right:${scb(160)}px}}
+@media(max-width:620px) and (min-width:481px){body.sidenav nav{width:${scnav(160)}px;padding:${sp(16)}px ${sp(10)}px}body.sidenav nav a{font-size:${scnav(11)}px;padding:${sp(7)}px ${sp(4)}px}.sidebar-names{font-size:${scnav(13)}px}.site-content{padding-right:${scnav(160)}px}}
 /* Below 480px the sidebar stays a sidebar — a slim rail pinned to the LEFT,
    the same look as the desktop collapsed icon-strip (toggle + crest only),
    never a bar across the top. Tapping it opens the full nav — links, names,
@@ -6752,7 +6858,7 @@ body.sidenav.collapsed .site-content{padding-right:48px}
   body.sidenav .sidebar-names{display:none}
   body.sidenav .sb-collapsed-crest{display:block;margin-top:auto;padding-top:${sp(12)}px}
   body.sidenav .site-content{padding-right:48px}
-  body.sidenav.mnav-open nav{position:fixed;top:0;left:0;bottom:0;height:100dvh;width:${scb(220)}px;min-width:0;align-items:stretch;padding:${sp(24)}px ${sp(16)}px;box-shadow:0 0 28px rgba(0,0,0,.28);z-index:40;background:${t2.background||t2.page}}
+  body.sidenav.mnav-open nav{position:fixed;top:0;left:0;bottom:0;height:100dvh;width:${scnav(220)}px;min-width:0;align-items:stretch;padding:${sp(24)}px ${sp(16)}px;box-shadow:0 0 28px rgba(0,0,0,.28);z-index:40;background:${t2.background||t2.page}}
   body.sidenav.mnav-open .navlinks{display:flex;flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;gap:0;margin-top:${sp(8)}px}
   body.sidenav.mnav-open nav a{display:block;padding:${sp(9)}px ${sp(6)}px}
   /* nav a{display:block} above is meant for the .navlinks rows, but .mw-lock is ALSO an
@@ -6817,25 +6923,31 @@ header.hero.heroink-dark h1,header.hero.heroink-dark .eyebrow,header.hero.heroin
    context — on the photo, off the photo, everywhere. The colour you pick is the colour you
    get; the preview shows you the result. A shadow keeps it legible on a busy photo without
    overriding the colour. */
-.ics{display:inline-flex;align-items:center;gap:7px;margin-top:${sp(18)}px;padding:${btnPad};${BTN};border-radius:${rad};text-decoration:none;font-size:${btnFs}px;letter-spacing:.1em;text-transform:uppercase;box-shadow:${btnShadFull}}
+.ics{display:inline-flex;align-items:center;gap:7px;margin-top:${sp(18)}px;padding:${btnPad};${BTN};border-radius:${rad};text-decoration:none;font-size:${btnFs}px;letter-spacing:.1em;text-transform:${t2.btnUppercase===false?'none':'uppercase'};box-shadow:${btnShadFull}}
 header.hero .ics{box-shadow:0 2px 14px rgba(0,0,0,.22)}
-.ics svg{width:${scb(14)}px;height:${scb(14)}px;flex-shrink:0}
-.maplink{white-space:nowrap;margin-left:8px;color:${t2.accent};text-decoration:none;font-size:${scb(13)}px;border-bottom:1px solid ${t2.accent}66}
+.ics svg{width:${sclabel(14)}px;height:${sclabel(14)}px;flex-shrink:0}
+.maplink{white-space:nowrap;margin-left:8px;color:${t2.accent};text-decoration:none;font-size:${sclink(13)}px;border-bottom:1px solid ${t2.accent}66}
 .navtoggle{display:none}
-h1{font-family:${t2.nameFont};font-weight:400;font-size:clamp(${sch(34)}px,7vw,${sch(60)}px);line-height:1.1;margin-bottom:10px;color:${t2.heading};text-transform:${nameCapsCss}}
-.eyebrow{font-size:${scb(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
+h1{font-family:${t2.nameFont};font-weight:400;font-size:clamp(${scn(34)}px,7vw,${scn(60)}px);line-height:1.1;margin-bottom:10px;color:${t2.heading};text-transform:${nameCapsCss};text-align:${['left','center','right'].includes(t2.nameAlign)?t2.nameAlign:'center'};letter-spacing:${(t2.nameLetterSpacing||0)/100}em}
+.eyebrow{font-size:${sclabel(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading};white-space:pre-wrap}
 .sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scs(15)}px;white-space:pre-wrap}
-section{max-width:${t2.maxWidth||720}px;margin:0 auto;padding:${secPad}px ${secPadH}px;background:${t2.page};border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}}
-section+section{margin-top:${secGap}px}
+section{max-width:${t2.maxWidth||720}px;margin:0 auto;padding:${secPad}px ${secPadH}px;background:${t2.page};border-top:${secGap>0?'none':`1px solid ${t2.heading}12`};text-align:${secAlign}${secBorder}${secShadow?';'+secShadow:''}${t2.sectionBorder?`;border:1px solid ${t2.heading}22`:''}}
+section+section{margin-top:${secGap}px${t2.sectionDivider==='line'?`;border-top:1px solid ${t2.heading}22`:''}}
+${t2.sectionDivider==='ornamental'?`section+section{position:relative}
+section+section::before{content:'\\2766';position:absolute;top:-13px;left:50%;transform:translateX(-50%);color:${t2.accent};font-size:19px;background:${t2.page};padding:0 12px;line-height:1}`:''}
+${t2.mobileCustom?`@media(max-width:620px){
+section{padding-top:${Math.max(0,Number(t2.mobilePadding)||0)}px;padding-bottom:${Math.max(0,Number(t2.mobilePadding)||0)}px}
+section+section{margin-top:${Math.max(0,Number(t2.mobileGap)||0)}px}
+}`:''}
 section.lft{text-align:left}
 section.band{max-width:none;background:${t2.band};border-top:none}
 section.band>*{max-width:${t2.maxWidth||720}px;margin-left:auto;margin-right:auto}
-h2{font-family:${t2.headFont};font-weight:400;font-size:clamp(${sch(24)}px,4vw,${sch(32)}px);margin-bottom:${sp(12)}px;color:${t2.heading}}
+h2{font-family:${t2.headFont};font-weight:${t2.headWeight==='bold'?700:400};font-size:clamp(${sch(24)}px,4vw,${sch(32)}px);margin-bottom:${sp(12)}px;color:${t2.heading};text-transform:${t2.headCaps?'uppercase':'none'};letter-spacing:${(t2.headLetterSpacing||0)/100}em}
 .intro{max-width:52ch;margin:0 auto ${sp(24)}px;color:${t2.text};font-size:${scs(15)}px;white-space:pre-wrap}
 section.lft .intro{margin-left:0}
 h2+.imgs-grid,h2+.imgs-rows,.intro+.imgs-grid,.intro+.imgs-rows{margin-top:${sp(18)}px}
-.para{max-width:60ch;margin:0 auto ${sp(16)}px;font-size:${scs(16)}px;text-align:${(['left','center','right','justify'].includes(t2.bodyAlign)?t2.bodyAlign:'left')};${t2.bodyAlign==='justify'?'hyphens:auto;-webkit-hyphens:auto;':''}color:${t2.text}}
+.para{max-width:${t2.measure||60}ch;margin:0 auto ${t2.paraSpacing!=null?t2.paraSpacing:16}px;font-size:${scs(16)}px;text-align:${(['left','center','right','justify'].includes(t2.bodyAlign)?t2.bodyAlign:'left')};${t2.bodyAlign==='justify'?'hyphens:auto;-webkit-hyphens:auto;':''}color:${t2.text}}
 section.lft .para{margin-left:0}
 /* Right alignment (heading/intro = .rgt, body = .b-right; site-wide via secAlign). Text runs
    to the right edge and its block sits against it — the mirror of Left. */
@@ -6863,7 +6975,7 @@ section.b-justify .intro{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
 dl{text-align:left}
 dl div{display:flex;gap:18px;padding:${sp(12)}px 0;border-bottom:1px solid ${t2.heading}12}
 dl div:last-child{border-bottom:none}
-dt{font-size:${scb(11)}px;letter-spacing:.14em;text-transform:uppercase;color:${t2.accent};width:100px;flex-shrink:0;padding-top:4px}
+dt{font-size:${sclabel(11)}px;letter-spacing:.14em;text-transform:uppercase;color:${t2.accent};width:100px;flex-shrink:0;padding-top:4px}
 dd{flex:1;font-size:${scs(15)}px}
 /* Centring a structured row means STACKING it. A plain text-align:center on a flex row
    leaves the label and the value side by side and drifts both — the column is gone and
@@ -6883,7 +6995,7 @@ section.lft .sched{text-align:left}
 section:not(.lft) .sched{max-width:520px;margin-left:auto;margin-right:auto}
 .sched li{display:flex;gap:18px;padding:${sp(14)}px 0;border-bottom:1px solid ${t2.heading}12}
 .sched li:last-child{border-bottom:none}
-.sched .t{width:82px;flex-shrink:0;font-size:${scb(13)}px;letter-spacing:.06em;color:${t2.accent};padding-top:3px}
+.sched .t{width:82px;flex-shrink:0;font-size:${sclabel(13)}px;letter-spacing:.06em;color:${t2.accent};padding-top:3px}
 .sched .d{flex:1;font-size:${scs(15)}px}
 section.b-center .sched{text-align:center}
 section.b-center .sched li{flex-direction:column;gap:2px;text-align:center}
@@ -6902,7 +7014,7 @@ section.b-center .sched-label{text-align:center}
    immersive; best for a curated few. Default (no extra class) is the pre-v148 stretch grid. */
 .grid-center{grid-template-columns:repeat(auto-fit,minmax(150px,160px));justify-content:center}
 .grid-rows{display:flex;flex-direction:column;align-items:center;gap:${sp(12)}px}
-.grid-rows img{width:100%;max-width:${scb(560)}px;aspect-ratio:16/10;height:auto}
+.grid-rows img{width:100%;max-width:560px;aspect-ratio:16/10;height:auto}
 /* Stretch (auto-fill + 1fr): tiles grow to fill the row. Two photos become two half-width
    tiles. Centre (auto-fit at a fixed 160px + justify-content): tiles keep their size and
    sit in the middle. The 1fr must go — a fractional unit IS the instruction to fill. */
@@ -6934,14 +7046,14 @@ section.b-center .sched-label{text-align:center}
    literal, where a backtick is live syntax even in a comment. It has bitten three times. */
 .lks{display:flex;flex-direction:column;align-items:center;gap:2px;margin:${sp(18)}px 0}
 .lks .lk{display:inline-block;padding:${sp(7)}px 2px;color:${t2.accent};text-decoration:none;
-  border-bottom:1px solid ${t2.accent}55;font-size:${scb(14)}px;width:fit-content}
+  border-bottom:1px solid ${t2.accent}55;font-size:${sclink(14)}px;width:fit-content}
 .lks .lk-dead{color:${t2.text};border-bottom:none;opacity:.75}
 section.b-left .lks,section.b-justify .lks{align-items:flex-start}
 .lks-rows{list-style:none;margin:${sp(18)}px 0;padding:0}
 .lks-rows li{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
   padding:${sp(12)}px 0;border-bottom:1px solid ${t2.heading}12;text-align:left}
 .lks-rows b{font-family:${t2.headFont};font-weight:500;font-size:${sch(17)}px;color:${t2.item}}
-.lks-rows a{color:${t2.accent};text-decoration:none;font-size:${scb(12.5)}px;white-space:nowrap;
+.lks-rows a{color:${t2.accent};text-decoration:none;font-size:${sclink(12.5)}px;white-space:nowrap;
   border-bottom:1px solid ${t2.accent}55}
 .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:${sp(20)}px 0}
 section.b-left .btns,section.b-justify .btns{justify-content:flex-start}
@@ -6950,7 +7062,7 @@ section.b-left .btns,section.b-justify .btns{justify-content:flex-start}
    height letterboxes itself on a phone. */
 .vid-embed{position:relative;width:100%;aspect-ratio:16/9;margin:${sp(20)}px 0;border-radius:${imgRad};overflow:hidden;background:${t2.band}}
 .vid-embed iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
-.vid-cap{font-size:${scb(12.5)}px;color:${t2.text};opacity:.75;margin-top:${sp(8)}px}
+.vid-cap{font-size:${sclink(12.5)}px;color:${t2.text};opacity:.75;margin-top:${sp(8)}px}
 .vid-link{position:relative;display:block;margin:${sp(20)}px 0;border-radius:${imgRad};overflow:hidden;text-decoration:none}
 .vid-link img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}
 .vid-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;
@@ -6958,15 +7070,15 @@ section.b-left .btns,section.b-justify .btns{justify-content:flex-start}
   color:${t2.heading};box-shadow:0 2px 14px rgba(0,0,0,.28)}
 .vid-play svg{width:24px;height:24px;margin-left:3px}
 .vid-cap-over{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);color:#fff;
-  font-size:${scb(11.5)}px;padding:7px 10px;text-align:center}
+  font-size:${sclink(11.5)}px;padding:7px 10px;text-align:center}
 .vid-plain{margin:${sp(18)}px 0}
-.vid-plain a{color:${t2.accent};text-decoration:none;border-bottom:1px solid ${t2.accent}55;font-size:${scb(14)}px}
+.vid-plain a{color:${t2.accent};text-decoration:none;border-bottom:1px solid ${t2.accent}55;font-size:${sclink(14)}px}
 .dv{border:none;margin:${sp(26)}px auto}
 .dv-line{width:56%;border-top:1px solid ${t2.accent}44;height:0}
-.dv-dots{color:${t2.accent};letter-spacing:.5em;font-size:${scb(13)}px;text-align:center;opacity:.8}
+.dv-dots{color:${t2.accent};letter-spacing:.5em;font-size:${sclabel(13)}px;text-align:center;opacity:.8}
 .dv-leaf{display:flex;align-items:center;gap:14px;width:64%}
 .dv-leaf span{flex:1;height:1px;background:${t2.accent}44}
-.dv-leaf i{color:${t2.accent};font-style:normal;font-size:${scb(15)}px;line-height:1}
+.dv-leaf i{color:${t2.accent};font-style:normal;font-size:${sclabel(15)}px;line-height:1}
 .imgs-grid{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:8px;margin:${sp(22)}px 0}
 .imgs-grid.ctr{grid-template-columns:repeat(var(--n,3),minmax(0,160px));justify-content:center}
 .imgs-grid img{width:100%;aspect-ratio:1;object-fit:cover;display:block;border-radius:${imgRad}}
@@ -7008,7 +7120,7 @@ section.b-center .stays{text-align:center}
 .stays li:last-child{border-bottom:none}
 .stays b{font-family:${t2.headFont};font-size:${sch(20)}px;font-weight:500;display:block;color:${t2.item}}
 .stays i{font-style:normal;font-size:${scs(13)}px;color:${t2.text};opacity:.75;display:block;margin-top:2px}
-.stays a{color:${t2.accent};font-size:${scb(13)}px;text-decoration:none;border-bottom:1px solid ${t2.accent}66;display:inline-block;margin-top:6px}
+.stays a{color:${t2.accent};font-size:${sclink(13)}px;text-decoration:none;border-bottom:1px solid ${t2.accent}66;display:inline-block;margin-top:6px}
 .ww-chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0}
 .ww-chip{font-size:${scb(13)}px;padding:8px 18px;border-radius:22px;border:1px solid ${t2.accent}66;color:${t2.text};background:transparent;cursor:pointer;transition:all .15s;font-family:inherit}
 .ww-chip.active,.ww-chip:hover{background:${t2.accent};color:#fff;border-color:${t2.accent}}
@@ -7027,9 +7139,9 @@ section.b-center .stays{text-align:center}
 .ww-email-err{font-size:12px;color:#DC2626;min-height:16px;margin:6px 0 0}
 .ww-pay-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:8px 0;border-bottom:1px solid ${t2.heading}10;font-size:${scb(14)}px}
 .ww-pay-row:last-child{border-bottom:none}
-.ww-pay-label{font-size:${scb(11)}px;letter-spacing:.1em;text-transform:uppercase;color:${t2.accent};flex-shrink:0}
+.ww-pay-label{font-size:${sclabel(11)}px;letter-spacing:.1em;text-transform:uppercase;color:${t2.accent};flex-shrink:0}
 .ww-pay-value{color:${t2.text};text-align:right;min-width:0;overflow-wrap:anywhere;word-break:break-word}
-.ww-store-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid ${t2.accent};border-radius:8px;padding:8px 16px;font-size:${scb(13)}px;color:${t2.accent};text-decoration:none;transition:background .15s}
+.ww-store-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid ${t2.accent};border-radius:8px;padding:8px 16px;font-size:${sclink(13)}px;color:${t2.accent};text-decoration:none;transition:background .15s}
 .ww-store-btn:hover{background:${t2.accent}11}
 .ww-registry{margin-top:28px}
 .ww-reg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
@@ -7054,7 +7166,7 @@ section.b-center .faq details{position:relative}
 .faq-static .faq-i:last-child{border-bottom:none}
 .faq-static .faq-i b{font-family:${t2.headFont};font-size:${sch(19)}px;font-weight:500;display:block;color:${t2.item};margin-bottom:4px}
 .faq-static .faq-i p{margin:0}
-footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-spacing:.14em;text-transform:uppercase;color:${t2.text};border-top:1px solid ${t2.heading}12}
+footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scfoot(11)}px;letter-spacing:.14em;text-transform:uppercase;color:${t2.text};border-top:1px solid ${t2.heading}12}
 /* The couple-name caption's own fade. This used to sit on <footer> itself, which also wraps
    .madewith — but ANY opacity below 1 makes an element a stacking context AND a containing
    block for its position:fixed descendants (same family as transform/filter), so the badge's
@@ -7080,44 +7192,46 @@ footer{text-align:center;padding:${sp(44)}px 24px;font-size:${scb(11)}px;letter-
    element on its own layer tracks the real viewport through that transition instead. */
 body:not(.sidenav) .madewith{position:fixed;left:0;right:0;bottom:0;z-index:50;margin-top:0;padding:34px 18px 16px;opacity:.7;background:linear-gradient(to top, ${t2.background||t2.page} 0, ${t2.background||t2.page} calc(100% - 34px), transparent 100%);transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
 @media(max-height:400px){body:not(.sidenav) .madewith{position:static;background:none;padding:0;margin-top:${sp(22)}px}}
-.mw-lbl{font-family:${t2.bodyFont};font-size:${scb(10)}px;letter-spacing:.08em;color:${t2.text};opacity:.75}
+/* Fixed size, deliberately not wired to any slider — this is the "Made with Union Vault"
+   attribution badge, not the couple's own content, so it isn't user-resizable. */
+.mw-lbl{font-family:${t2.bodyFont};font-size:10px;letter-spacing:.08em;color:${t2.text};opacity:.75}
 .mw-lock{display:inline-flex;align-items:center;gap:7px}
-.mw-crest{width:${scb(26)}px;height:auto;display:block;flex-shrink:0}
+.mw-crest{width:26px;height:auto;display:block;flex-shrink:0}
 .mw-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;font-family:'Cinzel',serif;font-weight:400}
-.mw-txt b{font-size:${scb(13)}px;letter-spacing:.1em;font-weight:400;color:${brand.main}}
-.mw-txt i{font-size:${scb(9)}px;letter-spacing:.18em;font-style:normal;color:${brand.sub}}
-.sidebar-names{font-family:${t2.nameFont};font-size:${scb(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em;text-transform:${nameCapsCss}}
+.mw-txt b{font-size:13px;letter-spacing:.1em;font-weight:400;color:${brand.main}}
+.mw-txt i{font-size:9px;letter-spacing:.18em;font-style:normal;color:${brand.sub}}
+.sidebar-names{font-family:${t2.nameFont};font-size:${scnav(16)}px;font-weight:400;color:${t2.heading};text-align:center;padding:0 ${sp(6)}px;line-height:1.4;letter-spacing:.02em;text-transform:${nameCapsCss}}
 body.sidenav .mw-lock{display:flex;align-items:center;justify-content:center;gap:4px}
 body.sidenav .mw-txt{margin-top:2px}
 @media(max-width:520px){
   dl div{flex-direction:column;gap:2px}
   dt{width:auto;padding-top:0}
   .sched li{gap:12px}
-  .sched .t{width:66px;font-size:${scb(12)}px}
+  .sched .t{width:66px;font-size:${sclabel(12)}px}
   header.hero{padding:${sp(32)}px 20px}
   .maplink{display:block;margin:6px 0 0}
   /* The collapsed nav is opt-IN, via the .js class the site's own script adds. Without
      JS none of this fires and the nav stays the plain wrapping list it is today — a menu
      button that cannot open is worse than a nav that takes three lines. */
   nav.js{display:block;text-align:center;padding:${sp(12)}px}
-  nav.js .navtoggle{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:6px 10px;cursor:pointer;color:${t2.heading};font-family:inherit;font-size:${scb(11)}px;letter-spacing:.14em;text-transform:uppercase}
-  nav.js .navtoggle svg{width:${scb(16)}px;height:${scb(16)}px}
+  nav.js .navtoggle{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:6px 10px;cursor:pointer;color:${t2.heading};font-family:inherit;font-size:${scnav(11)}px;letter-spacing:.14em;text-transform:uppercase}
+  nav.js .navtoggle svg{width:${scnav(16)}px;height:${scnav(16)}px}
   nav.js .navlinks{display:none;flex-direction:column;gap:0;padding-top:${sp(6)}px}
   nav.js.open .navlinks{display:flex}
-  nav.js .navlinks a{padding:11px 0;font-size:${scb(12)}px}
+  nav.js .navlinks a{padding:11px 0;font-size:${scnav(12)}px}
 }
 ${t2.format==='editorial'?`
-.edit-eyebrow{font-size:${scb(10)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent};margin:0 0 ${sp(10)}px;opacity:.8;font-family:${t2.bodyFont}}
+.edit-eyebrow{font-size:${sclabel(10)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent};margin:0 0 ${sp(10)}px;opacity:.8;font-family:${t2.bodyFont}}
 section.lft .edit-eyebrow{text-align:left}
 h2{font-weight:300!important;letter-spacing:.04em!important}
 h2::after{content:'';display:block;width:44px;height:1px;background:${t2.accent};opacity:.55;margin:${sp(12)}px auto 0}
 section.lft h2::after{margin-left:0;margin-right:auto}
 .intro{font-weight:300;letter-spacing:.03em}
-dl dt{font-size:${scb(9.5)}px!important;opacity:.5!important;letter-spacing:.18em!important}
+dl dt{font-size:${sclabel(9.5)}px!important;opacity:.5!important;letter-spacing:.18em!important}
 `:''}
 ${(t2.format==='magazine'||t2.format==='atelier')?`
 /* ── Editorial + Atelier: shared ── */
-.fx-sc,.fx-eyebrow{font-family:${t2.bodyFont};font-size:${scb(10)}px;letter-spacing:.26em;text-transform:uppercase;font-weight:500}
+.fx-sc,.fx-eyebrow{font-family:${t2.bodyFont};font-size:${sclabel(10)}px;letter-spacing:.26em;text-transform:uppercase;font-weight:500}
 .fx-eyebrow{color:${t2.accent};margin:0 0 ${sp(16)}px}
 section.fx h2{font-size:clamp(${sch(34)}px,5vw,${sch(58)}px);line-height:1.02;letter-spacing:-.01em;margin-bottom:${sp(22)}px}
 section.fx-spread{max-width:none;margin:0;padding:0;text-align:left;position:relative;background:${t2.background||t2.page}}
@@ -7142,7 +7256,7 @@ ${t2.format==='magazine'?`
 .fx-coverimg>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
 header.fx-cover:not(.fx-noimg) .fx-coverimg::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.3) 0%,rgba(0,0,0,0) 34%,rgba(0,0,0,0) 58%,rgba(0,0,0,.5) 100%)}
 .fx-mast,.fx-lines,.fx-issue{position:relative;z-index:2;color:#fff}
-.fx-mast{text-align:center;padding:${sp(26)}px ${sp(20)}px 0;font-family:${t2.nameFont};font-weight:400;font-size:clamp(${sch(48)}px,10vw,${sch(138)}px);line-height:.88;letter-spacing:-.02em;text-transform:${nameCapsCss}}
+.fx-mast{text-align:${['left','center','right'].includes(t2.nameAlign)?t2.nameAlign:'center'};padding:${sp(26)}px ${sp(20)}px 0;font-family:${t2.nameFont};font-weight:400;font-size:clamp(${scn(48)}px,10vw,${scn(138)}px);line-height:.88;letter-spacing:calc(-0.02em + ${(t2.nameLetterSpacing||0)/100}em);text-transform:${nameCapsCss}}
 .fx-mast i{font-style:italic;text-transform:none;font-size:.5em;vertical-align:.3em;letter-spacing:0}
 .fx-lines{max-width:440px;padding:0 0 ${sp(40)}px ${sp(40)}px;margin-top:auto}
 .fx-big{font-family:${t2.headFont};font-size:clamp(${sch(26)}px,3.4vw,${sch(40)}px);line-height:1.08;margin:${sp(6)}px 0 ${sp(12)}px}
@@ -7177,17 +7291,17 @@ section.fx h2{font-weight:400}
     border:1px solid ${t2.heading}1F;box-shadow:0 14px 34px -22px rgba(0,0,0,.45)}
   section.fx-spread.flip .fx-copy{grid-column:1;margin:${sp(22)}px -18vw ${sp(22)}px 10px}
   section.fx-spread.band .fx-copy{background:${/^#[0-9a-f]{6}$/i.test(t2.band)?t2.band+'B3':'rgba(255,255,255,.7)'}}
-  .fx-copy .fx-eyebrow{font-size:${scb(8)}px;letter-spacing:.2em;margin-bottom:${sp(8)}px}
+  .fx-copy .fx-eyebrow{font-size:${sclabel(8)}px;letter-spacing:.2em;margin-bottom:${sp(8)}px}
   section.fx-spread h2{font-size:${sch(25)}px;margin-bottom:${sp(10)}px}
   .fx-copy .intro{font-size:${scs(13)}px;line-height:1.5;margin-bottom:${sp(12)}px}
   .fx-copy .intro::first-letter{font-size:3em}
   .fx-copy .para{font-size:${scs(13)}px;line-height:1.55}
   .fx-copy dl div{display:block;padding:${sp(6)}px 0}
-  .fx-copy dt{width:auto;font-size:${scb(8.5)}px;padding-top:0}
+  .fx-copy dt{width:auto;font-size:${sclabel(8.5)}px;padding-top:0}
   .fx-copy dd{font-size:${scs(12.5)}px;line-height:1.4}
-  .fx-copy .maplink{margin-left:0;display:inline-block;font-size:${scb(11)}px}
+  .fx-copy .maplink{margin-left:0;display:inline-block;font-size:${sclink(11)}px}
   .fx-copy .sched li{gap:8px;padding:${sp(7)}px 0}
-  .fx-copy .sched .t{width:52px;font-size:${scb(10)}px;letter-spacing:.02em;padding-top:2px}
+  .fx-copy .sched .t{width:52px;font-size:${sclabel(10)}px;letter-spacing:.02em;padding-top:2px}
   .fx-copy .sched .d b{font-size:${sch(14)}px;line-height:1.3}
   .fx-copy .sched .d i{font-size:${scs(11)}px}
   .fx-copy .sched-label{font-size:${sch(14)}px}
@@ -7200,7 +7314,7 @@ header.fx-atelier-head.fx-noimg{grid-template-columns:1fr;min-height:0}
 .fx-names{padding:${sp(52)}px 0 ${sp(52)}px ${sp(52)}px;display:flex;flex-direction:column;justify-content:center;gap:${sp(22)}px;position:relative;z-index:2}
 .fx-acc{color:${t2.accent}}
 .fx-names .ics{align-self:flex-start;margin-top:0}
-header.fx-atelier-head h1{font-size:clamp(${sch(64)}px,10vw,${sch(150)}px);line-height:.86;letter-spacing:-.03em;margin:0 -30% 0 0;color:${t2.heading}}
+header.fx-atelier-head h1{font-size:clamp(${scn(64)}px,10vw,${scn(150)}px);line-height:.86;letter-spacing:-.03em;margin:0 -30% 0 0;color:${t2.heading}}
 header.fx-atelier-head.fx-noimg h1{margin-right:0}
 header.fx-atelier-head h1 i{display:block;font-size:.42em;color:${t2.accent};margin:.12em 0 .05em .1em;letter-spacing:0}
 header.fx-atelier-head .lead{margin:0;text-align:left}
@@ -7221,7 +7335,7 @@ section.fx h2 i,header.fx-atelier-head .lead i{color:${t2.accent}}
 @media(max-width:640px){
   header.fx-atelier-head{grid-template-columns:1fr;min-height:0}
   .fx-names{padding:${sp(30)}px 20px 0}
-  header.fx-atelier-head h1{margin-right:0;font-size:clamp(${sch(52)}px,17vw,${sch(80)}px)}
+  header.fx-atelier-head h1{margin-right:0;font-size:clamp(${scn(52)}px,17vw,${scn(80)}px)}
   .fx-meta{gap:16px}.fx-meta div{min-width:0;flex:1}
   /* !important: the figure carries an inline min-height (WB_HERO_H, a desktop "how tall
      should the hero be" preset) that a plain selector here can never outrank. Left in
