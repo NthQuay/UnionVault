@@ -1408,6 +1408,41 @@ function _wbTogglePreviewPin(){
 // gaps need the same multiplier, or the Spacing slider visibly does nothing in it even
 // though it's reshaping the whole real site.
 function _wbSpecSp(n,t){ return Math.round(n*((t.space||100)/100)); }
+// Section padding, scaled down for the compact card — the real site's own padding
+// (52px/24px by default) is sized for a 720px+ section, not a ~380px preview card.
+// 30% keeps the proportions readable while still visibly responding to the sliders.
+function _wbSpecSecPad(t){
+  const v=Math.max(4,Math.round((t.secpad!=null?t.secpad:52)*0.3));
+  const h=Math.max(4,Math.round((t.secpadH!=null?t.secpadH:24)*0.3));
+  return v+'px '+h+'px';
+}
+// Section shadow / Card edge: the exact formulas _wbBuildSite() uses for a real section,
+// applied to the specimen's own card. Both default to 0 (flat, no shadow) on a fresh
+// theme — the card used to always show a fixed rounded/shadowed look regardless, so a
+// new site's preview looked nicer than what guests actually saw.
+function _wbSpecCardStyle(t){
+  const sv=typeof t.shadow==='number'?Math.max(0,Math.min(100,t.shadow)):0;
+  const cv=typeof t.cardStyle==='number'?Math.max(0,Math.min(100,t.cardStyle)):0;
+  const shadow=sv>0?`0 ${Math.round(sv/100*10)}px ${Math.round(sv/100*34)}px rgba(0,0,0,${(sv/100*0.32).toFixed(3)})`:'none';
+  const radius=Math.max(4,Math.round(cv/100*14));
+  const border=cv>0?`1px solid rgba(0,0,0,${(cv/100*0.12).toFixed(3)})`:'1px solid rgba(0,0,0,.08)';
+  return `border-radius:${radius}px;overflow:hidden;border:${border};box-shadow:${shadow}`;
+}
+// Button: style/size/weight/shadow/bevel at the specimen's own small scale, mirroring the
+// real site's BTN/btnPad/btnFs/btnShadFull formulas closely enough to actually preview them.
+function _wbSpecBtnStyle(t){
+  const c=t.button;
+  const bw=t.btnBorder==='thin'?'1px':t.btnBorder==='bold'?'3px':'2px';
+  const base=t.btnStyle==='filled'?`background:${c};border:${bw} solid ${c};color:${_wbInk(c)}`
+    :t.btnStyle==='soft'?`background:${c}1A;border:${bw} solid ${c};color:${c}`
+    :`background:transparent;border:${bw} solid ${c};color:${c}`;
+  const pad=t.btnSize==='sm'?'5px 12px':t.btnSize==='lg'?'9px 24px':'7px 18px';
+  const fs=t.btnSize==='sm'?9:t.btnSize==='lg'?12:11;
+  const shadow=t.btnShadow==='soft'?'0 2px 8px rgba(0,0,0,.14)':t.btnShadow==='strong'?'0 3px 14px rgba(0,0,0,.28)':'none';
+  const bevel=t.btnBevel?'inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.12)':'none';
+  const shadowFull=[shadow,bevel].filter(x=>x!=='none').join(',')||'none';
+  return `display:inline-block;font-family:${t.btnFont||t.bodyFont};font-size:${fs}px;padding:${pad};border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};text-transform:${t.btnUppercase===false?'none':'uppercase'};box-shadow:${shadowFull};${base}`;
+}
 
 function _wbThemeBody(){
   const w=_wbSite(), t=w.theme;
@@ -1426,16 +1461,16 @@ function _wbThemeBody(){
           <svg width="13" height="13" viewBox="0 0 24 24" fill="${_wbPreviewPinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.4-1.4c-.4-.4-.6-.9-.6-1.4V9c0-2.8-2.2-5-5-5s-5 2.2-5 5v5.2c0 .5-.2 1-.6 1.4L5 17z"/></svg>
         </button>
       </div>
-      <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 2px 14px rgba(0,0,0,.1)">
+      <div id="wb-spec-card" style="${_wbSpecCardStyle(t)}">
         <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:${_wbSpecSp(24,t)}px ${_wbSpecSp(16,t)}px;text-align:${_specHeadAlign}">
           <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.nameScale||t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:${_wbSpecSp(3,t)}px;text-align:${['left','center','right'].includes(t.nameAlign)?t.nameAlign:'center'};letter-spacing:${(t.nameLetterSpacing||0)/100}em;text-transform:${t.nameCaps?'uppercase':'none'}">${_escHtml(_wbCouple())}</div>
           <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:${Math.round(10*(t.labelScale||100)/100)}px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:${_wbSpecSp(12,t)}px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
-          <span style="display:inline-block;font-family:${t.btnFont||t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)};text-transform:${t.btnUppercase===false?'none':'uppercase'}">Our story</span>
+          <span id="wb-spec-btn" style="${_wbSpecBtnStyle(t)}">Our story</span>
         </div>
-        <div id="wb-spec-band" style="background:${_escHtml(t.band)};padding:${_wbSpecSp(12,t)}px ${_wbSpecSp(16,t)}px;text-align:${_specHeadAlign}">
+        <div id="wb-spec-band" style="background:${_escHtml(t.band)};padding:${_wbSpecSecPad(t)};text-align:${_specHeadAlign}">
           <div id="wb-spec-bandhead" style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};font-weight:${t.headWeight==='bold'?700:400};text-transform:${t.headCaps?'uppercase':'none'};letter-spacing:${(t.headLetterSpacing||0)/100}em">A banded section</div>
           <div id="wb-spec-item" style="font-family:${t.headFont};font-weight:500;font-size:${Math.round(13*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.item)};margin-top:${_wbSpecSp(8,t)}px">An item title</div>
-          <div id="wb-spec-body" style="font-family:${t.bodyFont};font-size:${Math.round(11*(t.secBodyScale||100)/100)}px;color:${_escHtml(t.text)};margin-top:${_wbSpecSp(5,t)}px;text-align:${_specBodyAlign}">Body text sits here.</div>
+          <div id="wb-spec-body" style="font-family:${t.bodyFont};font-size:${Math.round(11*(t.secBodyScale||100)/100)}px;line-height:${(t.lineHeight||170)/100};color:${_escHtml(t.text)};margin-top:${_wbSpecSp(5,t)}px;text-align:${_specBodyAlign}">Body text sits here.</div>
         </div>
       </div>
     </div>`;
@@ -1658,9 +1693,13 @@ function _wbNum(field, v){
   if(sp) sp.style.marginBottom=_wbSpecSp(3,t)+'px';
   if(dt) dt.style.marginBottom=_wbSpecSp(12,t)+'px';
   const bandEl=document.getElementById('wb-spec-band');
-  if(bandEl) bandEl.style.padding=_wbSpecSp(12,t)+'px '+_wbSpecSp(16,t)+'px';
+  if(bandEl) bandEl.style.padding=_wbSpecSecPad(t);
   if(bi) bi.style.marginTop=_wbSpecSp(8,t)+'px';
-  if(bb) bb.style.marginTop=_wbSpecSp(5,t)+'px';
+  if(bb){ bb.style.marginTop=_wbSpecSp(5,t)+'px'; bb.style.lineHeight=(t.lineHeight||170)/100; }
+  // Section shadow / Card edge on the card itself; style/size/weight/shadow/bevel aren't
+  // sliders (no _wbNum path) but shadow/cardStyle are, so patch the card here too.
+  const cardEl=document.getElementById('wb-spec-card');
+  if(cardEl) cardEl.style.cssText=_wbSpecCardStyle(t);
 }
 function _wbCorners(c){
   const t=_wbSite().theme;
@@ -1969,6 +2008,7 @@ function _wbRepaintTheme(){
       if(_band){
         _band.style.background=t.band;
         _band.style.textAlign=_specHeadAlign;
+        _band.style.padding=_wbSpecSecPad(t);
         const _bh=_band.firstElementChild;
         if(_bh){
           _bh.style.color=t.heading; _bh.style.fontFamily=t.headFont;
@@ -1980,15 +2020,12 @@ function _wbRepaintTheme(){
         const _bi=document.getElementById('wb-spec-item');
         if(_bi){ _bi.style.color=t.item; _bi.style.fontFamily=t.headFont; _bi.style.fontSize=Math.round(13*(t.headScale||t.scale||100)/100)+'px'; }
         const _bb=_band.lastElementChild;
-        if(_bb){ _bb.style.color=t.text; _bb.style.fontFamily=t.bodyFont; _bb.style.fontSize=Math.round(11*(t.secBodyScale||100)/100)+'px'; _bb.style.textAlign=_specBodyAlign; }
+        if(_bb){ _bb.style.color=t.text; _bb.style.fontFamily=t.bodyFont; _bb.style.fontSize=Math.round(11*(t.secBodyScale||100)/100)+'px'; _bb.style.lineHeight=(t.lineHeight||170)/100; _bb.style.textAlign=_specBodyAlign; }
       }
-      const _btn=_hero.querySelector('span[style*="background"]');
-      if(_btn){
-        _btn.style.background=t.button; _btn.style.color=_wbInk(t.button);
-        _btn.style.fontFamily=t.btnFont||t.bodyFont;
-        _btn.style.textTransform=t.btnUppercase===false?'none':'uppercase';
-        _btn.style.borderRadius=WB_CORNERS[t.corners]||WB_CORNERS.round;
-      }
+      const _btn=document.getElementById('wb-spec-btn');
+      if(_btn) _btn.style.cssText=_wbSpecBtnStyle(t);
+      const _card=document.getElementById('wb-spec-card');
+      if(_card) _card.style.cssText=_wbSpecCardStyle(t);
     }
     _wbLiveSoon();
     return;
