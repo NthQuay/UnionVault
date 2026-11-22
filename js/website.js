@@ -1064,13 +1064,13 @@ function _wbThemeBody(){
       <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 2px 14px rgba(0,0,0,.1)">
         <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:24px 16px;text-align:${_specHeadAlign}">
           <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:3px">${_escHtml(_wbCouple())}</div>
-          <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:12px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
+          <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:${Math.round(10*(t.bodyScale||100)/100)}px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:12px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
           <span style="display:inline-block;font-family:${t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)}">Our story</span>
         </div>
         <div style="background:${_escHtml(t.band)};padding:12px 16px;text-align:${_specHeadAlign}">
-          <div style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)}">A banded section</div>
+          <div id="wb-spec-bandhead" style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)}">A banded section</div>
           <div id="wb-spec-item" style="font-family:${t.headFont};font-weight:500;font-size:${Math.round(13*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.item)};margin-top:8px">An item title</div>
-          <div style="font-family:${t.bodyFont};font-size:11px;color:${_escHtml(t.text)};margin-top:${Math.round(5*t.space/100)}px;text-align:${_specBodyAlign}">Body text sits here.</div>
+          <div id="wb-spec-body" style="font-family:${t.bodyFont};font-size:${Math.round(11*(t.secBodyScale||100)/100)}px;color:${_escHtml(t.text)};margin-top:${Math.round(5*t.space/100)}px;text-align:${_specBodyAlign}">Body text sits here.</div>
         </div>
       </div>
     </div>`;
@@ -1407,9 +1407,21 @@ function _wbNum(field, v){
     if(l.textContent.indexOf('Section shadow')===0) l.textContent='Section shadow · '+(t.shadow||0);
     if(l.textContent.indexOf('Card edge')===0) l.textContent='Card edge · '+(t.cardStyle||0);
   });
-  // The font specimen is a HEADING sample, so it follows the heading scale.
+  // Heading size affects every heading-level specimen line (name, band heading, item
+  // title); Menu text size affects the date (it's "furniture", same role as nav links);
+  // Section text size affects the body paragraph. Previously only the name's size was
+  // ever patched here, so Menu/Section text size looked like they did nothing at all —
+  // the specimen just never had anything wired to them, even on first render.
   const sp=document.getElementById('wb-spec-name');
   if(sp) sp.style.fontSize=Math.round(26*t.headScale/100)+'px';
+  const bh=document.getElementById('wb-spec-bandhead');
+  if(bh) bh.style.fontSize=Math.round(15*t.headScale/100)+'px';
+  const bi=document.getElementById('wb-spec-item');
+  if(bi) bi.style.fontSize=Math.round(13*t.headScale/100)+'px';
+  const dt=document.getElementById('wb-spec-date');
+  if(dt) dt.style.fontSize=Math.round(10*t.bodyScale/100)+'px';
+  const bb=document.getElementById('wb-spec-body');
+  if(bb) bb.style.fontSize=Math.round(11*t.secBodyScale/100)+'px';
 }
 function _wbCorners(c){
   const t=_wbSite().theme;
@@ -1870,7 +1882,7 @@ function _wbRepaintTheme(){
       const _nm=document.getElementById('wb-spec-name');
       if(_nm){ _nm.style.color=t.heading; _nm.style.fontFamily=t.nameFont; _nm.style.fontSize=Math.round(26*(t.headScale||t.scale||100)/100)+'px'; }
       const _dt=document.getElementById('wb-spec-date');
-      if(_dt){ _dt.style.color=t.accent; _dt.style.fontFamily=t.bodyFont; }
+      if(_dt){ _dt.style.color=t.accent; _dt.style.fontFamily=t.bodyFont; _dt.style.fontSize=Math.round(10*(t.bodyScale||100)/100)+'px'; }
       const _band=_hero.nextElementSibling;
       if(_band){
         _band.style.background=t.band;
@@ -1880,7 +1892,7 @@ function _wbRepaintTheme(){
         const _bi=document.getElementById('wb-spec-item');
         if(_bi){ _bi.style.color=t.item; _bi.style.fontFamily=t.headFont; _bi.style.fontSize=Math.round(13*(t.headScale||t.scale||100)/100)+'px'; }
         const _bb=_band.lastElementChild;
-        if(_bb){ _bb.style.color=t.text; _bb.style.fontFamily=t.bodyFont; _bb.style.textAlign=_specBodyAlign; }
+        if(_bb){ _bb.style.color=t.text; _bb.style.fontFamily=t.bodyFont; _bb.style.fontSize=Math.round(11*(t.secBodyScale||100)/100)+'px'; _bb.style.textAlign=_specBodyAlign; }
       }
       const _btn=_hero.querySelector('span[style*="background"]');
       if(_btn){ _btn.style.background=t.button; _btn.style.color=_wbInk(t.button); _btn.style.fontFamily=t.bodyFont; _btn.style.borderRadius=WB_CORNERS[t.corners]||WB_CORNERS.round; }
