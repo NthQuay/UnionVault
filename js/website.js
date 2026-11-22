@@ -1428,7 +1428,7 @@ function _wbThemeBody(){
       </div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 2px 14px rgba(0,0,0,.1)">
         <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:${_wbSpecSp(24,t)}px ${_wbSpecSp(16,t)}px;text-align:${_specHeadAlign}">
-          <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.nameScale||t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:${_wbSpecSp(3,t)}px;text-align:${['left','center','right'].includes(t.nameAlign)?t.nameAlign:'center'};letter-spacing:${(t.nameLetterSpacing||0)/100}em">${_escHtml(_wbCouple())}</div>
+          <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.nameScale||t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:${_wbSpecSp(3,t)}px;text-align:${['left','center','right'].includes(t.nameAlign)?t.nameAlign:'center'};letter-spacing:${(t.nameLetterSpacing||0)/100}em;text-transform:${t.nameCaps?'uppercase':'none'}">${_escHtml(_wbCouple())}</div>
           <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:${Math.round(10*(t.labelScale||100)/100)}px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:${_wbSpecSp(12,t)}px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
           <span style="display:inline-block;font-family:${t.btnFont||t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)};text-transform:${t.btnUppercase===false?'none':'uppercase'}">Our story</span>
         </div>
@@ -1961,6 +1961,7 @@ function _wbRepaintTheme(){
         _nm.style.fontSize=Math.round(26*(t.nameScale||t.headScale||t.scale||100)/100)+'px';
         _nm.style.textAlign=['left','center','right'].includes(t.nameAlign)?t.nameAlign:'center';
         _nm.style.letterSpacing=((t.nameLetterSpacing||0)/100)+'em';
+        _nm.style.textTransform=t.nameCaps?'uppercase':'none';
       }
       const _dt=document.getElementById('wb-spec-date');
       if(_dt){ _dt.style.color=t.accent; _dt.style.fontFamily=t.bodyFont; _dt.style.fontSize=Math.round(10*(t.labelScale||100)/100)+'px'; }
