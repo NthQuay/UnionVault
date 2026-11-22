@@ -1084,6 +1084,12 @@ function _wbTogglePublish(){
 }
 function openWbTheme(){
   _wbLiveFocusOff();
+  // The Preview specimen renders the couple's actual fonts immediately, but the Google
+  // Fonts stylesheet itself was only ever loaded once a font PICKER was opened — so on
+  // first opening the panel, anything other than a system font (Pinyon Script, say)
+  // silently fell back to the browser's default until a picker happened to load it.
+  // Load it here too, before the specimen is built below.
+  _wbEnsureGoogleFontsLoaded();
   document.querySelectorAll('.wb-row.wb-selected,.wb-theme-row.wb-selected').forEach(r=>r.classList.remove('wb-selected'));
   document.querySelector('.wb-theme-row')?.classList.add('wb-selected');
   _wbPanel('Theme', _wbThemeBody(),
