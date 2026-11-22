@@ -212,8 +212,8 @@ function _wbSite(){
   // legacy `images`: a migration writes the new shape and leaves the old one alone.
   if(typeof t.headScale!=='number') t.headScale=t.scale;
   if(typeof t.bodyScale!=='number') t.bodyScale=t.scale;
-  t.headScale=Math.max(85,Math.min(125,t.headScale));
-  t.bodyScale=Math.max(85,Math.min(125,t.bodyScale));
+  t.headScale=Math.max(20,Math.min(200,t.headScale));
+  t.bodyScale=Math.max(20,Math.min(200,t.bodyScale));
   // v129: the Save-the-date button. `btnStyle` is how it is drawn; `button` is its colour —
   // a colour that has existed in every preset since v120 and was rendered by NOTHING.
   if(WB_BTN_STYLES.indexOf(t.btnStyle)<0) t.btnStyle='outline';
@@ -1043,6 +1043,11 @@ function _wbTogglePreviewPin(){
     if(svg) svg.setAttribute('fill', _wbPreviewPinned ? 'currentColor' : 'none');
   }
 }
+// Spacing (t.space) is a global whitespace multiplier on the real site (the sp() helper,
+// applied to nearly every padding/margin/gap in the stylesheet) — the Preview card's own
+// gaps need the same multiplier, or the Spacing slider visibly does nothing in it even
+// though it's reshaping the whole real site.
+function _wbSpecSp(n,t){ return Math.round(n*((t.space||100)/100)); }
 
 function _wbThemeBody(){
   const w=_wbSite(), t=w.theme;
@@ -1062,15 +1067,15 @@ function _wbThemeBody(){
         </button>
       </div>
       <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.12);box-shadow:0 2px 14px rgba(0,0,0,.1)">
-        <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:24px 16px;text-align:${_specHeadAlign}">
-          <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:3px">${_escHtml(_wbCouple())}</div>
-          <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:${Math.round(10*(t.bodyScale||100)/100)}px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:12px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
+        <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:${_wbSpecSp(24,t)}px ${_wbSpecSp(16,t)}px;text-align:${_specHeadAlign}">
+          <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:${_wbSpecSp(3,t)}px">${_escHtml(_wbCouple())}</div>
+          <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:${Math.round(10*(t.bodyScale||100)/100)}px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:${_wbSpecSp(12,t)}px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
           <span style="display:inline-block;font-family:${t.bodyFont};font-size:11px;padding:7px 18px;border-radius:${WB_CORNERS[t.corners]||WB_CORNERS.round};background:${_escHtml(t.button)};color:${_wbInk(t.button)}">Our story</span>
         </div>
-        <div style="background:${_escHtml(t.band)};padding:12px 16px;text-align:${_specHeadAlign}">
+        <div id="wb-spec-band" style="background:${_escHtml(t.band)};padding:${_wbSpecSp(12,t)}px ${_wbSpecSp(16,t)}px;text-align:${_specHeadAlign}">
           <div id="wb-spec-bandhead" style="font-family:${t.headFont};font-size:${Math.round(15*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)}">A banded section</div>
-          <div id="wb-spec-item" style="font-family:${t.headFont};font-weight:500;font-size:${Math.round(13*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.item)};margin-top:8px">An item title</div>
-          <div id="wb-spec-body" style="font-family:${t.bodyFont};font-size:${Math.round(11*(t.secBodyScale||100)/100)}px;color:${_escHtml(t.text)};margin-top:${Math.round(5*t.space/100)}px;text-align:${_specBodyAlign}">Body text sits here.</div>
+          <div id="wb-spec-item" style="font-family:${t.headFont};font-weight:500;font-size:${Math.round(13*(t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.item)};margin-top:${_wbSpecSp(8,t)}px">An item title</div>
+          <div id="wb-spec-body" style="font-family:${t.bodyFont};font-size:${Math.round(11*(t.secBodyScale||100)/100)}px;color:${_escHtml(t.text)};margin-top:${_wbSpecSp(5,t)}px;text-align:${_specBodyAlign}">Body text sits here.</div>
         </div>
       </div>
     </div>`;
@@ -1160,15 +1165,15 @@ function _wbThemeBody(){
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <input type="range" min="20" max="200" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Menu text size · ${t.bodyScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <input type="range" min="20" max="200" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Section text size · ${t.secBodyScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.secBodyScale}" oninput="_wbNum('secBodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <input type="range" min="20" max="200" step="5" value="${t.secBodyScale}" oninput="_wbNum('secBodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
@@ -1385,11 +1390,11 @@ function _wbBtnStyle(v){
 }
 function _wbNum(field, v){
   const n=(v===''||v===null||v===undefined||isNaN(+v))?100:+v;
-  // The two text scales have a real range (85–125). Clamp INTO it rather than resetting to
-  // 100 on anything unexpected — a slider that jumps to the middle when it disagrees with
-  // you is worse than one that stops at its own edge.
+  // The three text scales have a real range (20–200). Clamp INTO it rather than resetting
+  // to 100 on anything unexpected — a slider that jumps to the middle when it disagrees
+  // with you is worse than one that stops at its own edge.
   _wbSite().theme[field] = (field==='headScale'||field==='bodyScale'||field==='secBodyScale')
-    ? Math.max(85, Math.min(125, n)) : n;
+    ? Math.max(20, Math.min(200, n)) : n;
   saveToStorage();
   _wbLiveSoon();
   // Update the readout in place — a full repaint would kill the slider mid-drag.
@@ -1422,6 +1427,16 @@ function _wbNum(field, v){
   if(dt) dt.style.fontSize=Math.round(10*t.bodyScale/100)+'px';
   const bb=document.getElementById('wb-spec-body');
   if(bb) bb.style.fontSize=Math.round(11*t.secBodyScale/100)+'px';
+  // Spacing: same multiplier as the real site's sp() helper, applied to the card's own
+  // padding and internal gaps — see _wbSpecSp().
+  const heroEl=document.getElementById('wb-spec-hero');
+  if(heroEl) heroEl.style.padding=_wbSpecSp(24,t)+'px '+_wbSpecSp(16,t)+'px';
+  if(sp) sp.style.marginBottom=_wbSpecSp(3,t)+'px';
+  if(dt) dt.style.marginBottom=_wbSpecSp(12,t)+'px';
+  const bandEl=document.getElementById('wb-spec-band');
+  if(bandEl) bandEl.style.padding=_wbSpecSp(12,t)+'px '+_wbSpecSp(16,t)+'px';
+  if(bi) bi.style.marginTop=_wbSpecSp(8,t)+'px';
+  if(bb) bb.style.marginTop=_wbSpecSp(5,t)+'px';
 }
 function _wbCorners(c){
   const t=_wbSite().theme;
@@ -1723,15 +1738,15 @@ function _wbRepaintTheme(){
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Heading size · ${t.headScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <input type="range" min="20" max="200" step="5" value="${t.headScale}" oninput="_wbNum('headScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Menu text size · ${t.bodyScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <input type="range" min="20" max="200" step="5" value="${t.bodyScale}" oninput="_wbNum('bodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Section text size · ${t.secBodyScale}%</div>
-        <input type="range" min="85" max="125" step="5" value="${t.secBodyScale}" oninput="_wbNum('secBodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
+        <input type="range" min="20" max="200" step="5" value="${t.secBodyScale}" oninput="_wbNum('secBodyScale',this.value)" style="width:100%;accent-color:var(--gold)"/>
       </div>
       <div style="margin-bottom:14px">
         <div class="wb-slot-lbl" style="margin-bottom:6px">Spacing · ${t.space<95?'Snug':(t.space>105?'Airy':'Normal')}</div>
