@@ -324,91 +324,91 @@ const TIPS_LIBRARY=[
     {lead:'Pack your honeymoon bags three days early.', body:'Finish packing before wedding week starts so you aren’t hunting for swimwear at midnight after your rehearsal dinner.'},
     {lead:'Mention it’s your honeymoon everywhere.', body:'Flag your booking with airlines, hotels, and restaurants ahead of time for complimentary room upgrades, bubbles, or dessert treats.'}
   ]},
-  {icon:'elopement', title:'Elopements & Micro-Weddings', photo:'tip-36', tagline:'Strip away the big-wedding fuss while keeping the day deeply intentional and memorable.', tips:[
+  {icon:'elopement', title:'Elopements & Micro-Weddings', photo:'tip-35', tagline:'Strip away the big-wedding fuss while keeping the day deeply intentional and memorable.', tips:[
     {lead:'Invest in an incredible photographer and videographer.', body:'With a tiny guest list, high-end photo and video coverage lets you share the magic with everyone back home.'},
     {lead:'Scout locations at the exact ceremony hour.', body:'Visit your cliffside, beach, or forest spot at the same time of day to check tides, sun glare, and weekend crowds.'},
     {lead:'Keep witnesses and legal paperwork sorted.', body:'Even an intimate elopement requires two witnesses over 18—arrange for your photographer and celebrant to sign if needed.'},
     {lead:'Send marriage announcements afterward.', body:'Use your digital hub to share photos, a ceremony video, and a post-elopement party invite with extended family.', link:{page:'website', label:'Open your Website'}},
     {lead:'Splurge on an unforgettable dining experience.', body:'Book a private chef or a degustation table at a top restaurant to celebrate right after you sign the register.'}
   ]},
-  {icon:'pets', title:'Including Pets in Your Wedding Day', photo:'tip-37', tagline:'Bring your furry best friend along safely without adding extra stress to your schedule.', tips:[
+  {icon:'pets', title:'Including Pets in Your Wedding Day', photo:'tip-36', tagline:'Bring your furry best friend along safely without adding extra stress to your schedule.', tips:[
     {lead:'Check venue pet rules before booking.', body:'Confirm whether animals are allowed indoors, during catering service, or only for outdoor ceremony photos.'},
     {lead:'Hire a dedicated wedding pet handler.', body:'Book a professional pet sitter or ask a non-guest friend to transport, walk, and take your dog home after portraits.'},
     {lead:'Do a practice visit with your pet.', body:'Bring your dog to the venue beforehand so unfamiliar smells, crowds, and camera flashes don’t overwhelm them on the day.'},
     {lead:'Add pet timings to your master run sheet.', body:'Schedule exact arrival and pickup windows so your pet only stays for the calmest 45 minutes.', link:{page:'timeline', label:'Open Timelines'}},
     {lead:'Pack water, treats, and lint rollers.', body:'Keep treats near the photographer for attention, and pack a sticky roller for dark suits before your pet goes home.'}
   ]},
-  {icon:'ring', title:'Engagement Party & Save-the-Date Etiquette', photo:'tip-38', tagline:'Kick off your engagement smoothly without accidentally over-committing your wedding guest list.', tips:[
+  {icon:'ring', title:'Engagement Party & Save-the-Date Etiquette', photo:'tip-37', tagline:'Kick off your engagement smoothly without accidentally over-committing your wedding guest list.', tips:[
     {lead:'Lock in your wedding headcount before inviting.', body:'Everyone invited to your engagement party will reasonably expect a wedding invite later, so draft your guest list first.'},
     {lead:'Keep the engagement party relaxed and low-cost.', body:'Save your major styling and catering budget for the wedding day by hosting a casual cocktail party or backyard afternoon.'},
     {lead:'Launch your digital guest list early.', body:'Collect addresses, emails, and phone numbers at your engagement party straight away.', link:{page:'guests', label:'Open Guest List'}},
     {lead:'Send Save-the-Dates 6 to 8 months out.', body:'Give guests plenty of notice for local weddings—and up to 12 months if your wedding falls on a long weekend or destination.'},
     {lead:'Skip engagement gift expectations.', body:'Add a warm note letting guests know their company is the only gift you need so nobody feels pressured to buy twice.'}
   ]},
-  {icon:'cake', title:'Cake, Dessert Bars & Late-Night Sweets', photo:'tip-39', tagline:'Make sure your wedding cake looks great, tastes fresh, and actually gets eaten.', tips:[
+  {icon:'cake', title:'Cake, Dessert Bars & Late-Night Sweets', photo:'tip-38', tagline:'Make sure your wedding cake looks great, tastes fresh, and actually gets eaten.', tips:[
     {lead:'Size your cake for 70% of your guest list.', body:'Not everyone eats dessert after a big dinner, so order a slightly smaller tier to avoid throwing away half your cake.'},
     {lead:'Ask your caterer about cakeage fees.', body:'Some venues charge per plate to slice and serve an external cake—serving it on a grazing table with napkins often avoids this fee.'},
     {lead:'Keep buttercream cakes out of direct sun.', body:'Store delicate cakes in a cool room until 20 minutes before cutting so icing doesn’t slump in summer heat.'},
     {lead:'Log cake delivery and dietary details clearly.', body:'Note gluten-free or vegan tiers and supplier arrival times inside your vendor dashboard.', link:{page:'vendors', label:'Open Vendors'}},
     {lead:'Cut your cake right before the dance floor opens.', body:'Grouping cake cutting with speeches keeps momentum rolling without interrupting guests mid-meal.'}
   ]},
-  {icon:'blended', title:'Second-Time Weddings & Blended Families', photo:'tip-40', tagline:'Honour your history and involve children meaningfully in your new chapter together.', tips:[
+  {icon:'blended', title:'Second-Time Weddings & Blended Families', photo:'tip-39', tagline:'Honour your history and involve children meaningfully in your new chapter together.', tips:[
     {lead:'Include children in the ceremony naturally.', body:'Invite kids to walk you down the aisle, carry rings, or participate in a unity ritual so they feel central to the day.'},
     {lead:'Ditch traditions that don’t fit your story.', body:'Skip garter tosses, veil reveals, or formal receiving lines in favour of moments that reflect who you are now.'},
     {lead:'Coordinate family seating with care.', body:'Use the interactive floorplan tool to balance blended family dynamics comfortably across tables.', link:{page:'seating', label:'Open Seating Plan'}},
     {lead:'Give kids a special toast or mention.', body:'Acknowledging your children during speeches reinforces that you are celebrating a whole family coming together.'},
     {lead:'Keep registry items practical or experience-based.', body:'Since you likely already have household essentials, opt for a honeymoon fund, art piece, or charity donation instead.'}
   ]},
-  {icon:'sunrise', title:'Morning-Of Prep & Getting Ready Logistics', photo:'tip-41', tagline:'Set a calm, joyful tone from the moment you wake up on your wedding morning.', tips:[
+  {icon:'sunrise', title:'Morning-Of Prep & Getting Ready Logistics', photo:'tip-40', tagline:'Set a calm, joyful tone from the moment you wake up on your wedding morning.', tips:[
     {lead:'Choose a bright, clutter-free getting-ready room.', body:'Natural window light and tidy surfaces make morning hair, makeup, and dress photos look clean and editorial.'},
     {lead:'Order breakfast and lunch platters the day before.', body:'Have fresh fruit, pastries, wraps, and plenty of water delivered early so nobody gets lightheaded before the ceremony.'},
     {lead:'Keep morning schedules visible to everyone.', body:'Share hair and makeup chair order and photographer arrival times so nobody runs late.', link:{page:'timeline', label:'Open Timelines'}},
     {lead:'Wear button-down shirts or loose robes.', body:'Avoid tight T-shirts or pullovers that ruin fresh hair and makeup when changing into wedding outfits.'},
     {lead:'Hide suitcases and snacks in a separate room.', body:'Designate one bedroom or bathroom as a “bag dump zone” so clutter stays out of every photo frame.'}
   ]},
-  {icon:'shield', title:'Wedding Insurance & Financial Protection', photo:'tip-42', tagline:'Protect your deposits and peace of mind against unexpected hiccups.', tips:[
+  {icon:'shield', title:'Wedding Insurance & Financial Protection', photo:'tip-41', tagline:'Protect your deposits and peace of mind against unexpected hiccups.', tips:[
     {lead:'Take out wedding insurance as soon as deposits are paid.', body:'Cover protects you from the moment you start booking suppliers—not just during wedding week.'},
     {lead:'Check what your policy actually covers.', body:'Read the fine print for supplier bankruptcy, severe weather postponement, attire damage, and public liability.'},
     {lead:'Store policy numbers and receipts together.', body:'Keep insurance certificates alongside your supplier contracts and payment logs.', link:{page:'vendors', label:'Open Vendors'}},
     {lead:'Pay major deposits by credit card.', body:'Using a card with purchase protection adds an extra layer of chargeback security if a vendor goes bust.'},
     {lead:'Verify venue liability requirements early.', body:'Check whether your venue’s insurance covers guest accidents or if you need standalone event liability cover.'}
   ]},
-  {icon:'scissors', title:'DIY Weddings & Handmade Décor', photo:'tip-44', tagline:'Add personal touches without spending your wedding week glued to a hot-glue gun.', tips:[
+  {icon:'scissors', title:'DIY Weddings & Handmade Décor', photo:'tip-42', tagline:'Add personal touches without spending your wedding week glued to a hot-glue gun.', tips:[
     {lead:'Finish all DIY projects two weeks before the wedding.', body:'Keep wedding week strictly for relaxing and final logistics rather than painting signs at midnight.'},
     {lead:'Price out materials before committing to DIY.', body:'Factor in glue, tools, practice runs, and your time—hiring items is often cheaper than buying raw supplies.'},
     {lead:'Track DIY supply costs in your main budget.', body:'Log craft store receipts and print orders inside your budget tracker so small spends don’t sneak up on you.', link:{page:'budget', label:'Open Budget'}},
     {lead:'Pack DIY items in labelled, clear plastic tubs.', body:'Group signage, candles, and table numbers by area with a photo of how each table should look for easy setup.'},
     {lead:'Assign a pack-down crew for the end of the night.', body:'Venues usually require all personal décor removed at midnight, so nominate two helpers with a large car beforehand.'}
   ]},
-  {icon:'info', title:'Wedding Guest Etiquette (Shareable Guide)', photo:'tip-47', tagline:'A polite, helpful checklist you can share with guests so the day runs smoothly for everyone.', tips:[
+  {icon:'info', title:'Wedding Guest Etiquette (Shareable Guide)', photo:'tip-43', tagline:'A polite, helpful checklist you can share with guests so the day runs smoothly for everyone.', tips:[
     {lead:'RSVP before the deadline—even if you can’t make it.', body:'Catering numbers and seating plans lock in weeks early, so reply promptly either way.'},
     {lead:'Never bring an uninvited plus-one or extra child.', body:'Check your invitation envelope or digital RSVP form to see exactly who is included in your party.', link:{page:'rsvp-mgr', label:'Open RSVP & Invites'}},
     {lead:'Keep phones tucked away during the ceremony.', body:'Let the professional photographer capture the aisle moments without screens blocking the view.'},
     {lead:'Don’t wear white, ivory, or bridal-adjacent shades.', body:'Unless the dress code specifically asks for all-white attire, leave those colours exclusively for the couple.'},
     {lead:'Hold off on posting photos until the couple shares first.', body:'Give the newlyweds the joy of sharing the first official snaps of their outfits and vows online.'}
   ]},
-  {icon:'venue', title:'Backyard, Marquee & Blank-Canvas Venues', photo:'tip-48', tagline:'Build a custom wedding space from scratch without missing crucial behind-the-scenes utilities.', tips:[
+  {icon:'venue', title:'Backyard, Marquee & Blank-Canvas Venues', photo:'tip-44', tagline:'Build a custom wedding space from scratch without missing crucial behind-the-scenes utilities.', tips:[
     {lead:'Confirm power, water, and generator capacity.', body:'Marquee lighting, catering ovens, and DJ decks require heavy power—hire a silent generator if mains won’t cope.'},
     {lead:'Hire one luxury portable bathroom per 50 guests.', body:'Standard festival loos spoil formal outfits, so book trailer bathrooms with running water and lighting.'},
     {lead:'Centralise supplier bump-in and delivery windows.', body:'Map out marquee installation, cool-room drop-offs, and furniture hire inside your master schedule.', link:{page:'vendors', label:'Open Vendors'}},
     {lead:'Book a cold room or extra ice deliveries.', body:'Blank-canvas venues rarely have commercial fridge space for hundreds of drinks and catering platters.'},
     {lead:'Check local council noise curfews and neighbour notices.', body:'Give nearby neighbours a friendly heads-up with your contact number and wrap up loud bass by curfew.'}
   ]},
-  {icon:'streaming', title:'Wedding Live-Streaming & Virtual Guests', photo:'tip-49', tagline:'Include overseas relatives and loved ones who can’t travel in person.', tips:[
+  {icon:'streaming', title:'Wedding Live-Streaming & Virtual Guests', photo:'tip-45', tagline:'Include overseas relatives and loved ones who can’t travel in person.', tips:[
     {lead:'Test internet upload speeds at the ceremony spot.', body:'Remote beaches, wineries, and gardens often have weak reception, so check signal strength ahead of time.'},
     {lead:'Assign one dedicated person to manage the stream.', body:'Ask a tech-savvy friend or hire a videographer to hold the tripod and monitor audio—never rely on the bridal party.'},
     {lead:'Share your private stream link securely.', body:'Post the viewing link, timezone details, and digital guestbook inside your password-protected hub.', link:{page:'website', label:'Open your Website'}},
     {lead:'Place the camera near a speaker or audio feed.', body:'Wind noise ruins phone microphones, so position your streaming device close to the celebrant’s PA system.'},
     {lead:'Say a quick hello to the camera after signing.', body:'Looking straight into the lens for a wave and smile makes virtual guests feel genuinely part of the moment.'}
   ]},
-  {icon:'hashtag', title:'Social Media, Hashtags & Guest Photo Sharing', photo:'tip-50', tagline:'Collect candid guest photos effortlessly without turning your reception into a phone screen sea.', tips:[
+  {icon:'hashtag', title:'Social Media, Hashtags & Guest Photo Sharing', photo:'tip-46', tagline:'Collect candid guest photos effortlessly without turning your reception into a phone screen sea.', tips:[
     {lead:'Set up a shared QR code photo album.', body:'Place small cards on reception tables so guests can upload candid photos and videos directly into one folder.'},
     {lead:'Share your photo-upload link post-wedding.', body:'Add your shared gallery link to your guest hub so everyone can browse and upload after the weekend.', link:{page:'website', label:'Open your Website'}},
     {lead:'Pick a short, easy-to-spell wedding hashtag.', body:'Avoid complicated puns or long strings of numbers that guests will misspell after a few glasses of champagne.'},
     {lead:'Appoint a designated behind-the-scenes content creator.', body:'Ask a bridesmaid or hire a creator to capture vertical phone clips of morning prep and the first dance.'},
     {lead:'Clarify your social media preferences politely.', body:'A quick note from your MC or on your welcome sign lets guests know if you prefer unplugged or delayed posting.'}
   ]},
-  {icon:'care', title:'Accessibility & Older Guest Comfort', photo:'tip-52', tagline:'Ensure grandparents, mobility-aid users, and neurodivergent guests can enjoy every part of the day.', tips:[
+  {icon:'care', title:'Accessibility & Older Guest Comfort', photo:'tip-47', tagline:'Ensure grandparents, mobility-aid users, and neurodivergent guests can enjoy every part of the day.', tips:[
     {lead:'Check step-free access from parking to reception.', body:'Confirm ramps, lifts, and accessible restrooms are clear and close to the main celebration spaces.'},
     {lead:'Reserve front-row seats for older or hard-of-hearing guests.', body:'Seating grandparents right near the ceremony action helps them see and hear vows clearly.'},
     {lead:'Collect accessibility notes during the RSVP process.', body:'Add an optional support field to your digital RSVP form to plan seating and transport early.', link:{page:'rsvp-mgr', label:'Open RSVP & Invites'}},
