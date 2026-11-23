@@ -1,7 +1,8 @@
 // WEDDING TIPS LIBRARY
 // ══════════════════════════════════════════════
 // Read-only reference content (not a planning tool like the other pages) —
-// 53 categories of 5 tips each. A few tips point at a specific UnionVault
+// 47 categories (most of 5 tips; a handful merge two or three related topics into one,
+// grouped with sub-headers via `group` on a tip). A few tips point at a specific UnionVault
 // tool; those carry a `link` so the tip can jump straight there instead of
 // just naming it in passing text.
 const TIPS_ICONS={
@@ -113,12 +114,20 @@ const TIPS_LIBRARY=[
     {lead:'Repurpose ceremony flowers at the reception.', body:'Move arbour arrangements and aisle meadows to the bridal table or bar area after the ceremony to double your budget.'},
     {lead:'Test your table lighting at night.', body:'Check how candles, fairy lights, or uplighting look after dark so your reception feels warm rather than dim.'}
   ]},
-  {icon:'calendar', title:'Multi-Event Weekend Planning', tagline:'Plan the whole celebration without burning out you or your guests.', tips:[
-    {lead:'Keep pre-wedding events optional.', body:'Make welcome drinks or recovery brunches casual drop-ins so travelling guests don’t feel over-scheduled.'},
-    {lead:'Separate budgets for each celebration.', body:'Track engagement parties, rehearsal dinners, and day-after brunches individually so costs don’t blur together.'},
-    {lead:'Manage multi-event RSVPs effortlessly.', body:'Invite specific guest groups to your rehearsal dinner or recovery brunch without cluttering your main list.', link:{page:'events', label:'Open Events'}},
-    {lead:'Delegate hosting duties for pre-events.', body:'Let parents, siblings, or your bridal party coordinate the welcome drinks so you can rest before the big day.'},
-    {lead:'Plan an easy morning-after recovery.', body:'Book a casual café or park picnic with simple catering so you can say goodbye to guests without hosting stress.'}
+  {icon:'calendar', title:'Multi-Event Weekend Planning', tagline:'Plan hens, bucks, brunches and every event around the big day without burning out.', tips:[
+    {group:'Planning Multiple Events', lead:'Keep pre-wedding events optional.', body:'Make welcome drinks or recovery brunches casual drop-ins so travelling guests don’t feel over-scheduled.'},
+    {group:'Planning Multiple Events', lead:'Separate budgets for each celebration.', body:'Track engagement parties, rehearsal dinners, and day-after brunches individually so costs don’t blur together.'},
+    {group:'Planning Multiple Events', lead:'Manage every event’s RSVPs in one place.', body:'Invite specific guest groups to your hens, bucks, rehearsal dinner or recovery brunch without cluttering your main wedding list.', link:{page:'events', label:'Open Events'}},
+    {group:'Planning Multiple Events', lead:'Delegate hosting duties for pre-events.', body:'Let parents, siblings, or your bridal party coordinate the welcome drinks so you can rest before the big day.'},
+    {group:'Planning Multiple Events', lead:'Plan an easy morning-after recovery.', body:'Book a casual café or park picnic with simple catering so you can say goodbye to guests without hosting stress.'},
+    {group:'Hens & Bucks', lead:'Poll guests on budget and dates first.', body:'Send a quick anonymous poll before locking in flights or luxury Airbnbs so nobody feels priced out.'},
+    {group:'Hens & Bucks', lead:'Host pre-parties at least 3 weeks out.', body:'Scheduling your hens or bucks too close to the wedding risks last-minute illness, sunburn, or exhaustion in wedding photos.'},
+    {group:'Hens & Bucks', lead:'Keep guest lists aligned with the wedding.', body:'Avoid inviting people to the hens or bucks party who aren’t invited to the actual wedding unless it’s an explicit workplace send-off.'},
+    {group:'Hens & Bucks', lead:'Collect upfront deposits for group bookings.', body:'Have the organiser collect money before paying for boats, buses, or accommodation so one person isn’t left out of pocket.'},
+    {group:'Day-After Brunch', lead:'Keep the start time at 10:30 AM or later.', body:'Give yourself and your guests plenty of time to sleep in after a late reception night.'},
+    {group:'Day-After Brunch', lead:'Choose a drop-in style over a seated meal.', body:'Coffee, pastries, fruit platters, and bacon-and-egg rolls let guests come and go around their flight times.'},
+    {group:'Day-After Brunch', lead:'Pick a casual, self-pay or low-key venue.', body:'Meeting at a local café, surf club, or shady park saves you from hosting or cleaning up a third event.'},
+    {group:'Day-After Brunch', lead:'Bring a few extra chairs and sunglasses.', body:'Everyone will appreciate a relaxed, low-pressure space to swap stories from the night before.'}
   ]},
   {icon:'gift', title:'Gifts, Wishing Well & Registry Etiquette', tagline:'Wishing well, registry and thank-yous — handled with grace.', tips:[
     {lead:'Offer both a wishing well and a small registry.', body:'Some traditional guests love buying a physical gift, while others prefer contributing to your honeymoon fund.'},
@@ -155,12 +164,17 @@ const TIPS_LIBRARY=[
     {lead:'Draft and store vows securely.', body:'Write, edit, and back up your personal vows safely so you never lose a draft.'},
     {lead:'Print vow cards for the altar.', body:'Reading from matching, sturdy card stock looks far better in photos than holding a glowing smartphone.'}
   ]},
-  {icon:'catering', title:'Catering, Bar & Dietary Management', photo:'tip-15', tagline:'Keep your guests well-fed, hydrated, and safely accommodated all night.', tips:[
-    {lead:'Ask for dietary needs on the RSVP.', body:'Collect allergies, vegan requests, and kids’ meal counts upfront to avoid awkward catering surprises on the night.'},
-    {lead:'Serve canapés immediately after the ceremony.', body:'Hungry guests get tired fast, so ensure drinks and roaming food start the moment photos begin.'},
-    {lead:'Offer one signature cocktail instead of an open spirits bar.', body:'A custom His & Hers or Theirs & Theirs drink feels special while keeping bar tabs predictable.'},
-    {lead:'Export dietary summaries in one click.', body:'Generate a clean, categorised catering report straight from your guest list to send to your head chef.', link:{page:'guests', label:'Open Guest List'}},
-    {lead:'Order late-night snacks for dance-floor energy.', body:'Mini sliders, wood-fired pizza, or toasties at 10:00 PM keep energy high and help guests pace their drinks.'}
+  {icon:'catering', title:'Catering, Bar & Dietary Management', photo:'tip-15', tagline:'Keep your guests well-fed, hydrated, and included — whatever they drink.', tips:[
+    {group:'Catering & Dietary', lead:'Ask for dietary needs on the RSVP.', body:'Collect allergies, vegan requests, and kids’ meal counts upfront to avoid awkward catering surprises on the night.'},
+    {group:'Catering & Dietary', lead:'Serve canapés immediately after the ceremony.', body:'Hungry guests get tired fast, so ensure drinks and roaming food start the moment photos begin.'},
+    {group:'Catering & Dietary', lead:'Offer one signature cocktail instead of an open spirits bar.', body:'A custom His & Hers or Theirs & Theirs drink feels special while keeping bar tabs predictable.'},
+    {group:'Catering & Dietary', lead:'Export dietary summaries in one click.', body:'Generate a clean, categorised catering report straight from your guest list to send to your head chef.', link:{page:'guests', label:'Open Guest List'}},
+    {group:'Catering & Dietary', lead:'Order late-night snacks for dance-floor energy.', body:'Mini sliders, wood-fired pizza, or toasties at 10:00 PM keep energy high and help guests pace their drinks.'},
+    {group:'Bar & Non-Alcoholic', lead:'Offer elevated zero-proof cocktails and sparkling teas.', body:'Stock non-alcoholic prosecco, craft zero-alcohol beers, and botanical spritzes rather than just soft drink and juice.'},
+    {group:'Bar & Non-Alcoholic', lead:'Ensure bar staff serve zero-proof drinks in proper glassware.', body:'Serving mocktails in real coupe or rocks glasses makes non-drinkers feel included in every toast.'},
+    {group:'Bar & Non-Alcoholic', lead:'Note non-alcoholic preferences in your catering counts.', body:'Track alcohol-free guests alongside dietary requirements so you order the right beverage ratios.', link:{page:'guests', label:'Open Guest List'}},
+    {group:'Bar & Non-Alcoholic', lead:'Keep chilled water stations accessible on every table.', body:'Place carafes of still and sparkling water within easy reach so guests stay hydrated between speeches.'},
+    {group:'Bar & Non-Alcoholic', lead:'Include a zero-proof toast option at every place setting.', body:'Ask waitstaff to pour non-alcoholic bubbles automatically for nominated guests before speeches begin.'}
   ]},
   {icon:'camera', title:'Photography & Videography Shot Lists', photo:'tip-16', tagline:'Capture every meaningful moment without spending hours away from your party.', tips:[
     {lead:'Cap formal family photos at 10 groupings.', body:'Keep family portraits to immediate relatives so you aren’t stuck posing for an hour during cocktail hour.'},
@@ -176,12 +190,22 @@ const TIPS_LIBRARY=[
     {lead:'Confirm venue sound limits early.', body:'Check whether your venue enforces decibel cutoffs or requires acoustic music after a certain hour.'},
     {lead:'Keep formal dances short.', body:'Fade out your first dance or parent dances around the 90-second mark before inviting everyone else onto the floor.'}
   ]},
-  {icon:'weather', title:'Outdoor & Weather Contingency Planning', photo:'tip-18', tagline:'Stay calm and prepared no matter what the forecast brings on the day.', tips:[
-    {lead:'Book a Plan B space you actually like.', body:'Ensure your indoor wet-weather backup feels intentional rather than like a last-minute conference room.'},
-    {lead:'Provide shade and water for summer ceremonies.', body:'Set up parasols, handheld fans, and iced water stations if guests will sit in direct sun.'},
-    {lead:'Order clear umbrellas in bulk.', body:'Matching transparent umbrellas protect hair and outfits while still letting natural light through for great rainy-day photos.'},
-    {lead:'Add weather contact info to your run sheet.', body:'Store marquee hire and venue coordinator numbers in your emergency contacts for fast morning-of decisions.'},
-    {lead:'Account for wind and uneven ground.', body:'Supply heel protectors for grassy lawns and swap tall, lightweight taper candles for sturdy hurricane vases.'}
+  {icon:'weather', title:'Weather & Seasonal Planning', photo:'tip-18', tagline:'Stay calm, cool or cosy whatever the forecast brings on the day.', tips:[
+    {group:'Outdoor Contingency', lead:'Book a Plan B space you actually like.', body:'Ensure your indoor wet-weather backup feels intentional rather than like a last-minute conference room.'},
+    {group:'Outdoor Contingency', lead:'Order clear umbrellas in bulk.', body:'Matching transparent umbrellas protect hair and outfits while still letting natural light through for great rainy-day photos.'},
+    {group:'Outdoor Contingency', lead:'Add weather contact info to your run sheet.', body:'Store marquee hire and venue coordinator numbers in your emergency contacts for fast morning-of decisions.'},
+    {group:'Outdoor Contingency', lead:'Account for wind and uneven ground.', body:'Supply heel protectors for grassy lawns and swap tall, lightweight taper candles for sturdy hurricane vases.'},
+    {group:'Hot Weather', lead:'Provide shade and water for summer ceremonies.', body:'Set up parasols, handheld fans, and iced water stations if guests will sit in direct sun.'},
+    {group:'Hot Weather', lead:'Schedule outdoor ceremonies for late afternoon.', body:'Avoid the harsh midday sun between 12:00 PM and 3:00 PM for guest comfort and softer portrait lighting.'},
+    {group:'Hot Weather', lead:'Set up self-serve hydration and sunscreen stations.', body:'Offer chilled water dispensers, electrolyte sachets, and spray sunscreen near the ceremony entrance.'},
+    {group:'Hot Weather', lead:'Share heat-smart dress code tips early.', body:'Advise guests on breathable fabrics and sun-safe footwear through your event FAQ page.', link:{page:'website', label:'Open your Website'}},
+    {group:'Hot Weather', lead:'Choose heat-hardy flowers and sturdy icing.', body:'Ask your florist for blooms like orchids, roses, or natives, and opt for fondant or ganache over soft buttercream.'},
+    {group:'Hot Weather', lead:'Provide handheld fans or paper programs.', body:'Doubles as a ceremony order of service and an instant breeze while guests wait for the aisle walk.'},
+    {group:'Cold Weather', lead:'Account for early sunset times in your timeline.', body:'Winter sun drops fast, so plan your ceremony early enough to capture outdoor portraits in daylight.'},
+    {group:'Cold Weather', lead:'Provide pashminas, blankets, or outdoor heaters.', body:'Keep a basket of warm wraps near outdoor cocktail areas so guests stay comfortable between venues.'},
+    {group:'Cold Weather', lead:'Highlight warm arrival drinks and coat check info.', body:'Let guests know where to store heavy coats and umbrellas on your digital schedule.', link:{page:'website', label:'Open your Website'}},
+    {group:'Cold Weather', lead:'Swap iced welcome drinks for mulled wine or hot cider.', body:'Seasonal warmers immediately set a cosy mood as guests arrive from the cold.'},
+    {group:'Cold Weather', lead:'Build extra buffer time for winter travel.', body:'Rain, fog, or icy roads can slow down supplier deliveries and guest arrivals, so pad your morning schedule.'}
   ]},
   {icon:'kids', title:'Kids & Family-Friendly Wedding Tips', photo:'tip-19', tagline:'Make sure your littlest guests—and their parents—have a relaxed, fun celebration.', tips:[
     {lead:'Be crystal clear about child invites.', body:'Address invitations specifically to the parents’ names or list every invited child clearly so there is zero confusion.'},
@@ -281,12 +305,17 @@ const TIPS_LIBRARY=[
     {lead:'Light up pathways and outdoor exits.', body:'Place solar stakes, lanterns, or fairy lights along garden paths and steps so guests can navigate safely at night.'},
     {lead:'Keep the dance floor compact.', body:'A slightly smaller dance floor packs people together and feels energetic, whereas a huge floor can make a lively crowd look sparse.'}
   ]},
-  {icon:'keepsake', title:'Post-Wedding Wrap-Up & Keepsake Preservation', photo:'tip-33', tagline:'Close out your wedding smoothly and preserve your favourite memories stress-free.', tips:[
-    {lead:'Book bouquet preservation before the wedding.', body:'Floral pressing or resin preservation studios fill up months in advance and require fresh blooms within days.'},
-    {lead:'Clean your wedding dress within two weeks.', body:'Sweat, champagne, and grass stains set permanently if left untreated in a garment bag for months.'},
-    {lead:'Close out final vendor payments and reviews.', body:'Check off any remaining balances and export your completed wedding records.', link:{page:'vendors', label:'Open Vendors'}},
-    {lead:'Back up your photos and videos in three places.', body:'Save your full gallery to a cloud drive, an external hard drive, and a computer as soon as your photographer delivers it.'},
-    {lead:'Order a printed wedding album early.', body:'Curate your top 60 to 80 photos while the memories are fresh so your gallery doesn’t stay trapped on a hard drive forever.'}
+  {icon:'keepsake', title:'Post-Wedding Wrap-Up & Admin', photo:'tip-33', tagline:'Close out vendor loose ends and legal admin without losing a single thread.', tips:[
+    {group:'Keepsakes & Vendors', lead:'Book bouquet preservation before the wedding.', body:'Floral pressing or resin preservation studios fill up months in advance and require fresh blooms within days.'},
+    {group:'Keepsakes & Vendors', lead:'Clean your wedding dress within two weeks.', body:'Sweat, champagne, and grass stains set permanently if left untreated in a garment bag for months.'},
+    {group:'Keepsakes & Vendors', lead:'Close out final vendor payments and reviews.', body:'Check off any remaining balances and export your completed wedding records.', link:{page:'vendors', label:'Open Vendors'}},
+    {group:'Keepsakes & Vendors', lead:'Back up your photos and videos in three places.', body:'Save your full gallery to a cloud drive, an external hard drive, and a computer as soon as your photographer delivers it.'},
+    {group:'Keepsakes & Vendors', lead:'Order a printed wedding album early.', body:'Curate your top 60 to 80 photos while the memories are fresh so your gallery doesn’t stay trapped on a hard drive forever.'},
+    {group:'Legal & Name Change', lead:'Order two copies of your official marriage certificate.', body:'Having a spare certified copy speeds up updates across banks, passports, and government agencies.'},
+    {group:'Legal & Name Change', lead:'Update your primary photo ID first.', body:'Start with your driver’s licence and passport, as most banks and utilities require updated photo ID before changing account names.'},
+    {group:'Legal & Name Change', lead:'Keep a master list of accounts to update.', body:'Track super funds, Medicare, electoral roll, insurance policies, and subscriptions in your post-wedding notes.', link:{page:'checklist', label:'Open Checklist'}},
+    {group:'Legal & Name Change', lead:'Wait until after your honeymoon to change passports.', body:'International flights and hotel check-ins must match your passport name—save the passport renewal for when you return.'},
+    {group:'Legal & Name Change', lead:'Set up a joint email or filing folder for shared bills.', body:'Consolidating household utilities, insurance, and mortgage accounts makes newlywed admin effortless.'}
   ]},
   {icon:'honeymoon', title:'Honeymoon Planning & Post-Wedding Travel', photo:'tip-34', tagline:'Plan an effortless romantic getaway without packing stress the morning after your wedding.', tips:[
     {lead:'Give yourselves a 24-hour buffer before flying.', body:'Flying out the day after your reception leaves zero room for hangovers, gift drop-offs, or flight delays—wait two days if possible.'},
@@ -294,13 +323,6 @@ const TIPS_LIBRARY=[
     {lead:'Track travel bookings alongside wedding admin.', body:'Store flight confirmations, resort vouchers, and itinerary notes inside a dedicated folder.'},
     {lead:'Pack your honeymoon bags three days early.', body:'Finish packing before wedding week starts so you aren’t hunting for swimwear at midnight after your rehearsal dinner.'},
     {lead:'Mention it’s your honeymoon everywhere.', body:'Flag your booking with airlines, hotels, and restaurants ahead of time for complimentary room upgrades, bubbles, or dessert treats.'}
-  ]},
-  {icon:'celebration', title:'Hens, Bucks & Pre-Wedding Celebrations', photo:'tip-35', tagline:'Keep pre-wedding parties fun, inclusive, and free from group-chat budget drama.', tips:[
-    {lead:'Poll guests on budget and dates first.', body:'Send a quick anonymous poll before locking in flights or luxury Airbnbs so nobody feels priced out.'},
-    {lead:'Host pre-parties at least 3 weeks out.', body:'Scheduling your hens or bucks too close to the wedding risks last-minute illness, sunburn, or exhaustion in wedding photos.'},
-    {lead:'Keep guest lists aligned with the wedding.', body:'Avoid inviting people to the hens or bucks party who aren’t invited to the actual wedding unless it’s an explicit workplace send-off.'},
-    {lead:'Manage pre-party RSVPs cleanly.', body:'Keep track of who’s attending pre-wedding events without cluttering your main wedding headcount.', link:{page:'events', label:'Open Events'}},
-    {lead:'Collect upfront deposits for group bookings.', body:'Have the organiser collect money before paying for boats, buses, or accommodation so one person isn’t left out of pocket.'}
   ]},
   {icon:'elopement', title:'Elopements & Micro-Weddings', photo:'tip-36', tagline:'Strip away the big-wedding fuss while keeping the day deeply intentional and memorable.', tips:[
     {lead:'Invest in an incredible photographer and videographer.', body:'With a tiny guest list, high-end photo and video coverage lets you share the magic with everyone back home.'},
@@ -351,33 +373,12 @@ const TIPS_LIBRARY=[
     {lead:'Pay major deposits by credit card.', body:'Using a card with purchase protection adds an extra layer of chargeback security if a vendor goes bust.'},
     {lead:'Verify venue liability requirements early.', body:'Check whether your venue’s insurance covers guest accidents or if you need standalone event liability cover.'}
   ]},
-  {icon:'checklist', title:'Post-Wedding Name Change & Admin Checklist', photo:'tip-43', tagline:'Tackle life admin after the wedding without losing track of accounts and IDs.', tips:[
-    {lead:'Order two copies of your official marriage certificate.', body:'Having a spare certified copy speeds up updates across banks, passports, and government agencies.'},
-    {lead:'Update your primary photo ID first.', body:'Start with your driver’s licence and passport, as most banks and utilities require updated photo ID before changing account names.'},
-    {lead:'Keep a master list of accounts to update.', body:'Track super funds, Medicare, electoral roll, insurance policies, and subscriptions in your post-wedding notes.', link:{page:'checklist', label:'Open Checklist'}},
-    {lead:'Wait until after your honeymoon to change passports.', body:'International flights and hotel check-ins must match your passport name—save the passport renewal for when you return.'},
-    {lead:'Set up a joint email or filing folder for shared bills.', body:'Consolidating household utilities, insurance, and mortgage accounts makes newlywed admin effortless.'}
-  ]},
   {icon:'scissors', title:'DIY Weddings & Handmade Décor', photo:'tip-44', tagline:'Add personal touches without spending your wedding week glued to a hot-glue gun.', tips:[
     {lead:'Finish all DIY projects two weeks before the wedding.', body:'Keep wedding week strictly for relaxing and final logistics rather than painting signs at midnight.'},
     {lead:'Price out materials before committing to DIY.', body:'Factor in glue, tools, practice runs, and your time—hiring items is often cheaper than buying raw supplies.'},
     {lead:'Track DIY supply costs in your main budget.', body:'Log craft store receipts and print orders inside your budget tracker so small spends don’t sneak up on you.', link:{page:'budget', label:'Open Budget'}},
     {lead:'Pack DIY items in labelled, clear plastic tubs.', body:'Group signage, candles, and table numbers by area with a photo of how each table should look for easy setup.'},
     {lead:'Assign a pack-down crew for the end of the night.', body:'Venues usually require all personal décor removed at midnight, so nominate two helpers with a large car beforehand.'}
-  ]},
-  {icon:'sun', title:'Summer & Hot-Weather Wedding Tips', photo:'tip-45', tagline:'Keep everyone cool, hydrated, and looking fresh through high temperatures and bright sun.', tips:[
-    {lead:'Schedule outdoor ceremonies for late afternoon.', body:'Avoid the harsh midday sun between 12:00 PM and 3:00 PM for guest comfort and softer portrait lighting.'},
-    {lead:'Set up self-serve hydration and sunscreen stations.', body:'Offer chilled water dispensers, electrolyte sachets, and spray sunscreen near the ceremony entrance.'},
-    {lead:'Share heat-smart dress code tips early.', body:'Advise guests on breathable fabrics and sun-safe footwear through your event FAQ page.', link:{page:'website', label:'Open your Website'}},
-    {lead:'Choose heat-hardy flowers and sturdy icing.', body:'Ask your florist for blooms like orchids, roses, or natives, and opt for fondant or ganache over soft buttercream.'},
-    {lead:'Provide handheld fans or paper programs.', body:'Doubles as a ceremony order of service and an instant breeze while guests wait for the aisle walk.'}
-  ]},
-  {icon:'snowflake', title:'Winter & Cool-Weather Wedding Tips', photo:'tip-46', tagline:'Lean into cosy lighting, rich textures, and warm hospitality for a magical winter celebration.', tips:[
-    {lead:'Account for early sunset times in your timeline.', body:'Winter sun drops fast, so plan your ceremony early enough to capture outdoor portraits in daylight.'},
-    {lead:'Provide pashminas, blankets, or outdoor heaters.', body:'Keep a basket of warm wraps near outdoor cocktail areas so guests stay comfortable between venues.'},
-    {lead:'Highlight warm arrival drinks and coat check info.', body:'Let guests know where to store heavy coats and umbrellas on your digital schedule.', link:{page:'website', label:'Open your Website'}},
-    {lead:'Swap iced welcome drinks for mulled wine or hot cider.', body:'Seasonal warmers immediately set a cosy mood as guests arrive from the cold.'},
-    {lead:'Build extra buffer time for winter travel.', body:'Rain, fog, or icy roads can slow down supplier deliveries and guest arrivals, so pad your morning schedule.'}
   ]},
   {icon:'info', title:'Wedding Guest Etiquette (Shareable Guide)', photo:'tip-47', tagline:'A polite, helpful checklist you can share with guests so the day runs smoothly for everyone.', tips:[
     {lead:'RSVP before the deadline—even if you can’t make it.', body:'Catering numbers and seating plans lock in weeks early, so reply promptly either way.'},
@@ -407,26 +408,12 @@ const TIPS_LIBRARY=[
     {lead:'Appoint a designated behind-the-scenes content creator.', body:'Ask a bridesmaid or hire a creator to capture vertical phone clips of morning prep and the first dance.'},
     {lead:'Clarify your social media preferences politely.', body:'A quick note from your MC or on your welcome sign lets guests know if you prefer unplugged or delayed posting.'}
   ]},
-  {icon:'cocktail', title:'Non-Alcoholic & Inclusive Bar Planning', photo:'tip-51', tagline:'Make sure non-drinkers, designated drivers, and pregnant guests feel just as celebrated.', tips:[
-    {lead:'Offer elevated zero-proof cocktails and sparkling teas.', body:'Stock non-alcoholic prosecco, craft zero-alcohol beers, and botanical spritzes rather than just soft drink and juice.'},
-    {lead:'Ensure bar staff serve zero-proof drinks in proper glassware.', body:'Serving mocktails in real coupe or rocks glasses makes non-drinkers feel included in every toast.'},
-    {lead:'Note non-alcoholic preferences in your catering counts.', body:'Track alcohol-free guests alongside dietary requirements so you order the right beverage ratios.', link:{page:'guests', label:'Open Guest List'}},
-    {lead:'Keep chilled water stations accessible on every table.', body:'Place carafes of still and sparkling water within easy reach so guests stay hydrated between speeches.'},
-    {lead:'Include a zero-proof toast option at every place setting.', body:'Ask waitstaff to pour non-alcoholic bubbles automatically for nominated guests before speeches begin.'}
-  ]},
   {icon:'care', title:'Accessibility & Older Guest Comfort', photo:'tip-52', tagline:'Ensure grandparents, mobility-aid users, and neurodivergent guests can enjoy every part of the day.', tips:[
     {lead:'Check step-free access from parking to reception.', body:'Confirm ramps, lifts, and accessible restrooms are clear and close to the main celebration spaces.'},
     {lead:'Reserve front-row seats for older or hard-of-hearing guests.', body:'Seating grandparents right near the ceremony action helps them see and hear vows clearly.'},
     {lead:'Collect accessibility notes during the RSVP process.', body:'Add an optional support field to your digital RSVP form to plan seating and transport early.', link:{page:'rsvp-mgr', label:'Open RSVP & Invites'}},
     {lead:'Offer a quiet breakout space away from loud music.', body:'Designate a lounge or veranda where older relatives or sensory-sensitive guests can rest during the dance party.'},
     {lead:'Arrange door-to-door transport for elderly relatives.', body:'Assign a trusted family member to drive grandparents home early if they get tired before the reception ends.'}
-  ]},
-  {icon:'brunch', title:'Post-Wedding Brunch & Farewell Gatherings', photo:'tip-53', tagline:'Say a relaxed, heartfelt goodbye to guests before everyone heads home.', tips:[
-    {lead:'Keep the start time at 10:30 AM or later.', body:'Give yourself and your guests plenty of time to sleep in after a late reception night.'},
-    {lead:'Choose a drop-in style over a seated meal.', body:'Coffee, pastries, fruit platters, and bacon-and-egg rolls let guests come and go around their flight times.'},
-    {lead:'Track recovery brunch RSVPs separately.', body:'Use multi-event RSVP lists so you know rough numbers for café bookings or catering orders.', link:{page:'events', label:'Open Events'}},
-    {lead:'Pick a casual, self-pay or low-key venue.', body:'Meeting at a local café, surf club, or shady park saves you from hosting or cleaning up a third event.'},
-    {lead:'Bring a few extra chairs and sunglasses.', body:'Everyone will appreciate a relaxed, low-pressure space to swap stories from the night before.'}
   ]}
 ];
 let _tipsOpenCat=null;
@@ -503,7 +490,15 @@ function _tipsSearch(q){
 }
 function _tipsDetailHtml(i){
   const cat=TIPS_LIBRARY[i]; if(!cat) return '';
-  const rows=cat.tips.map((t,ti)=>`
+  // Some categories merge what used to be two or three separate categories (e.g. Weather
+  // & Seasonal Planning folds in the old Summer/Winter ones). `group` marks which of the
+  // original topics a tip came from; a header prints only when it changes from the tip
+  // before it, so categories with no groups (most of them) render exactly as before.
+  let _lastGroup=null;
+  const rows=cat.tips.map((t,ti)=>{
+    const groupHtml = (t.group && t.group!==_lastGroup) ? `<div class="tip-group-lbl">${_escHtml(t.group)}</div>` : '';
+    _lastGroup = t.group || _lastGroup;
+    return `${groupHtml}
     <div class="tip-row" id="tip-row-${i}-${ti}">
       <span class="tip-row-num">${ti+1}</span>
       <div class="tip-row-body">
@@ -511,7 +506,8 @@ function _tipsDetailHtml(i){
         <div class="tip-row-text">${_escHtml(t.body)}</div>
         ${t.link?`<button class="tip-row-link" onclick="${_tipsPublicMode?`window.location.href='https://unionvault.app/'`:`navigate('${t.link.page}')`}">${_escHtml(t.link.label)} <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   return `
   <button class="tip-back" onclick="${_tipsPublicMode?'_pubTipsOpen(null)':'_tipsOpen(null)'}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> All topics</button>
   <div class="tip-detail-hd">
@@ -578,7 +574,7 @@ function _renderLibraryGate(){
       <div class="pub-hero-inner">
         <img class="pub-hero-crest" src="${window.location.origin}/logos/White%20text%20(Dark%20mode).png" alt="Union Vault">
         <div class="pub-hero-title">Your Free Wedding Tips Library Is Ready</div>
-        <div class="pub-hero-sub">265 practical, no-fluff tips from real weddings — budget, guests, vendors, timelines and more. Create a free account to unlock them all.</div>
+        <div class="pub-hero-sub">263 practical, no-fluff tips from real weddings — budget, guests, vendors, timelines and more. Create a free account to unlock them all.</div>
         <a class="pub-hero-cta" href="#pub-gate-form">Create free account ↓</a>
       </div>
     </div>
@@ -588,7 +584,7 @@ function _renderLibraryGate(){
         <div class="pub-gate-chip"><img src="/assets/tips/budget.jpg" alt=""/><div class="pub-gate-lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div></div>
         <div class="pub-gate-chip"><img src="/assets/tips/moodboard.jpg" alt=""/><div class="pub-gate-lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div></div>
       </div>
-      <div class="pub-gate-preview-note">53 topics waiting inside →</div>
+      <div class="pub-gate-preview-note">47 topics waiting inside →</div>
 
       <div class="pub-founder-note">
         <div class="pub-founder-eyebrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${TIPS_ICONS.heart}</svg> Why we built this</div>
@@ -726,8 +722,8 @@ function _renderUnlockedLibrary(){
     </div>
     <div class="pub-lib-trust-strip">
       <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">By a Bride</div><div class="pub-lib-trust-lbl">For Brides</div></div>
-      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">265+</div><div class="pub-lib-trust-lbl">Wedding Tips</div></div>
-      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">53</div><div class="pub-lib-trust-lbl">Topics Covered</div></div>
+      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">263+</div><div class="pub-lib-trust-lbl">Wedding Tips</div></div>
+      <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">47</div><div class="pub-lib-trust-lbl">Topics Covered</div></div>
       <div class="pub-lib-trust-item"><div class="pub-lib-trust-num">Private</div><div class="pub-lib-trust-lbl">By Design</div></div>
     </div>
     <div class="pub-lib-section-head">
