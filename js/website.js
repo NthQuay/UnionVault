@@ -243,6 +243,11 @@ function _wbSite(){
   if(typeof t.nameSep!=='string') t.nameSep='&';
   if(typeof t.nameLetterSpacing!=='number') t.nameLetterSpacing=0;
   t.nameLetterSpacing=Math.max(-5,Math.min(20,t.nameLetterSpacing));
+  // An adjustment added to each format's own hardcoded line-height (1.1 classic, .88
+  // magazine masthead, .86 atelier) via calc() — not an absolute value, since the three
+  // formats never shared one base to begin with. Default 0 changes nothing on upgrade.
+  if(typeof t.nameLineHeight!=='number') t.nameLineHeight=0;
+  t.nameLineHeight=Math.max(-30,Math.min(30,t.nameLineHeight));
   // Section headings: weight/capitalise/letter-spacing never had controls — h2 was always
   // regular weight, never capitalised, at each format's own hardcoded tracking. Defaults
   // match that exactly, so nobody's site changes on upgrade.
@@ -1168,6 +1173,10 @@ function _wbTypeTabHtml(t){
     <div>
       <div class="wb-slot-lbl" style="margin-bottom:6px">Name letter-spacing · ${t.nameLetterSpacing>0?'+':''}${t.nameLetterSpacing}</div>
       <input type="range" min="-5" max="20" step="1" value="${t.nameLetterSpacing}" oninput="_wbNum('nameLetterSpacing',this.value)" style="width:100%;accent-color:var(--gold)"/>
+    </div>
+    <div>
+      <div class="wb-slot-lbl" style="margin-bottom:6px">Name line spacing · ${t.nameLineHeight>0?'+':''}${t.nameLineHeight}</div>
+      <input type="range" min="-30" max="30" step="5" value="${t.nameLineHeight}" oninput="_wbNum('nameLineHeight',this.value)" style="width:100%;accent-color:var(--gold)"/>
     </div>`
   ) + _wbTypeGroup('headings', 'Headings',
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>',
@@ -1469,7 +1478,7 @@ function _wbThemeBody(){
       </div>
       <div id="wb-spec-card" style="${_wbSpecCardStyle(t)}">
         <div id="wb-spec-hero" style="background:${_escHtml(t.page)};padding:${_wbSpecSp(24,t)}px ${_wbSpecSp(16,t)}px;text-align:${_specHeadAlign}">
-          <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.nameScale||t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:${_wbSpecSp(3,t)}px;text-align:${['left','center','right'].includes(t.nameAlign)?t.nameAlign:'center'};letter-spacing:${(t.nameLetterSpacing||0)/100}em;text-transform:${t.nameCaps?'uppercase':'none'}">${_escHtml(_wbCouple())}</div>
+          <div id="wb-spec-name" style="font-family:${t.nameFont};font-size:${Math.round(26*(t.nameScale||t.headScale||t.scale||100)/100)}px;color:${_escHtml(t.heading)};margin-bottom:${_wbSpecSp(3,t)}px;text-align:${['left','center','right'].includes(t.nameAlign)?t.nameAlign:'center'};letter-spacing:${(t.nameLetterSpacing||0)/100}em;line-height:${1.1+(t.nameLineHeight||0)/100};text-transform:${t.nameCaps?'uppercase':'none'}">${_escHtml(_wbCouple())}</div>
           <div id="wb-spec-date" style="font-family:${t.bodyFont};font-size:${Math.round(10*(t.labelScale||100)/100)}px;letter-spacing:.16em;text-transform:uppercase;color:${_escHtml(t.accent)};margin-bottom:${_wbSpecSp(12,t)}px">${(STATE.event||{}).date?_escHtml(fmtDate(STATE.event.date)):'Set a date'}</div>
           <span id="wb-spec-btn" style="${_wbSpecBtnStyle(t)}">Our story</span>
         </div>
@@ -1652,6 +1661,7 @@ function _wbNum(field, v){
     if(l.textContent.indexOf('Heading size')===0) l.textContent='Heading size · '+t.headScale+'%';
     if(l.textContent.indexOf("Couple's names size")===0) l.textContent="Couple's names size · "+t.nameScale+'%';
     if(l.textContent.indexOf('Name letter-spacing')===0) l.textContent='Name letter-spacing · '+(t.nameLetterSpacing>0?'+':'')+t.nameLetterSpacing;
+    if(l.textContent.indexOf('Name line spacing')===0) l.textContent='Name line spacing · '+(t.nameLineHeight>0?'+':'')+t.nameLineHeight;
     if(l.textContent.indexOf('Heading letter-spacing')===0) l.textContent='Heading letter-spacing · '+(t.headLetterSpacing>0?'+':'')+t.headLetterSpacing;
     if(l.textContent.indexOf('Section text size')===0) l.textContent='Section text size · '+t.secBodyScale+'%';
     if(l.textContent.indexOf('Line spacing')===0) l.textContent='Line spacing · '+(t.lineHeight/100).toFixed(2);
@@ -1680,6 +1690,7 @@ function _wbNum(field, v){
   if(sp){
     sp.style.fontSize=Math.round(26*(t.nameScale||t.headScale)/100)+'px';
     sp.style.letterSpacing=((t.nameLetterSpacing||0)/100)+'em';
+    sp.style.lineHeight=1.1+(t.nameLineHeight||0)/100;
   }
   const bh=document.getElementById('wb-spec-bandhead');
   if(bh){
@@ -2006,6 +2017,7 @@ function _wbRepaintTheme(){
         _nm.style.fontSize=Math.round(26*(t.nameScale||t.headScale||t.scale||100)/100)+'px';
         _nm.style.textAlign=['left','center','right'].includes(t.nameAlign)?t.nameAlign:'center';
         _nm.style.letterSpacing=((t.nameLetterSpacing||0)/100)+'em';
+        _nm.style.lineHeight=1.1+(t.nameLineHeight||0)/100;
         _nm.style.textTransform=t.nameCaps?'uppercase':'none';
       }
       const _dt=document.getElementById('wb-spec-date');
@@ -6972,7 +6984,7 @@ header.hero .ics{box-shadow:0 2px 14px rgba(0,0,0,.22)}
 .ics svg{width:${sclabel(14)}px;height:${sclabel(14)}px;flex-shrink:0}
 .maplink{white-space:nowrap;margin-left:8px;color:${t2.accent};text-decoration:none;font-size:${sclink(13)}px;border-bottom:1px solid ${t2.accent}66}
 .navtoggle{display:none}
-h1{font-family:${t2.nameFont};font-weight:400;font-size:clamp(${scn(34)}px,7vw,${scn(60)}px);line-height:1.1;margin-bottom:10px;color:${t2.heading};text-transform:${nameCapsCss};text-align:${['left','center','right'].includes(t2.nameAlign)?t2.nameAlign:'center'};letter-spacing:${(t2.nameLetterSpacing||0)/100}em}
+h1{font-family:${t2.nameFont};font-weight:400;font-size:clamp(${scn(34)}px,7vw,${scn(60)}px);line-height:calc(1.1 + ${(t2.nameLineHeight||0)/100});margin-bottom:10px;color:${t2.heading};text-transform:${nameCapsCss};text-align:${['left','center','right'].includes(t2.nameAlign)?t2.nameAlign:'center'};letter-spacing:${(t2.nameLetterSpacing||0)/100}em}
 .eyebrow{font-size:${sclabel(11)}px;letter-spacing:.24em;text-transform:uppercase;color:${t2.accent}}
 .lead{font-family:${t2.headFont};font-size:clamp(${sch(19)}px,3vw,${sch(24)}px);font-style:italic;margin-top:${sp(22)}px;max-width:34ch;margin-left:auto;margin-right:auto;color:${t2.heading};white-space:pre-wrap}
 .sub{margin-top:${sp(14)}px;max-width:52ch;margin-left:auto;margin-right:auto;color:${t2.text};font-size:${scs(15)}px;white-space:pre-wrap}
@@ -7300,7 +7312,7 @@ ${t2.format==='magazine'?`
 .fx-coverimg>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
 header.fx-cover:not(.fx-noimg) .fx-coverimg::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.3) 0%,rgba(0,0,0,0) 34%,rgba(0,0,0,0) 58%,rgba(0,0,0,.5) 100%)}
 .fx-mast,.fx-lines,.fx-issue{position:relative;z-index:2;color:#fff}
-.fx-mast{text-align:${['left','center','right'].includes(t2.nameAlign)?t2.nameAlign:'center'};padding:${sp(26)}px ${sp(20)}px 0;font-family:${t2.nameFont};font-weight:400;font-size:clamp(${scn(48)}px,10vw,${scn(138)}px);line-height:.88;letter-spacing:calc(-0.02em + ${(t2.nameLetterSpacing||0)/100}em);text-transform:${nameCapsCss}}
+.fx-mast{text-align:${['left','center','right'].includes(t2.nameAlign)?t2.nameAlign:'center'};padding:${sp(26)}px ${sp(20)}px 0;font-family:${t2.nameFont};font-weight:400;font-size:clamp(${scn(48)}px,10vw,${scn(138)}px);line-height:calc(.88 + ${(t2.nameLineHeight||0)/100});letter-spacing:calc(-0.02em + ${(t2.nameLetterSpacing||0)/100}em);text-transform:${nameCapsCss}}
 .fx-mast i{font-style:italic;text-transform:none;font-size:.5em;vertical-align:.3em;letter-spacing:0}
 .fx-lines{max-width:440px;padding:0 0 ${sp(40)}px ${sp(40)}px;margin-top:auto}
 .fx-big{font-family:${t2.headFont};font-size:clamp(${sch(26)}px,3.4vw,${sch(40)}px);line-height:1.08;margin:${sp(6)}px 0 ${sp(12)}px}
@@ -7358,7 +7370,7 @@ header.fx-atelier-head.fx-noimg{grid-template-columns:1fr;min-height:0}
 .fx-names{padding:${sp(52)}px 0 ${sp(52)}px ${sp(52)}px;display:flex;flex-direction:column;justify-content:center;gap:${sp(22)}px;position:relative;z-index:2}
 .fx-acc{color:${t2.accent}}
 .fx-names .ics{align-self:flex-start;margin-top:0}
-header.fx-atelier-head h1{font-size:clamp(${scn(64)}px,10vw,${scn(150)}px);line-height:.86;letter-spacing:-.03em;margin:0 -30% 0 0;color:${t2.heading}}
+header.fx-atelier-head h1{font-size:clamp(${scn(64)}px,10vw,${scn(150)}px);line-height:calc(.86 + ${(t2.nameLineHeight||0)/100});letter-spacing:calc(-0.03em + ${(t2.nameLetterSpacing||0)/100}em);margin:0 -30% 0 0;color:${t2.heading}}
 header.fx-atelier-head.fx-noimg h1{margin-right:0}
 header.fx-atelier-head h1 i{display:block;font-size:.42em;color:${t2.accent};margin:.12em 0 .05em .1em;letter-spacing:0}
 header.fx-atelier-head .lead{margin:0;text-align:left}
