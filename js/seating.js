@@ -41,29 +41,10 @@ function _seatingConflicts(){
   });
   return out;
 }
-function _seatingConflictBanner(cf){
-  if(!cf.conflicts.length) return '';
-  const esc=_escHtml;
-  const n=cf.conflicts.length;
-  const rows=cf.conflicts.map(c=>{
-    const ta=STATE.tables.find(t=>t.id===c.tableIds[0]);
-    const tb=STATE.tables.find(t=>t.id===c.tableIds[1]);
-    const txt = c.kind==='same'
-      ? `<b>${esc(c.a.name)}</b> &amp; <b>${esc(c.b.name)}</b> are at the same table (${esc(ta?ta.name:'?')}).`
-      : `<b>${esc(c.a.name)}</b> &amp; <b>${esc(c.b.name)}</b> are at neighbouring tables (${esc(ta?ta.name:'?')} &amp; ${esc(tb?tb.name:'?')}).`;
-    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;background:rgba(192,101,62,.06)">
-      <span style="flex:1">${txt}</span>
-      <button onclick="event.stopPropagation();_seatIgnoreConflict('${c.key}')" title="Ignore this conflict — hides it from the banner and removes the table markers" style="display:inline-flex;align-items:center;gap:4px;background:none;border:.5px solid rgba(192,101,62,.4);color:var(--red);font-size:11px;font-weight:600;font-family:inherit;border-radius:7px;padding:4px 9px;cursor:pointer;flex-shrink:0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10 10 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9 9 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>Ignore</button>
-    </div>`;
-  }).join('');
-  return `<div style="background:rgba(192,101,62,.1);border:.5px solid rgba(192,101,62,.4);color:var(--ink);border-radius:10px;padding:11px 13px;margin-bottom:16px;font-size:12.5px;line-height:1.5">
-    <div style="display:flex;gap:9px;align-items:center;margin-bottom:9px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <b>${n} seating conflict${n>1?'s':''}</b>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px">${rows}</div>
-  </div>`;
-}
+// Banner rendering itself lives in floorplan.js (_seatingAlertsBanner), combined
+// with the separated-couples banner — floorplan.js loads alongside this file in
+// both views, so the shared function is always available here. _seatingConflicts()
+// above stays; it supplies that combined banner's data in List view.
 // Ignore a keep-apart conflict: persist the pair-key, re-render so the banner row +
 // both table warning badges drop. The seating cog offers a "Restore ignored conflicts" reset.
 function _seatIgnoreConflict(key){
@@ -172,8 +153,7 @@ function renderSeating(c,actions){
     <span style="flex:1">Drag tables to reorder them. Click <strong>Done</strong> when finished.</span>
     <button onclick="toggleArrangeTables()" title="Finish arranging" style="display:inline-flex;align-items:center;gap:6px;background:var(--gold-deep);border:none;color:#fff;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;padding:7px 14px;border-radius:8px;flex-shrink:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</button>
   </div>`:''}
-  ${_seatingConflictBanner(_cf)}
-  ${_seatingSeparatedBanner(_sep)}
+  ${_seatingAlertsBanner(_cf,_sep,'list')}
   <div class="grid-2" style="margin-bottom:20px" id="tables-grid">
     ${STATE.tables.map(t=>`
     <div class="table-card ${arrangeTablesMode?'table-arrange-mode':''}"

@@ -598,6 +598,17 @@ function _floorSeparatedCouples(){
   }
   return out;
 }
+// All guest ids involved in any still-flagged separated pair/family, regardless of
+// which of their 2+ tables is currently rendering — lets _floorTableHtml work out,
+// per table, exactly which SEATED guest is the flagged one (see _floorPipSeparatedGids).
+function _floorSepFlaggedGids(sep){
+  const out=new Set();
+  (sep&&sep.pairs||[]).forEach(p=>{
+    if(p.groupKind==='family') (p.members||[]).forEach(m=>{ if(m&&m.id) out.add(m.id); });
+    else { if(p.a) out.add(p.a.id); if(p.b) out.add(p.b.id); }
+  });
+  return out;
+}
 // Toggle: flag families split across tables (couples are always flagged). Off by default.
 function _seatFamilySepOn(){ return !!(STATE.settings && STATE.settings.flagSeparatedFamilies); }
 function _toggleFamilySep(){
@@ -615,35 +626,179 @@ function _setFloorConflictTables(n){
   navigate('seating');
   _seatReopenCog();
 }
-function _seatingSeparatedBanner(sep){
-  if(!sep.pairs.length) return '';
+// ── Combined seating alerts banner (conflicts + separated couples/families) ──
+// One collapsible banner in place of the two separate ones. Each row keeps its own
+// colour-coded type dot (red = keep-apart conflict, purple = separated) so merging
+// them doesn't lose the distinction, and an Actions dropdown (the shared
+// dots-dropdown/toggleDots system) offers real "move the flagged guest to a table
+// that would clear the flag" options — greyed out with "no room" where the
+// candidate table is full — instead of a single bare Ignore button.
+let _seatAlertsOpen=true; // disclosure state only; resets open on every page load
+function _seatToggleAlertsOpen(){ _seatAlertsOpen=!_seatAlertsOpen; navigate('seating'); }
+function _seatAlertsBannerOn(){ return !(STATE.settings&&STATE.settings.hideSeatingAlerts); }
+function _toggleSeatAlertsBanner(){
+  if(!STATE.settings) STATE.settings={};
+  STATE.settings.hideSeatingAlerts=_seatAlertsBannerOn();
+  saveToStorage(); navigate('seating'); _seatReopenCog();
+}
+// Which table (if any) a guest currently occupies — walks STATE.tables rather than
+// trusting STATE.seating's own keys, so a stale/removed table id can't mislead it.
+function _seatTableOfGuest(gid){
+  for(const t of (STATE.tables||[])){ if(_seatIds(t.id).includes(gid)) return t.id; }
+  return null;
+}
+// Move options for a separated couple/family: for a couple, both directions (A to
+// B's table, B to A's table); for a family, moving each straggler to wherever the
+// majority of the group already sits. Each option is room-checked against the
+// target table's actual capacity.
+function _seatMoveOptsSeparated(p){
+  const freeAt=tid=>{ const t=STATE.tables.find(x=>x.id===tid); return t?Math.max(0,t.seats-_seatCount(tid)):0; };
+  const tname=tid=>{ const t=STATE.tables.find(x=>x.id===tid); return t?t.name:'?'; };
+  if(p.groupKind==='family'){
+    const countByTid={};
+    p.members.forEach(m=>{ const tid=_seatTableOfGuest(m.id); if(tid) countByTid[tid]=(countByTid[tid]||0)+1; });
+    const majority=Object.keys(countByTid).sort((a,b)=>countByTid[b]-countByTid[a])[0];
+    if(!majority) return [];
+    const stragglers=p.members.filter(m=>_seatTableOfGuest(m.id)!==majority);
+    let free=freeAt(majority);
+    return stragglers.map(m=>{
+      const ok=free>0; if(ok) free--;
+      return {label:`Move ${m.name} → ${tname(majority)}`, sub:ok?'joins the rest':'no room', disabled:!ok,
+        onclick:ok?`_seatMoveGuestToTable('${m.id}','${majority}')`:null};
+    });
+  }
+  const [ta,tb]=p.tableIds, freeA=freeAt(ta), freeB=freeAt(tb);
+  return [
+    {label:`Move ${p.b.name} → ${tname(ta)}`, sub:freeA>0?`joins ${p.a.name} · room for ${freeA}`:'no room', disabled:freeA<=0,
+      onclick:freeA>0?`_seatMoveGuestToTable('${p.b.id}','${ta}')`:null},
+    {label:`Move ${p.a.name} → ${tname(tb)}`, sub:freeB>0?`joins ${p.b.name} · room for ${freeB}`:'no room', disabled:freeB<=0,
+      onclick:freeB>0?`_seatMoveGuestToTable('${p.a.id}','${tb}')`:null},
+  ];
+}
+// "Safe" distance checks for a keep-apart conflict, one per view: List view's own
+// flag is index-adjacency only (_seatingConflicts), Floorplan's is a real on-canvas
+// gap (_floorConflicts). Each mirrors whichever check actually produced the
+// conflict, so a suggested table is genuinely guaranteed not to flag again.
+function _seatListDistanceOk(candidateTid,partnerTid){
+  const order=STATE.tables.map(t=>t.id);
+  const ci=order.indexOf(candidateTid), pi=order.indexOf(partnerTid);
+  if(ci<0||pi<0) return {ok:false,tables:0};
+  const d=Math.abs(ci-pi);
+  return {ok:d>1, tables:d};
+}
+function _seatFloorDistanceOk(candidateTid,partnerTid){
+  const ct=STATE.tables.find(x=>x.id===candidateTid), pt=STATE.tables.find(x=>x.id===partnerTid);
+  if(!ct||!pt) return {ok:false,tables:0};
+  const boxOf=t=>{ const s=_tableSize(t), ab=_rotatedAABB(s.w,s.h,t.rotation||0), c=_tableCenter(t); return {cx:c.x,cy:c.y,hw:ab.w/2,hh:ab.h/2}; };
+  const ba=boxOf(ct), bb=boxOf(pt);
+  const gapX=Math.max(0, Math.abs(ba.cx-bb.cx) - (ba.hw+bb.hw));
+  const gapY=Math.max(0, Math.abs(ba.cy-bb.cy) - (ba.hh+bb.hh));
+  const gap=Math.hypot(gapX,gapY);
+  const unitA=Math.min(ba.hw,ba.hh)*2, unitB=Math.min(bb.hw,bb.hh)*2;
+  const unit=Math.max(unitA,unitB)||1;
+  const allowance=_floorConflictRange()*unit;
+  return {ok:gap>=allowance, tables:Math.max(1,Math.round(gap/unit))};
+}
+function _seatMoveOptsConflict(conf,mode){
+  const distanceOk = mode==='floor' ? _seatFloorDistanceOk : _seatListDistanceOk;
+  const freeAt=tid=>{ const t=STATE.tables.find(x=>x.id===tid); return t?Math.max(0,t.seats-_seatCount(tid)):0; };
+  const opts=[];
+  const consider=(mover,partner)=>{
+    const partnerTid=_seatTableOfGuest(partner.id);
+    const moverTid=_seatTableOfGuest(mover.id);
+    if(!partnerTid) return;
+    (STATE.tables||[]).forEach(t=>{
+      if(t.id===moverTid) return;
+      const d=distanceOk(t.id,partnerTid);
+      if(!d.ok) return;
+      opts.push({mover,table:t,free:freeAt(t.id),tables:d.tables});
+    });
+  };
+  consider(conf.a,conf.b);
+  consider(conf.b,conf.a);
+  opts.sort((x,y)=>x.tables-y.tables || y.free-x.free);
+  return opts.slice(0,3).map(o=>({
+    label:`Move ${o.mover.name} → ${o.table.name}`,
+    sub:`${o.tables} table${o.tables===1?'':'s'} away · ${o.free>0?'room for '+o.free:'no room'}`,
+    disabled:o.free<=0,
+    onclick:o.free>0?`_seatMoveGuestToTable('${o.mover.id}','${o.table.id}')`:null
+  }));
+}
+// Place a guest (seated or unassigned) at another table's first free chair, clearing
+// any head-seat marker and their old chair first. Shared by every "move to Table X"
+// action in the alerts banner.
+function _seatMoveGuestToTable(gid,toTid){
+  const g=STATE.guests&&STATE.guests.find(x=>x.id===gid); if(!g) return;
+  const tt=STATE.tables.find(x=>x.id===toTid); if(!tt) return;
+  if(_seatCount(toTid)>=tt.seats) return; // full — caller should already have checked
+  const fromTid=_seatTableOfGuest(gid);
+  if(fromTid===toTid) return;
+  if(fromTid){
+    const ft=STATE.tables.find(x=>x.id===fromTid);
+    if(ft){ if(ft.headLeft===gid) ft.headLeft=null; if(ft.headRight===gid) ft.headRight=null; }
+    _seatClear(fromTid,gid);
+    _seatTrim(fromTid);
+  }
+  _seatFirstFree(toTid,gid);
+  saveToStorage();
+  navigate('seating');
+}
+function _seatingAlertsBanner(cf,sep,mode){
+  if(!_seatAlertsBannerOn()) return '';
   const esc=_escHtml;
-  const nCouple=sep.pairs.filter(p=>p.groupKind!=='family').length;
-  const nFamily=sep.pairs.filter(p=>p.groupKind==='family').length;
-  const parts=[];
-  if(nCouple) parts.push(`${nCouple} couple${nCouple>1?'s':''}`);
-  if(nFamily) parts.push(nFamily>1?`${nFamily} families`:`1 family`);
-  const heading=`${parts.join(', ')} separated`;
-  const ignoreBtn=(key)=>`<button onclick="event.stopPropagation();_seatIgnoreSeparation('${key}')" title="Ignore this flag — hides it from the banner and removes the table markers" style="display:inline-flex;align-items:center;gap:4px;background:none;border:.5px solid rgba(154,79,149,.4);color:var(--sep-ink);font-size:11px;font-weight:600;font-family:inherit;border-radius:7px;padding:4px 9px;cursor:pointer;flex-shrink:0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10 10 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9 9 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>Ignore</button>`;
+  const items=[];
+  (cf.conflicts||[]).forEach(c=>items.push({type:'conflict',key:'c:'+c.key,data:c}));
+  (sep.pairs||[]).forEach(p=>items.push({type:'separated',key:'s:'+p.key,data:p}));
+  if(!items.length) return '';
   const tn=(tid,fb)=>{ const t=STATE.tables.find(x=>x.id===tid); return esc(t?t.name:fb); };
-  const rows=sep.pairs.map(p=>{
-    let label;
-    if(p.groupKind==='family'){
-      const tables=p.tableIds.map(t=>tn(t,'?')).join(', ');
-      label=`<b>${esc(p.famName)}</b> — split across ${tables}`;
+  const dot=type=>type==='conflict'
+    ? `<span style="width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">!</span>`
+    : `<span style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--sep-ink);color:var(--sep-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/></svg></span>`;
+  const menuItem=o=>`<button class="seat-alert-item" ${o.disabled?'disabled':''} ${o.onclick?`onclick="closeDots();${o.onclick}"`:''}><b>${esc(o.label)}</b><span>${esc(o.sub)}</span></button>`;
+  const rows=items.map((it,i)=>{
+    const menuId='seat-alert-menu-'+i;
+    let label, opts, focusKey, ignoreFn, ignoreLabel;
+    if(it.type==='conflict'){
+      const c=it.data;
+      label=`<b>${esc(c.a.name)}</b> &amp; <b>${esc(c.b.name)}</b> ${c.kind==='same'?'are at the same table':'are at neighbouring tables'} (${tn(c.tableIds[0],'?')}${c.kind==='same'?'':' &amp; '+tn(c.tableIds[1],'?')}).`;
+      opts=_seatMoveOptsConflict(c,mode);
+      focusKey=null;
+      ignoreFn=`_seatIgnoreConflict('${c.key}')`; ignoreLabel='Ignore this conflict';
     } else {
-      label=`<b>${esc(p.a.name)}</b> &amp; <b>${esc(p.b.name)}</b> — ${tn(p.tableIds[0],'?')} &amp; ${tn(p.tableIds[1],'?')}`;
+      const p=it.data;
+      label=p.groupKind==='family'
+        ? `<b>${esc(p.famName)}</b> — split across ${p.tableIds.map(t=>tn(t,'?')).join(', ')}`
+        : `<b>${esc(p.a.name)}</b> &amp; <b>${esc(p.b.name)}</b> — ${tn(p.tableIds[0],'?')} &amp; ${tn(p.tableIds[1],'?')}`;
+      opts=_seatMoveOptsSeparated(p);
+      focusKey=p.key;
+      ignoreFn=`_seatIgnoreSeparation('${p.key}')`; ignoreLabel='Ignore this flag';
     }
-    return `<div class="sep-row" onclick="_seatFocusCouple('${p.key}')" title="Click to find these tables on the floorplan" style="display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;background:rgba(154,79,149,.06);border:.5px solid transparent;cursor:pointer">
-      <span style="flex:1">${label}</span>${ignoreBtn(p.key)}
+    const menu=`<div class="dots-dropdown hidden" id="${menuId}">
+      ${opts.map(menuItem).join('')}
+      ${opts.length?'<div style="height:1px;background:var(--border);margin:4px 0"></div>':''}
+      <button onclick="closeDots();${ignoreFn}">${ignoreLabel}</button>
+    </div>`;
+    return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 9px;border-radius:8px;background:var(--surface)">
+      ${dot(it.type)}
+      <span style="flex:1;${focusKey?'cursor:pointer':''}" ${focusKey?`onclick="_seatFocusCouple('${focusKey}')" title="Click to find these tables on the floorplan"`:''}>${label}</span>
+      <div style="position:relative;flex-shrink:0">
+        <button onclick="toggleDots(event,'${menuId}')" title="Actions" style="display:inline-flex;align-items:center;gap:4px;background:none;border:.5px solid var(--border);color:var(--ink);font-size:11px;font-weight:600;font-family:inherit;border-radius:7px;padding:4px 9px;cursor:pointer">Actions <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        ${menu}
+      </div>
     </div>`;
   }).join('');
-  return `<div style="background:rgba(154,79,149,.09);border:.5px solid rgba(154,79,149,.38);color:var(--ink);border-radius:10px;padding:11px 13px;margin-bottom:16px;font-size:12.5px;line-height:1.5">
-    <div style="display:flex;gap:9px;align-items:center;margin-bottom:9px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sep-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg>
-      <b>${heading}</b>
+  const nConf=items.filter(it=>it.type==='conflict').length;
+  const nSep=items.filter(it=>it.type==='separated').length;
+  const open=_seatAlertsOpen;
+  const countLabel=`${nConf?nConf+' conflict'+(nConf>1?'s':''):''}${nConf&&nSep?', ':''}${nSep?nSep+' separated':''}`;
+  return `<div style="background:var(--parchment);border:.5px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden">
+    <div onclick="_seatToggleAlertsOpen()" style="display:flex;align-items:center;gap:9px;padding:11px 13px;cursor:pointer;user-select:none">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;transition:transform .15s;transform:rotate(${open?90:0}deg)"><path d="m9 6 6 6-6 6"/></svg>
+      <b style="flex:1;font-size:12.5px">Seating alerts</b>
+      <span style="font-size:11px;color:var(--muted)">${countLabel}</span>
+      <span style="background:var(--gold-deep);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px">${items.length}</span>
     </div>
-    <div style="display:flex;flex-direction:column;gap:6px">${rows}</div>
+    ${open?`<div style="padding:0 9px 9px;display:flex;flex-direction:column;gap:5px">${rows}</div>`:''}
   </div>`;
 }
 // Ignore a separation flag: persist the couple's pair-key, re-render so the banner row
@@ -722,6 +877,13 @@ function _seatCogMenuHtml(style, layout){
       <div style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;left:${seatingAttendingOnly?'16px':'2.5px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
     </div>
   </label>`;
+  // Seating alerts banner toggle (both views) — the combined conflicts/separated banner.
+  const alertsOn=_seatAlertsBannerOn();
+  const alertsToggle=`<label style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink);margin-bottom:11px;cursor:pointer;user-select:none" title="Show or hide the combined seating-conflicts/separated-couples banner">Show seating alerts banner
+    <div onclick="event.preventDefault();_toggleSeatAlertsBanner()" style="width:32px;height:18px;border-radius:9px;background:${alertsOn?'var(--gold)':'var(--border)'};position:relative;transition:background .2s;flex-shrink:0;cursor:pointer">
+      <div style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;left:${alertsOn?'16px':'2.5px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+    </div>
+  </label>`;
   // Unassigned pool — group by couple/family toggle
   const groupPoolOn=!(STATE.settings&&STATE.settings.seatFlatPool);
   const groupPoolToggle=`<label style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink);margin-bottom:11px;cursor:pointer;user-select:none" title="Group couples and families together in the unassigned guests panel">Group couples &amp; families
@@ -776,6 +938,7 @@ function _seatCogMenuHtml(style, layout){
   return `<div id="seat-cog-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:60;width:225px;background:var(--cream);border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 24px rgba(26,26,24,.12);padding:13px 15px;text-align:left">
     <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:8px">Display</div>
     ${attendingToggle}
+    ${alertsToggle}
     ${groupPoolToggle}
     ${showKidsToggle}
     ${dietToggle}
@@ -827,6 +990,12 @@ function _seatReopenCog(){
 // offset via _seatNameTagOrigin before rendering that table's pips.
 let _seatNameTagSink=null;     // null = inline (default); array = collect
 let _seatNameTagOrigin=null;   // {x,y,rot,w,h,scale} of the table currently rendering
+// Per-guest conflict/separation dots (floorplan pips only). Set fresh by _floorTableHtml
+// right before it renders each table's pips, so _pip() can flag the SPECIFIC seated
+// guest — not just the table corner, which is all _conflictBadge()/_separationBadge()
+// give you and is genuinely ambiguous on a table with several guests.
+let _floorPipConflictGids=new Set();
+let _floorPipSeparatedGids=new Set();
 function _pip(x,y,on,init,gid,rot,stagger,tid,si,up){
   const fs=Math.max(8,Math.round(SEAT_PIP*0.35));
   // Keep guest initials upright regardless of table rotation: the pip lives inside the
@@ -846,6 +1015,18 @@ function _pip(x,y,on,init,gid,rot,stagger,tid,si,up){
   // correct in both portrait and the 90°-rotated landscape page. EDITOR path keeps the
   // initial inside the rotated pip with a -rot counter-rotation.
   const _printInit = on && init && _seatNameTagSink && _seatNameTagOrigin;
+  // Conflict/separation dot for THIS specific guest (editor view only — print has no
+  // need for it). Conflict wins if a guest is somehow flagged both ways at once.
+  let _flagKind=null; // null | 'conflict' | 'separated'
+  if(on&&gid&&!_printInit){
+    if(_floorPipConflictGids.has(gid)) _flagKind='conflict';
+    else if(_floorPipSeparatedGids.has(gid)) _flagKind='separated';
+  }
+  const _flagDot = _flagKind==='conflict'
+    ? `<span title="Keep-apart conflict" style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--red);border:1.5px solid var(--cream);z-index:4;pointer-events:none"></span>`
+    : _flagKind==='separated'
+    ? `<span title="Separated from partner/family" style="position:absolute;top:-3px;left:-3px;width:9px;height:9px;border-radius:50%;background:var(--sep-ink);border:1.5px solid var(--cream);z-index:4;pointer-events:none"></span>`
+    : '';
   const inner = (on && init && !_printInit)
     ? `<span class="sp-pip-init" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;font-size:${fs}px;font-weight:700;color:${_initColor};letter-spacing:-0.5px;line-height:1;${cr}">${init}</span>`
     : '';
@@ -956,7 +1137,7 @@ function _pip(x,y,on,init,gid,rot,stagger,tid,si,up){
     : (_rsvpWarn==='declined' ? 'background:rgba(180,60,60,.20);border:1.5px dashed rgba(180,60,60,.55)'
       : _rsvpWarn==='awaiting' ? 'background:rgba(160,130,70,.32);border:1.5px dashed #A08246'
       : 'background:var(--gold-deep);border:1.5px solid var(--border)');
-  return `<span${drag} style="position:absolute;left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;width:${SEAT_PIP}px;height:${SEAT_PIP}px;border-radius:50%;${cur}${_pipFill}"${on?' data-pipon="1"':''}>${inner}</span>${nameTag}`;
+  return `<span${drag} style="position:absolute;left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;width:${SEAT_PIP}px;height:${SEAT_PIP}px;border-radius:50%;${cur}${_pipFill}"${on?' data-pipon="1"':''}>${inner}${_flagDot}</span>${nameTag}`;
 }
 function _pipC(cx,cy,on,init,gid,rot,stagger,tid,si,up){ const h=SEAT_PIP/2; return _pip(cx-h,cy-h,on,init,gid,rot,stagger,tid,si,up); }
 function _pipsRound(n,filled,S,inits,gids,rot,tid){
@@ -1082,6 +1263,12 @@ function _floorTableHtml(t,style,cf,sep){
   const filled=_seatCount(t.id);
   const conflict=cf.tableHas.has(t.id);
   const separated=!!(sep&&sep.tableHas.has(t.id));
+  // Per-guest flags for THIS table's pips, read by _pip() via the module-level sets —
+  // see the comment by their declaration for why this isn't just the table badge.
+  _floorPipConflictGids=new Set();
+  if(cf&&cf.chipFlag){ const pre=t.id+'|'; cf.chipFlag.forEach(k=>{ if(k.indexOf(pre)===0) _floorPipConflictGids.add(k.slice(pre.length)); }); }
+  _floorPipSeparatedGids=new Set();
+  if(separated){ const all=_floorSepFlaggedGids(sep); _seatIds(t.id).forEach(gid=>{ if(all.has(gid)) _floorPipSeparatedGids.add(gid); }); }
   const inner=(style==='ring')?_floorRing(t,shape,filled,conflict):_floorPips(t,shape,filled,conflict);
   const rot=t.rotation||0;
   // The handle normally floats above the table on a short stalk. A bridal table seating
@@ -2275,8 +2462,7 @@ function renderSeatingFloor(c,actions){
   c.innerHTML=`
   ${_seatStickyBar('floorplan')}
   ${_unseatedBannerHtml()}
-  ${_seatingConflictBanner(cf)}
-  ${_seatingSeparatedBanner(sep)}
+  ${_seatingAlertsBanner(cf,sep,'floor')}
   <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:12px">
     <button class="btn btn-outline btn-sm" onclick="openAddDecor()" ${_floorLayoutLocked()?'disabled style="display:inline-flex;align-items:center;gap:5px;opacity:.45;cursor:not-allowed"':'style="display:inline-flex;align-items:center;gap:5px"'}>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
