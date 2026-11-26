@@ -7,6 +7,13 @@ let dragTableId=null;
 
 let seatingAttendingOnly=false;
 
+// Guest ids the "Seat them" unseated-attending banner has asked the pool to flag.
+// Checked by _poolChipRow() on every render (not a one-off classList toggle), so
+// the outline survives whatever re-render happens next and only goes away once a
+// guest is actually seated (they simply stop appearing in the pool). Reset — not
+// appended to — each time "Seat them" is clicked, from the then-current list.
+let _seatUnseatedHighlight=new Set();
+
 // Remembers the seating toolbar's last collapse decision (full vs icon-only) so each
 // re-render can stamp the group with the correct class BEFORE first paint. Without this,
 // every navigate('seating') paints full labels then snaps to icons a frame later (the

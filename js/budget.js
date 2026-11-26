@@ -431,15 +431,29 @@ function _updateSeatingNavBadge(){
 // The banner on the Seating page. Rendered in BOTH views (list and floorplan),
 // directly under the sticky bar, because the thing it is about lives on this
 // page. It is not a third entry in the global alerts stack.
+// Dismissing is keyed to a signature of the current unseated-attending ids, not a
+// flat boolean \u2014 so "Dismiss" hides the banner for exactly this set, but it comes
+// back the moment the set actually changes (someone new becomes unseated, or an
+// RSVP flips), rather than staying hidden forever after the first dismiss.
+let _unseatedBannerDismissKey=null;
+function _unseatedBannerKey(u){ return u.map(g=>g.id).sort().join(','); }
+function _dismissUnseatedBanner(){
+  _unseatedBannerDismissKey=_unseatedBannerKey(_unseatedAttending());
+  navigate('seating');
+}
 function _unseatedBannerHtml(){
   const u=_unseatedAttending();
   if(!u.length) return '';
+  if(_unseatedBannerDismissKey===_unseatedBannerKey(u)) return '';
   const names=u.slice(0,3).map(g=>_escHtml(g.name||'Guest'));
   const more=u.length-names.length;
   let sub=names.join(', ');
   if(names.length>1) sub=names.slice(0,-1).join(', ')+' and '+names[names.length-1];
   if(more>0) sub=names.join(', ')+' and '+more+' more';
-  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 13px;background:var(--parchment);border:.5px solid var(--gold);border-radius:9px">
+  return `<div style="position:relative;display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 32px 11px 13px;background:var(--parchment);border:.5px solid var(--gold);border-radius:9px">
+    <button onclick="_dismissUnseatedBanner()" title="Dismiss" aria-label="Dismiss" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;line-height:0;border-radius:50%;display:flex;align-items:center;justify-content:center">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <span style="color:var(--gold-deep);flex-shrink:0;display:inline-flex">${_NAV_SEAT_SVG.replace('width="14" height="14"','width="17" height="17"')}</span>
     <div style="flex:1;min-width:0">
       <div style="font-size:13px;color:var(--ink)">${u.length} attending guest${u.length!==1?'s aren\u2019t':' isn\u2019t'} seated</div>
@@ -448,23 +462,23 @@ function _unseatedBannerHtml(){
     <button class="btn btn-outline btn-sm" onclick="_focusUnseatedPool()" style="flex-shrink:0;white-space:nowrap">Seat them</button>
   </div>`;
 }
-// "Seat them" scrolls to the Unassigned pool on THIS page and pulses just the
-// chips for the attending-unseated guests named in the banner (reusing the same
-// chip-found highlight the guest-finder uses) — not the whole pool, which (with
-// "Show only attending" off) also holds awaiting/declined guests the banner
-// isn't about. Also clears any active search so a chip it's trying to show
+// "Seat them" scrolls to the Unassigned pool on THIS page and outlines just the
+// chips for the attending-unseated guests named in the banner — not the whole
+// pool, which (with "Show only attending" off) also holds awaiting/declined
+// guests the banner isn't about. Unlike the guest-finder's chip-found pulse
+// (one chip, vanishes after 1.8s), this flags a working SET of chips the user
+// still has to get through, so the outline holds rather than disappearing —
+// see _seatUnseatedHighlight. Also clears any active search so a flagged chip
 // isn't sitting hidden behind a stale filter.
 function _focusUnseatedPool(){
-  const el=document.getElementById('seating-pool');
-  if(!el) return;
   const s=document.getElementById('seating-search');
   if(s && s.value){ s.value=''; if(typeof filterSeatingPool==='function') filterSeatingPool(''); }
-  el.scrollIntoView({behavior:'smooth',block:'center'});
   const ids=_unseatedAttending().map(g=>g.id);
-  if(typeof _highlightChipInPool==='function') ids.forEach(id=>_highlightChipInPool(id));
-  setTimeout(()=>{
-    ids.forEach(id=>{ const c=el.querySelector('.seat-chip[data-gid="'+id+'"]'); if(c) c.classList.remove('chip-found'); });
-  },1800);
+  _seatUnseatedHighlight=new Set(ids);
+  navigate('seating');
+  const el=document.getElementById('seating-pool');
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth',block:'center'});
 }
 function _updateBudgetNavBadge(){
   const el = document.getElementById('nav-budget-badge');

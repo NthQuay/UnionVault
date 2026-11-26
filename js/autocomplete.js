@@ -146,7 +146,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v515.48';
+const APP_BUILD='v515.49';
 const APP_BUILD_DATE='2026-11-26';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -169,11 +169,24 @@ function _seatingPrintHtml(forPreview){
   // do not. So the side/bottom tag-bands must be reserved against the table extents,
   // not against decor — otherwise an empty reserve band is added past a right-edge
   // decor item, which is exactly the blank strip we're removing.
-  let tMinL=Infinity, tMaxR=-Infinity, tMaxB=-Infinity;
-  tables.forEach(t=>{ const s=_tableSize(t); const l=t.x||0, top=t.y||0, r=l+s.w, b=top+s.h; minL=Math.min(minL,l); minT=Math.min(minT,top); maxR=Math.max(maxR,r); maxB=Math.max(maxB,b); tMinL=Math.min(tMinL,l); tMaxR=Math.max(tMaxR,r); tMaxB=Math.max(tMaxB,b); });
+  let tMinL=Infinity, tMinT=Infinity, tMaxR=-Infinity, tMaxB=-Infinity;
+  tables.forEach(t=>{ const s=_tableSize(t); const l=t.x||0, top=t.y||0, r=l+s.w, b=top+s.h; minL=Math.min(minL,l); minT=Math.min(minT,top); maxR=Math.max(maxR,r); maxB=Math.max(maxB,b); tMinL=Math.min(tMinL,l); tMinT=Math.min(tMinT,top); tMaxR=Math.max(tMaxR,r); tMaxB=Math.max(tMaxB,b); });
   (STATE.settings.floorDecor||[]).forEach(d=>{ const def=DECOR_DEFS[d.type]||{w:120,h:56}; const w=d.w||def.w, h=d.h||def.h; minL=Math.min(minL,d.x||0); minT=Math.min(minT,d.y||0); maxR=Math.max(maxR,(d.x||0)+w); maxB=Math.max(maxB,(d.y||0)+h); });
   if(!isFinite(minL)){ minL=0; minT=0; maxR=320; maxB=300; }
-  if(!isFinite(tMinL)){ tMinL=minL; tMaxR=maxR; tMaxB=maxB; }
+  if(!isFinite(tMinL)){ tMinL=minL; tMinT=minT; tMaxR=maxR; tMaxB=maxB; }
+  // A decor item placed well away from the actual table cluster (a door marked at the
+  // venue's real entrance, say) otherwise balloons this crop and shrinks the WHOLE
+  // plan to a speck surrounded by blank space — the tables are what a seating print is
+  // for, so bound the crop to a generous margin around the table extent (one full
+  // cluster-width/height past each edge) instead of an unlimited one. Decor within
+  // that margin still prints in its real place; a lone outlier past it is left off
+  // this crop rather than dictating the scale for everything else.
+  if(isFinite(tMinL)){
+    const tW=Math.max(1,tMaxR-tMinL), tH=Math.max(1,tMaxB-tMinT);
+    const margin=0.4;
+    minL=Math.max(minL, tMinL-tW*margin); minT=Math.max(minT, tMinT-tH*margin);
+    maxR=Math.min(maxR, tMaxR+tW*margin); maxB=Math.min(maxB, tMaxB+tH*margin);
+  }
   // Guest name badges hang BELOW the bottom row of chairs (the seat-pip name tags),
   // extending past the table's own height. Reserve room for them so the bottom row
   // isn't clipped. The same name tags also overhang the LEFT and RIGHT edges (chairs
@@ -201,7 +214,7 @@ function _seatingPrintHtml(forPreview){
   // BELOW the heading. We then vertically centre the plan in that area and scale it as
   // large as possible to fill the page.
   const ROT_W=forPreview?940:740;   // usable page width (the rotated plan's width)
-  const ROT_H=forPreview?700:900;   // usable page height below the heading (the plan's length)
+  const ROT_H=forPreview?700:840;   // usable page height below the heading (the plan's length) — trimmed from 900 to leave clearance for the fixed print footer
   let scale;
   if(twoPage){
     scale=Math.min(ROT_W/ch, ROT_H/cw, 6.0);
@@ -370,8 +383,14 @@ const _SEATING_PRINT_CSS=`
   .sp-sub{color:#B4AFA4}
   .sp-section-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9A7B2E;border-bottom:1px solid #E7DECF;padding-bottom:5px;margin:18px 0 10px}
   .sp-floor-wrap{position:relative;width:100%;border:1px solid #E7DECF;border-radius:8px;background:#FBF8F3;overflow:hidden;padding:6px}
-  .sp-list{column-count:2;column-gap:18px}
-  @media (max-width:560px){.sp-list{column-count:1}}
+  /* A grid, not CSS multi-column: column-count's cross-page fragmentation is a known
+     Chromium print bug — content that ends close to a page boundary inside a
+     multicol block can trigger a spurious extra blank page afterward. Grid doesn't
+     have that failure mode. Row-major order (left, right, left, right down the
+     page) instead of the old column-major "newspaper" order, which is a fine
+     reading order for a numbered table list either way. */
+  .sp-list{display:grid;grid-template-columns:1fr 1fr;column-gap:18px}
+  @media (max-width:560px){.sp-list{grid-template-columns:1fr}}
   .sp-tcard{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;border:1px solid #E7DECF;border-radius:8px;padding:9px 12px 10px;margin-bottom:9px;background:#fff}
   .sp-tname{font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;font-weight:600;color:#3A352F;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #F0E9DC;padding-bottom:4px;margin-bottom:5px}
   .sp-cnt{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:#9A9389}
@@ -391,8 +410,16 @@ const _SEATING_PRINT_CSS=`
      printable area, and keeps the floorplan block from splitting across a page boundary —
      which previously left page 2 blank and pushed the table list onto page 3. */
   @media print{
-    .sp-doc:not(.sp-2page){padding:14mm}
+    .sp-doc:not(.sp-2page){padding:14mm 14mm 24mm}
     .sp-doc:not(.sp-2page) .sp-floor-wrap{break-inside:avoid;page-break-inside:avoid}
+  }
+  /* The footer only appears once in the markup, but fixed-position elements repeat on
+     every physical page under print (standard Chromium/print-engine behaviour) — so
+     this is how "Union Vault" shows at the bottom of every page rather than only the
+     last one. The extra bottom padding above reserves room so it never overlaps the
+     last card on a page that runs close to the edge. */
+  @media print{
+    .sp-foot{position:fixed;left:14mm;right:14mm;bottom:7mm;margin-top:0}
   }
   @page{size:A4 portrait;margin:0}
   /* ── Two-page mode: page 1 = whole floorplan rotated 90° to fit a single
@@ -408,7 +435,10 @@ const _SEATING_PRINT_CSS=`
   .sp-doc.sp-2page .sp-rot-region{display:flex;align-items:center;justify-content:center}
   .sp-doc.sp-2page .sp-page-floor .sp-section-label{margin-top:0}
   @media print{
-    .sp-doc.sp-2page .sp-page-floor{height:100vh;display:flex;flex-direction:column}
+    /* height trimmed (not a full 100vh) and extra bottom padding on the page, so the
+       fixed footer (see .sp-foot above) never overlaps the rotated plan. */
+    .sp-doc.sp-2page .sp-page{padding-bottom:16mm}
+    .sp-doc.sp-2page .sp-page-floor{height:calc(100vh - 16mm);display:flex;flex-direction:column}
     .sp-doc.sp-2page .sp-page-floor .sp-section-label{flex:0 0 auto}
     .sp-doc.sp-2page .sp-rot-region{flex:1 1 auto;min-height:0}
   }
@@ -1142,7 +1172,14 @@ function _couplePoolLabel(g,p){
 // units (a solo guest, or a whole couple/family) gets one; members inside
 // the same group sit flush together under their connector bracket.
 function _poolChipRow(g,divider){
-  return `<span class="seat-chip${divider?' pool-row-div':''}" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${dietIcons(g.dietary)} ${g.name}${_ageBandBadge(g)||''}</span>`;
+  const flagged=typeof _seatUnseatedHighlight!=='undefined' && _seatUnseatedHighlight.has(g.id);
+  // "Attending" badge only earns its keep when the pool isn't already filtered to
+  // attending-only guests — otherwise every chip would qualify and it'd be noise.
+  const attendingBadge=(flagged && !seatingAttendingOnly) ? `<span class="chip-attending-badge">Attending</span>` : '';
+  // Dietary requirements sit to the RIGHT of the name (not before it), and only
+  // when the "Show dietary requirements" toggle is on — see _seatDietOn/toggleSeatDiet.
+  const diet=_seatDietOn()?` ${dietIcons(g.dietary)}`:'';
+  return `<span class="seat-chip${divider?' pool-row-div':''}${flagged?' chip-unseated':''}" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${g.name}${diet}${_ageBandBadge(g)||''}${attendingBadge}</span>`;
 }
 function _poolGroupsHtml(unseated){
   if(!unseated.length) return '<span style="font-size:13px;color:var(--muted);display:block;padding:8px 4px">All guests assigned ✓</span>';

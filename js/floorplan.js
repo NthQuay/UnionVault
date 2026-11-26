@@ -308,6 +308,17 @@ function _seatPillName(g,mode){
 // Back-compat: old callers that flipped names on/off now cycle off→last→off.
 function toggleSeatNames(){ setSeatNameMode(_seatNameMode()==='off'?'last':'off'); }
 function toggleSeatDietKey(){ STATE.settings.seatingHideDietKey=!STATE.settings.seatingHideDietKey; saveToStorage(); navigate('seating'); _seatReopenCog(); }
+// Whether unassigned-pool chips show each guest's dietary requirements (icons, to
+// the right of their name). The key exists only to explain those icons, so turning
+// this off takes the key with it — see toggleSeatDiet.
+function _seatDietOn(){ return !(STATE.settings&&STATE.settings.seatingHideDiet); }
+function toggleSeatDiet(){
+  if(!STATE.settings) STATE.settings={};
+  const turningOff=_seatDietOn();
+  STATE.settings.seatingHideDiet=turningOff;
+  if(turningOff) STATE.settings.seatingHideDietKey=true;
+  saveToStorage(); navigate('seating'); _seatReopenCog();
+}
 function _seatStickyBar(layout){
   const sw=_seatLayoutSwitchHtml(layout);
   const search=`<div style="position:relative;flex:1;min-width:160px;max-width:300px">
@@ -898,10 +909,18 @@ function _seatCogMenuHtml(style, layout){
       <div style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;left:${showKidsOn?'16px':'2.5px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
     </div>
   </label>`;
-  // Display section — Show dietary key toggle (both views).
-  const dietToggle=`<label style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink);margin-bottom:11px;cursor:pointer;user-select:none" title="Show or hide the dietary requirements key in the toolbar">Show dietary key
-    <div onclick="event.preventDefault();toggleSeatDietKey()" style="width:32px;height:18px;border-radius:9px;background:${!keyHidden?'var(--gold)':'var(--border)'};position:relative;transition:background .2s;flex-shrink:0;cursor:pointer">
-      <div style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;left:${!keyHidden?'16px':'2.5px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+  // Display section — Show dietary requirements (pool chips) and Show dietary key
+  // (toolbar legend), both views. The key only explains the requirement icons, so
+  // it's disabled whenever the parent toggle is off — see toggleSeatDiet.
+  const dietOn=_seatDietOn();
+  const dietReqToggle=`<label style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink);margin-bottom:11px;cursor:pointer;user-select:none" title="Show each unassigned guest's dietary requirements as icons, to the right of their name">Show dietary requirements
+    <div onclick="event.preventDefault();toggleSeatDiet()" style="width:32px;height:18px;border-radius:9px;background:${dietOn?'var(--gold)':'var(--border)'};position:relative;transition:background .2s;flex-shrink:0;cursor:pointer">
+      <div style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;left:${dietOn?'16px':'2.5px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+    </div>
+  </label>`;
+  const dietToggle=`<label style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:${dietOn?'var(--ink)':'var(--muted)'};margin-bottom:11px;cursor:${dietOn?'pointer':'not-allowed'};user-select:none" title="${dietOn?'Show or hide the dietary requirements key in the toolbar':'Turn on “Show dietary requirements” first — the key has nothing to explain while it’s off'}">Show dietary key
+    <div ${dietOn?`onclick="event.preventDefault();toggleSeatDietKey()"`:''} style="width:32px;height:18px;border-radius:9px;background:${(!keyHidden&&dietOn)?'var(--gold)':'var(--border)'};position:relative;transition:background .2s;flex-shrink:0;cursor:${dietOn?'pointer':'not-allowed'};opacity:${dietOn?'1':'.55'}">
+      <div style="position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2.5px;left:${(!keyHidden&&dietOn)?'16px':'2.5px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
     </div>
   </label>`;
   // Zoom-buttons toggle (floorplan only). Gestures (pinch / Ctrl+scroll) always work;
@@ -941,6 +960,7 @@ function _seatCogMenuHtml(style, layout){
     ${alertsToggle}
     ${groupPoolToggle}
     ${showKidsToggle}
+    ${dietReqToggle}
     ${dietToggle}
     ${famSepToggle}
     ${zoomToggle}
