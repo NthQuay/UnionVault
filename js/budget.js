@@ -462,21 +462,19 @@ function _unseatedBannerHtml(){
     <button class="btn btn-outline btn-sm" onclick="_focusUnseatedPool()" style="flex-shrink:0;white-space:nowrap">Seat them</button>
   </div>`;
 }
-// "Seat them" scrolls to the Unassigned pool on THIS page and outlines just the
-// chips for the attending-unseated guests named in the banner — not the whole
-// pool, which (with "Show only attending" off) also holds awaiting/declined
-// guests the banner isn't about. Unlike the guest-finder's chip-found pulse
-// (one chip, vanishes after 1.8s), this flags a working SET of chips the user
-// still has to get through, so the outline holds rather than disappearing —
-// see _seatUnseatedHighlight. Also clears any active search so a flagged chip
-// isn't sitting hidden behind a stale filter.
+// "Seat them" scrolls to the Unassigned pool on THIS page and pulls just the
+// attending-unseated guests named in the banner into their own box at the top of
+// it — not the whole pool, which (with "Show only attending" off) also holds
+// awaiting/declined guests the banner isn't about. See _seatUnseatedHighlight /
+// _poolSectionedHtml / _attendingBoxHtml. Also clears any active search so a
+// flagged guest isn't sitting hidden behind a stale filter.
 function _focusUnseatedPool(){
   const s=document.getElementById('seating-search');
   if(s && s.value){ s.value=''; if(typeof filterSeatingPool==='function') filterSeatingPool(''); }
   const ids=_unseatedAttending().map(g=>g.id);
   _seatUnseatedHighlight=new Set(ids);
   navigate('seating');
-  const el=document.getElementById('seating-pool');
+  const el=document.getElementById('seating-attending-box')||document.getElementById('seating-pool');
   if(!el) return;
   el.scrollIntoView({behavior:'smooth',block:'center'});
 }

@@ -2543,7 +2543,7 @@ function renderSeatingFloor(c,actions){
           <button type="button" onclick="filterSeatingPool('');const _se=document.getElementById('seating-search');if(_se){_se.value='';_se.focus()}" title="Clear" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;line-height:0;display:flex;align-items:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-direction:column;padding:2px 4px">
-          ${_poolGroupsHtml(unseated)}
+          ${_poolSectionedHtml(unseated)}
         </div>
       </div>
     </div>`:''}
@@ -2557,7 +2557,7 @@ function renderSeatingFloor(c,actions){
       <button type="button" onclick="filterSeatingPool('');const _se=document.getElementById('seating-search');if(_se){_se.value='';_se.focus()}" title="Clear" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;line-height:0;display:flex;align-items:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-direction:column;padding:4px">
-      ${_poolGroupsHtml(unseated)}
+      ${_poolSectionedHtml(unseated)}
     </div>
   </div>`:''}` ;
 

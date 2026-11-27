@@ -213,7 +213,7 @@ function renderSeating(c,actions){
       </div>
     </div>
     <div id="seating-pool" ondragover="event.preventDefault()" ondrop="returnToPool(event)" style="min-height:44px;display:flex;flex-wrap:wrap;gap:6px;padding:4px">
-      ${_poolGroupsHtml(unseated)}
+      ${_poolSectionedHtml(unseated)}
     </div>
   </div>`:''}`;
   // Collapse the seating action buttons (Arrange/Add/Reset) to icons only when the

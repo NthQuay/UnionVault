@@ -146,8 +146,8 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v515.49';
-const APP_BUILD_DATE='2026-11-26';
+const APP_BUILD='v515.50';
+const APP_BUILD_DATE='2026-11-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
   const p1=_escHtml(ev.partner1||'Partner'), p2=_escHtml(ev.partner2||'Partner');
@@ -1172,14 +1172,10 @@ function _couplePoolLabel(g,p){
 // units (a solo guest, or a whole couple/family) gets one; members inside
 // the same group sit flush together under their connector bracket.
 function _poolChipRow(g,divider){
-  const flagged=typeof _seatUnseatedHighlight!=='undefined' && _seatUnseatedHighlight.has(g.id);
-  // "Attending" badge only earns its keep when the pool isn't already filtered to
-  // attending-only guests — otherwise every chip would qualify and it'd be noise.
-  const attendingBadge=(flagged && !seatingAttendingOnly) ? `<span class="chip-attending-badge">Attending</span>` : '';
   // Dietary requirements sit to the RIGHT of the name (not before it), and only
   // when the "Show dietary requirements" toggle is on — see _seatDietOn/toggleSeatDiet.
   const diet=_seatDietOn()?` ${dietIcons(g.dietary)}`:'';
-  return `<span class="seat-chip${divider?' pool-row-div':''}${flagged?' chip-unseated':''}" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${g.name}${diet}${_ageBandBadge(g)||''}${attendingBadge}</span>`;
+  return `<span class="seat-chip${divider?' pool-row-div':''}" data-sname="${g.name.toLowerCase()}" data-gid="${g.id}" draggable="true" ondragstart="event.stopPropagation();dragSeat(event,'${g.id}',null)">${g.name}${diet}${_ageBandBadge(g)||''}</span>`;
 }
 function _poolGroupsHtml(unseated){
   if(!unseated.length) return '<span style="font-size:13px;color:var(--muted);display:block;padding:8px 4px">All guests assigned ✓</span>';
@@ -1202,6 +1198,30 @@ function _poolGroupsHtml(unseated){
       <div class="pool-group-rows">${rows}</div>
     </div>`;
   }).join('');
+}
+// Pool render, but with any guest "Seat them" flagged (_seatUnseatedHighlight —
+// still-unseated attending guests) pulled into their own box at the top, grouped
+// exactly as they'd otherwise be. Replaces the old per-chip highlight/badge: the
+// box itself is the signal now, so a flagged guest gets no special per-row marking.
+function _poolSectionedHtml(unseated){
+  const hl=(typeof _seatUnseatedHighlight!=='undefined')?_seatUnseatedHighlight:null;
+  if(!hl||!hl.size) return _poolGroupsHtml(unseated);
+  const flagged=unseated.filter(g=>hl.has(g.id));
+  if(!flagged.length) return _poolGroupsHtml(unseated);
+  const rest=unseated.filter(g=>!hl.has(g.id));
+  // _poolGroupsHtml prints "All guests assigned ✓" for an empty list, which would
+  // be wrong here — the rest are flagged, not seated. Skip it when there's none.
+  return _attendingBoxHtml(flagged) + (rest.length ? _poolGroupsHtml(rest) : '');
+}
+function _attendingBoxHtml(flagged){
+  return `<div id="seating-attending-box" style="border:1.5px solid var(--green);border-radius:9px;background:rgba(74,124,89,.07);padding:8px 9px 9px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:11.5px;font-weight:700;color:var(--green)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>
+      <span>Attending — still need a seat</span>
+      <span style="background:var(--green);color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:auto;flex-shrink:0">${flagged.length}</span>
+    </div>
+    ${_poolGroupsHtml(flagged)}
+  </div>`;
 }
 
 // Toggle children/infants visibility in the pool
