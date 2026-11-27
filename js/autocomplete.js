@@ -146,7 +146,7 @@ function _acPick(inputId, name){
 // can land a launch late — and there was previously NO way to tell which build was
 // actually running. Diagnosing "I uploaded it but nothing changed" meant hunting for
 // whether a feature happened to appear. Bump this with every release.
-const APP_BUILD='v515.52';
+const APP_BUILD='v515.53';
 const APP_BUILD_DATE='2026-11-27';
 function _seatingPrintHtml(forPreview){
   const ev=STATE.event||{};
@@ -1193,7 +1193,7 @@ function _poolGroupsHtml(unseated){
     const idsJson=JSON.stringify(grp.ids).replace(/"/g,'&quot;');
     const connector=(typeof _gtConnectorHtml==='function')?_gtConnectorHtml({type:grp.type==='couple'?'couple':'family',key:idsJson},grp.members.length):'';
     const rows=grp.members.map((g,mi)=>_poolChipRow(g, mi===grp.members.length-1 ? !isLastUnit : false)).join('');
-    return `<div class="pool-group" draggable="true" ondragstart="dragGroup(event,'${idsJson}')" ondragover="event.preventDefault();this.classList.add('pg-drag-over')" ondragleave="this.classList.remove('pg-drag-over')" ondrop="this.classList.remove('pg-drag-over')">
+    return `<div class="pool-group" draggable="true" data-ids="${idsJson}" ondragstart="dragGroup(event,'${idsJson}')" ondragover="event.preventDefault();this.classList.add('pg-drag-over')" ondragleave="this.classList.remove('pg-drag-over')" ondrop="this.classList.remove('pg-drag-over')">
       ${connector}
       <div class="pool-group-rows">${rows}</div>
     </div>`;

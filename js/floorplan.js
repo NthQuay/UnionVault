@@ -1815,6 +1815,65 @@ function _floorSeatDown(e){
   try{ pip.setPointerCapture(e.pointerId); }catch(_){}
   e.preventDefault();
 }
+// Same drag, started from an UNASSIGNED pool chip instead of a seated pip. Pool chips
+// also carry the old HTML5 draggable/ondragstart attributes (dragSeat/dragGroup —
+// autocomplete.js), which is how dragging onto the List view's table rows still works;
+// but HTML5 drag-and-drop has no touch equivalent in the spec at all, so a phone/tablet
+// guest — or, as reported, Chrome DevTools' "mobile device" mode, which also swaps mouse
+// input for touch — could never drag an unassigned guest onto a chair here. This reuses
+// the exact same _floorDrag 'seat' state machine _floorSeatDown/_floorSeatUp already
+// drive (ghost, hit-testing, drop handling), just with no source table: fromTid stays
+// null because a pool guest isn't being moved FROM anywhere.
+function _floorPoolSeatDown(e){
+  // Pool chips keep their existing HTML5 draggable/ondragstart attributes too (for
+  // List view, and because it already works fine for a mouse) — only take over here
+  // for touch, where that native drag never fires at all. Letting a mouse's pointerdown
+  // fall through avoids running both drag systems at once for the same gesture.
+  if(e.pointerType!=='touch') return;
+  if(e.ctrlKey||e.metaKey) return;
+  if(_floorActiveTouches()>=2){ _floorAbortDrag(); return; }
+  if(_floorAllLocked()) return;
+  e.stopPropagation();
+  const chip=e.currentTarget;
+  const gid=chip.dataset.gid; if(!gid) return;
+  const g=STATE.guests&&STATE.guests.find(x=>x.id===gid);
+  const ghost=document.createElement('div');
+  ghost.className='floor-seat-ghost';
+  ghost.textContent=g?initials(g.name):'';
+  ghost.style.cssText='position:fixed;z-index:4000;width:'+SEAT_PIP+'px;height:'+SEAT_PIP+'px;border-radius:50%;background:var(--gold-deep);color:#fff;display:flex;align-items:center;justify-content:center;font-size:'+Math.max(8,Math.round(SEAT_PIP*0.35))+'px;font-weight:700;font-family:Inter,sans-serif;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3);opacity:.92';
+  ghost.style.left=(e.clientX-SEAT_PIP/2)+'px';
+  ghost.style.top=(e.clientY-SEAT_PIP/2)+'px';
+  document.body.appendChild(ghost);
+  chip.style.opacity='0.3';
+  _floorDrag={mode:'seat',gid,fromTid:null,pip:chip,ghost,startX:e.clientX,startY:e.clientY,moved:false};
+  try{ chip.setPointerCapture(e.pointerId); }catch(_){}
+  e.preventDefault();
+}
+// Pointer-drag equivalent of dragGroup() — a whole couple/family block dragged as one
+// unit from the pool. See _floorPoolSeatDown above for why this exists alongside the
+// HTML5 drag attributes rather than instead of them.
+function _floorPoolGroupDown(e){
+  if(e.pointerType!=='touch') return; // see _floorPoolSeatDown — mouse keeps using HTML5 DnD
+  if(e.ctrlKey||e.metaKey) return;
+  if(_floorActiveTouches()>=2){ _floorAbortDrag(); return; }
+  if(_floorAllLocked()) return;
+  e.stopPropagation();
+  const wrap=e.currentTarget;
+  let ids; try{ ids=JSON.parse(wrap.dataset.ids||'[]'); }catch(_){ ids=null; }
+  if(!ids||!ids.length) return;
+  const lead=STATE.guests&&STATE.guests.find(x=>x.id===ids[0]);
+  const ghost=document.createElement('div');
+  ghost.className='floor-seat-ghost';
+  ghost.textContent=lead?initials(lead.name):'';
+  ghost.style.cssText='position:fixed;z-index:4000;width:'+SEAT_PIP+'px;height:'+SEAT_PIP+'px;border-radius:50%;background:var(--gold-deep);color:#fff;display:flex;align-items:center;justify-content:center;font-size:'+Math.max(8,Math.round(SEAT_PIP*0.35))+'px;font-weight:700;font-family:Inter,sans-serif;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3);opacity:.92';
+  ghost.style.left=(e.clientX-SEAT_PIP/2)+'px';
+  ghost.style.top=(e.clientY-SEAT_PIP/2)+'px';
+  document.body.appendChild(ghost);
+  wrap.style.opacity='0.5';
+  _floorDrag={mode:'seat',groupIds:ids,fromTid:null,pip:wrap,ghost,startX:e.clientX,startY:e.clientY,moved:false};
+  try{ wrap.setPointerCapture(e.pointerId); }catch(_){}
+  e.preventDefault();
+}
 // Remove any orphaned seat-drag ghost(s) from <body> and reset an in-progress seat
 // drag, so a half-finished drag can't leave a stuck pip behind (e.g. after a page change
 // interrupts the gesture). Safe to call anytime — does nothing if there's nothing to clear.
@@ -1850,13 +1909,38 @@ function _floorSeatUp(d,e){
   }
   const tgt=_seatTargetAt(e.clientX,e.clientY,null);
   if(!tgt){ navigate('seating'); return; } // dropped on empty canvas → no change
+  // POOL GROUP (couple/family) dragged by POINTER — see _floorPoolGroupDown. Always
+  // pool-origin (a seated group can't be re-grabbed as a unit), so there is no "from"
+  // table to evict from. Mirrors _chairDrop's/dropOnTable's existing dragGroupIds
+  // branches: lead takes the exact chair aimed at (evicting whoever was there), the
+  // rest fill the table's next free seats.
+  if(d.groupIds && d.groupIds.length){
+    const ids=d.groupIds, lead=ids[0], rest=ids.slice(1);
+    if(tgt.kind==='pool'){ navigate('seating'); return; } // still unseated → no-op
+    const toTid = tgt.kind==='table' ? tgt.tid : tgt.tid;
+    if(!toTid){ navigate('seating'); return; }
+    if(tgt.kind==='seat'||tgt.kind==='emptySeat'){
+      const occupant=(tgt.kind==='seat')?tgt.gid:null;
+      if(occupant && occupant!==lead){
+        const tt=STATE.tables.find(x=>x.id===toTid);
+        if(tt){ if(tt.headLeft===occupant) tt.headLeft=null; if(tt.headRight===occupant) tt.headRight=null; }
+        _seatClear(toTid,occupant);
+      }
+      _seatAt(toTid,tgt.idx,lead);
+    } else {
+      _seatFirstFree(toTid,lead);
+    }
+    rest.forEach(gid=>{ if(!_seatIds(toTid).includes(gid)) _seatFirstFree(toTid,gid); });
+    saveToStorage(); navigate('seating'); return;
+  }
   const gid=d.gid, fromTid=d.fromTid;
   // Helper: is this guest a head-seat marker on its source table?
   const _clearHeadIf=(tid,g)=>{ const tt=STATE.tables.find(x=>x.id===tid); if(!tt) return; if(tt.headLeft===g) tt.headLeft=null; if(tt.headRight===g) tt.headRight=null; };
   if(tgt.kind==='pool'){
     // Dropped on the Unassigned box → remove the guest, LEAVING THE CHAIR EMPTY.
-    _clearHeadIf(fromTid,gid);
-    _seatClear(fromTid,gid); _seatTrim(fromTid);
+    // (A pool-origin drag — fromTid null — means there's nothing to clear; guarding
+    // on fromTid also keeps a null table id from ever reaching STATE.seating.)
+    if(fromTid){ _clearHeadIf(fromTid,gid); _seatClear(fromTid,gid); _seatTrim(fromTid); }
     saveToStorage(); navigate('seating'); return;
   }
   if(tgt.kind==='emptySeat'){
@@ -1869,7 +1953,7 @@ function _floorSeatUp(d,e){
     if(fromTid) _seatTrim(fromTid);
     saveToStorage(); navigate('seating'); return;
   }
-  if(tgt.kind==='seat'&&tgt.gid&&tgt.gid!==gid){
+  if(tgt.kind==='seat'&&tgt.gid&&tgt.gid!==gid&&fromTid){
     // SWAP the two guests between their chairs (and tables). Index-based, so it is
     // already correct with holes — each guest lands in the other's exact chair.
     const otherGid=tgt.gid, otherTid=tgt.tid||fromTid;
@@ -1882,6 +1966,15 @@ function _floorSeatUp(d,e){
       const swapHead=(tid,oldG,newG)=>{ const tt=STATE.tables.find(x=>x.id===tid); if(!tt) return; if(tt.headLeft===oldG) tt.headLeft=newG; if(tt.headRight===oldG) tt.headRight=newG; };
       swapHead(fromTid,gid,otherGid); swapHead(otherTid,otherGid,gid);
     }
+  } else if(tgt.kind==='seat'&&tgt.gid&&tgt.gid!==gid&&!fromTid){
+    // Pool-origin guest dropped on an OCCUPIED chair: there's no seat of their own to
+    // swap into, so this evicts the occupant to the pool and takes their chair —
+    // the same behaviour _chairDrop's HTML5-drag path already gives a mouse user.
+    const tid=tgt.tid, occupant=tgt.gid;
+    const tt=STATE.tables.find(x=>x.id===tid);
+    if(tt){ if(tt.headLeft===occupant) tt.headLeft=null; if(tt.headRight===occupant) tt.headRight=null; }
+    _seatClear(tid,occupant);
+    _seatAt(tid,tgt.idx,gid);
   } else {
     const toTid=tgt.tid;
     if(!toTid||toTid===fromTid){ navigate('seating'); return; } // same table, body → no chair chosen
@@ -1973,6 +2066,14 @@ function _wireFloor(){
   });
   document.querySelectorAll('#floor-canvas .floor-seat').forEach(p=>{
     p.addEventListener('pointerdown',_floorSeatDown);
+  });
+  // Pool chips/groups — touch-capable pointer drag alongside their existing HTML5
+  // draggable attributes (see _floorPoolSeatDown/_floorPoolGroupDown).
+  document.querySelectorAll('#seating-pool .seat-chip').forEach(c=>{
+    c.addEventListener('pointerdown',_floorPoolSeatDown);
+  });
+  document.querySelectorAll('#seating-pool .pool-group').forEach(g=>{
+    g.addEventListener('pointerdown',_floorPoolGroupDown);
   });
   const _panelHandle=document.getElementById('floor-panel-resize');
   if(_panelHandle) _panelHandle.addEventListener('pointerdown',_floorPanelResizeDown);
