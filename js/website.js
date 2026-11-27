@@ -494,7 +494,7 @@ function _wbLayout(key){
   // Left/Right heading align, a non-left body align, or a width moved off Page) keeps its
   // own setting, so nobody's site changes on upgrade.
   if(typeof l.useGlobal!=='boolean'){
-    const customized = l.align==='left' || l.align==='right' || ['center','right','justify'].includes(l.body) || (l.bg && l.bg!=='page');
+    const customized = l.align==='left' || l.align==='right' || l.align==='center' || ['center','right','justify'].includes(l.body) || (l.bg && l.bg!=='page');
     l.useGlobal = !customized;
   }
   return l;
@@ -5093,7 +5093,7 @@ function _wbBuildSite(forDownload){
     // entirely, exactly as if the section had never been touched. Only once a section
     // turns global OFF does its own stored alignment/width take over.
     const useGlobal = typeof l.useGlobal==='boolean' ? l.useGlobal
-      : !(l.align==='left' || l.align==='right' || ['center','right','justify'].includes(l.body) || (l.bg && l.bg!=='page'));
+      : !(l.align==='left' || l.align==='right' || l.align==='center' || ['center','right','justify'].includes(l.body) || (l.bg && l.bg!=='page'));
     // bg is 0–100 (px max-width scale); legacy 'page'/'band' strings also handled.
     const bgV = useGlobal ? 0 : ((!l.bg||l.bg==='page')?0:(l.bg==='band'?100:Math.min(100,Math.max(0,Number(l.bg)||0))));
     const band = bgV >= 100;
@@ -5101,12 +5101,16 @@ function _wbBuildSite(forDownload){
     // max-width grows from 720px (bgV=0) toward no cap at bgV=100.
     const _mw=t.maxWidth||720; const secWideMaxW = (!band && bgV > 0) ? Math.round(_mw + bgV / 100 * Math.max(0,1400-_mw)) : null;
     const left = !useGlobal && l.align==='left';
-    // Two independent aligns. `lft` = the heading and intro; `b-*` = the section's own
-    // content. v121 and earlier had only `lft`, and the body was hardcoded left in the
-    // CSS — so choosing Centre centred the heading and silently did nothing below it.
+    // Two independent aligns. `lft`/`ctr`/`rgt` = the heading and intro; `b-*` = the
+    // section's own content. v121 and earlier had only `lft`, and the body was hardcoded
+    // left in the CSS — so choosing Centre centred the heading and silently did nothing
+    // below it. `ctr` exists so a per-section Centre always wins over whatever the GLOBAL
+    // theme alignment is — without it, Centre had no class of its own and just fell through
+    // to the section's base `text-align`, which is the theme's own alignment, not centre.
     const right = !useGlobal && l.align==='right';
+    const center = !useGlobal && l.align==='center';
     const body = useGlobal ? 'left' : ((l.body==='center'||l.body==='justify'||l.body==='right') ? l.body : 'left');
-    const cls = [extra||'', band?'band':'', left?'lft':'', right?'rgt':'', 'b-'+body].filter(Boolean).join(' ');
+    const cls = [extra||'', band?'band':'', left?'lft':'', right?'rgt':'', center?'ctr':'', 'b-'+body].filter(Boolean).join(' ');
 
     const blocks=_wbBlocks(k).filter(b=>!b.off);
     let feat='', featBlk=null;
@@ -6997,6 +7001,7 @@ section{padding-top:${Math.max(0,Number(t2.mobilePadding)||0)}px;padding-bottom:
 section+section{margin-top:${Math.max(0,Number(t2.mobileGap)||0)}px}
 }`:''}
 section.lft{text-align:left}
+section.ctr{text-align:center}
 section.band{max-width:none;background:${t2.band};border-top:none}
 section.band>*{max-width:${t2.maxWidth||720}px;margin-left:auto;margin-right:auto}
 h2{font-family:${t2.headFont};font-weight:${t2.headWeight==='bold'?700:400};font-size:clamp(${sch(24)}px,4vw,${sch(32)}px);margin-bottom:${sp(12)}px;color:${t2.heading};text-transform:${t2.headCaps?'uppercase':'none'};letter-spacing:${(t2.headLetterSpacing||0)/100}em}
@@ -7022,8 +7027,8 @@ section.b-right .lks{align-items:flex-end}
 section.b-right .btns{justify-content:flex-end}
 section.b-right .stays,section.b-right .faq{text-align:right}
 section.b-right .faq summary{flex-direction:row-reverse;gap:10px}
-${secAlign==='right'?`section:not(.lft):not(.rgt) .intro{margin-left:auto;margin-right:0}
-section:not(.lft):not(.rgt) h2::after{margin-left:auto;margin-right:0}`:''}
+${secAlign==='right'?`section:not(.lft):not(.rgt):not(.ctr) .intro{margin-left:auto;margin-right:0}
+section:not(.lft):not(.rgt):not(.ctr) h2::after{margin-left:auto;margin-right:0}`:''}
 ${t2.bodyAlign==='right'?`.para{margin-left:auto;margin-right:0}`:''}
 section.b-center .para{text-align:center}
 section.b-justify .para{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
