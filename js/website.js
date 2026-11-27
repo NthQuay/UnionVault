@@ -62,6 +62,47 @@ const WB_FONTS_CURSIVE = [
   ["'Parisienne',cursive",   'Parisienne'],
   ["'Pinyon Script',cursive",'Pinyon Script']
 ];
+// Exact Google Fonts css2 weight/style query for each family in WB_FONTS/WB_FONTS_CURSIVE,
+// keyed by the plain name (each tuple's [1]). Lets the public site request only the 1-4
+// families its own theme actually uses instead of every family the builder's font picker
+// offers — see _wbSiteFontsHref().
+const WB_GFONT_SPEC = {
+  'Cormorant Garamond': 'ital,wght@0,300;0,400;0,500;0,600;1,400',
+  'Cinzel':             'wght@400;500',
+  'Playfair Display':   'ital,wght@0,400;0,500;1,400',
+  'Bodoni Moda':        'ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400',
+  'Lora':               'ital,wght@0,400;0,500;1,400',
+  'Libre Baskerville':  'ital,wght@0,400;1,400',
+  'Inter':              'wght@300;400;500;600',
+  'Montserrat':         'wght@300;400;500;600',
+  'Lato':               'wght@300;400;700',
+  'Raleway':            'wght@300;400;500;600',
+  'Josefin Sans':       'wght@300;400;600',
+  'Great Vibes':        '',
+  'Alex Brush':         '',
+  'Parisienne':         '',
+  'Pinyon Script':      ''
+};
+// Builds the public site's Google Fonts <link> href from only the families its theme
+// actually uses (headFont/bodyFont/nameFont/btnFont), instead of the builder font picker's
+// full 15-family catalog. That catalog bundle is right for the picker — it has to show
+// every option live — but on the guest-facing site it was downloading fonts nobody chose,
+// which lengthens how long text sits in a fallback font (font-display:swap paints text
+// immediately in a fallback, then swaps once the real font arrives) before swapping in.
+function _wbSiteFontsHref(t2){
+  const families = new Set();
+  [t2.headFont, t2.bodyFont, t2.nameFont, t2.btnFont].forEach(css=>{
+    const m = String(css||'').match(/'([^']+)'/);
+    if(m && WB_GFONT_SPEC[m[1]]!==undefined) families.add(m[1]);
+  });
+  if(!families.size) families.add('Cormorant Garamond').add('Inter');
+  const segs = [...families].map(name=>{
+    const spec = WB_GFONT_SPEC[name];
+    const plus = name.replace(/ /g,'+');
+    return 'family='+plus+(spec?':'+spec:'');
+  });
+  return 'https://fonts.googleapis.com/css2?'+segs.join('&')+'&display=swap';
+}
 const WB_CORNERS = { sharp:'0px', round:'10px', pill:'999px' };
 
 // Per-block IMAGE SHAPE — distinct from WB_CORNERS above, which is the site-wide corner
@@ -6857,7 +6898,7 @@ function _wbBuildSite(forDownload){
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${_escHtml(_wbCouple())}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;500;600&family=Josefin+Sans:wght@300;400;600&family=Great+Vibes&family=Alex+Brush&family=Parisienne&family=Pinyon+Script&display=swap" rel="stylesheet"/>
+<link href="${_wbSiteFontsHref(t2)}" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:${(()=>{const c=String(t2.background||t2.page||'#ffffff').trim();const m=c.match(/^#([0-9a-f]{6})$/i);if(!m) return 'light';const n=parseInt(m[1],16);return(((n>>16)&255)*299+((n>>8)&255)*587+(n&255)*114)/1000<128?'dark':'light';})()}}
