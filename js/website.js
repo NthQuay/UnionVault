@@ -103,6 +103,33 @@ function _wbSiteFontsHref(t2){
   });
   return 'https://fonts.googleapis.com/css2?'+segs.join('&')+'&display=swap';
 }
+// A second, dedicated <link> for just the couple's NAME font — loaded alongside the
+// one above, not instead of it. _wbSiteFontsHref already shrank the font payload a lot,
+// but font-display:swap always paints the fallback font FIRST and swaps once the real
+// one downloads, however small it is — and a cursive/script name font looks nothing
+// like its fallback, so even a brief swap reads as a jarring "wrong font" flash on the
+// single most prominent text on the page. Two things make this one load fast enough
+// that the swap essentially never has time to render visibly:
+//   - `text=` subsets it to only the couple's own name characters (upper AND lower case,
+//     since text-transform:uppercase needs the glyphs that are actually painted, not the
+//     ones in the markup) instead of a full Latin charset — typically a few KB.
+//   - `display=optional` tells the browser: if this font isn't ready almost immediately,
+//     don't swap to it at all for this page view — show the fallback cleanly and use the
+//     real font once it's cached, rather than yanking the heading into a different font
+//     partway through. h1 is hardcoded to font-weight:400 (see the h1 rule below), so no
+//     weight list is needed here the way the main link above carries one.
+function _wbNameFontHref(t2){
+  const m = String(t2.nameFont||'').match(/'([^']+)'/);
+  if(!m || WB_GFONT_SPEC[m[1]]===undefined) return '';
+  const raw = _wbCouple();
+  const chars = new Set((raw+raw.toUpperCase()+raw.toLowerCase()).split(''));
+  // A little slack beyond the couple's actual characters, so a name with an apostrophe
+  // or hyphen the couple adds later doesn't silently go tofu until the next edit.
+  ["'",'’','-','.',','].forEach(c=>chars.add(c));
+  const text=encodeURIComponent([...chars].join(''));
+  const plus=m[1].replace(/ /g,'+');
+  return 'https://fonts.googleapis.com/css2?family='+plus+'&text='+text+'&display=optional';
+}
 const WB_CORNERS = { sharp:'0px', round:'10px', pill:'999px' };
 
 // Per-block IMAGE SHAPE — distinct from WB_CORNERS above, which is the site-wide corner
@@ -5797,7 +5824,7 @@ function _wbBuildSite(forDownload){
 <\/script>`;
 
       return wrap(k, [
-        ww.message?`<p class="lead">${_escHtml(ww.message)}</p>`:'',
+        ww.message?`<p class="sub">${_escHtml(ww.message)}</p>`:'',
         formHtml,
         ww.closing?`<p class="sub">${_escHtml(ww.closing)}</p>`:'',
         registryHtml
@@ -6899,6 +6926,7 @@ function _wbBuildSite(forDownload){
 <title>${_escHtml(_wbCouple())}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="${_wbSiteFontsHref(t2)}" rel="stylesheet"/>
+${(()=>{const nfh=_wbNameFontHref(t2);return nfh?`<link href="${nfh}" rel="stylesheet"/>`:'';})()}
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:${(()=>{const c=String(t2.background||t2.page||'#ffffff').trim();const m=c.match(/^#([0-9a-f]{6})$/i);if(!m) return 'light';const n=parseInt(m[1],16);return(((n>>16)&255)*299+((n>>8)&255)*587+(n&255)*114)/1000<128?'dark':'light';})()}}
